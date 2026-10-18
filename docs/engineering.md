@@ -1767,6 +1767,16 @@ core中H及原依赖为12方法／18次：DetailDueSaveTests全部7／9（AXPres
 - 实际验证：`python3 -B scripts/check_workflow.py --format json` 通过（含 `workflow-contract`、`component-catalog`、`performance-baselines` 与 `ci-contract`）；项目技能结构校验、脚本回归和 `git diff --check` 也已在本批最终差异上重跑。
 - 全量 Swift 测试和本次变更文件的严格 SwiftLint 已由质量门禁实际运行；后续业务代码或共享 UI 改动仍必须按路由选择定向测试、构建和原生验收。
 
+## 指定复核入口切换（2026-10-18）
+
+治理批次 G-0 只改规则、技能、检查器及其测试，不改 Swift 或产品行为：
+
+- 原规则要求的 Cursor `verifier` 一直无法调用，统一搜索各批因此都停在 partial。经用户 2026-10-18 确认，指定只读复核改由 Claude Code `verifier` 子代理承担，权威规则只写在[技能路由的指定只读复核入口](../skill-routing.md#指定只读复核入口)。
+- `AGENTS.md` 两处、`skill-routing.md` 技能表与 §7、`areachain-verify` / `areachain-workflow` 技能各一处现行规则已改为引用该入口；历史段落保持原意，它们留下的复核缺口不会自动关闭。
+- `check_workflow.py` 的 `workflow-contract` 为上述四个文件新增标记 "Claude Code `verifier`"，`test_check_workflow.py` 增加缺少该标记必须失败的反例。没有增加禁止出现 Cursor 字样的负向规则。
+- 实际验证：`check_workflow.py` 通过；`test_check_workflow.py` 125 项、`scripts/tests` 283 项通过；`quality_gate.py --profile static --strict` 通过；`git diff --check` 无输出。本批没有运行 Swift 测试或构建。
+- 复核：本批用新入口派发 `verifier`，结论为"通过"，无整改项。它提醒 skill-routing「复用门禁」里公共顶栏一句仍写 Cursor `verifier`，容易被读成现行规则，留待另批处理。切换前各批的补复核也需另开批次。
+
 ## 全生命周期质量门禁更新（2026-09-26）
 
 本批把此前“有规范但缺统一执行入口”的部分接成可重复门禁，权威说明见 [质量门禁](quality-gates.md)：

@@ -37,11 +37,12 @@ WORKFLOW_CONTRACT = {
     "AGENTS.md": (
         "skill-routing.md", "component-catalog.md", "quality-gates.md",
         "areachain-workflow", "白话请求默认行为", "不把 `.cursor/plans` 当项目路线",
+        "Claude Code `verifier`",
     ),
     "skill-routing.md": (
         "areachain-workflow", "areachain-ui", "areachain-verify",
         "docs/component-catalog.md", "docs/quality-gates.md", "用户输入契约",
-        "三个项目技能",
+        "三个项目技能", "Claude Code `verifier`",
     ),
     "docs/component-catalog.md": (
         "DaybookInputShell", "ModelChanges", "新公共组件",
@@ -49,7 +50,9 @@ WORKFLOW_CONTRACT = {
     ".agents/skills/areachain-workflow/SKILL.md": (
         "skill-routing.md", "component-catalog.md", "areachain-verify",
         "quality-gates.md", "用户无需调用本技能", "skill-format",
+        "Claude Code `verifier`",
     ),
+    ".agents/skills/areachain-verify/SKILL.md": ("Claude Code `verifier`",),
     "docs/quality-gates.md": (
         "quality_gate.py", "performance-baselines.json", "security-static",
         "comment-contract",

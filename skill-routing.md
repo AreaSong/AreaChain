@@ -122,6 +122,16 @@ P提交后重开与多行输入续验保持上述路由；仅扩展原Gallery的
 
 这是 AreaChain 的项目级路由契约。它把仓库规则、项目技能、共享组件、实现和验收串成一条冷启动也能执行的流程；它不改变全局技能的启用策略，也不授予安装、签名、真实数据或远端写入权限。
 
+## 指定只读复核入口
+
+本节是指定只读复核的唯一权威来源，其他文件只引用这里。
+
+- **入口**：2026-10-18 起，共享契约、持久化语义、复杂状态、跨模块行为和高风险变更的指定只读复核，由 Claude Code `verifier` 子代理承担。它定义在本机 `~/.claude/agents/verifier.md`，运行在独立上下文中，只读。
+- **时机与输入**：执行对话在本批最终验证之后显式派发它。派发时提供原始需求或提示词、适用的项目约定、实际差异（文件列表与关键 diff）、已运行的命令与结果；要求它按"结论 / 实际运行的检查 / 整改清单 / 未覆盖项"四段格式返回，并给出 `file:line`。
+- **结论处理**：结论为"通过"，才算关闭本批的复核缺口。结论为"不通过"时，只按整改清单修复，重跑受影响的检查，再派发一次复核。执行者自己不能充当复核者，也不能让普通子代理（如 `Explore`、`general-purpose`）顶替。
+- **不可用环境**：在没有该子代理的环境（如 Codex、Cursor）中，或派发失败时，保留复核缺口并报告 partial，不得冒充已复核。
+- **历史段落**：下文和其他文档历史段落里的"指定 Cursor verifier / Cursor `verifier`"保留当时的含义，不逐段改写。它们留下的复核缺口不会因本节自动关闭，需另开补复核批次处理。
+
 ## 来源优先级
 
 发生冲突时按以下顺序核对，不能把旧提示词或模型记忆当成项目事实：
@@ -166,7 +176,7 @@ P提交后重开与多行输入续验保持上述路由；仅扩展原Gallery的
 | 新增产品能力或页面 | `areasong-development`（当前会话可用时）与 [areachain-workflow](.agents/skills/areachain-workflow/SKILL.md) | 有界面时用 [areachain-ui](.agents/skills/areachain-ui/SKILL.md) | [areachain-verify](.agents/skills/areachain-verify/SKILL.md) |
 | 既有界面、输入、窗口或视觉调整 | [areachain-ui](.agents/skills/areachain-ui/SKILL.md) 与 `areasong-development` 的 UI 路径 | 按实际问题选择 UI/UX 或平台方法 | [areachain-verify](.agents/skills/areachain-verify/SKILL.md) |
 | Domain、Services、持久化、同步或公共状态 | [areachain-workflow](.agents/skills/areachain-workflow/SKILL.md) | `areasong-development` 的架构/可靠性/工程引用 | [areachain-verify](.agents/skills/areachain-verify/SKILL.md) |
-| 重构、公共组件或跨模块契约 | [areachain-workflow](.agents/skills/areachain-workflow/SKILL.md) | `areasong-development` 架构治理 | Cursor `verifier` 只读复核，以及 [areachain-verify](.agents/skills/areachain-verify/SKILL.md) |
+| 重构、公共组件或跨模块契约 | [areachain-workflow](.agents/skills/areachain-workflow/SKILL.md) | `areasong-development` 架构治理 | Claude Code `verifier` 子代理（见[指定只读复核入口](#指定只读复核入口)）只读复核，以及 [areachain-verify](.agents/skills/areachain-verify/SKILL.md) |
 | 只读诊断、代码审阅或进度查询 | 相关代码/文档和验证入口 | 不因“看起来像功能”而实施修改 | 按请求报告证据，不自动修复 |
 | 验证或回归 | [areachain-verify](.agents/skills/areachain-verify/SKILL.md) | 按影响选择测试、构建和原生证据 | 报告通过、失败、跳过和未运行 |
 | 文档、AGENTS、路由或项目技能维护 | [areachain-workflow](.agents/skills/areachain-workflow/SKILL.md) | 不引入第四个项目技能或本机 `skill-creator` | `check_workflow.py`（含 `skill-format`）和差异复核 |
@@ -209,7 +219,7 @@ P提交后重开与多行输入续验保持上述路由；仅扩展原Gallery的
 
 1. 运行本次影响对应的静态检查、定向测试、脚本测试或构建；不要用旧结果代替新证据。
 2. UI 变更分别检查行为、焦点/键盘、双语、浅深色、最小窗口和原生宿主；网页截图不能证明 macOS 原生验收。
-3. 共享组件或公共契约变化扩大到所有真实消费者。跨模块契约只由 Cursor `verifier` 做只读复核；测试、构建和隔离原生只由 [areachain-verify](.agents/skills/areachain-verify/SKILL.md) 选择并执行。
+3. 共享组件或公共契约变化扩大到所有真实消费者。跨模块契约只由 Claude Code `verifier` 子代理（见[指定只读复核入口](#指定只读复核入口)）做只读复核；测试、构建和隔离原生只由 [areachain-verify](.agents/skills/areachain-verify/SKILL.md) 选择并执行。
 4. 最终报告区分：已实现、已验证、已安装、已发布、跳过、未运行和残余风险。
 5. 更新权威文档和组件目录；不生成重复的计划性规范。
 

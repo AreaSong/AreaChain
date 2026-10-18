@@ -42,8 +42,8 @@ class WorkflowCheckTests(unittest.TestCase):
                    ".daybookSurface(floating: .rowBubble(isHovered: false, isCopied: false)) } }\n")
         contract_docs = {
             "docs/architecture.md": "qa-compile --qa-batch Config/QA.xcconfig 持久化之前\n",
-            "AGENTS.md": "[路由](skill-routing.md) [目录](docs/component-catalog.md) areachain-workflow 白话请求默认行为 不把 `.cursor/plans` 当项目路线\n",
-            "skill-routing.md": "areachain-workflow areachain-ui areachain-verify docs/component-catalog.md docs/quality-gates.md 用户输入契约 三个项目技能\n",
+            "AGENTS.md": "[路由](skill-routing.md) [目录](docs/component-catalog.md) areachain-workflow 白话请求默认行为 不把 `.cursor/plans` 当项目路线 Claude Code `verifier`\n",
+            "skill-routing.md": "areachain-workflow areachain-ui areachain-verify docs/component-catalog.md docs/quality-gates.md 用户输入契约 三个项目技能 Claude Code `verifier`\n",
             "docs/quality-gates.md": "quality_gate.py performance-baselines.json security-static comment-contract\n",
             "docs/component-catalog.md": "TaskContentQueryReader DaybookInputShell DaybookTextField SyntaxTextField DaybookButtonStyle DaybookToggleStyle checkbox Checkbox DaybookStepper Stepper DaybookSegmentedControl DaybookSegmentOption DaybookSegmentedBar Segmented segmented DaybookPicker DaybookPickerOption formRow verbatim Picker ModernCheckbox inlineSubtask detailSubtask detailSubtaskSymbolSize Completion DaybookControlsPreview ControlsPreviewWindowController openControlsPreview settings.controlsPreview DaybookOverlaySamples daybookSurface TaskRow DayBoardList BoardFilter BoardSearch CommandCatalog DayKey AgendaProjection DayBoardPageProjection DayBoardCheckIndex DayBoardMutations ModelChanges PendingTrash BoardRowChrome BoardCommandStrip BoardSearchHitGroups WorkspaceHeaderBar WorkspaceHeaderAction WorkspaceHeaderSearchCapsule 新公共组件\n",
         }
@@ -136,6 +136,8 @@ class WorkflowCheckTests(unittest.TestCase):
             content = f"---\nname: {name}\ndescription: Isolated fixture for {name}\n---\n"
             if name == "areachain-workflow":
                 content += "skill-routing.md component-catalog.md areachain-verify quality-gates.md 用户无需调用本技能 skill-format\n"
+            if name in ("areachain-workflow", "areachain-verify"):
+                content += "Claude Code `verifier`\n"
             self.write(f".agents/skills/{name}/SKILL.md", content)
             self.write(f".agents/skills/{name}/agents/openai.yaml",
                        "interface:\n  display_name: Fixture\n  short_description: Isolated fixture\n")
@@ -307,6 +309,23 @@ class WorkflowCheckTests(unittest.TestCase):
         result = workflow.check_workflow_contract(self.root)
         self.assertEqual(result["status"], "failed")
         self.assertTrue(any("areachain-ui" in problem["message"] for problem in result["issues"]))
+
+    def test_workflow_contract_rejects_missing_designated_verifier_entry(self):
+        self.make_project()
+        marker = "Claude Code `verifier`"
+        for relative in ("AGENTS.md", "skill-routing.md",
+                         ".agents/skills/areachain-workflow/SKILL.md",
+                         ".agents/skills/areachain-verify/SKILL.md"):
+            with self.subTest(file=relative):
+                path = self.root / relative
+                original = path.read_text(encoding="utf-8")
+                self.assertEqual(workflow.check_workflow_contract(self.root)["status"], "passed")
+                path.write_text(original.replace(marker, "Cursor `verifier`"), encoding="utf-8")
+                result = workflow.check_workflow_contract(self.root)
+                path.write_text(original, encoding="utf-8")
+                self.assertEqual(result["status"], "failed")
+                self.assertTrue(any(problem["file"].endswith(relative) and marker in problem["message"]
+                                    for problem in result["issues"]))
 
     def test_qa_template_cannot_lose_identity_or_pre_persistence_entry(self):
         self.make_project()
