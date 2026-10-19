@@ -42,7 +42,8 @@ final class UnifiedSearchResultsFixture {
          subtaskEnvironment: SubtaskCommandEnvironment? = nil, routineEnvironment: RoutineCommandEnvironment? = nil, batchEnvironment: BatchCommandEnvironment? = nil,
          testVault: PrivacyVault? = nil, enableMultiPlan: Bool = false, outputCapability: CommandMultiPlanOutputCapability = .taskTitle, enablePlanRevisions: Bool = false,
          trashEnvironment: BatchCommandEnvironment? = nil, trashCapability: TrashCommandAdapter.Capability = .closed,
-         taskCopyEnvironment: TaskCopyCommandEnvironment? = nil) throws {
+         taskCopyEnvironment: TaskCopyCommandEnvironment? = nil,
+         convert: ((CommandHandoffCoordinator) -> ConvertCommandAdapter)? = nil) throws {
         vault = testVault ?? PrivacyVault(store: MemoryVaultConfigurationStore(), systemKeys: FakeSystemVaultKeys())
         self.batch = batch
         handoff = try .init(sourcePage: .overview)
@@ -96,7 +97,8 @@ final class UnifiedSearchResultsFixture {
             taskChain: chainAdapter,
             subtask: subtaskAdapter, routine: routineAdapter, batch: batchAdapter, multiPlan: multi,
             trash: trashEnvironment.map { TrashCommandAdapter(coordinator: handoff.coordinator, environment: $0, capability: trashCapability) },
-            taskCopy: taskCopyEnvironment.map { TaskCopyCommandAdapter(coordinator: handoff.coordinator, environment: $0) })
+            taskCopy: taskCopyEnvironment.map { TaskCopyCommandAdapter(coordinator: handoff.coordinator, environment: $0) },
+            convert: convert?(handoff.coordinator))
     }
 
     func publish() async throws -> ContentQueryReadEffect {

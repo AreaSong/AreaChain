@@ -9,7 +9,7 @@ enum CommandMultiPlanFamily: Equatable, Hashable {
 enum CommandMultiPlanIssue: Error, Equatable {
     case unassembled, unsupported, incomplete, stale, confirmationRequired, recoveryUnavailable
     case externalPending
-    /// 需要独立确认的回收项只能单项提交，不进入多项计划队列。
+    /// 需要独立确认的回收与转换项只能单项提交，不进入多项计划队列。
     case independentConfirmation
 }
 

@@ -51457,13 +51457,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Trash commands need their own confirmation and run only as a single item. Remove them from this plan and submit them on their own."
+            "value": "Trash and convert commands need their own confirmation and run only as a single item. Remove them from this plan and submit them on their own."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "回收类指令需要独立确认，只能单项执行。请先从这份计划中移除，再单独提交。"
+            "value": "回收、转换类指令需要独立确认，只能单项执行。请先从这份计划中移除，再单独提交。"
           }
         }
       }
@@ -52382,6 +52382,907 @@
           "stringUnit": {
             "state": "translated",
             "value": "备注"
+          }
+        }
+      }
+    },
+    "unified.convert.pending": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Convert: prepare, accept, then confirm separately"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "转换：先准备、接受，再单独确认"
+          }
+        }
+      }
+    },
+    "unified.convert.single": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conversion runs on its own, for one ordinary item without notes."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "转换只能单项执行，且只接受一个没有备注的普通对象。"
+          }
+        }
+      }
+    },
+    "unified.convert.prepare": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prepare conversion"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "准备转换"
+          }
+        }
+      }
+    },
+    "unified.convert.accept": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accept conversion effects"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "接受转换影响"
+          }
+        }
+      }
+    },
+    "unified.convert.accepted": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Effects accepted. Review to confirm."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已接受影响，请进入确认。"
+          }
+        }
+      }
+    },
+    "unified.convert.baseline": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prepare to read the current item and what will change."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "准备后读取当前对象和将发生的变化。"
+          }
+        }
+      }
+    },
+    "unified.convert.stale": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The item changed or the preview expired. Prepare again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "对象已变化或预览已失效，请重新准备。"
+          }
+        }
+      }
+    },
+    "unified.convert.review": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review Conversion…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "检查后转换…"
+          }
+        }
+      }
+    },
+    "unified.convert.reviewHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This opens a separate confirmation. Nothing changes until you confirm there."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这一步只打开单独的确认，确认前不会改动任何内容。"
+          }
+        }
+      }
+    },
+    "unified.convert.confirmTitle %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Convert “%@”?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "转换「%@」？"
+          }
+        }
+      }
+    },
+    "unified.convert.confirm": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Convert"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确认转换"
+          }
+        }
+      }
+    },
+    "unified.convert.busy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Another command is running. Try again after it finishes."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "另一条指令正在执行，请等它结束后再试。"
+          }
+        }
+      }
+    },
+    "unified.convert.unassembled": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conversion isn’t available here."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此处暂不提供转换。"
+          }
+        }
+      }
+    },
+    "unified.convert.input": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This command only takes the item to convert."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这条指令只接受要转换的对象。"
+          }
+        }
+      }
+    },
+    "unified.convert.acceptFirst": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accept the conversion effects first."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先接受转换影响。"
+          }
+        }
+      }
+    },
+    "unified.convert.verificationRequired": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The last conversion of this item has an unknown result. Check that result first."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这个对象上次转换的结果未知，请先核对结果。"
+          }
+        }
+      }
+    },
+    "unified.convert.problem.missing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The item no longer exists."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "对象已不存在。"
+          }
+        }
+      }
+    },
+    "unified.convert.problem.duplicate": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More than one item has this identity; nothing was changed."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "有多个对象使用同一身份，未做改动。"
+          }
+        }
+      }
+    },
+    "unified.convert.problem.deleted": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The item is already in Trash."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "对象已在回收站。"
+          }
+        }
+      }
+    },
+    "unified.convert.problem.source": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t confirm that this is an ordinary item."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法确认这是普通对象。"
+          }
+        }
+      }
+    },
+    "unified.convert.problem.protectedContent": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protected items can’t be converted by command."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "受保护的对象不能用指令转换。"
+          }
+        }
+      }
+    },
+    "unified.convert.problem.notes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Items with notes can’t be converted by command yet. Use the button in the detail panel."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "带备注的对象暂不能用指令转换，请使用详情面板里的按钮。"
+          }
+        }
+      }
+    },
+    "unified.convert.problem.family": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The item’s subtasks couldn’t be read reliably; nothing was changed."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法可靠读取该对象的子任务，未做改动。"
+          }
+        }
+      }
+    },
+    "unified.convert.problem.changed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The item changed after the preview. Prepare again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "预览后对象已变化，请重新准备。"
+          }
+        }
+      }
+    },
+    "unified.convert.pendingResult": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Converting…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在转换…"
+          }
+        }
+      }
+    },
+    "unified.convert.saved": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Converted"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已转换"
+          }
+        }
+      }
+    },
+    "unified.convert.unknown": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Result unknown"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "结果未知"
+          }
+        }
+      }
+    },
+    "unified.convert.notSubmitted": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not converted. Nothing was changed."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未转换，没有任何改动。"
+          }
+        }
+      }
+    },
+    "unified.convert.created.routine": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A new routine was created and the original task moved to Trash."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已新建习惯，原待办已进回收站。"
+          }
+        }
+      }
+    },
+    "unified.convert.created.todo": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A new task for today was created and the original routine moved to Trash."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已新建今天的待办，原习惯已进回收站。"
+          }
+        }
+      }
+    },
+    "unified.convert.open.routine": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open new routine"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开新习惯"
+          }
+        }
+      }
+    },
+    "unified.convert.open.todo": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open new task"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开新待办"
+          }
+        }
+      }
+    },
+    "unified.convert.restoreHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The original can be restored from the Trash page; subtasks that went with a task come back with it."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原对象可在回收站页面恢复；随原待办一起进入回收站的子任务会一起恢复。"
+          }
+        }
+      }
+    },
+    "unified.convert.unknownDetail": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The save may or may not have finished. It won’t be retried, and this item can’t be converted again until you check the result."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存可能已完成也可能未完成，不会自动重试；核对结果前不能再次转换这个对象。"
+          }
+        }
+      }
+    },
+    "unified.convert.verify": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check result"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "核对结果"
+          }
+        }
+      }
+    },
+    "unified.convert.verification.converted": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checked: converted. The new item exists and the original is in Trash."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "核对结果：已转换。新对象存在，原对象在回收站。"
+          }
+        }
+      }
+    },
+    "unified.convert.verification.notConverted": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checked: not converted. The original is unchanged and no new item was found. You can prepare again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "核对结果：未转换。原对象未变，也没有新对象，可以重新准备。"
+          }
+        }
+      }
+    },
+    "unified.convert.verification.inconsistent": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checked: the result is inconsistent. Converting this item again stays blocked."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "核对结果不一致，暂不允许再次转换这个对象。"
+          }
+        }
+      }
+    },
+    "unified.convert.held": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This result stays in the current run until you continue."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "结果保留在本次运行中，直到你继续操作。"
+          }
+        }
+      }
+    },
+    "unified.convert.loss.headline.toRoutine": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Creates a new routine; the original task moves to Trash."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "会新建一个习惯，原待办进回收站。"
+          }
+        }
+      }
+    },
+    "unified.convert.loss.headline.toTodo": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Creates a new task; the original routine moves to Trash."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "会新建一个待办，原习惯进回收站。"
+          }
+        }
+      }
+    },
+    "unified.convert.loss.weekday": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Date %1$@ becomes a weekly repeat on %2$@."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "日期 %1$@ 变成每周%2$@重复。"
+          }
+        }
+      }
+    },
+    "unified.convert.loss.everyDay": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "every day"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每天"
+          }
+        }
+      }
+    },
+    "unified.convert.loss.dueAndDone": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Due time and completion state are not carried over."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "截止时间和完成状态不会迁移。"
+          }
+        }
+      }
+    },
+    "unified.convert.loss.subtasks": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subtasks becoming templates: %1$lld; done ones losing completion: %2$lld."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld 个子任务变成模板，其中 %2$lld 个已完成的完成状态会丢失。"
+          }
+        }
+      }
+    },
+    "unified.convert.loss.attachments.toRoutine": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Attachments moving to the new routine: %lld."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 个附件改挂到新习惯。"
+          }
+        }
+      }
+    },
+    "unified.convert.loss.original.todo": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The original task and its subtasks go to Trash and can be restored."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原待办及其子任务进回收站，可以恢复。"
+          }
+        }
+      }
+    },
+    "unified.convert.loss.today": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The date becomes today (%@)."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "日期变成今天（%@）。"
+          }
+        }
+      }
+    },
+    "unified.convert.loss.schedule": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repeat weekdays and the enabled or paused state are lost."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重复星期和启用／暂停状态会丢失。"
+          }
+        }
+      }
+    },
+    "unified.convert.loss.checks": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check-ins staying with the original routine (with the streak, and going to Trash with it): %lld."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 条打卡记录和连击留在原习惯上，随原习惯进回收站。"
+          }
+        }
+      }
+    },
+    "unified.convert.loss.templates": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subtask templates becoming unfinished subtasks: %lld."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 个子任务模板变成未完成的子任务。"
+          }
+        }
+      }
+    },
+    "unified.convert.loss.attachments.toTodo": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Attachments moving to the new task: %lld."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 个附件改挂到新待办。"
+          }
+        }
+      }
+    },
+    "unified.convert.loss.original.routine": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The original routine goes to Trash and can be restored."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原习惯进回收站，可以恢复。"
           }
         }
       }

@@ -49,7 +49,9 @@ import Foundation
     }
 
     func family(for command: CommandID) throws -> CommandMultiPlanFamily {
-        if CommandTrashEdit.commands.contains(command.rawValue) { throw CommandMultiPlanIssue.independentConfirmation }
+        if CommandTrashEdit.commands.contains(command.rawValue) || CommandConvertEdit.commands.contains(command.rawValue) {
+            throw CommandMultiPlanIssue.independentConfirmation
+        }
         if CommandPlanSemantics.isAtomicSetting(command), localSettings != nil, fileSettings != nil {
             throw CommandMultiPlanIssue.unsupported
         }

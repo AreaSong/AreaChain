@@ -58,9 +58,15 @@ final class UnifiedSearchController {
     var trashPreview: CommandTrashPreview?
     var trashAcceptance: CommandTrashAcceptance?
     var trashConfirmation: CommandTrashConfirmation?
-    var trashConfirmationFocus: UInt64 = 0
+    /// 独立确认面板（回收与转换共用）的默认焦点修订。
+    var confirmationFocus: UInt64 = 0
     var trashFailure: String?
     var trashProblems: [CommandTrashTargetProblem] = []
+    var convertPreview: CommandConvertPreview?
+    var convertAcceptance: CommandConvertAcceptance?
+    var convertConfirmation: CommandConvertConfirmation?
+    var convertFailure: String?
+    var convertVerification: CommandConvertVerification?
     var taskCopyPreview: CommandTaskCopyPreview?
     var taskCopyResult: CommandTaskCopyResult?
     var taskCopyFailure: String?
@@ -106,6 +112,7 @@ final class UnifiedSearchController {
     @ObservationIgnored let taskChain: TaskChainCommandAdapter?
     @ObservationIgnored let trash: TrashCommandAdapter?
     @ObservationIgnored let taskCopy: TaskCopyCommandAdapter?
+    @ObservationIgnored let convert: ConvertCommandAdapter?
     @ObservationIgnored let settingBackend: UnifiedSearchSettingBackend
     var fileSettingFailure: UnifiedSearchFileSettingFailure?
     var fileSettingConfirmation: UnifiedSearchFileSettingConfirmation?
@@ -139,10 +146,11 @@ final class UnifiedSearchController {
          recordOpen: @escaping (ContentQueryBrowseOpen) -> Void, settingBackend: UnifiedSearchSettingBackend,
          taskCreate: TaskCreateCommandAdapter? = nil, taskTitle: TaskTitleCommandAdapter? = nil,
          taskField: TaskFieldCommandAdapter? = nil, taskChain: TaskChainCommandAdapter? = nil, subtask: SubtaskCommandAdapter? = nil, routine: RoutineCommandAdapter? = nil, batch: BatchCommandAdapter? = nil, multiPlan: MultiPlanCommandAdapter? = nil,
-         trash: TrashCommandAdapter? = nil, taskCopy: TaskCopyCommandAdapter? = nil) {
+         trash: TrashCommandAdapter? = nil, taskCopy: TaskCopyCommandAdapter? = nil, convert: ConvertCommandAdapter? = nil) {
         self.session = session
         self.trash = trash
         self.taskCopy = taskCopy
+        self.convert = convert
         self.coordinator = coordinator
         self.settingBackend = settingBackend
         self.taskCreate = taskCreate
@@ -230,9 +238,9 @@ final class UnifiedSearchController {
             if intent == .open { executeNavigation(source: source); return }
             if intent == .escape { _ = navigationInput(queryInputText); return }
         }
-        if trashConfirmation != nil {
+        if hasIndependentConfirmation {
             // 独立确认期间只接受 Esc 取消；提交、打开和结果移动都不能越过确认。
-            if intent == .escape { cancelTrashConfirmation() }
+            if intent == .escape { cancelIndependentConfirmation() }
             return
         }
         if intent == .submit { requestOperationSubmit(source); return }
@@ -315,6 +323,7 @@ final class UnifiedSearchController {
         revokeBatch()
         revokeTrash()
         revokeTaskCopy()
+        revokeConvert()
         revokeTaskField()
         revokeTaskTitle()
         revokeTaskComposition()
@@ -348,6 +357,9 @@ final class UnifiedSearchController {
         trashProblems = []
         revokeTaskCopy()
         taskCopyFailure = nil
+        revokeConvert()
+        convertFailure = nil
+        convertVerification = nil
         revokeTaskField()
         taskFieldFailure = nil
         revokeTaskTitle()
@@ -420,7 +432,7 @@ final class UnifiedSearchController {
         if change == .privacyInvalidated || !operationVisible { revokeTaskTitle() }
         if change == .privacyInvalidated || !operationVisible { revokeBatch(); revokeTaskField() }
         if change == .privacyInvalidated || !operationVisible { revokeSubtask(); revokeRoutine() }
-        if change == .privacyInvalidated || !operationVisible { revokeTrash(); revokeTaskCopy() }
+        if change == .privacyInvalidated || !operationVisible { revokeTrash(); revokeTaskCopy(); revokeConvert() }
         if change == .privacyInvalidated || !operationVisible { chainCreationPreparation = nil }
         if change != .published, objectSelection != nil || session.isMasked {
             cancelObjectSelection(returnFocus: false)

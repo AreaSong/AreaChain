@@ -53,6 +53,7 @@ struct CommandPreferenceGroupInvocation: Equatable {
     @ObservationIgnored let subtasks = CommandSubtaskRegistry()
     @ObservationIgnored let routines = CommandRoutineRegistry()
     @ObservationIgnored let trashes = CommandTrashRegistry()
+    @ObservationIgnored let conversions = CommandConvertRegistry()
     @ObservationIgnored let taskCreations = CommandTaskCreateRegistry()
     private(set) var ownershipRevision: UInt64 = 0
     init(pages: [ContentQueryPageContext]) throws {
@@ -229,11 +230,10 @@ struct CommandPreferenceGroupInvocation: Equatable {
             || groupInvocations.values.contains { $0.lease.ownership == ownership }
             || multiPlans.preparing[ownership.hostID] == ownership
             || taskCreations.preparing[ownership.hostID] == ownership
-            || taskTitles.preparing[ownership.hostID] == ownership
-            || taskFields.preparing[ownership.hostID] == ownership
-            || batches.preparing[ownership.hostID] == ownership
-            || subtasks.preparing[ownership.hostID] == ownership
+            || taskTitles.preparing[ownership.hostID] == ownership || taskFields.preparing[ownership.hostID] == ownership
+            || batches.preparing[ownership.hostID] == ownership || subtasks.preparing[ownership.hostID] == ownership
             || routines.preparing[ownership.hostID] == ownership || trashes.preparing[ownership.hostID] == ownership
+            || conversions.preparing[ownership.hostID] == ownership
     }
 
     /// 任务事实先进入原 Run，随后事件撤销显示许可也不会丢掉已提交输出。

@@ -1,5 +1,9 @@
 # AreaChain 技能路由与交付闭环
 
+## T-M5 待办与重复事项互转
+
+沿 areachain-workflow → areasong-development／areachain-ui（ui-ux-pro-max 聚焦确认焦点、Esc 与损失说明）→ areachain-verify；共享转换入口与共用确认面板见[组件目录](docs/component-catalog.md#t-m5-待办与重复事项互转)，规则、实测、未覆盖项与生产接线授权只见[权威 T-M5](docs/unified-search-commands.md#991-里程碑-t-m5待办与重复事项互转)。
+
 ## T-M4 复制与回收
 
 沿 areachain-workflow → areasong-development／areachain-ui（ui-ux-pro-max 聚焦确认焦点与 Esc）→ areachain-verify；复制规则、写入接口和独立确认入口见[组件目录](docs/component-catalog.md#t-m4-复制与回收)，规则、实测、未覆盖项与生产接线授权只见[权威 T-M4](docs/unified-search-commands.md#990-里程碑-t-m4复制与回收)。

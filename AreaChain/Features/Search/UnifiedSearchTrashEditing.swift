@@ -97,12 +97,6 @@ extension UnifiedSearchController {
         }
     }
 
-    /// 面板出现后才递增：取消按钮须先存在，焦点修订的变化才会把默认焦点放到取消上。
-    func focusTrashConfirmationCancel() {
-        guard trashConfirmation != nil else { return }
-        trashConfirmationFocus &+= 1
-    }
-
     /// Esc 与取消只撤销确认；草稿、计划、预览和接受均保持原样。
     func cancelTrashConfirmation() {
         guard let confirmation = trashConfirmation else { return }

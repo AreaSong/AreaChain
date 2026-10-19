@@ -45,33 +45,11 @@ import Testing
     }
 
     func command(_ path: String, host: UnifiedSearchTestHost) async throws {
-        let editor = try host.editor
-        editor.insertText(path, replacementRange: .init(location: 0, length: editor.string.utf16.count))
-        try await host.settle()
-        try await host.key(48, "\t")
-        try await host.clickCompositionControl("unified.objects.choose.target")
-        await controller.objectSelectionTask?.value
-        try await host.settle()
+        try await UnifiedSearchCommandDriver.command(path, controller: controller, host: host)
     }
 
     func select(_ objects: [CommandObjectReference], host: UnifiedSearchTestHost) async throws {
-        let picker = try #require(controller.objectSelection)
-        for target in objects {
-            host.window.makeFirstResponder(try host.field)
-            for _ in 0...picker.browse.snapshot.visible.count {
-                if controller.objectSelection?.browse.active == target { break }
-                let active = controller.objectSelection?.browse.active
-                let sequence = picker.browse.snapshot.visible
-                let forward = (active.flatMap(sequence.firstIndex) ?? -1) < (sequence.firstIndex(of: target) ?? 0)
-                try await host.key(forward ? 125 : 126, forward ? "\u{F701}" : "\u{F700}")
-            }
-            try #require(controller.objectSelection?.browse.active == target,
-                "visible=\(picker.browse.snapshot.visible.count) known=\(picker.browse.snapshot.known.count) has=\(picker.browse.snapshot.known.contains(target)) message=\(controller.objectSelectionMessage) results=\(controller.session.isMasked)")
-            try await host.clickCompositionControl("unified.select." + target.searchIdentifier)
-        }
-        try await host.clickCompositionControl("unified.objects.accept")
-        await controller.objectSelectionTask?.value
-        try await host.settle()
+        try await UnifiedSearchCommandDriver.select(objects, controller: controller, host: host)
     }
 
     func prepareAndAccept(_ host: UnifiedSearchTestHost, name: String) async throws -> CommandTrashAcceptance {
@@ -99,19 +77,14 @@ import Testing
     }
 
     func focused(_ identifier: String, host: UnifiedSearchTestHost) throws -> Bool {
-        let node = try host.resultNode(identifier)
-        let selector = NSSelectorFromString("isAccessibilityFocused")
-        try #require(node.responds(to: selector))
-        let read = unsafeBitCast(node.method(for: selector), to: (@convention(c) (AnyObject, Selector) -> Bool).self)
-        return read(node, selector)
+        try UnifiedSearchCommandDriver.focused(identifier, host: host)
     }
 
     func label(_ identifier: String, host: UnifiedSearchTestHost) throws -> String? {
-        SettingsButtonTestSupport.value(try host.resultNode(identifier), "accessibilityLabel") as? String
+        try UnifiedSearchCommandDriver.label(identifier, host: host)
     }
 
     func has(_ identifier: String, host: UnifiedSearchTestHost) -> Bool {
-        SettingsButtonTestSupport.elements(host.window.contentView)
-            .contains { SettingsButtonTestSupport.value($0, "accessibilityIdentifier") as? String == identifier }
+        UnifiedSearchCommandDriver.has(identifier, host: host)
     }
 }

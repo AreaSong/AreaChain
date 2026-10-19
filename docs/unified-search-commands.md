@@ -227,7 +227,7 @@
 | <a id="T5"></a>T5 快速/结构化新增重复事项；标题/备注/星期/提醒/优先级/标签；启用/暂停、排序、删除 → 习惯定义 | [ResidentsPage.swift](../AreaChain/Features/Workspace/ResidentsPage.swift)：20、45；[RecurringItemEditor.swift](../AreaChain/Features/Workspace/RecurringItemEditor.swift)：104；[DayBoardMutations+Capture.swift](../AreaChain/Features/Tasks/DayBoardMutations+Capture.swift)：30 `addCapturedRoutine`、47 `addRecurringItem` | 结构化至少一个星期；语法值优先于显式草稿字段，需在新预览解释最终值。启用时补暂停期跳过记录，不能视为只改开关。验证星期/停用区间、定义与执行日分离。 T-M4 已在隔离环境实现，见 [§9.90](#990-里程碑-t-m4复制与回收)。 |
 | <a id="T6"></a>T6 指定日完成/撤回/跳过、月历选择检查日、当前/最佳连击 → 习惯记录/查询 | [SwiftDataRoutineRepository.swift](../AreaChain/Services/Repositories/SwiftDataRoutineRepository.swift)：220 `toggleRoutine`、235 `markRoutineDone`、247 `skipRoutine`、270 `applyCheck`；[HabitCheckMonthView.swift](../AreaChain/Features/Workspace/HabitCheckMonthView.swift)：27 | `skip` 为 done+skipped；单条 `markRoutineDone` 保留 skip，批量 `applyCheck` 清 skip。单条仓储不负责全部启用/排定限制，不能绕开调用层。先核定操作名称的精确语义，再验证历史/未来/非排定/停用日期及重复调用。月历点击是选日期，不是打卡。 |
 | <a id="T7"></a>T7 多选今天/明天、完成/未完成、加/移标签、启用/停用、回收、清选择 → 批量任务/习惯 | [WorkspaceBatchActionBar.swift](../AreaChain/Features/Workspace/WorkspaceBatchActionBar.swift)：36、61 `AgendaProjection.capability`、102 分日；[DayBoardMutations+Batch.swift](../AreaChain/Features/Tasks/DayBoardMutations+Batch.swift)：22、60、97、132 | 现有批量接口只处理 Todo/Routine；习惯按每条真实检查日分组，正向完成检查排定/启用。当前今日/顶部搜索无批量栏，不能当新统一结果批量已存在。验证固定目标、混合适用子集、跨日失败与未完成参数，不静默忽略子任务。 T-M4 已在隔离环境实现，见 [§9.90](#990-里程碑-t-m4复制与回收)。 |
-| <a id="T8"></a>T8 待办↔重复事项转换 → 对象转换 | [DayBoardMutations+Convert.swift](../AreaChain/Features/Tasks/DayBoardMutations+Convert.swift)：30 `convertTodoToRoutine`、64 `convertRoutineToTodo` | 新建新 ID 并软删原对象，非原 ID 改类型；待办转习惯将活子任务标题折入备注、移交活附件、按原日期取星期，不迁移截止/完成态；反向新建今天待办。预览字段损失与关联变化，验证旧对象/附件、重试不重复创建。 |
+| <a id="T8"></a>T8 待办↔重复事项转换 → 对象转换 | [DayBoardMutations+Convert.swift](../AreaChain/Features/Tasks/DayBoardMutations+Convert.swift)：30 `convertTodoToRoutine`、64 `convertRoutineToTodo` | 新建新 ID 并软删原对象，非原 ID 改类型；待办转习惯将活子任务标题折入备注、移交活附件、按原日期取星期，不迁移截止/完成态；反向新建今天待办。预览字段损失与关联变化，验证旧对象/附件、重试不重复创建。 T-M5 已在隔离环境实现，见 [§9.91](#991-里程碑-t-m5待办与重复事项互转)；原文“子任务折入备注”已过时，以当前代码的模板转换为准。 |
 | <a id="T9"></a>T9 今日/昨天/即将展开、昨天全部延至今日；筛选/清筛选；全部事项种类和状态；列表选择/排序 → 查询/批量/排序 | [TasksPage.swift](../AreaChain/Features/Tasks/TasksPage.swift)、[DayBoardList.swift](../AreaChain/Features/Tasks/DayBoardList.swift)；[WorkspacePendingView.swift](../AreaChain/Features/Workspace/WorkspacePendingView.swift)：61；[WorkspaceAllItemsView.swift](../AreaChain/Features/Workspace/WorkspaceAllItemsView.swift)：51；[DayBoardMutations+Convert.swift](../AreaChain/Features/Tasks/DayBoardMutations+Convert.swift)：13 `applyManualOrder` | 复用 `BoardFilter`、`ItemsListing`、`AgendaProjection`、`ManualOrder`；标签、优先级、来源、日期、提醒等适用维度同步查询；完成状态与习惯启用状态不能混为一个状态。验证页内状态与查询往返、混排手动排序、昨天习惯真实检查日；“全部延至今日”只改适用待办。 |
 | <a id="T10"></a>T10 剪贴板加今天 → 单次捕获 | [ClipboardCapture.swift](../AreaChain/Services/ClipboardCapture.swift)：39 `ingest`；[Classification.swift](../AreaChain/Domain/Classification.swift) | 有文字只取文字、仅图片才挂图；保留原文，仅解析普通标签，不走任务时间/优先级 NLP；可按偏好附来源 Bundle ID。不同于剪贴板历史和正文粘贴。验证文字+图片优先级、事务/文件失败及重试身份。 |
 | <a id="B1"></a>B1 日历月/周切换、上/下月或周、回今天、选日/入日清单、指定日新增、拖拽改期 → 规划导航/任务动作 | [CalendarPage.swift](../AreaChain/Features/Calendar/CalendarPage.swift)：72 页头、288 `addTodo`、294 `selectDayFromGrid`、299 `enterDayList`、314 `dropTodo`；[CalendarWeekBoard.swift](../AreaChain/Features/Calendar/CalendarWeekBoard.swift)：72 | 改期复用 `moveTodo`，只接受待办；选日期导航不改模型。验证六周月历、窄窗、周跨月、保存失败不改选日及原任务草稿。 |
@@ -7657,3 +7657,87 @@ C-M3 之后的上限、实现与验证见 [§9.88](#988-里程碑-c-m3长文上�
 - 整改后重跑：`qa-compile` 通过；本批原生连跑三轮均为 6 方法／15 次全部通过；气泡宿主与 TaskRow 回归（TaskRowBubbleTests、TaskRowInteractionTests、GanttInteractionTests 与本批）全部通过。同轮 DiaryTitleHoverTests、QuadrantLayoutTests、ScrollAssemblyConsumerTests 共 10 次失败（含四象限宿主初始化崩溃）；在未改基线 `tm4base`（持原锁）上同一组方法同样 10 次失败，判定为既有问题，未修改。
 - 第二次结论：**通过**。verifier 亲自重跑本批 4 个服务类、本批原生（含新气泡用例 5 个参数与上轮偶发的复制用例 4 个 style）及 TaskRowBubble／TaskRowInteraction／GanttInteraction，共 8 类 107 次全部通过；DiaryTitleHover／QuadrantLayout／ScrollAssembly 的失败与基线 `tm4base` 列表逐条一致，判为既有。核对两处 handleTap（设置结果回调时只在成功置已复制且只写一次，未设置时与原代码相同）、TaskRow 两处接线、`reportingCopyResult` 只有 TaskRow 使用；第九节其余各项在新差异下仍成立。指定复核缺口关闭。
 - 两条低级意见均不阻断：新气泡用例直接构造共享气泡，TaskRow 两处接线在“写入失败气泡不显示已复制”路径上只有静态证据（列入未覆盖项）；本段的悬空引用已由本条补齐。
+
+### 9.91 里程碑 T-M5：待办与重复事项互转
+
+2026-10-19（Asia/Shanghai）。用户确认先补齐功能，补复核 G-1b～G-1e 挪到接入正式版之前，本批不跑。本节是 T-M5 唯一交接：共享转换入口、todo.toRoutine／routine.toTodo 两个指令，以及把 T-M4 的独立确认泛化为回收与转换共用的一份。全部仍在隔离环境：能力默认关闭，生产搜索、真实用户库和系统服务未接入，没有提交或推送。
+
+#### 规则
+
+- **转换逻辑只有一份**：[ItemConversionService](../AreaChain/Services/ItemConversionService.swift)。`applyTodoToRoutine`／`applyRoutineToTodo` 只在调用方事务内写入；`convertTodoToRoutine`／`convertRoutineToTodo` 包一次 `ModelChanges.perform` 给界面用。[DayBoardMutations+Convert](../AreaChain/Features/Tasks/DayBoardMutations+Convert.swift) 的两个函数签名、返回值不变，只转调共享入口；TaskDetailSections 未改。时钟（`now`）、日期键（`today`）、星期日历、事务边界、新对象 UUID 与日历刷新都可注入，生产默认值与原实现一致。
+- **行为与旧实现等价**：都是新建新 UUID 的对象 + 软删原对象，不就地改类型。待办 → 习惯：标题、提醒、标签、重要／紧急、来源、备注照搬；星期按原日期取（`ItemConversion.weekdayMask`）；活子任务按顺序变成模板（新 UUID，保留标题、顺序、标签，不保留完成态）；活附件改挂；原待办与活子任务同一时间戳软删；排序取全部活待办与活习惯最大值 + 1。习惯 → 待办：新建今天的待办，模板变成未完成的新子任务，活附件改挂，原习惯软删（打卡记录留在原习惯上）；排序取今天的活待办与全部活习惯最大值 + 1。§8 T8 原文“子任务折入备注”已过时（`ItemConversion.foldedNotes` 仍在但转换不再调用），以当前代码的模板转换为准。
+- **资格**：沿 B-M1／T-M4 的“普通无备注”门槛——来源 ordinary、来源声明 notes 为 absent，且真实备注为空；有备注拒绝并给出原因“带备注的对象暂不能用指令转换，请使用详情面板里的按钮”（`problem.notes`）。待办另须按身份查得的活子任务与关系上的活子任务一致（否则 `family`）。只接单个对象；不放宽门槛。
+- **只允许单项计划**：与回收共用 `CommandIndependentPlan`：只接当前唯一的普通计划项，不入原子组、不接依赖或输出。MultiPlanCommandAdapter 遇到转换命令同样抛 `independentConfirmation`；多项计划提示文案改为“回收、转换类指令需要独立确认，只能单项执行”（原 T-M4 文案只提回收）。
+
+#### 预览损失清单
+
+预览只读，零写入；损失与关联变化由 [ConvertCommandReader](../AreaChain/Services/ConvertCommandReader.swift) 用与写入相同的规则（`liveSubtasks`、`orderedTemplates`、`weekdayMask`）算出，确认面板显示同一份冻结清单，执行时再在保存前逐项核对实际写入（不一致整体回滚）。
+
+| 方向 | 面板逐条列出 |
+|---|---|
+| 待办 → 习惯 | 会新建一个习惯、原待办进回收站；日期 X 变成每周星期 Y 重复；截止时间和完成状态不迁移；N 个子任务变成模板、其中 M 个已完成的完成态丢失（有子任务时）；K 个附件改挂到新习惯（有附件时）；原待办及其子任务进回收站、可以恢复 |
+| 习惯 → 待办 | 会新建一个待办、原习惯进回收站；日期变成今天（执行所用时钟的今天，跨日后须重新预览）；重复星期和启用／暂停状态丢失；N 条打卡记录和连击留在原习惯上、随原习惯进回收站；N 个模板变成未完成的子任务（有模板时）；K 个附件改挂到新待办（有附件时）；原习惯进回收站、可以恢复 |
+
+预览后对象被改（标题、子任务、附件等指纹）、被删或跨日，确认／提交时拒绝（`changed`／`deleted`），撤销确认、清空预览与接受，要求重新预览。
+
+#### 独立确认面板泛化
+
+- **绑定只有一份**：[CommandIndependentConfirmation／CommandIndependentConfirmationLedger](../AreaChain/Domain/CommandIndependentConfirmation.swift)。确认绑定接受 ID、计划戳、计划项、目标集合和指令提供的摘要；新接受撤销旧确认，取消或拒绝撤销本次确认，提交时须逐项一致。回收的摘要是连带计数（`CommandTrashConfirmation` 现为该泛型的别名，保留 `counts`／`titles`／`targets`／`sampleLimit`），转换的摘要是损失清单（`CommandConvertConfirmation`）。`CommandTrashPreview` 的单项计划与冻结核验改为调用共享的 `CommandIndependentPlan`，判断条件与抛出的错误不变。
+- **面板只有一份**：[UnifiedSearchIndependentConfirmationPanel](../AreaChain/Features/Search/UnifiedSearchIndependentConfirmation.swift)（原 UnifiedSearchTrashConfirmation.swift 以 git mv 改名），各指令只提供标识前缀、标题、确认文案和说明内容；回收说明为 `UnifiedSearchTrashConfirmationDetails`（原文案与标识不变），转换说明为 `UnifiedSearchConvertLossList`。默认焦点在“取消”、Tab 才到确认、确认期间 ⌘Return／Return 打开／结果移动都被控制器忽略、Esc 只撤销确认，这些规则现由 `hasIndependentConfirmation`／`cancelIndependentConfirmation`／`focusIndependentConfirmationCancel` 统一路由；焦点修订 `trashConfirmationFocus` 改名为 `confirmationFocus`。T-M4 的回收测试断言未改。
+
+#### 执行、未知结果与回执
+
+- **执行**：[ConvertCommandAdapter](../AreaChain/Services/ConvertCommandAdapter.swift)（`Capability.convert`，默认 `.closed`）沿回收的 prepare → accept → 独立 confirm → submit。新对象 UUID 在接受时分配一次。[ConvertCommandTransaction](../AreaChain/Services/ConvertCommandTransaction.swift) 在一次 ModelChanges 中只调共享入口的 apply，保存前核对新对象唯一、原对象与活子任务同戳、附件改挂集合、模板／子任务数与星期／日期都与预览一致；只有保存成功才登记事实并私有发布（发布目标为原对象与新对象）。保存调用前失败为 notSubmitted，原对象、附件与计划不变。
+- **未知结果**：save 已调用后失败沿 §9.71 记为 unknown，不发布、不刷新、不重放；同一接受只能调用一次，Run 封存后同一计划不能再执行；原对象登记为“待核对”，在核对前不能再接受该对象的转换（`verificationRequired`）。[verifyUnknown](../AreaChain/Services/ConvertCommandVerification.swift) 用同容器的新只读 context 按接受时的新 UUID 和原对象软删状态返回 absent／live／deleted／ambiguous／unreadable 与结论：新对象活 + 原对象已删为 converted，新对象无 + 原对象活为 notConverted，其余为 inconsistent。只有确定结论才解除阻止；原 unknown 回执不提升。
+- **回执**：成功时显示新建了什么，并提供“打开新习惯／新待办”，复用 [UnifiedSearchNavigation](../AreaChain/Features/Search/UnifiedSearchNavigation.swift) 新增的 `openConvertedObject`（与 openLongTextOwner 同一 `objects.resolve` + `navigate`；新习惯按转换时钟的今天作为执行日打开）。原对象可在现有回收站恢复：待办连同随它进回收站的子任务一起恢复；改挂的附件不在回收站，仍属于新对象；习惯恢复后打卡记录仍在。恢复原对象不会删除新对象（与界面转换一致）。
+
+#### CalendarSync 不对称的结论
+
+两个方向在保存成功后都经 `ModelChanges` 的默认发布 `BoardEvents.changed()` → `requestRefresh(true)` → `CalendarSync.refreshIfEnabled()` 请求日历刷新；待办转习惯在此之后又显式调用一次，协调器在已有任务时只置 pending 合并。两处都由同一次提交（8a31d31）引入，没有记录意图。结论：不对称在生产上是冗余的额外请求，不是反方向漏刷新，不影响结果。本批按要求保持现状：共享入口的 `refreshCalendar` 只在待办转习惯保存成功后调用，指令路径同样只在该方向调用注入的刷新（`calendarRefreshRequested`）。是否删去冗余调用留待生产接线时另行决定；注意这条规则目前有两处：界面路径在 `ItemConversionService.convertTodoToRoutine`，指令路径在 `ConvertCommandTransaction.apply`（指令直接调 apply，不经界面包装），删改时须两处一起改。
+
+#### 隔离与生产接线所需授权
+
+生产代码没有新的构造点：`ConvertCommandAdapter` 只在测试夹具中构造，控制器参数 `convert` 默认 nil；DayBoardMutations 的界面入口行为不变。QA 中时钟固定（today 2026-10-18）、日历刷新是计数 fake，环境沿 BatchCommandEnvironment（私有 NotificationCenter、内存库、fake 刷新），不写真实通知或日历。接入生产前还需另行授权和定界：在真实宿主装配 ConvertCommandAdapter（打开 `.convert`）并注入生产时钟与 `CalendarSync.refreshIfEnabled`；用生产刷新替换 fake，确认转换后真实提醒、日历与小组件；是否放开带备注对象；是否去掉冗余的日历刷新；以及接入正式版前的补复核 G-1b～G-1e。
+
+#### 测试与实测结果
+
+证据在忽略目录 `build/TM5/`（日志、`*.summary`、22 张截图）。全部经 `./scripts/build.sh` 隔离入口、批次 `tm5`（QA 身份 `com.areachain.privacy-qa.tm5`），沿原 `build/.build.lock`，六项真实钥匙串变量由脚本清除，只用合成内存库、固定时钟与 fake 刷新。原生测试串行；第一次检查时屏幕处于锁定状态，未跑原生，解锁后只读确认控制台在线、登录完成、未锁屏、单屏再开跑。
+
+| 批次 | 结果 |
+|---|---|
+| `qa-compile --qa-batch tm5` | 多次 exit 0，QA 包签名核验通过 |
+| 本批 Services 与 T-M4 回收、原转换回归（ItemConversionServiceTests、ConvertCommandTests、ConvertCommandBoundaryTests、TrashCommandTests、TrashCommandBoundaryTests、RoutineSubtaskConversionTests） | 38 次全部通过，0 失败、0 跳过 |
+| 受影响旧服务／领域回归（执行、协调者、宿主会话、计划、目录、批量与批量状态、多项计划 15 类、子任务、习惯、任务标题／字段／创建链／复制、回收、转换、ModelChanges，共 65 类） | 375 次：374 通过、1 失败、0 跳过 |
+| 本批原生 UnifiedSearchConvertInteractionTests | 4 方法 / 9 次全部通过 |
+| 受影响原生回归第一轮（本批 2 类 + T-M4 UnifiedSearchTrashInteractionTests + 统一搜索批量／多项计划／操作／对象／计划／导航／长文／子任务／习惯／标题／字段／新增／设置／结果、TaskRow 交互与气泡、批量菜单、DetailTimePicker，共 39 类） | 185 方法 / 287 次：4 个用例失败、1 个声明的已知问题（expected failure）、0 跳过 |
+| 同组第二轮（结果保存为 `build/TM5/native-regression-2.xcresult`） | 185 方法 / 290 次：只有 1 个用例失败（既有）、1 个已知问题，0 跳过 |
+| 正常 `./scripts/build.sh` | exit 0，staticSignatureVerified=true、hardenedRuntime=true；开发描述文件约 91 小时后到期 |
+| `check_workflow.py`、`unittest discover -s scripts/tests`（283 项）、`quality_gate.py --profile static --strict`、本批 39 个 Swift 文件逐个严格 SwiftLint（0 违规）、`git diff --check` | 全部通过 |
+
+原生失败的处理：
+
+- `UnifiedSearchOperationInteractionTests.nativeBooleanWeekdaysDayAndTime`：找不到 `daybook.date.2026-10-19` 日期按钮，两轮都失败、单独重跑仍失败；在未改动基线 `tm5base`（持原锁）上以相同断言失败，与 §9.90 记录的既有问题一致，未修改。
+- `DetailTimePickerTests.outerTransactionAXClearRequiresOriginalDisplay`：测试内声明的已知问题（第五阶段 B 旧问题），两轮都按预期记为 expected failure。
+- 第一轮另有 `UnifiedSearchMultiPlanLifecycleTests.lostDisplayRequiresNewRealReviewAndAcceptanceBeforeRemainingUnits`、`UnifiedSearchNavigationOwnershipTests.navigationPreservesPlanRunUnknownAndRevisions` 以 signal trap 崩溃，`UnifiedSearchOperationPresentationTests.bothHostsLanguagesThemesAndWidthsKeepAnchor` 因窗口非 key 失败。三者单独重跑、所在三个类整类重跑以及第二轮完整回归都通过；第一轮的 xcresult 已被 build.sh 轮换清理，崩溃栈未保留，系统诊断目录也没有对应时刻的崩溃报告。按偶发记录，不计通过也不判为既有，列入剩余风险。
+
+唯一的服务层失败是既有问题，未修改、未放宽：`SubtaskModelTests.addTagSkipsDiaryPresetNames`（第 215、217～219 行断言，与 §9.90 记录一致）。用 `git archive HEAD` 解出的未改动基线（`build/TM5/base`，持原锁、批次 `tm5base`）跑同一用例，以相同的四处断言失败。
+
+原生覆盖：待办转习惯四种样式（标准 444pt／紧凑 304pt × 中英文 × 浅深色）走真实选择器、准备、损失清单逐条存在（星期名按语言显示）、⌘Return 与按钮都只打开确认、默认焦点在取消、确认期间 ⌘Return 不执行、Esc 回到草稿（计划、接受不变）、Tab 到确认后执行、回执“打开新习惯”经原导航定位到新习惯当天的检查器；习惯转待办两种样式（含按钮取消）并打开新待办；确认后改名被拒并要求重新预览；有备注的待办被拒并显示原因（中英文）。TaskDetailConvertButtonTests 用原详情面板的两个转换按钮（经 DayBoardMutations 原签名）完成转换并打开新对象；T-M4 的 UnifiedSearchTrashInteractionTests 在两轮回归中全部通过（断言未改，夹具的输入／选择辅助改为转调共用的 UnifiedSearchCommandDriver）。截图已逐张查看关键态。
+
+#### 未覆盖项与剩余风险
+
+- 打开新对象只在测试宿主中验证到原导航的定位（目标与检查器引用），完整工作台显示没有端到端用例；Shift-Tab、VoiceOver 朗读、真人输入法、最低系统版本、真实多窗口未验证；截图是 NSView.cacheDisplay，键鼠是合成原生事件。
+- 未知结果的原生界面（“核对结果”按钮与结论文案）只有服务层证据和静态核对，没有原生用例。
+- 带备注的对象不能用指令转换；inconsistent 结论会一直阻止该对象再次转换（本次运行内），需要人工处理。
+- “待核对”阻止记在协调者内存里，只能由 `verifyUnknown` 解除，而核对要求原 Run 仍在宿主会话中；若会话在核对前被丢弃，该对象在本次进程内会一直不能用指令转换，且没有界面入口解除。这偏保守，不会导致重复创建；生产接线前需决定解除方式。
+- 外部系统（真实提醒、日历同步、小组件）只经 fake 验证；CalendarSync 冗余刷新保持现状。
+- 第一轮原生回归的两次 signal trap 崩溃与一次失焦没有复现，崩溃栈未保留；若再出现，需要保留 xcresult 后单独定位。
+- 本批没有提交、推送、安装或发布，没有访问真实用户库、系统服务、签名配置或全局配置；`git mv` 的改名处于暂存区，其余改动未暂存。
+
+#### 指定只读复核
+
+- 全部验证后按[指定只读复核入口](../skill-routing.md#指定只读复核入口)派发 Claude Code `verifier` 子代理，提供提示词要点、实际差异与全部命令结果。
+- 结论：**通过**。八条验收逐条按源码核对为符合；verifier 亲自重跑 `qa-compile`、本批服务层与回收／原转换回归 6 类 38 次、原生 4 类（含 T-M4 回收交互与 TaskDetailConvertButtonTests）18 次、协调者／执行／宿主会话／多项计划／批量等 11 类 65 次，全部通过；`check_workflow.py` 与 `git diff --check` 通过；只读比对 xcstrings：新增 53 个 `unified.convert.*` 键、只改 `unified.multi.independentConfirmation`、无删除，中英文齐全。
+- 两条低级意见（不阻断）：日历刷新不对称规则在界面与指令两处、“待核对”阻止在会话丢弃后可能无法解除。只做文档处理，分别补入上文“CalendarSync 不对称的结论”与“未覆盖项与剩余风险”，未改代码，因此没有再次派发复核。
+- verifier 自述一处越界：把一次 `qa-compile` 的 stderr 重定向到了忽略目录内的 `build/TM5/verifier-qa-compile.err`（只有 xcodebuild 多目标设备警告）。该文件不在版本管理内，保留未删。
+- verifier 未重跑：正常 Debug 构建、quality_gate、scripts/tests、SwiftLint，以及 65 类服务与 39 类原生完整回归，这些以本节执行者证据为准；第一轮原生偶发崩溃未在基线上复现。

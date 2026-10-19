@@ -14,6 +14,8 @@ struct UnifiedSearchSettingSubmission: View {
                 UnifiedSearchTaskCopySubmission(controller: controller)
             } else if controller.showsTrash {
                 UnifiedSearchTrashSubmission(controller: controller)
+            } else if controller.showsConvert {
+                UnifiedSearchConvertSubmission(controller: controller)
             } else if controller.showsSubtask {
                 UnifiedSearchSubtaskSubmission(controller: controller)
             } else if controller.showsRoutineCreation {

@@ -174,6 +174,20 @@ extension UnifiedSearchController {
         }
     }
 
+    /// 转换回执打开新对象：沿 openLongTextOwner 的同一解析与 navigate 核验，不另开导航。
+    /// 新习惯按转换所用时钟的今天作为执行日打开；新待办直接打开。
+    func openConvertedObject(_ facts: CommandConvertFacts, source: UnifiedSearchBuffer) {
+        guard validates(source), facts.state == .saved else { return }
+        guard let router = navigationRouter, let convert else { convertFailure = "unified.navigation.unassembled"; return }
+        let created = facts.created
+        let open = created.type == .routine
+            ? ContentQueryBrowseOpen(object: .init(type: .routineOccurrence, id: created.id, dayKey: convert.conversion.clock.today()),
+                                     parent: created, viewingTrash: false)
+            : ContentQueryBrowseOpen(object: created, parent: nil, viewingTrash: false)
+        do { navigate(.object(try router.objects.resolve(open)), source: source) }
+        catch { convertFailure = navigationFailure(error as? WorkspaceOpenFailure ?? .invalidTarget) }
+    }
+
     func validReturn(_ ticket: UnifiedSearchReturnContext) -> Bool {
         ticket.id == returnSearch?.id && ticket.queryRevision == navigationQueryRevision
             && ticket.privacyRevision == buffer.privacyRevision && ticket.ownership == buffer.lease.ownership
@@ -279,7 +293,7 @@ extension UnifiedSearchController {
     private func revokeNavigationAcceptances() {
         multiPlan?.invalidatePresentation()
         revokeRoutine(); revokeSubtask(); revokeBatch(); revokeTaskField(); revokeTaskTitle(); revokeTaskComposition()
-        revokeTrash(); revokeTaskCopy()
+        revokeTrash(); revokeTaskCopy(); revokeConvert()
         chainCreationPreparation = nil
     }
 

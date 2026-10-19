@@ -100,36 +100,22 @@ struct CommandTrashPreview: Equatable, CustomStringConvertible, CustomDebugStrin
 
     /// 只读当前唯一计划项；回收项不能与其他计划项组成多项计划。
     static func input(in host: CommandOwnedHost) throws -> CommandPlanItem {
-        let session = host.session
-        guard session.execution == nil, session.operations.allDrafts.isEmpty, session.operations.pending == nil,
-              session.plan.editing == nil, session.plan.items.count == 1,
-              let item = session.plan.items.first, item.draft.hostID == session.hostID else {
-            throw CommandTrashIssue.unsupportedPlan
-        }
+        guard let item = CommandIndependentPlan.onlyItem(in: host) else { throw CommandTrashIssue.unsupportedPlan }
         try validate(item)
         return item
     }
 
     static func validate(_ item: CommandPlanItem) throws {
-        let draft = item.draft
-        guard item.atomicGroup == nil, item.links.predecessors.isEmpty, item.links.results.isEmpty,
-              item.hasSupportedOrigins, item.executionOrigin == nil,
-              let command = CommandCatalog.standard.command(id: draft.commandID),
-              command.interactions.contains(.independentConfirmation) else { throw CommandTrashIssue.unsupportedPlan }
-        let edit = try CommandTrashEdit(command: draft.commandID)
-        guard !draft.blocksUnprotectedExport, draft.protectionRequirement == .ordinary,
-              draft.baseline == CommandDraftBaseline(), draft.arguments.isEmpty, draft.check().staticallyValid,
-              draft.targets.selection != .none, edit.allows(draft.targets.objects) else { throw CommandTrashIssue.invalidArguments }
+        guard CommandIndependentPlan.isStandalone(item) else { throw CommandTrashIssue.unsupportedPlan }
+        let edit = try CommandTrashEdit(command: item.draft.commandID)
+        guard CommandIndependentPlan.isPlainTargetDraft(item.draft), edit.allows(item.draft.targets.objects) else {
+            throw CommandTrashIssue.invalidArguments
+        }
     }
 
     func frozenItem(in run: CommandExecutionRun, lease: CommandHostLease) throws -> CommandPlanItem {
-        guard run.multiPlan == nil, run.previewLeaseMatches(self.lease, current: lease, itemID: self.item.id),
-              run.snapshot.stamp == plan, run.snapshot.items.count == 1, run.permitsMember(self.item.id),
-              let item = run.snapshot.items.first(where: { $0.id == self.item.id }), item.stamp == self.item,
-              item.draft.stamp == draft, item.draft.targets == targets,
-              let command = CommandCatalog.standard.command(id: item.draft.commandID),
-              run.resolvedInput(item.id) == .init(arguments: targets.argument(for: command).map { [$0] } ?? [],
-                                                  targets: targets) else {
+        guard let item = CommandIndependentPlan.frozenItem(in: run, lease: lease, previewLease: self.lease, plan: plan,
+                                                           item: self.item, draft: draft, targets: targets) else {
             throw CommandTrashIssue.stale
         }
         try Self.validate(item)
@@ -142,39 +128,25 @@ struct CommandTrashAcceptance: Equatable {
     let preview: CommandTrashPreview
 }
 
-/// 独立确认只绑定当时的计划戳与固定目标；摘要来自同一预览，不重新取样。
-struct CommandTrashConfirmation: Equatable, CustomStringConvertible, CustomDebugStringConvertible {
-    let id: UUID
-    let acceptanceID: UUID
-    let plan: CommandPlanStamp
-    let item: CommandPlanItemStamp
-    let targets: [CommandObjectReference]
-    let titles: [String]
-    let counts: CommandTrashCounts
-    static let sampleLimit = 3
-    var description: String { "CommandTrashConfirmation(targets: \(targets.count))" }
-    var debugDescription: String { description }
-
-    fileprivate init(_ accepted: CommandTrashAcceptance) {
-        id = UUID()
-        acceptanceID = accepted.id
-        plan = accepted.preview.plan
-        item = accepted.preview.item
-        targets = accepted.preview.targets.objects
-        titles = Array(accepted.preview.impacts.prefix(Self.sampleLimit).map(\.title))
-        counts = accepted.preview.counts
+extension CommandTrashAcceptance {
+    var confirmationBinding: CommandTrashConfirmation.Binding {
+        .init(acceptanceID: id, plan: preview.plan, item: preview.item, targets: preview.targets.objects,
+              summary: preview.counts)
     }
+}
 
-    func matches(_ accepted: CommandTrashAcceptance) -> Bool {
-        acceptanceID == accepted.id && plan == accepted.preview.plan && item == accepted.preview.item
-            && targets == accepted.preview.targets.objects && counts == accepted.preview.counts
-    }
+/// 回收的确认摘要是连带计数；绑定、撤销与核对沿共享的 CommandIndependentConfirmationLedger。
+typealias CommandTrashConfirmation = CommandIndependentConfirmation<CommandTrashCounts>
+
+extension CommandIndependentConfirmation where Summary == CommandTrashCounts {
+    var counts: CommandTrashCounts { summary }
 }
 
 @MainActor final class CommandTrashRegistry {
     var preparing: [String: CommandHostOwnership] = [:]
     private(set) var acceptances: [UUID: CommandTrashAcceptance] = [:]
-    private(set) var confirmations: [UUID: CommandTrashConfirmation] = [:]
+    private let ledger = CommandIndependentConfirmationLedger<CommandTrashCounts>()
+    var confirmations: [UUID: CommandTrashConfirmation] { ledger.confirmations }
     private var invoked: Set<UUID> = []
     func wasInvoked(_ id: UUID) -> Bool { invoked.contains(id) }
     func markInvoked(_ id: UUID) { invoked.insert(id) }
@@ -185,7 +157,7 @@ struct CommandTrashConfirmation: Equatable, CustomStringConvertible, CustomDebug
         if let old = acceptances[preview.draft.draftID] {
             guard !wasInvoked(old.id) else { throw CommandTrashIssue.alreadyInvoked }
             if old.preview == preview { return old }
-            confirmations[old.id] = nil
+            ledger.revoke(acceptanceID: old.id)
         }
         let accepted = CommandTrashAcceptance(id: UUID(), preview: preview)
         acceptances[preview.draft.draftID] = accepted
@@ -197,19 +169,16 @@ struct CommandTrashConfirmation: Equatable, CustomStringConvertible, CustomDebug
             throw CommandTrashIssue.confirmationStale
         }
         try accepted.preview.validateLimit()
-        let confirmation = CommandTrashConfirmation(accepted)
-        confirmations[accepted.id] = confirmation
-        return confirmation
+        return ledger.issue(accepted.confirmationBinding, titles: accepted.preview.impacts.map(\.title))
     }
 
-    func cancel(_ confirmation: CommandTrashConfirmation) {
-        guard confirmations[confirmation.acceptanceID] == confirmation else { return }
-        confirmations[confirmation.acceptanceID] = nil
-    }
+    func cancel(_ confirmation: CommandTrashConfirmation) { ledger.cancel(confirmation) }
 
     func confirmation(for accepted: CommandTrashAcceptance) throws -> CommandTrashConfirmation {
-        guard let confirmation = confirmations[accepted.id] else { throw CommandTrashIssue.confirmationRequired }
-        guard confirmation.matches(accepted) else { throw CommandTrashIssue.confirmationStale }
-        return confirmation
+        switch ledger.lookup(accepted.confirmationBinding) {
+        case .missing: throw CommandTrashIssue.confirmationRequired
+        case .stale: throw CommandTrashIssue.confirmationStale
+        case .current(let confirmation): return confirmation
+        }
     }
 }

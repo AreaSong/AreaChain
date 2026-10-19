@@ -11,7 +11,11 @@ struct UnifiedSearchTrashSubmission: View {
             if let unit = controller.trashUnit, let facts = unit.trash { result(facts, unit: unit) }
             else if controller.settingExecution != nil { Text("unified.trash.held").font(DaybookType.caption) }
             else if let confirmation = controller.trashConfirmation {
-                UnifiedSearchTrashConfirmationPanel(controller: controller, confirmation: confirmation, source: source)
+                UnifiedSearchIndependentConfirmationPanel(controller: controller, identifier: "unified.trash",
+                    title: "alert.trash.title", confirmTitle: "alert.trash.move",
+                    confirm: { controller.confirmTrash(confirmation, source: source) }) {
+                    UnifiedSearchTrashConfirmationDetails(confirmation: confirmation)
+                }
             } else { pending(source) }
             if let failure = controller.trashFailure {
                 Text(LocalizedStringKey(failure)).font(DaybookType.caption).fixedSize(horizontal: false, vertical: true)
