@@ -18,6 +18,7 @@ REQUIRED_DOCS = (
     "AGENTS.md", "README.md", "docs/README.md", "docs/architecture.md",
     "docs/signing.md", "docs/engineering.md", "skill-routing.md",
     "docs/component-catalog.md", "docs/quality-gates.md",
+    "docs/unified-search-status.md",
 )
 LINK = re.compile(r"\[[^\]\n]*\]\((?:<([^>\n]+)>|([^\s)]+))(?:\s+\"[^\"]*\")?\)")
 IMPORT = re.compile(r"\bimport\s+(?:(?:typealias|struct|class|enum|protocol|let|var|func)\s+)?(AppKit|SwiftUI|Cocoa)\b")
@@ -58,6 +59,7 @@ WORKFLOW_CONTRACT = {
         "comment-contract",
     ),
     "docs/architecture.md": ("qa-compile", "--qa-batch", "Config/QA.xcconfig", "持久化之前"),
+    "docs/unified-search-status.md": ("现状总览", "功能覆盖表", "每批最少必读"),
 }
 
 COMPONENT_ENTRIES = (

@@ -56,7 +56,14 @@ struct MarkdownPlanParserTests {
             uniqueKeysWithValues: ([existingWorkTag] + snapshot.tags).map { ($0.name, $0.id) }
         )
 
-        // 2. 验证第一条待办与单层子任务、二级缩进转备注
+        // 2～4. 分节验证待办与子任务、重复事项、灵感手记
+        try expectFirstTodo(snapshot, tagIDByName: tagIDByName, workTagID: workTagID)
+        try expectRoutines(snapshot, workTagID: workTagID)
+        try expectDiary(snapshot, tagIDByName: tagIDByName)
+    }
+
+    /// 第一条待办与单层子任务、二级缩进转备注；拆出只为控制测试函数长度，断言不变。
+    private func expectFirstTodo(_ snapshot: ExportSnapshot, tagIDByName: [String: UUID], workTagID: UUID) throws {
         let firstTodo = try #require(snapshot.todos.first)
         #expect(firstTodo.title == "核心架构评审")
         #expect(firstTodo.dayKey == "2026-10-12")
@@ -77,8 +84,10 @@ struct MarkdownPlanParserTests {
         // 子任务上的 #密码 不会挂成待办侧标签
         #expect(firstTodo.subtasks[1].isDone)
         #expect(TagIDList.parse(firstTodo.subtasks[1].tagIDs).isEmpty)
+    }
 
-        // 3. 验证重复事项周期掩码与内嵌语法
+    /// 重复事项周期掩码与内嵌语法。
+    private func expectRoutines(_ snapshot: ExportSnapshot, workTagID: UUID) throws {
         let firstRoutine = try #require(snapshot.routines.first)
         #expect(firstRoutine.title == "每日晨会复盘")
         #expect(firstRoutine.isEnabled)
@@ -95,8 +104,10 @@ struct MarkdownPlanParserTests {
         #expect(WeekdayMask.contains(secondRoutine.weekdayMask, weekday: 4)) // 周三
         #expect(WeekdayMask.contains(secondRoutine.weekdayMask, weekday: 6)) // 周五
         #expect(!WeekdayMask.contains(secondRoutine.weekdayMask, weekday: 3)) // 周二未选中
+    }
 
-        // 4. 验证灵感手记
+    /// 灵感手记。
+    private func expectDiary(_ snapshot: ExportSnapshot, tagIDByName: [String: UUID]) throws {
         let diary = try #require(snapshot.diaries.first)
         #expect(diary.dayKey == "2026-10-13")
         #expect(diary.isPinned)
@@ -290,4 +301,3 @@ struct MarkdownPlanParserTests {
         #expect(jsonDraft.diaries.count == 1 && jsonDraft.diaries[0].isPinned)
     }
 }
-

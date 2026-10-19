@@ -20,7 +20,8 @@ extension ContentQueryReadSession {
               publication.response.matches.contains(where: { match in
                   guard match.id == object else { return false }
                   switch match {
-                  case .todo, .subtask, .routine, .routineOccurrence: return true
+                  // 标签只给已装配的简单标签指令；宿主侧按指令决定是否提供标签对象字段。
+                  case .todo, .subtask, .routine, .routineOccurrence, .tag: return true
                   default: return false
                   }
               }) else { throw ContentQueryReadSessionError.noPresentation }

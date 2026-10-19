@@ -42,9 +42,14 @@ struct UnifiedSearchObjectSelection {
 extension UnifiedSearchController {
     static var adaptedObjectTypes: Set<CommandObjectType> { [.todo, .subtask, .routine, .routineOccurrence] }
 
+    /// 标签对象只对已装配的简单指令开放；其他指令的对象字段与选择器不变。
+    func adaptedObjectTypes(for command: CommandDescriptor) -> Set<CommandObjectType> {
+        Self.adaptedObjectTypes.union(routesSimple(command.id) ? [.tag] : [])
+    }
+
     func supportsObjectField(_ parameter: CommandParameter, command: CommandDescriptor) -> Bool {
         let location: UnifiedSearchObjectLocation = parameter.id == .target ? .targets : .parameter(parameter.id)
-        return !objectTypes(location, command: command).isDisjoint(with: Self.adaptedObjectTypes)
+        return !objectTypes(location, command: command).isDisjoint(with: adaptedObjectTypes(for: command))
             && command.interactions.isDisjoint(with: [.secureInput, .authentication, .freshAuthentication])
     }
 
@@ -82,7 +87,7 @@ extension UnifiedSearchController {
         guard validates(source), operationVisible, objectSelection == nil, !objectSelectionLoading,
               let draft = editingDraft, draft.stamp == source.operation,
               let command = CommandCatalog.standard.command(id: draft.commandID),
-              !objectTypes(location, command: command).isDisjoint(with: Self.adaptedObjectTypes),
+              !objectTypes(location, command: command).isDisjoint(with: adaptedObjectTypes(for: command)),
               command.interactions.isDisjoint(with: [.secureInput, .authentication, .freshAuthentication]) else { return }
         guard !appending || location == .targets && command.id.rawValue == "batch.completion"
             && batch?.supports(command.id) == true else { return }
@@ -202,7 +207,8 @@ extension UnifiedSearchController {
             event = .selectTargets(draft.stamp, .init(picker.appending ? .selected : selection, objects: objects),
                                    baseline: command.id.rawValue == "todo.title" || routesBatch(command.id)
                                     || (routesSubtask(command.id) || routesRoutine(command.id) || routesTrash(command.id)
-                                        || routesTaskCopy(command.id) || routesConvert(command.id)) ? nil : syntheticBaselines[command.id])
+                                        || routesTaskCopy(command.id) || routesConvert(command.id) || routesSimple(command.id))
+                                    ? nil : syntheticBaselines[command.id])
         } else {
             guard let argument = objectArgument(picker.location, objects: picker.objects, command: command) else { return false }
             event = .edit(draft.stamp, argument)

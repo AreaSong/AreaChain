@@ -113,7 +113,9 @@ struct WorkspacePendingView: View {
                     .padding(.vertical, 1)
                     .background(
                         Capsule() // token-exempt: 赛道数量标签底槽胶囊
-                            .fill(isSelected ? (isOverdueAlert ? DaybookPalette.accent.base.opacity(0.14) : DaybookPalette.fill.subtle) : Color.clear) // token-exempt: 14% 强调色胶囊底
+                            .fill(isSelected
+                                ? (isOverdueAlert ? DaybookPalette.accent.base.opacity(0.14) : DaybookPalette.fill.subtle) // token-exempt: 14% 强调色胶囊底
+                                : Color.clear)
                     )
             }
             .padding(.horizontal, 8)

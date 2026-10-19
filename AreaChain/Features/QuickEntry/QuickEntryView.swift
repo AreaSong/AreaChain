@@ -4,8 +4,8 @@ import SwiftUI
 import WidgetKit
 
 enum QuickEntryMode: String, CaseIterable {
-    case task = "task"
-    case diary = "diary"
+    case task
+    case diary
 
     var title: String {
         switch self {

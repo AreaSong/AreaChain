@@ -471,4 +471,3 @@ final class DaybookTopScrollBlurNSView: NSView {
         }
     }
 }
-

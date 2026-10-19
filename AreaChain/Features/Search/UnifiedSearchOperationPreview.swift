@@ -79,7 +79,7 @@ struct UnifiedSearchOperationPreview: View {
                           !(controller.showsMultiPlan && controller.settingExecution != nil),
                           !((controller.showsBatch || controller.showsTaskTitle || controller.showsTaskField
                             || controller.showsSubtask || controller.showsRoutine || controller.showsTrash
-                            || controller.showsConvert)
+                            || controller.showsConvert || controller.showsSimple)
                             && controller.settingExecution != nil) {
                     Text(verbatim: command.name(locale: locale)).font(DaybookType.body.weight(.semibold))
                     Text(verbatim: command.summary(locale: locale)).font(DaybookType.caption)

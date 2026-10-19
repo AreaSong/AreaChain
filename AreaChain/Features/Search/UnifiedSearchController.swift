@@ -67,6 +67,10 @@ final class UnifiedSearchController {
     var convertConfirmation: CommandConvertConfirmation?
     var convertFailure: String?
     var convertVerification: CommandConvertVerification?
+    var simplePreview: CommandSimplePreview?
+    var simpleAcceptance: CommandSimpleAcceptance?
+    var simpleFailure: String?
+    var simpleVerification: CommandSimpleVerification?
     var taskCopyPreview: CommandTaskCopyPreview?
     var taskCopyResult: CommandTaskCopyResult?
     var taskCopyFailure: String?
@@ -113,6 +117,7 @@ final class UnifiedSearchController {
     @ObservationIgnored let trash: TrashCommandAdapter?
     @ObservationIgnored let taskCopy: TaskCopyCommandAdapter?
     @ObservationIgnored let convert: ConvertCommandAdapter?
+    @ObservationIgnored let simple: SimpleCommandAdapter?
     @ObservationIgnored let settingBackend: UnifiedSearchSettingBackend
     var fileSettingFailure: UnifiedSearchFileSettingFailure?
     var fileSettingConfirmation: UnifiedSearchFileSettingConfirmation?
@@ -146,11 +151,13 @@ final class UnifiedSearchController {
          recordOpen: @escaping (ContentQueryBrowseOpen) -> Void, settingBackend: UnifiedSearchSettingBackend,
          taskCreate: TaskCreateCommandAdapter? = nil, taskTitle: TaskTitleCommandAdapter? = nil,
          taskField: TaskFieldCommandAdapter? = nil, taskChain: TaskChainCommandAdapter? = nil, subtask: SubtaskCommandAdapter? = nil, routine: RoutineCommandAdapter? = nil, batch: BatchCommandAdapter? = nil, multiPlan: MultiPlanCommandAdapter? = nil,
-         trash: TrashCommandAdapter? = nil, taskCopy: TaskCopyCommandAdapter? = nil, convert: ConvertCommandAdapter? = nil) {
+         trash: TrashCommandAdapter? = nil, taskCopy: TaskCopyCommandAdapter? = nil, convert: ConvertCommandAdapter? = nil,
+         simple: SimpleCommandAdapter? = nil) {
         self.session = session
         self.trash = trash
         self.taskCopy = taskCopy
         self.convert = convert
+        self.simple = simple
         self.coordinator = coordinator
         self.settingBackend = settingBackend
         self.taskCreate = taskCreate
@@ -324,6 +331,7 @@ final class UnifiedSearchController {
         revokeTrash()
         revokeTaskCopy()
         revokeConvert()
+        revokeSimple()
         revokeTaskField()
         revokeTaskTitle()
         revokeTaskComposition()
@@ -360,6 +368,9 @@ final class UnifiedSearchController {
         revokeConvert()
         convertFailure = nil
         convertVerification = nil
+        revokeSimple()
+        simpleFailure = nil
+        simpleVerification = nil
         revokeTaskField()
         taskFieldFailure = nil
         revokeTaskTitle()
@@ -432,7 +443,7 @@ final class UnifiedSearchController {
         if change == .privacyInvalidated || !operationVisible { revokeTaskTitle() }
         if change == .privacyInvalidated || !operationVisible { revokeBatch(); revokeTaskField() }
         if change == .privacyInvalidated || !operationVisible { revokeSubtask(); revokeRoutine() }
-        if change == .privacyInvalidated || !operationVisible { revokeTrash(); revokeTaskCopy(); revokeConvert() }
+        if change == .privacyInvalidated || !operationVisible { revokeTrash(); revokeTaskCopy(); revokeConvert(); revokeSimple() }
         if change == .privacyInvalidated || !operationVisible { chainCreationPreparation = nil }
         if change != .published, objectSelection != nil || session.isMasked {
             cancelObjectSelection(returnFocus: false)

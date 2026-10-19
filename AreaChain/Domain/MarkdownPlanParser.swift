@@ -365,7 +365,7 @@ enum MarkdownPlanParser {
         }
 
         private mutating func consumeRoutineLine(trimmed: String, indent: Int, sectionTags: [String]) {
-            if (indent == 0 || currentRoutine == nil), let item = MarkdownPlanTableParser.parseListItem(trimmed) {
+            if indent == 0 || currentRoutine == nil, let item = MarkdownPlanTableParser.parseListItem(trimmed) {
                 flushPending()
                 var content = MarkdownPlanTableParser.cleanMarkdownInline(item.content)
                 let mods = MarkdownPlanParser.consumeRoutineModifiers(from: &content)

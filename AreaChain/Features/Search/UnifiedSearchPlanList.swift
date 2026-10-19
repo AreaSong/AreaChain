@@ -17,6 +17,8 @@ struct UnifiedSearchPlanList: View {
                 Text("unified.trash.pending").font(DaybookType.caption)
             } else if controller.showsConvert {
                 Text("unified.convert.pending").font(DaybookType.caption)
+            } else if controller.showsSimple {
+                Text("unified.simple.pending").font(DaybookType.caption)
             } else if controller.showsBatch {
                 Text("unified.batch.pending").font(DaybookType.caption)
             } else if controller.showsRoutineCreation {

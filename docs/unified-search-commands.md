@@ -10,6 +10,8 @@
 
 ## 0. 状态、权威范围与基线
 
+现状总览见[统一搜索现状总览](unified-search-status.md)：现状以总览为准，本文保留设计与历史。
+
 2026-10-02 最新增量：2J-3C 的冻结值来源、预算续读、同快照全批重算及结果发布协调见第 9.33 节；2J-3A/B 的展示、浏览与分页见第 9.31～9.32 节。以下阶段状态和“不进入后续”保留为历史交接时点。本轮不关闭指定 Cursor verifier 或历史验收缺口，整体 partial；真实仓储、异步调度、合作式取消、隐私失效接线与生产 UI 仍未实现。
 
 2026-10-02 增量：2J-1 注入快照的同步批次、跨提供者类型化聚合与完整性汇总见第 9.28 节。只保证同一调用的值输入一致；指定 Cursor verifier 与旧阶段缺口保留，整体仍 partial。真实仓储、生产 UI、排序/片段/分页、缓存、异步失效和执行未接线。
@@ -7741,3 +7743,59 @@ C-M3 之后的上限、实现与验证见 [§9.88](#988-里程碑-c-m3长文上�
 - 两条低级意见（不阻断）：日历刷新不对称规则在界面与指令两处、“待核对”阻止在会话丢弃后可能无法解除。只做文档处理，分别补入上文“CalendarSync 不对称的结论”与“未覆盖项与剩余风险”，未改代码，因此没有再次派发复核。
 - verifier 自述一处越界：把一次 `qa-compile` 的 stderr 重定向到了忽略目录内的 `build/TM5/verifier-qa-compile.err`（只有 xcodebuild 多目标设备警告）。该文件不在版本管理内，保留未删。
 - verifier 未重跑：正常 Debug 构建、quality_gate、scripts/tests、SwiftLint，以及 65 类服务与 39 类原生完整回归，这些以本节执行者证据为准；第一轮原生偶发崩溃未在基线上复现。
+
+### 9.92 提速基建 X-1
+
+2026-10-19（Asia/Shanghai）。按 2026-10-18 的提速决定，在继续做功能前做一批基建：文档瘦身（A）、简单指令共用骨架（B）、全库 SwiftLint 归零（C）。仍在隔离环境：骨架能力默认关闭，生产搜索、真实用户库和系统服务未接入；不提交、不推送。前置 T-M5 已提交（cfa5868），开始时工作区干净。
+
+#### 决定与入口
+
+- **A**：新增[现状总览](unified-search-status.md)，此后现状以它为准；本文 §0 加一行指向它，原文不删不移、锚点不变。交接规则只写在[路由维护](../skill-routing.md#路由维护)一处；`check_workflow.py` 把总览列入必需文档并要求“现状总览／功能覆盖表／每批最少必读”三个标记，反例测试 `test_unified_search_status_requires_its_markers`。
+- **B**：骨架入口与适用范围只见[组件目录](component-catalog.md#简单指令共用骨架x-1)。新指令只写一个 `SimpleCommandSpec`（形状、文案、observe／expect／apply）；骨架只接目录 `modification` 且无交互要求的指令，需要独立确认或认证的一律 `supports == false`，不能借骨架绕过确认。只接新指令，没有迁移任何旧适配器。共享改动只有一次性接线：Run 单元加 `simple` 字段、协调者加 `simples` 登记表、控制器加 `simple` 参数（默认 nil）与五处分派，以及标签对象只对已装配的简单指令开放（`adaptedObjectTypes(for:)`，候选读取接受 `.tag`）。
+- **G1 消费者**：tag.create→`createTag(name:sortOrder: nil)`；tag.rename→`updateTag` 只改名；tag.color→`batchSetColor`；tag.order→`reorderTags`，与原界面拖动一致须是全部活标签的新顺序。名称规则（修剪、空名、规范化重名、预置）沿用仓储与 TagManagementPage。私密标签：原界面改名、改色、排序都不需要解锁，保护按标签 UUID 关联；改名会改变之后正文里 `#名字` 的识别（DiaryPrivacy 按名字匹配），这与原界面相同，指令保持一致。tag.color 遇到预置标签整组拒绝，不像仓储那样静默跳过。搜索仍不能创建标签。
+- **C**：15 条既有违规逐条修复，未加 disable、未改 `.swiftlint.yml`。格式类：结尾换行 5 处、行长 4 处（WorkspacePendingView 拆三元式；AIPlanTemplateService 字面量用行尾 `\` 续行）、多余 let（WorkspaceHeaderBar 的 `let _ = refreshTick` 改为把它作为参数传给 `@ViewBuilder pill`，`_ =` 在该 ViewBuilder 里不能编译）、多余枚举原始值 2 处、多余括号 1 处；函数过长 2 处按节拆成小函数。模板包输出逐字节不变：临时探针在改前、改后（新构建）对两组输入的 SHA256 都是 `c232d83a…5b838`、`5b266dc0…72f5d`，探针已删除。
+
+#### 适配器重复步骤
+
+| 步骤 | 现有五族（TaskField／Subtask／Routine／Trash／Convert） | 骨架 |
+|---|---|---|
+| 计划戳、lease、单项计划与冻结（withXPreparation／validatePreview／frozenItem） | 每族一套，逻辑相同只换 Issue 与登记表 | 共用 |
+| 能力开关 `Capability`／`supports` | 每族一套 | 共用（closed／open＋目录无交互要求） |
+| 目标资格读取 | 特有：字段原值、子任务父关系、习惯执行日、回收连带、转换损失 | `observe` |
+| 参数到业务调用 | 特有：editField、子任务／习惯服务、软删、ItemConversionService | `apply`（一次仓储调用） |
+| ModelChanges 事务与写后核对 | Trash／Convert 各有 Transaction，其余在 MutationService 内 | 共用（写后再读必须等于预览，否则回滚） |
+| 提交事实登记（登记表、claim、record、Run 字段、回执） | 每族一个登记表、一个 Execution 扩展、一个 Run 字段 | 共用 `CommandSimpleFacts`／`unit.simple` |
+| 未知结果核对 | 每族一个 verifyUnknown，判定各异 | 共用：当前值对比预期与原值 |
+| 宿主提交与回执（控制器状态、Editing、Submission、五处分派） | 每族一套 | 共用一套 |
+| 独立确认／提醒与日历回执 | 只有 T-M4／T-M5、TaskField／Batch 有 | 骨架不接；需要的指令不能用骨架 |
+
+#### 成本对比（不含测试）
+
+| 批次 | 指令 | 新增文件 | 新增文件行数 | 改动已有文件 | 文案 |
+|---|---|---|---|---|---|
+| T-M4 | 5 | 15 | 1394 | 22 | +935 行 |
+| T-M5 | 2 | 12 | 1411 | 19 | +903 行 |
+| X-1 骨架（一次性） | — | 7 | 853 | 14（+47／−12） | 37 键，+629 行 |
+| X-1 标签消费者 | 4 | 1 | 190 | 0 | 8 键，+136 行 |
+
+以后同类指令的边际成本：一个规格（每个约 40～50 行）、两条双语文案和测试；不新增适配器、事务、Run 字段或界面文件，不改共享文件。
+
+#### 验证（均为本批实际运行）
+
+- 检查点 A：`check_workflow.py` 全部 passed；`test_check_workflow` 126 项 OK。
+- 检查点 B（隔离入口 `--qa-batch x1`）：TagSimpleCommandTests 11 方法／12 次；UnifiedSearchSimpleInteractionTests 3 方法／7 次（四种语言主题尺寸组合）；共享契约回归 Domain／Services 22 类 144 方法／231 次、原生 Search 12 类 57 方法／78 次，均 0 失败 0 跳过。
+- 检查点 C：全库 `swiftlint lint --strict AreaChain AreaChainTests` 由 15 条降为 0；受影响回归 9 类 51 方法／70 次，唯一失败是既有问题（见缺口）。
+- 最终：源码指纹运行前后一致；5 类 26 方法／31 次只有同一既有失败；`check_workflow.py`、`scripts/tests` 284 项、`quality_gate.py --profile static --strict`、`git diff --check` 通过；正常 `./scripts/build.sh` 构建与验签通过（描述文件 2026-10-22 到期）。证据在被忽略的 `build/X1/`。
+
+#### 缺口
+
+- 原生对象选择器按结果列表顺序登记多选（不是点击顺序，且随语言排序），tag.order 在统一搜索里还不能表达任意新顺序；预览逐项列出将写入的位置，需要专门的排序输入（另批）。原生测试按冻结目标断言，结果与当前顺序相同时走 noChange。
+- `AIPlanTemplateServiceTests` 第 21 行在未改动的 HEAD 副本上同样失败（`TagItem.isDiaryPreset` 恒为 false，“密码”未被排除）；与本批无关，未修。
+- 骨架未接独立确认、提醒／日历回执、多项计划；tag.cancel、tag.view、私密选项新建不在本批。
+- 正常签名、人工输入法／VoiceOver、最低系统、真实多窗口与生产接线授权等既有缺口不变，汇总见[现状总览](unified-search-status.md#未闭合缺口)。
+
+#### 指定只读复核
+
+- 按[指定只读复核入口](../skill-routing.md#指定只读复核入口)派发 Claude Code `verifier`，结论 **通过**，七条验收逐条符合。它亲自重跑 check_workflow、检查器 126 项、全库 SwiftLint（0）与 5 类 26 方法／31 次原生／服务测试（唯一失败同上既有问题），并在内存中模拟多行字面量规则确认模板文本逐字相等。
+- 低级意见（未改代码，留待后续）：骨架准入未检查目录 `availability`／`queue`，以后给 unresolved／unavailable 指令写规格可能绕过目录状态；`ContentQueryObjectCandidates` 对所有指令接受 `.tag`，非简单指令全选含标签时拒绝提示由 unsupported 变为 wrongType（仍拒绝）；tag.color 预置标签整组拒绝与原界面静默过滤不同（当前不会触发），请用户确认取舍；tag.order 原生写入分支依赖结果顺序。
+- 未重跑：quality_gate、scripts/tests、正常 Debug 与 34 类回归，以执行者证据为准。verifier 未写文件（后台输出由工具框架落在 /private/tmp）。

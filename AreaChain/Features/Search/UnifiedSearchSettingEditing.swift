@@ -86,6 +86,7 @@ extension UnifiedSearchController {
         if showsTaskCopy { submitTaskCopy(source); return }
         if showsTrash { requestTrashConfirmation(source); return }
         if showsConvert { requestConvertConfirmation(source); return }
+        if showsSimple { submitSimple(source); return }
         if showsSubtask { submitSubtask(source); return }
         if showsRoutine { submitRoutine(source); return }
         if showsBatch { submitBatch(source); return }

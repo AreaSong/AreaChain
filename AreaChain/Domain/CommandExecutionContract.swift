@@ -78,6 +78,7 @@ struct CommandExecutionUnit: Equatable {
     var batch: CommandBatchFacts?
     var trash: CommandTrashFacts?
     var conversion: CommandConvertFacts?
+    var simple: CommandSimpleFacts?
     var subtask: CommandSubtaskFacts?
     var routine: CommandRoutineFacts?
     var routineCreation: CommandRoutineCreateFacts?

@@ -158,4 +158,3 @@ struct DataBackupRenderingTests {
         #expect(ids.contains("planImport.preview.cancel"))
     }
 }
-

@@ -156,71 +156,75 @@ struct WorkspacePrivacyUnlockedButton: View {
     @State private var refreshTick = 0
 
     var body: some View {
+        // 内容闭包读取 refreshTick：手动续期后不必等下一秒也会重算倒计时。
         TimelineView(.periodic(from: .now, by: 1)) { _ in
-            let _ = refreshTick
-            let remaining = vault.remainingIdleSeconds
-            let countdown = vault.formattedRemainingIdleTime()
-            let pillTint = isHovered
-                ? DaybookPalette.status.danger
-                : (remaining <= 30 ? DaybookPalette.status.pending : DaybookPalette.accent.base)
+            pill(refreshTick: refreshTick)
+        }
+    }
+
+    @ViewBuilder private func pill(refreshTick _: Int) -> some View {
+        let remaining = vault.remainingIdleSeconds
+        let countdown = vault.formattedRemainingIdleTime()
+        let pillTint = isHovered
+            ? DaybookPalette.status.danger
+            : (remaining <= 30 ? DaybookPalette.status.pending : DaybookPalette.accent.base)
+        Button {
+            vault.lock()
+        } label: {
+            HStack(spacing: 4) {
+                ZStack {
+                    Image(systemName: "lock.open.fill").hidden()
+                    Image(systemName: "lock.fill").hidden()
+                    Image(systemName: isHovered ? "lock.fill" : "lock.open.fill")
+                }
+                ZStack {
+                    Text("privacy.header.unlocked").hidden()
+                    Text("privacy.header.lock").hidden()
+                    Text(isHovered ? "privacy.header.lock" : "privacy.header.unlocked")
+                }
+                ZStack {
+                    Text("88:88").monospacedDigit().hidden()
+                    Text(countdown).monospacedDigit()
+                }
+            }
+            .font(DaybookType.caption.weight(.medium))
+        }
+        .buttonStyle(
+            DaybookButtonStyle(
+                .pill(tint: pillTint),
+                size: .compact
+            )
+        )
+        .fixedSize()
+        .onHover { hovering in
+            withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                isHovered = hovering
+            }
+        }
+        .contextMenu {
+            Button {
+                vault.touch()
+                refreshTick &+= 1
+            } label: {
+                Label("privacy.header.renew", systemImage: "arrow.clockwise")
+            }
             Button {
                 vault.lock()
             } label: {
-                HStack(spacing: 4) {
-                    ZStack {
-                        Image(systemName: "lock.open.fill").hidden()
-                        Image(systemName: "lock.fill").hidden()
-                        Image(systemName: isHovered ? "lock.fill" : "lock.open.fill")
-                    }
-                    ZStack {
-                        Text("privacy.header.unlocked").hidden()
-                        Text("privacy.header.lock").hidden()
-                        Text(isHovered ? "privacy.header.lock" : "privacy.header.unlocked")
-                    }
-                    ZStack {
-                        Text("88:88").monospacedDigit().hidden()
-                        Text(countdown).monospacedDigit()
-                    }
-                }
-                .font(DaybookType.caption.weight(.medium))
+                Label("privacy.lock.now", systemImage: "lock.fill")
             }
-            .buttonStyle(
-                DaybookButtonStyle(
-                    .pill(tint: pillTint),
-                    size: .compact
-                )
-            )
-            .fixedSize()
-            .onHover { hovering in
-                withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                    isHovered = hovering
-                }
-            }
-            .contextMenu {
+            if let navigation {
+                Divider()
                 Button {
-                    vault.touch()
-                    refreshTick &+= 1
+                    navigation.revealTab(.privacy)
                 } label: {
-                    Label("privacy.header.renew", systemImage: "arrow.clockwise")
-                }
-                Button {
-                    vault.lock()
-                } label: {
-                    Label("privacy.lock.now", systemImage: "lock.fill")
-                }
-                if let navigation {
-                    Divider()
-                    Button {
-                        navigation.revealTab(.privacy)
-                    } label: {
-                        Label("privacy.settings.title", systemImage: "lock.shield")
-                    }
+                    Label("privacy.settings.title", systemImage: "lock.shield")
                 }
             }
-            .help(Text("privacy.lock.now"))
-            .accessibilityLabel(Text("privacy.state.unlocked"))
-            .accessibilityIdentifier("workspace.header.privacy.lock")
         }
+        .help(Text("privacy.lock.now"))
+        .accessibilityLabel(Text("privacy.state.unlocked"))
+        .accessibilityIdentifier("workspace.header.privacy.lock")
     }
 }
 

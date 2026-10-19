@@ -140,7 +140,8 @@ enum AIPlanTemplateService {
 
         1. **交给 AI**：将 `SKILL.md`（或任一模板文件）拖入 AI 对话框，告诉 AI 你的目标（例如：「参考这份规范，帮我拆解下周的产品发布待办、每日运动习惯和复盘手记，输出一个 `.md` 文件」）。
         2. **内嵌语法自动识别**：无论使用 `.md` 还是 `.json`，只要在标题或正文里写上 `#标签`、`!p1`~`!p4`（四象限优先级）、`@15:30`（提醒时刻）、`// 备注`，AreaChain 都会在导入时自动识别。
-        3. **预览确认与一键导入**：打开 AreaChain 工作台「系统 -> 数据与备份」，点击「导入计划 (.md / .json)」，在弹出的**结构化识别预览窗口**中核对识别出的待办、子任务、重复事项、手记与标签（含新增/复用标签与私密手记加锁标识），点击「确认导入」即可落库并一键跳转到对应日期。
+        3. **预览确认与一键导入**：打开 AreaChain 工作台「系统 -> 数据与备份」，点击「导入计划 (.md / .json)」，在弹出的**结构化识别预览窗口**中核对识别出的待办、子任务、重复事项、手记与标签（含新增/复用标签与私密手记加锁标识），\
+        点击「确认导入」即可落库并一键跳转到对应日期。
         """
     }
 
@@ -148,7 +149,19 @@ enum AIPlanTemplateService {
         let tagListText = publicTags.isEmpty
             ? "（当前暂无已有公开标签，可直接按需编写 `#新标签`）"
             : publicTags.map { TagSyntax.spelling(for: $0) }.joined(separator: "、")
-        return """
+        // 各节之间原本就是一个空行；按节拆开只为控制函数长度，拼接结果逐字不变。
+        return [
+            skillIntroduction,
+            skillSyntaxSection(tagListText: tagListText),
+            skillDomainSection(todayKey: todayKey),
+            skillMarkdownExample(todayKey: todayKey),
+            skillJSONExample(todayKey: todayKey),
+            skillAdvancedSection(todayKey: todayKey)
+        ].joined(separator: "\n\n")
+    }
+
+    private static var skillIntroduction: String {
+        """
         ---
         name: areachain-planner
         description: "根据用户目标生成可直接导入 AreaChain 的结构化计划（支持 .md 与轻量 .json），覆盖一次性待办、单层子任务、重复事项与灵感手记。"
@@ -157,7 +170,11 @@ enum AIPlanTemplateService {
         # AreaChain 计划与手记生成规范 (SKILL)
 
         当用户要求制定计划、拆解任务、安排习惯或整理手记并导入 AreaChain 时，请严格按照本规范输出 `.md` 或 `.json` 文件。
+        """
+    }
 
+    private static func skillSyntaxSection(tagListText: String) -> String {
+        """
         ## 1. 核心内嵌语法（Markdown 与 JSON 通用）
 
         AreaChain 导入器会对标题与正文自动执行自然语言解析：
@@ -168,17 +185,26 @@ enum AIPlanTemplateService {
           - **新标签默认创建**：如果现有标签不满足需求，你可以直接编写当前没有的 `#新标签`，AreaChain 导入时会自动创建该标签。
           - **分类隔离约束**：`#密码`、`#小巧思`、`#日记` 是手记专属分类，**不要**挂在待办或重复事项上。
         - **备注切分**：在标题行末尾使用 `// 备注内容`（或在 Markdown 下一行使用缩进 `> 备注`）写入长文本备注。
+        """
+    }
 
+    private static func skillDomainSection(todayKey: String) -> String {
+        """
         ## 2. 领域结构与单层子任务约束
 
         - **一次性待办 (`Todo`)**：归属于具体民事日期 `YYYY-MM-DD`（未指定时默认归入导入当天，参考基准日：`\(todayKey)`；也兼容 `2026年10月11日` 或 `2026/10/11` 标题日期）。支持标准复选框 `- [ ]`、普通列表 `- `、有序列表 `1. ` 及 Markdown 动作表格。
         - **子任务 (`Subtask`) 严格仅支持一层**：
           - 每个待办下可包含若干第一层子任务（缩进 `- [ ] 子任务 #子标签`）。
           - **严禁生成二级或更深层级的嵌套子任务**；更细的执行步骤请写成所属待办下的 `> 备注说明`。
-        - **重复事项 (`Routine`)**：放在 `## 重复事项`（或 `## Routines`）章节下，用 `[repeat: daily]`（每天）、`[repeat: workdays]`（工作日）或 `[repeat: mon,wed,fri]`（指定星期）声明周期；也支持周计划 Markdown 表格（第一列为星期一～星期日）。
+        - **重复事项 (`Routine`)**：放在 `## 重复事项`（或 `## Routines`）章节下，用 `[repeat: daily]`（每天）、`[repeat: workdays]`（工作日）或 `[repeat: mon,wed,fri]`（指定星期）声明周期；\
+        也支持周计划 Markdown 表格（第一列为星期一～星期日）。
         - **灵感手记 (`Diary`)**：放在 `## 灵感手记`（或 `## Diaries`）章节下，支持 `#小巧思`、`#日记`、`#密码` 及自定义标签，可用 `[pinned]` 标记置顶、用 `[day: YYYY-MM-DD]` 指定归属日。
           - **私密手记免密投递加锁**：若手记带有 `#密码` 或用户在 AreaChain 中设为「私密手记」的标签，导入时无需输入密码即可直接入库并**自动加锁隐藏**（查看或编辑时才需验证密码/Touch ID）。注意：请勿将真实明文敏感密码直接发给不受信任的外部云端模型。
+        """
+    }
 
+    private static func skillMarkdownExample(todayKey: String) -> String {
+        """
         ## 3. 标准 Markdown 输出格式示例 (`.md`)
 
         ```markdown
@@ -197,7 +223,11 @@ enum AIPlanTemplateService {
         ## 灵感手记
         - 关于模块化重构的思考 // 把高频变化的解析器留在纯领域层，零 UI 依赖更易测试 #小巧思 [pinned]
         ```
+        """
+    }
 
+    private static func skillJSONExample(todayKey: String) -> String {
+        """
         ## 4. 轻量 JSON 输出格式示例 (`.json`，免 UUID)
 
         ```json
@@ -227,12 +257,17 @@ enum AIPlanTemplateService {
           ]
         }
         ```
+        """
+    }
 
+    private static func skillAdvancedSection(todayKey: String) -> String {
+        """
         ## 5. 高阶与特殊写法全兼容说明
 
         AreaChain 解析器内置了对各类特殊写法与复杂排版的自动容错：
         - **相对日期与行内跨日**：标题或行内支持 `# 今天`、`# 明天`、`# 后天` 及 `[day: 明天]` / `【日期：\(todayKey)】`，可在同一列表内跨日排程；支持 `[due: 18:00]` / `【截止：18:00】` 设置截止时刻。
-        - **无章节混排自动分流**：即便不写 `## 重复事项` 或 `## 灵感手记` 章节，只要列表项带有 `[repeat: ...]` / `【周期：...】` 会自动识别为**重复事项**；无复选框列表项带有 `#小巧思`、`#日记`、`#密码` 或 `[pinned]` / `【置顶】` 会自动识别为**灵感手记**。
+        - **无章节混排自动分流**：即便不写 `## 重复事项` 或 `## 灵感手记` 章节，只要列表项带有 `[repeat: ...]` / `【周期：...】` 会自动识别为**重复事项**；无复选框列表项带有 `#小巧思`、`#日记`、\
+        `#密码` 或 `[pinned]` / `【置顶】` 会自动识别为**灵感手记**。
         - **Markdown 表格智能拆解**：
           - 第一列为「周一～周日」的表格 $\rightarrow$ 自动转为按对应星期启用的**重复事项**（含「休息」字样的行自动设为停用）。
           - 含「环节/动作/组数/时长/要点」等列的表格 $\rightarrow$ 自动合并为**待办与子任务**，技术要点自动转入备注。

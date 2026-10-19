@@ -94,7 +94,7 @@ struct UnifiedSearchObjectField: View {
     }
 
     private var available: Bool {
-        !controller.objectTypes(location, command: command).isDisjoint(with: UnifiedSearchController.adaptedObjectTypes)
+        !controller.objectTypes(location, command: command).isDisjoint(with: controller.adaptedObjectTypes(for: command))
             && command.interactions.isDisjoint(with: [.secureInput, .authentication, .freshAuthentication])
     }
 
