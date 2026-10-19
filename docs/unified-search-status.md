@@ -2,7 +2,7 @@
 
 本文是统一搜索与指令体系的**现状总览**：只记当前状态、覆盖、缺口和每批必读入口。设计、规则与历史证据仍以[权威设计](unified-search-commands.md)为准，本文不复制。每批怎样更新本文见[技能路由的路由维护](../skill-routing.md#路由维护)。
 
-最后更新：2026-10-19，里程碑 T-M6（[§9.93](unified-search-commands.md#993-里程碑-t-m6任务类修改收尾)）。
+最后更新：2026-10-19，里程碑 L-M1a（[§9.94](unified-search-commands.md#994-里程碑-l-m1a长文受控借用契约待确认)）。
 
 ## 目标与阶段
 
@@ -82,6 +82,7 @@
 - **C2B 原生接受与锁定交错**：敏感输入不开放，mutable textStorage 只能事后检测。来源：[§9.52](unified-search-commands.md#952-阶段-4a-3c2b原生接受与锁定交错的隔离可行性)、[§9.86](unified-search-commands.md#986-里程碑-c-m1命令长文原生编辑与受控组合输入)。
 - **生产接线授权**：所有适配器默认未装配，正式版没有统一搜索构造点；接入前需逐项授权装配、用生产刷新替换 fake，并确认提醒、日历、小组件的真实副作用。来源：[§9.90](unified-search-commands.md#990-里程碑-t-m4复制与回收)、[§9.91](unified-search-commands.md#991-里程碑-t-m5待办与重复事项互转)。
 - **长文执行通道（受控借用）**：任何 longText 参数（notes、body）的草稿都被 `blocksUnprotectedExport` 拦下，不能进入 Run；todo.notes／routine.notes／routine.capture 的规格与共享入口已就绪，执行阻塞，需单独批次设计并复核受控借用契约（2026-10-19 用户决定）。来源：[§9.93](unified-search-commands.md#993-里程碑-t-m6任务类修改收尾)。
+- **长文受控借用：契约待确认**：L-M1a 已完成现状核对与契约草案（L1～L9 待用户逐条确认），L-M1b 按确认结果实现并接通 T-M6 的备注与快速新增；另记 `todo.notes`／`routine.notes` 的 clear 不带正文、不命中守卫，现仅靠未装配挡住。来源：[§9.94](unified-search-commands.md#994-里程碑-l-m1a长文受控借用契约待确认)。
 - **正文与受保护内容**：手记正文保存 handler 未做；受保护内容查阅与敏感执行／转交不开放。来源：[§9.85](unified-search-commands.md#985-里程碑-n-m2标签导航普通手记全文与普通图片查阅)、[§9.88](unified-search-commands.md#988-里程碑-c-m3长文上限与超限引导)。
 - **有备注对象资格**：回收与转换拒绝带备注对象，是否放开待产品决定；放开还缺的五项见 §9.93。来源：[§9.93](unified-search-commands.md#993-里程碑-t-m6任务类修改收尾)、[§9.90](unified-search-commands.md#990-里程碑-t-m4复制与回收)、[§9.91](unified-search-commands.md#991-里程碑-t-m5待办与重复事项互转)。
 - **已知历史问题**：T-M1 标题多目标面板消失的根因未判定；DetailSubtaskCompletionTests 两项 Expected Failure 保留；原生日期格按钮在统一搜索测试宿主里找不到标识（`nativeBooleanWeekdaysDayAndTime` 等）；`SubtaskModelTests.addTagSkipsDiaryPresetNames` 在未改动 HEAD 上同样失败。来源：[§9.73](unified-search-commands.md#973-里程碑-t-m1普通任务修改与受限依赖执行)、[§9.89](unified-search-commands.md#989-补复核-g-1at-系列)。

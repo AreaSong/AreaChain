@@ -7861,3 +7861,52 @@ C-M3 之后的上限、实现与验证见 [§9.88](#988-里程碑-c-m3长文上�
 - 按[指定只读复核入口](../skill-routing.md#指定只读复核入口)派发 Claude Code `verifier`，结论 **通过**，七条验收逐条符合。它亲自重跑本批 7 个服务层类（45 方法／60 次全过）、`check_workflow.py`、全库 SwiftLint（0）、`git diff --check`，只读比对文案（新增 56 键、改 1 键，中英文与格式参数一致）、旧实现（`git show a3c81b6`）与生产构造点。
 - 三条低级意见：① `TaskDerivedRows.tags` 平行重写了标签匹配——已改为直接调用 `InputTagResolver.preview`，重跑受影响检查；② 两条原界面回归（`uiSaveKeepsSignatureAndSemantics`、`panelEntryKeepsSignature`）走生产默认附件目录与授权回调，当前文本不含 @附件与时间记号，不触发真实 IO——保留不改（用于证明原签名路径），列为剩余风险；③ 总览 T5、G1 两行缺 §9.93 链接与 T-M6——已补。只修文档与①，未再派发复核。
 - verifier 未重跑：原生测试（用户正在使用电脑）、41 类完整回归、基线复现、正常构建、quality_gate、scripts/tests，以执行者证据为准；它未写文件。
+
+### 9.94 里程碑 L-M1a：长文受控借用契约（待确认）
+
+2026-10-19（Asia/Shanghai）。本节是 L-M1a 唯一交接：只做现状核对与契约设计，**不改 Swift、测试、脚本或目录声明**；条款等用户逐条确认（L1～L9）后，由 L-M1b 实现并接通 T-M6 的 todo.notes／routine.notes／routine.capture。未提交、未推送。下文 `file:line` 均在 HEAD d752498 上只读核对；标“推断”的未经运行验证。
+
+#### 现状（事实与出处）
+
+1. **守卫与消费点**：[CommandDraftProtection](../AreaChain/Domain/CommandDraftProtection.swift):18–24 在 protectedReference／required／unknown、任一**值为** `.longText` 的参数或 `.uniform(.longText)` 基线时为真。消费点：[CommandPlanValidation](../AreaChain/Domain/CommandPlanValidation.swift):55（checkItem 报 protectedContent）、:44（偏好单元资格）、:133（拒绝创建输出引用）；[CommandPlan](../AreaChain/Domain/CommandPlan.swift):238（link）、:293（seal 抛 protectedContent）、:323（偏好基线重载）；Run 输入 [CommandExecutionRun](../AreaChain/Domain/CommandExecutionRun.swift):233 → [CommandCreationOutput](../AreaChain/Domain/CommandCreationOutput.swift):97（`resolving` 返回 nil）；另有约 20 处适配准入（CommandSimple:154、CommandTaskField:113、CommandBatch:129、BatchCommandAdapter:124、LocalSettingCommandMapping:17 等，见 `git grep blocksUnprotectedExport`）。各点只看草稿参数值、基线与保护要求，不看目录类型。
+2. **clear 漏口（推断）**：notes 声明 allowsEmpty=true（[CommandCatalogBuilder](../AreaChain/Domain/CommandCatalogBuilder.swift):33–37），clear 不带值即静态合法（[CommandArgumentValidation](../AreaChain/Domain/CommandArgumentValidation.swift):44–48）；简单骨架要求 draft.baseline 为空（CommandSimple:154–156）。故 `todo.notes clear`、`routine.notes clear` 草稿都不命中守卫（body 未设 allowsEmpty，clear 报 invalidValue，不受影响），当前只靠 `pendingLongText` 未装配（[TaskCommandSpecs](../AreaChain/Services/TaskCommandSpecs.swift):27–31）挡住；守卫测试只覆盖 replace（[NotesSimpleCommandTests](../AreaChainTests/Services/NotesSimpleCommandTests.swift):100–115）。
+3. **正文所在与撤权**：普通稿正文唯一在宿主草稿 `arguments`，[CommandDraftContentSession](../AreaChain/Services/Privacy/CommandDraftContentSession.swift) 不缓存（:309–318，只签可撤销原生访问）。受保护稿密文在 `sealed`、显式恢复后的明文在 `restored[access.id]`（:45–46、:112–132）；access 绑 lease、draft stamp、reference、vault generation、epoch（:27–37）。revokeAccess（:71–78）推进 epoch、清 restored 与原生 owner，由 willLock／didChange／mask 通知（:58–66）、显式恢复、detach、clearOversized 与建点触发。`current()` 要求 `host.execution == nil`（:392–399），**Run 存在期间任何 access 都通不过校验**。`withRestoredContents`（:135–140）同步借用，但“不缓存 String”只是约定。一次性凭据已有先例：CommandDraftCheckpoint（:11–25，无公开构造、只能 consume 一次）。
+4. **身份**：CommandHostOwnership（coordinatorID／hostID／generation）与 CommandHostLease.revision（[CommandHandoffContract](../AreaChain/Domain/CommandHandoffContract.swift):4–13）；CommandDraftStamp（hostID／draftID／version，[CommandDraft](../AreaChain/Domain/CommandDraft.swift):3–7）；CommandPlanStamp（hostID／planID／revision）与 ItemStamp（id／version，CommandPlan:3–12）；CommandExecutionStamp（runID＋plan）、CommandAttemptStamp（execution／unitID／number／phase）、CommandOperationIdentity（[CommandExecutionContract](../AreaChain/Domain/CommandExecutionContract.swift):3–21）。seal 把计划项整体移入 Snapshot 并清空计划（CommandPlan:290–299，[CommandHostSession](../AreaChain/Domain/CommandHostSession.swift):85–90）；P-M3 返回由 Snapshot 重建计划项（[CommandPlanRevision](../AreaChain/Domain/CommandPlanRevision.swift):172、:230）。
+5. **放开守卫后的导出面**：正文会随 `CommandResolvedInput.arguments` 进入 [CommandSimple](../AreaChain/Domain/CommandSimple.swift):108（Call）、:119（Preview，即预览缓存与接受）、[CommandSimpleExecution](../AreaChain/Domain/CommandSimpleExecution.swift):8（Facts，即执行事实与回执），以及 frozenItem 的等值比较（CommandSimple:160–165）；NotesEdit 直接从输入取 String（[NotesCommandSpec](../AreaChain/Services/NotesCommandSpec.swift):123–134）。description 已脱敏，但值可被任意复制。
+6. **C2B 现状**：§9.52 末“最终分类”（第 3928 行）为“已验证可用的有限原生路径：无”。C-M1（§9.86）经授权替代组合输入全拒，A～E 已验证普通／受保护组词、锁恢复与生命周期；仍未闭合：外部 mutable textStorage 只能事后撤权（§9.52 反例二）、系统服务／拖放／听写／辅助功能写入、输入法私有缓存、String 零化、C-M1 指定复核与启动偏离副作用。C-M3（§9.88）定上限 64KiB（[CommandParameter](../AreaChain/Domain/CommandParameter.swift):51）。**只属受保护**：建点与原生显示交错、执行期 access 失效（第 3 条）、恢复依赖已解锁 vault。**普通也有**：编辑期旁路可能丢未接受输入、进程内 String 不零化、§5“锁定后预览与授权失效”。执行只消费已确认参数，编辑期残余不会让被执行的普通正文偏离用户确认值。
+7. **派生副作用**：[TaskNotesService](../AreaChain/Services/TaskNotesService.swift).apply（:27–46）解析 #标签并经 InputTagResolver.merging 合并（含新建与恢复墓碑），派生提醒／优先级，经 [InputAttachmentResolver](../AreaChain/Services/Repositories/InputAttachmentResolver.swift).linkIfPresent（:7）关联 @附件；[RoutineCaptureService](../AreaChain/Services/RoutineCaptureService.swift).apply（:24–36）同理新建习惯。[InputTagResolver](../AreaChain/Services/Repositories/InputTagResolver.swift)（:12–17、:21–36、:54–56）**不查 isPrivateDiary**，只有 TagSyntax 排除三个中文预设名，故 3T-0 D 节（第 5208 行）所记缺口属实：非预设私密标签可经备注关联到任务。对照：命令标签路径 [CommandTaskTagCatalog](../AreaChain/Domain/CommandTaskTagCatalog.swift):111 拒绝私密与预设标签。
+8. **“普通无备注”门槛**：全部依赖来源所有者给出的 `CommandTaskTitleEligibility.notes`（absent／present／unknown，[CommandTaskTitleContract](../AreaChain/Domain/CommandTaskTitleContract.swift):9–14），目前只有合成夹具提供：TaskTitleCommandEnvironment:22、TaskTitleCommandVerification:28、TaskFieldCommandReader:39／81、TaskFieldCommandTagCandidates:22、SubtaskCommandEnvironment:44、RoutineCommandEnvironment:52、BatchCommandReader:71、TrashCommandReader:67／78、ConvertCommandReader:55；TaskCopyCommandAdapter:88–90 另要求枚举与实际 notes 一致。另一类按解析结果拒绝备注：CommandTaskCreateContract:40、CommandTaskCreatePreview:118、CommandRoutineCreate:70。
+
+#### 契约条款与推荐
+
+| # | 问题 | 选项 | 推荐、理由与风险 |
+|---|---|---|---|
+| 1 | 范围 | A 只普通；B 普通＋受保护；C 暂不开放 | **A**。第 6 条的受保护专属风险未闭合，且 access 在 Run 期间按设计失效，开放 B 要改 ContentSession 的执行期语义；普通正文本就在宿主草稿内。受保护、required／unknown 继续被拦。风险：普通长文仍是进程内明文，不承诺加密或零化。 |
+| 2 | 身份绑定 | A 全绑；B 只绑 run＋item；C 只绑草稿修订 | **A，缺一即拒**：ownership（coordinatorID／hostID／generation）、plan stamp、item stamp、draft stamp、parameter（notes／body）、operation、run stamp、attempt（number，phase=.local）、正文摘要；lease.revision 沿 frozenItem 现有 previewLeaseMatches 规则比对；签发时另记 vault generation 与托管 epoch。B、C 都允许旧计划或另一 attempt 拿到正文。 |
+| 3 | 一次使用与撤销 | A 托管＋每 attempt 一次借用；B 借用可复用到 Run 结束；C 不托管、执行时回读草稿 | **A**。**预览期**：简单骨架在封存前准备（CommandSimple:142 要求 `execution == nil`），预览需要最终全文、派生行与 L7 判定，因此由准备函数在同一同步调用内直接读宿主草稿 `arguments`（正文的唯一所在，不经 `resolving`），身份为 ownership、plan、item、draft、parameter，读完即弃、不逃逸；Preview 与接受只留第 5 条印记和派生行。**封存期**：seal 时把正文移入托管（键为第 2 条身份），并核对其摘要与已接受印记一致，不一致即 stale、要求重新预览。**执行期**：借用只在本地写入的同步临界段内签发并当场 consume。saved／noChange：回执登记后销毁托管。notSubmitted（含确认回滚）：本借用作废，同 Run 重试另签，或经 P-M3 返回把正文还给草稿（失败不丢唯一草稿）。unknown：禁止再签，托管保留到核对，核为未写入可归还、核为已写入则销毁，不 replay。cancelNotStarted：归还草稿。锁定／遮罩／隐私变化：推进托管 epoch，未用借用和签发资格全部作废，该项转阻塞，须返回草稿重新预览再封存。托管生命周期跟随宿主会话（hostID＋ownership.generation）：宿主正常关闭先走现有未保存内容处理（CommandHostSession:32–35 已把未成功的 Run 计入），用户放弃或宿主被强制失效时，托管与该宿主的草稿一起销毁——与当前内存草稿同一下场，既不残留孤立明文，也不比现状多丢内容（本来就没有磁盘草稿）。失焦不撤托管（执行不是编辑），但借用不跨事件循环存在。B 留下可重放窗口；C 与“封存后计划已清空”冲突。 |
+| 4 | 不导出 | A 不可构造凭据＋单文件出口；B 仅约定；C 运行时脱敏包装 | **A**。托管、借用类型和两个出口集中在 Services 下同一新文件：借用为 `@MainActor final class`（仿 CommandDraftCheckpoint，consume 一次），构造器与正文取值器都是 fileprivate，模块内其他文件拿不到 String；不 Equatable／Codable，description 固定脱敏，不在 Task／异步闭包中捕获（MainActor 类隐式 Sendable，故不以“非 Sendable”作保证）。出口以 `extension TaskNotesService { apply(_ loan:…) }`、`extension RoutineCaptureService { apply(_ loan:…) }` 写在同一文件，用同步非逃逸闭包取出正文后交原 `apply(String…)`。L-M1b 在 check_workflow 加符号守卫：托管的签发与 consume 符号只允许该文件与 NotesCommandSpec／RoutineCaptureSpec 引用。不进入复制、日志、模板、预览缓存、回执、诊断、转交或其他对象类型。风险：同文件代码仍能复制 String，靠单文件审查与守卫，不宣称语言级不可复制。 |
+| 5 | 封存与 Run | A 只存印记与句柄；B 存密文；C 存明文 | **A**：Snapshot／ResolvedInput／Preview／Facts 里的 longText 值换成不含正文的印记（parameter、operation、UTF-8 字节数、带键摘要、托管句柄 ID）；守卫只对“已托管且只含印记”的普通草稿放行，其余照旧拒绝；P-M3 返回从托管还原正文。未知核对比较三者：写前目标备注摘要、写入时记下的期望最终全文摘要、当前摘要；等于期望为已写入，等于写前为未写入，其余为冲突；当前值不提升原 unknown 回执。B 对普通内容引入未授权的加密依赖。 |
+| 6 | 冲突基线 | A 带键 HMAC；B 沿用 T-M6 纯 SHA-256；C 存原文 | **A**：每个协调者一把随机内存键的 HMAC-SHA256，替换 `notesField` 实现（TaskCommandSpecs:73–77），字段语义不变；它还被已装配的 [CaptureCommandSpecs](../AreaChain/Services/CaptureCommandSpecs.swift):102 使用，L-M1b 须回归该消费者。replace：目标 notes 与派生字段（tagIDs、提醒、优先级）现值；append：必须含旧 notes 摘要（最终全文依赖旧值，旧 token 会再参与解析）；clear：旧 notes 摘要，不因不带正文而例外。B 的摘要对短备注可被字典猜出，一旦进回执就等于泄露。没有字段修订号，ABA 检测不到，照实说明。 |
+| 7 | 派生副作用 | A 与原界面一致；B 指令拒绝私密／预设标签；C 指令跳过私密标签仍保存 | **B**（改变产品行为，见 L7）：解析出的标签命中 isPrivateDiary 或预设即整条不可执行并说明原因，与 CommandTaskTagCatalog:111 一致；新建／恢复标签、提醒、@附件保持原界面语义并逐行预览（T-M6 已有）。C 会让指令与界面对同一文字写出不同结果。原界面行为本契约不改。 |
+| 8 | “普通无备注”门槛 | — | 本契约只开放三条命令本身。T-M6 五项细化为：① 本契约；② 无备注证明从枚举改为适配自读备注取带键摘要比对（改变 §9.71“适配不读 notes”的设计，见 L8）；③ 回收／转换的损失清单列入备注并补双语确认；④ todo.title 的 `//` 派生备注是 shortText 派生出 longText，另行定界，不在本契约内；⑤ 原生与复核证据。字段类（move／priority／reminder／tags／due）不读写备注，可在 ② 落地后先放宽。 |
+| 9 | 测试与验收 | — | 见下一段。 |
+
+L-M1b 必须的反例（合成内存库、fake 系统依赖）：借用签发后锁定／遮罩再执行失败且不写；同一借用二次 consume 失败；同 Run 重试只能用新 attempt 新签的借用；plan／item／draft／run／attempt／parameter 任一不同即拒；unknown 后不能再签；预览后、封存前草稿正文被改则 seal 报 stale；宿主强制失效后托管同时销毁、无孤立条目；未托管的 clear 草稿 seal 被拒（补第 2 条漏口）；受保护／required／unknown 仍报 protectedContent；notSubmitted、cancelNotStarted 与 P-M3 返回后草稿正文逐字还原；在 Snapshot、ResolvedInput、Preview、Facts、回执、计划摘要、description／debugDescription、日志捕获与预览缓存里搜不到哨兵正文（只见印记）；64KiB 上限在托管与最终全文两处都拒；私密标签按 L7 结论；TaskNotesService.save、RoutineCaptureService.capture 与原界面逐字对照不变；check_workflow 出口守卫有缺符号反例。
+
+#### 需要用户逐条确认
+
+- **L1 范围**：A 只开放普通长文（推荐）／B 普通与受保护一起／C 暂不开放。
+- **L2 身份绑定**：全绑、缺一即拒（推荐）／只绑 run＋item。
+- **L3 托管与撤销**：预览期同步直读宿主草稿、封存时托管并核对印记、每 attempt 一次借用、失败与取消还给草稿、unknown 锁定待核、锁定即阻塞（推荐）／借用可复用到 Run 结束。
+- **L4 出口**：单文件不可构造凭据＋检查器守卫（推荐）／仅约定。
+- **L5 封存内容**：只存印记与句柄（推荐）／存密文。
+- **L6 基线摘要**：带键 HMAC，并替换 T-M6 的纯 SHA-256 实现（推荐）／沿用纯 SHA-256。
+- **L7 私密标签（产品行为变化）**：指令拒绝私密与预设标签（推荐）／与原界面一致可关联／跳过私密标签仍保存。另请决定：原界面的同一缺口是否另开批次处理。
+- **L8 无备注证明**：适配自读备注取摘要比对（推荐，改变 §9.71 设计）／保留来源所有者枚举。
+- **L9 守卫收紧**：改按“目录声明为 longText 的参数”判定，clear 同样须走托管（推荐）／维持按值判定。
+
+#### 验证与复核
+
+- 只改本节与[现状总览](unified-search-status.md)的“最后更新”及缺口一行；`check_workflow.py`、`git diff --check` 均 exit 0。
+- Claude Code `verifier` 首轮**不通过**（高 1：预览期取不到正文；中 2：单文件出口、宿主失效归宿；低 3：Sendable 表述、行号、routine.notes 与 notesField 消费者），已只按整改清单修改，复核结论见下行。
+- 第二轮 `verifier` 结论**通过**：6 项整改逐条核实，没有出现不允许的设计，也没有改 Swift、测试、脚本或目录声明。另有一条低级意见留给 L-M1b：RoutineCaptureSpec 和已装配的剪贴板指令同在 CaptureCommandSpecs.swift:68 所在文件，出口守卫要按符号放行，或者把 RoutineCaptureSpec 拆成单独文件，不能整份文件放行。clear 漏口仍是静态推理，没有运行验证。
