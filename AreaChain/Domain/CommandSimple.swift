@@ -8,19 +8,23 @@ enum CommandSimpleShape: Equatable {
     case single(CommandObjectType)
     /// 显式固定集合；一个对象也走固定集合，不接受“全部结果”。
     case fixed(CommandObjectType)
+    /// 单个对象，类型可以是集合里的任一种（如同一天混排的待办或习惯）。
+    case singleAny(Set<CommandObjectType>)
 
     func allows(_ targets: CommandDraftTargets) -> Bool {
         switch self {
         case .none: return targets.selection == .none && targets.objects.isEmpty
         case .single(let type):
-            return targets.selection == .single && targets.objects.count == 1 && Self.plain(targets.objects, type)
+            return targets.selection == .single && targets.objects.count == 1 && Self.plain(targets.objects, [type])
         case .fixed(let type):
-            return [.single, .selected].contains(targets.selection) && !targets.objects.isEmpty && Self.plain(targets.objects, type)
+            return [.single, .selected].contains(targets.selection) && !targets.objects.isEmpty && Self.plain(targets.objects, [type])
+        case .singleAny(let types):
+            return targets.selection == .single && targets.objects.count == 1 && Self.plain(targets.objects, types)
         }
     }
 
-    private static func plain(_ objects: [CommandObjectReference], _ type: CommandObjectType) -> Bool {
-        objects.allSatisfy { $0.type == type && $0.dayKey == nil }
+    private static func plain(_ objects: [CommandObjectReference], _ types: Set<CommandObjectType>) -> Bool {
+        objects.allSatisfy { types.contains($0.type) && $0.dayKey == nil }
     }
 }
 
@@ -33,11 +37,20 @@ enum CommandSimpleIssue: Error, Equatable {
 
 enum CommandSimpleProblem: String, Equatable {
     case missing, duplicate, deleted, protected, empty, nameTaken, incompleteOrder, changed
+    /// T-M6：来源不是普通内容、位置越界、父任务不符、不在那天的清单里、跨“带子任务”分组、正文超限、
+    /// 没有可延期对象、日期不是今天、目标超过总量上限、快速新增解析不出内容。
+    case protectedSource, outOfRange, parentMismatch, notListed, crossesGroup, tooLong, nothingToMove, notToday, tooMany, untitled
 }
 
-/// 预览里的一个值：本地化键或原文（用户内容）。
+/// 预览里的一个值：本地化键、原文（用户内容）或带一个整数参数的本地化键（如“N 字”）。
 enum CommandSimpleDisplay: Equatable {
-    case verbatim(String), localized(String)
+    case verbatim(String), localized(String), count(String, Int)
+}
+
+/// 不属于字段变化、但要在预览与回执里说明的一行（如被跳过的预置标签）。
+struct CommandSimpleNotice: Equatable {
+    let key: String
+    let title: String
 }
 
 struct CommandSimpleField: Equatable {
@@ -57,6 +70,7 @@ struct CommandSimpleRow: Equatable {
 
 struct CommandSimpleState: Equatable, CustomStringConvertible, CustomDebugStringConvertible {
     var rows: [CommandSimpleRow] = []
+    var notices: [CommandSimpleNotice] = []
     var keys: Set<String> { Set(rows.map(\.key)) }
     var description: String { "CommandSimpleState(rows: \(rows.count))" }
     var debugDescription: String { description }
@@ -88,6 +102,14 @@ struct CommandSimpleCopy: Equatable {
     let saved: String
 }
 
+/// 规格方法收到的全部输入：冻结参数、新建对象的身份（准备时分配一次），以及冻结目标的行身份。
+/// frozen 为 nil 表示按参数重新推出目标（准备与复核时），否则只读这些行（写后核对与未知核对）。
+struct CommandSimpleCall: Equatable {
+    let input: CommandResolvedInput
+    var creation: CommandObjectReference?
+    var frozen: Set<String>?
+}
+
 struct CommandSimplePreview: Equatable, CustomStringConvertible, CustomDebugStringConvertible {
     let lease: CommandHostLease
     let plan: CommandPlanStamp
@@ -99,10 +121,17 @@ struct CommandSimplePreview: Equatable, CustomStringConvertible, CustomDebugStri
     let copy: CommandSimpleCopy
     let before: CommandSimpleState
     let after: CommandSimpleState
+    /// 新建型指令在准备时分配的对象身份；接受与提交沿用同一个，重试不会另建。
+    var creation: CommandObjectReference?
     let semanticsVersion = 1
     var noChange: Bool { before == after }
-    /// 未知结果期间被锁定的行身份：原有目标与新建行都算。
-    var lockKeys: Set<String> { before.keys.union(after.keys) }
+    /// 未知结果期间被锁定的行身份：原有目标与新建行都算；新建型指令另锁整条指令，未核对前不能再建。
+    var lockKeys: Set<String> {
+        before.keys.union(after.keys).union(creation == nil ? [] : ["create:" + command.rawValue])
+    }
+    var call: CommandSimpleCall { .init(input: input, creation: creation) }
+    /// 写后与未知核对只读冻结的行，不按参数重新推出目标。
+    var frozenCall: CommandSimpleCall { .init(input: input, creation: creation, frozen: before.keys.union(after.keys)) }
     var description: String { "CommandSimplePreview(\(command.rawValue))" }
     var debugDescription: String { description }
 

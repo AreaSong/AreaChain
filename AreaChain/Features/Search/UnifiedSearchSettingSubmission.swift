@@ -12,6 +12,8 @@ struct UnifiedSearchSettingSubmission: View {
                 EmptyView()
             } else if controller.showsTaskCopy {
                 UnifiedSearchTaskCopySubmission(controller: controller)
+            } else if controller.showsClipboardCapture {
+                UnifiedSearchClipboardCaptureSubmission(controller: controller)
             } else if controller.showsTrash {
                 UnifiedSearchTrashSubmission(controller: controller)
             } else if controller.showsConvert {

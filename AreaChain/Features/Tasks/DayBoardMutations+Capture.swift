@@ -19,21 +19,12 @@ extension DayBoardMutations {
         ).saved
     }
 
+    /// 快速新增规则只在 RoutineCaptureService 一处；这里保留原签名供重复事项面板调用。
     @discardableResult
     static func addCapturedRoutine(text: String, sortOrder: Int, context: ModelContext) -> Bool {
-        let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return false }
-        let parsed = NaturalLanguageParser.parseTaskCapture(text)
-        let saved = ModelChanges.perform(in: context) {
-            let ids = try InputTagResolver.resolve(parsed.tagNames, in: context)
-            let routine = try routineRepo(for: context).addRoutine(CreateRoutineParams(
-                title: parsed.cleanTitle, sortOrder: sortOrder, remindMinutes: parsed.remindMinutes,
-                tagIDs: ids, isImportant: parsed.isImportant, isUrgent: parsed.isUrgent, notes: parsed.notes
-            ))
-            InputAttachmentResolver.linkIfPresent(in: text, ownerKind: .routine, ownerID: routine.id, context: context)
-        }
-        if saved { requestReminderAccessIfNeeded(parsed.remindMinutes) }
-        return saved
+        RoutineCaptureService.capture(.init(text: text, sortOrder: sortOrder), in: context,
+                                      repository: routineRepo(for: context),
+                                      requestReminderAccess: requestReminderAccessIfNeeded)
     }
 
     /// 用结构化草稿创建重复事项。失败时不写入，调用方保留草稿。
@@ -113,37 +104,16 @@ extension DayBoardMutations {
         return ok
     }
 
+    /// 备注规则只在 TaskNotesService 一处；这里保留原签名与原上下文回退供详情页调用。
     static func saveNotes(_ notes: String, for todo: TodoItem) -> Bool {
         let context = todo.modelContext ?? Persistence.session.container.mainContext
-        let parsed = NaturalLanguageParser.parseTaskNotes(notes)
-        let saved = ModelChanges.perform(in: context) {
-            let merged = try InputTagResolver.merging(parsed.tagNames, into: todo.tagIDs, in: context)
-            try taskRepo(for: context).applyParsedNotes(id: todo.id, update: parsedNoteUpdate(notes, parsed, merged))
-            InputAttachmentResolver.linkIfPresent(in: notes, ownerKind: .todo, ownerID: todo.id, context: context)
-        }
-        if saved { requestReminderAccessIfNeeded(parsed.remindMinutes) }
-        return saved
+        return TaskNotesService.save(notes, for: todo, in: context, repository: taskRepo(for: context),
+                                     requestReminderAccess: requestReminderAccessIfNeeded)
     }
 
     static func saveNotes(_ notes: String, for routine: DailyRoutine) -> Bool {
         let context = routine.modelContext ?? Persistence.session.container.mainContext
-        let parsed = NaturalLanguageParser.parseTaskNotes(notes)
-        let saved = ModelChanges.perform(in: context) {
-            let merged = try InputTagResolver.merging(parsed.tagNames, into: routine.tagIDs, in: context)
-            try routineRepo(for: context).applyParsedNotes(id: routine.id, update: parsedNoteUpdate(notes, parsed, merged))
-            InputAttachmentResolver.linkIfPresent(in: notes, ownerKind: .routine, ownerID: routine.id, context: context)
-        }
-        if saved { requestReminderAccessIfNeeded(parsed.remindMinutes) }
-        return saved
-    }
-
-    private static func parsedNoteUpdate(_ notes: String, _ parsed: ParsedCapture, _ tagIDs: String) -> ParsedNoteUpdate {
-        ParsedNoteUpdate(
-            notes: notes,
-            tagIDs: tagIDs,
-            remindMinutes: parsed.remindMinutes,
-            isImportant: parsed.hasPriorityToken ? parsed.isImportant : nil,
-            isUrgent: parsed.hasPriorityToken ? parsed.isUrgent : nil
-        )
+        return TaskNotesService.save(notes, for: routine, in: context, repository: routineRepo(for: context),
+                                     requestReminderAccess: requestReminderAccessIfNeeded)
     }
 }

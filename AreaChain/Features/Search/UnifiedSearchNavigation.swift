@@ -293,7 +293,7 @@ extension UnifiedSearchController {
     private func revokeNavigationAcceptances() {
         multiPlan?.invalidatePresentation()
         revokeRoutine(); revokeSubtask(); revokeBatch(); revokeTaskField(); revokeTaskTitle(); revokeTaskComposition()
-        revokeTrash(); revokeTaskCopy(); revokeConvert(); revokeSimple()
+        revokeTrash(); revokeTaskCopy(); revokeConvert(); revokeSimple(); clipboardCapture.revoke()
         chainCreationPreparation = nil
     }
 

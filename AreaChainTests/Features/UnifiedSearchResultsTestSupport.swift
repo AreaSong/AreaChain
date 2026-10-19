@@ -44,7 +44,8 @@ final class UnifiedSearchResultsFixture {
          trashEnvironment: BatchCommandEnvironment? = nil, trashCapability: TrashCommandAdapter.Capability = .closed,
          taskCopyEnvironment: TaskCopyCommandEnvironment? = nil,
          convert: ((CommandHandoffCoordinator) -> ConvertCommandAdapter)? = nil,
-         simple: ((CommandHandoffCoordinator) -> SimpleCommandAdapter)? = nil) throws {
+         simple: ((CommandHandoffCoordinator) -> SimpleCommandAdapter)? = nil,
+         clipboard: ((CommandHandoffCoordinator) -> ClipboardCaptureCommandAdapter)? = nil) throws {
         vault = testVault ?? PrivacyVault(store: MemoryVaultConfigurationStore(), systemKeys: FakeSystemVaultKeys())
         self.batch = batch
         handoff = try .init(sourcePage: .overview)
@@ -99,7 +100,8 @@ final class UnifiedSearchResultsFixture {
             subtask: subtaskAdapter, routine: routineAdapter, batch: batchAdapter, multiPlan: multi,
             trash: trashEnvironment.map { TrashCommandAdapter(coordinator: handoff.coordinator, environment: $0, capability: trashCapability) },
             taskCopy: taskCopyEnvironment.map { TaskCopyCommandAdapter(coordinator: handoff.coordinator, environment: $0) },
-            convert: convert?(handoff.coordinator), simple: simple?(handoff.coordinator))
+            convert: convert?(handoff.coordinator), simple: simple?(handoff.coordinator),
+            clipboard: clipboard?(handoff.coordinator))
     }
 
     func publish() async throws -> ContentQueryReadEffect {

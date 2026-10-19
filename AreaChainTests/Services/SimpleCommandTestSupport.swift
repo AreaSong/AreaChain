@@ -18,7 +18,7 @@ import Testing
     private(set) var adapter: SimpleCommandAdapter!
     var context: ModelContext { io.context }
 
-    init(capability: SimpleCommandAdapter.Capability = .open) throws {
+    init(capability: SimpleCommandAdapter.Capability = .open, isPreset: @escaping TagCommandSpecs.Preset = { $0.isDiaryPreset }) throws {
         io = try TaskCaptureFixture()
         handoff = try HandoffFixture()
         tags = [TagItem(name: "工作 · Work", sortOrder: 0), TagItem(name: "家庭 · Home", sortOrder: 1, colorToken: "ink"),
@@ -38,7 +38,8 @@ import Testing
             registerLocalModification: { [unowned self] in io.trace.append("fact") },
             refresh: { [unowned self] includeCalendar in refreshes.append(includeCalendar) }))
         adapter = .init(coordinator: handoff.coordinator, environment: environment,
-                        specs: TagCommandSpecs.all { [unowned self] in repository($0) }, capability: capability)
+                        specs: TagCommandSpecs.all(repository: { [unowned self] in repository($0) }, isPreset: isPreset),
+                        capability: capability)
     }
 
     func target(_ tag: TagItem) -> CommandObjectReference { .init(type: .tag, id: tag.id) }

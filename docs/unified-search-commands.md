@@ -7799,3 +7799,65 @@ C-M3 之后的上限、实现与验证见 [§9.88](#988-里程碑-c-m3长文上�
 - 按[指定只读复核入口](../skill-routing.md#指定只读复核入口)派发 Claude Code `verifier`，结论 **通过**，七条验收逐条符合。它亲自重跑 check_workflow、检查器 126 项、全库 SwiftLint（0）与 5 类 26 方法／31 次原生／服务测试（唯一失败同上既有问题），并在内存中模拟多行字面量规则确认模板文本逐字相等。
 - 低级意见（未改代码，留待后续）：骨架准入未检查目录 `availability`／`queue`，以后给 unresolved／unavailable 指令写规格可能绕过目录状态；`ContentQueryObjectCandidates` 对所有指令接受 `.tag`，非简单指令全选含标签时拒绝提示由 unsupported 变为 wrongType（仍拒绝）；tag.color 预置标签整组拒绝与原界面静默过滤不同（当前不会触发），请用户确认取舍；tag.order 原生写入分支依赖结果顺序。
 - 未重跑：quality_gate、scripts/tests、正常 Debug 与 34 类回归，以执行者证据为准。verifier 未写文件（后台输出由工具框架落在 /private/tmp）。
+
+
+### 9.93 里程碑 T-M6：任务类修改收尾
+
+2026-10-19（Asia/Shanghai）。本节是 T-M6 唯一交接：备注（A）、排序（B）、昨天全部延至今日（C）、快速新增重复事项（D）、剪贴板加今天（E）与骨架加固（F）。仍在隔离环境：新能力默认未装配，生产没有构造点，不接生产搜索、真实用户库或系统服务；本批不提交、不推送。
+
+#### 决定与入口
+
+- **长文执行被守卫拦住（用户 2026-10-19 决定）**：todo.notes／routine.notes 的 notes 与 routine.capture 的 body 都是 longText，草稿受 `blocksUnprotectedExport` 守卫，不能解析成执行输入或封存进 Run（§9.71 前 D 节已写明需另行确认“受控借用”契约）。本批只做 A、D 的共享入口抽取、规格与逐字对照回归；指令执行保持被拒（`TaskCommandSpecs.pendingLongText` 不装配，装上也在准备时被拒，测试锁住），**A、D 执行为阻塞**，受控借用另开批次。
+- **共享入口（原界面改为转调，签名不变，不再依赖 Persistence.session，上下文由调用方传入）**：[TaskNotesService](../AreaChain/Services/TaskNotesService.swift)（备注解析、#标签合并、提醒／优先级派生、@附件关联；原 `DayBoardMutations.saveNotes` 两个重载转调）、[RoutineCaptureService](../AreaChain/Services/RoutineCaptureService.swift)（原 `addCapturedRoutine` 转调，可传新建身份与创建日）、[ManualOrderService](../AreaChain/Services/ManualOrderService.swift)（原 `applyManualOrder` 转调；另给出某天未完成待办与到期习惯的看板顺序）、[ClipboardCapture](../AreaChain/Services/ClipboardCapture.swift)（`Environment` 注入剪贴板、附件存储、偏好语言、日期、来源 Bundle ID；`apply` 为事务内唯一写入；`ingest(container:pasteboard:storage:)` 签名与菜单栏调用不变）。预览与写入同一规则：`InputTagResolver.preview`、`InputAttachmentResolver.matches` 是原 `resolve`／`linkIfPresent` 拆出的只读部分。
+- **目录**：`tasks.postponeYesterday` 去掉显式目标（目标按页面取法推出、接受后冻结）；`tasks.order` 加 `position` 数字参数并收为单目标。三个排序指令都用 1 起的 position，不依赖对象选择器的登记顺序；tag.order 的排序输入问题不在本批。
+- **骨架加固（F）**：准入另查目录 `availability == .declared` 与 `queue == .eligibleAfterWiring`，未决／不可用指令一律不装配；tag.color 改为与标签页一致——跳过预置标签，在预览与回执里逐个列出（`CommandSimpleState.notices`），全是预置时与仓储一样拒绝；预置判定可注入（生产 `TagItem.isDiaryPreset` 恒为 false，测试用夹具判定）。
+- **骨架通用扩展（一次性，旧规格不改）**：`singleAny` 目标形状；`CommandSimpleCall` 带新建身份（准备时分配一次，未知结果锁整条指令）与冻结行（写后与未知核对只读冻结目标）；`afterSave` 保存成功后的系统后续（如提醒授权，fake 注入）；变化清单多于一个对象时给总数、超过 20 行只列前 20 行。
+
+#### 用没用骨架
+
+| 指令 | 骨架 | 说明 |
+|---|---|---|
+| subtask.order／routine.order／tasks.order | 用 | 一次仓储调用（reorderSubtasks／reorderRoutines／ManualOrderService.apply）；字段是位置而非原 sortOrder，位置不变即无变化、不写库 |
+| tasks.postponeYesterday | 用 | 目标沿 `AgendaProjection.overdueTodos`（今日页同规则，无页面筛选）；写入沿 B-M1 的 `moveTodo`，一次事务；总量沿 `CommandBatchWriteSet.Counts.entityLimit`；day 必须是今天 |
+| todo.notes／routine.notes／routine.capture | 规格已写，未装配 | NLP 派生、标签新建／恢复、附件关联都列成行；执行阻塞于长文守卫 |
+| capture.clipboard | 不用 | 目录是 systemAction／externalEffect（不入普通队列，不能进计划或 Run），且要读系统剪贴板；沿 todo.copy 的无 Run 模式另写 [ClipboardCaptureCommandAdapter](../AreaChain/Services/ClipboardCaptureCommandAdapter.swift) |
+
+#### 规则要点
+
+- **A 备注**：替换／追加（以换行接在原备注后）／清空都把最终全文交给 TaskNotesService，与详情页一致；冲突基线只记备注 SHA-256 摘要，不存明文、描述不含内容；固定多目标逐个列出派生变化，一次事务，任何一个失败整体回滚；最终全文超 64KiB 拒绝（`tooLong`）。
+- **B 排序**：越界、非整数、父任务不符、目标已删、来源非普通都拒绝；tasks.order 只排那天未完成的待办与到期习惯，跨“带子任务在前”分组的位置拒绝（写入后也显示不出来）。
+- **C 延期**：昨天清单里全部未完成的待办（不含习惯、已完成、已删）；接受后清单增减一律要求重新预览，不静默扩大；目标为空、日期不是今天、超总量都不可执行并说明原因。原页面按钮仍逐个保存，未改。
+- **D 快速新增**：解析标题、提醒、优先级、标签与备注沿原入口；新标签沿原入口在保存时新建（搜索仍不能创建）；排序值沿原面板 `Catalog.nextSortOrder`（含已删除）；同一身份不会建第二个。回执“打开新习惯”随 D 执行一起推迟。
+- **E 剪贴板**：准备只读草稿、偏好与日期，提示“将读取当前剪贴板”，不读内容；提交时读一次。有文字只取文字（保留原文、只解析普通标签、不解析时间与优先级、有图也不挂），只有图片才挂图；不写剪贴板，因此不进剪贴板历史。这条与目录 systemAction 的规则不冲突，按更保守的“提交才读”执行。写附件或事务失败清掉刚写的文件；保存已调用但结果未知时保留文件、记待核对并阻止新的捕获，核对为“不存在”才清文件。同一份预览只能提交一次。
+
+#### 放宽“普通无备注”门槛还缺什么
+
+本批没有放宽标题、回收、转换等指令的门槛。放宽前还缺：① 长文受控借用（本批阻塞点），否则备注无法安全进入执行；② 各指令的备注冲突基线（本批的摘要字段可复用），以及备注“有／无”的来源证明从 `notes` 枚举改为摘要比对；③ 回收与转换的损失清单把备注列入（转换会照搬备注、回收随对象进回收站）并补确认文案；④ todo.title 会改写派生备注的旧 UI 语义需单独定界；⑤ 对应原生与复核证据。
+
+#### 测试与实测
+
+均经 `./scripts/build.sh` 隔离入口、批次 `tm6`（原锁、六项钥匙串变量由脚本清除、合成内存库、fake 刷新与授权、临时附件目录），证据与 24 张截图在被忽略的 `build/TM6/`。
+
+| 批次 | 结果 |
+|---|---|
+| 新增服务层 6 类（Notes／Order／Postpone／RoutineCapture／ClipboardCapture／SimpleCommandSkeleton）+ X-1 TagSimpleCommandTests | 7 类 45 方法／60 次，全部通过 |
+| 受影响服务／领域回归（含上行，共 41 类：目录、草稿、计划、执行、宿主、转交、标签／附件解析、仓储、ModelChanges、看板投影、标题、复制、回收、转换、InputSyntaxPersistence 等） | 313 方法／406 次：1 失败（既有），0 跳过 |
+| 原生 UnifiedSearchTM6InteractionTests（排序位置输入、越界提示、延至今日预览、剪贴板读取提示；中英文 × 浅深色 × 444／304pt） | 4 方法／13 次，第二轮全部通过 |
+| 原生回归第二轮（13 类：T-M6、X-1、转换、回收、长文、导航、操作、备注详情、输入语法、习惯开关、详情转换、子任务标题、今日页筛选） | 66 方法／112 次：1 失败（既有），0 跳过 |
+| `qa-compile`、正常 `./scripts/build.sh` | 通过；staticSignatureVerified、hardenedRuntime 为 true，描述文件 2026-10-22 到期 |
+| `check_workflow.py`、`scripts/tests` 284 项、`quality_gate.py --profile static --strict`、全库 `swiftlint lint --strict`（0 违规）、`git diff --check` | 全部通过 |
+
+既有失败（均在 `git archive HEAD` 解出的未改动基线 `build/TM6/base` 上、持原锁、批次 `tm6base` 以相同断言复现，未修、未放宽）：`SubtaskModelTests.addTagSkipsDiaryPresetNames`（215、217～219 行）；`UnifiedSearchOperationInteractionTests.nativeBooleanWeekdaysDayAndTime`（找不到 `daybook.date.2026-10-19`）；`YesterdayCardActionTests`／`YesterdayCardConsumerTests` 8 个用例中 5 个（昨日卡片入口与文案），本批未改该卡片，第一轮之后从回归里移出。原生第一轮受系统弹窗（前台 `com.apple.UserNotificationCenter`）与用户操作抢焦点影响，出现非 key 窗口、对象选择器未打开与一次 `UnifiedSearchNavigationFixture.init` 崩溃；第二轮同组全部通过，崩溃栈未保留，列入剩余风险。原生没有子任务拖动排序与菜单栏剪贴板入口的用例，这两条原界面回归只有服务层证据（共享入口逐字对照、`HotKeyCenterTests`）。
+
+#### 缺口
+
+- A、D 执行阻塞于长文受控借用；回执“打开新习惯”、备注原生长文编辑与派生预览的原生验收随之推迟。
+- 原生日期格按钮在测试宿主里找不到标识（与 §9.90 既有失败同因），延期原生用例的日期改走日期选择器绑定背后的同一参数入口。
+- 同 sortOrder 的子任务／习惯在指令里按 UUID 排次序，原界面同值顺序未定义；tasks.order 一次只移一项。
+- 页面筛选双向同步、tasks.filter／kind／status／sections／select 的执行仍未做（T9）；剪贴板未知结果的“待核对”只在本次进程内；生产接线授权、正常签名与人工验收等既有缺口不变。
+
+#### 指定只读复核
+
+- 按[指定只读复核入口](../skill-routing.md#指定只读复核入口)派发 Claude Code `verifier`，结论 **通过**，七条验收逐条符合。它亲自重跑本批 7 个服务层类（45 方法／60 次全过）、`check_workflow.py`、全库 SwiftLint（0）、`git diff --check`，只读比对文案（新增 56 键、改 1 键，中英文与格式参数一致）、旧实现（`git show a3c81b6`）与生产构造点。
+- 三条低级意见：① `TaskDerivedRows.tags` 平行重写了标签匹配——已改为直接调用 `InputTagResolver.preview`，重跑受影响检查；② 两条原界面回归（`uiSaveKeepsSignatureAndSemantics`、`panelEntryKeepsSignature`）走生产默认附件目录与授权回调，当前文本不含 @附件与时间记号，不触发真实 IO——保留不改（用于证明原签名路径），列为剩余风险；③ 总览 T5、G1 两行缺 §9.93 链接与 T-M6——已补。只修文档与①，未再派发复核。
+- verifier 未重跑：原生测试（用户正在使用电脑）、41 类完整回归、基线复现、正常构建、quality_gate、scripts/tests，以执行者证据为准；它未写文件。

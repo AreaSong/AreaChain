@@ -29,7 +29,7 @@ struct UnifiedSearchSimpleSubmission: View {
                     Text(LocalizedStringKey(preview.copy.preview)).font(DaybookType.body.weight(.semibold))
                         .fixedSize(horizontal: false, vertical: true)
                     if preview.noChange { Text("unified.simple.noChange").font(DaybookType.caption) }
-                    UnifiedSearchSimpleChangeList(changes: preview.before.changes(to: preview.after))
+                    UnifiedSearchSimpleChangeList(changes: preview.before.changes(to: preview.after), notices: preview.after.notices)
                 }.accessibilityElement(children: .contain).accessibilityIdentifier("unified.simple.values")
                 if accepted { Text("unified.simple.accepted").font(DaybookType.caption) }
                 else {
@@ -54,7 +54,7 @@ struct UnifiedSearchSimpleSubmission: View {
             Text(LocalizedStringKey(facts.state == .saved ? controller.simpleSavedCopy(facts) : UnifiedSearchSimpleCopy.result(facts)))
                 .font(DaybookType.body).accessibilityIdentifier("unified.simple.status")
             if facts.state == .saved {
-                UnifiedSearchSimpleChangeList(changes: facts.before.changes(to: facts.after))
+                UnifiedSearchSimpleChangeList(changes: facts.before.changes(to: facts.after), notices: facts.after.notices)
                 Text(facts.publication == .returned && !facts.publicationFailed ? "unified.task.published" : "unified.field.publicationIssue")
                     .font(DaybookType.caption)
                 if facts.registrationFailed { Text("unified.field.registrationIssue").font(DaybookType.caption) }
@@ -86,15 +86,31 @@ extension UnifiedSearchController {
 }
 
 /// 逐行列出“对象 · 字段：原值 → 新值”；新建行没有原值。用户内容按原文显示。
+/// 多于一行时先给总数；超过 sampleLimit 行只列前面若干行并说明还有多少，避免长清单撑满面板。
 struct UnifiedSearchSimpleChangeList: View {
+    static let sampleLimit = 20
     let changes: [CommandSimpleChange]
+    var notices: [CommandSimpleNotice] = []
     @Environment(\.locale) private var locale
 
     var body: some View {
         VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
-            ForEach(Array(changes.enumerated()), id: \.offset) { _, change in
+            let objects = Set(changes.map(\.key)).count
+            if objects > 1 {
+                Text(verbatim: L10n.format("unified.simple.count", locale: locale, objects)).font(DaybookType.caption)
+                    .accessibilityIdentifier("unified.simple.count")
+            }
+            ForEach(Array(changes.prefix(Self.sampleLimit).enumerated()), id: \.offset) { _, change in
                 Text(verbatim: line(change)).font(DaybookType.caption).fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("unified.simple.change." + change.field)
+            }
+            if changes.count > Self.sampleLimit {
+                Text(verbatim: L10n.format("unified.simple.more", locale: locale, changes.count - Self.sampleLimit))
+                    .font(DaybookType.caption).accessibilityIdentifier("unified.simple.more")
+            }
+            ForEach(Array(notices.enumerated()), id: \.offset) { _, notice in
+                Text(verbatim: L10n.format(notice.key, locale: locale, notice.title)).font(DaybookType.caption)
+                    .fixedSize(horizontal: false, vertical: true).accessibilityIdentifier("unified.simple.notice")
             }
         }.accessibilityElement(children: .contain).accessibilityIdentifier("unified.simple.changes")
     }
@@ -112,6 +128,7 @@ struct UnifiedSearchSimpleChangeList: View {
         switch display {
         case .verbatim(let value): return value
         case .localized(let key): return L10n.format(key, locale: locale)
+        case .count(let key, let value): return L10n.format(key, locale: locale, value)
         }
     }
 }

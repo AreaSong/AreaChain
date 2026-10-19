@@ -84,6 +84,7 @@ extension UnifiedSearchController {
         if showsRoutineCreation { submitRoutineCreation(source); return }
         if showsTaskChain { submitTaskChain(source); return }
         if showsTaskCopy { submitTaskCopy(source); return }
+        if showsClipboardCapture { submitClipboardCapture(source); return }
         if showsTrash { requestTrashConfirmation(source); return }
         if showsConvert { requestConvertConfirmation(source); return }
         if showsSimple { submitSimple(source); return }

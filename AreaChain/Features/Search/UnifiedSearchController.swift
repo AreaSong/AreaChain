@@ -74,6 +74,7 @@ final class UnifiedSearchController {
     var taskCopyPreview: CommandTaskCopyPreview?
     var taskCopyResult: CommandTaskCopyResult?
     var taskCopyFailure: String?
+    var clipboardCapture = UnifiedSearchClipboardCaptureState()
     var chainCreationPreparation: CommandTaskCreatePreparation?
     var chainFailure: String?
     var multiPlanFailure: String?
@@ -118,6 +119,7 @@ final class UnifiedSearchController {
     @ObservationIgnored let taskCopy: TaskCopyCommandAdapter?
     @ObservationIgnored let convert: ConvertCommandAdapter?
     @ObservationIgnored let simple: SimpleCommandAdapter?
+    @ObservationIgnored let clipboard: ClipboardCaptureCommandAdapter?
     @ObservationIgnored let settingBackend: UnifiedSearchSettingBackend
     var fileSettingFailure: UnifiedSearchFileSettingFailure?
     var fileSettingConfirmation: UnifiedSearchFileSettingConfirmation?
@@ -152,8 +154,9 @@ final class UnifiedSearchController {
          taskCreate: TaskCreateCommandAdapter? = nil, taskTitle: TaskTitleCommandAdapter? = nil,
          taskField: TaskFieldCommandAdapter? = nil, taskChain: TaskChainCommandAdapter? = nil, subtask: SubtaskCommandAdapter? = nil, routine: RoutineCommandAdapter? = nil, batch: BatchCommandAdapter? = nil, multiPlan: MultiPlanCommandAdapter? = nil,
          trash: TrashCommandAdapter? = nil, taskCopy: TaskCopyCommandAdapter? = nil, convert: ConvertCommandAdapter? = nil,
-         simple: SimpleCommandAdapter? = nil) {
+         simple: SimpleCommandAdapter? = nil, clipboard: ClipboardCaptureCommandAdapter? = nil) {
         self.session = session
+        self.clipboard = clipboard
         self.trash = trash
         self.taskCopy = taskCopy
         self.convert = convert
@@ -332,6 +335,7 @@ final class UnifiedSearchController {
         revokeTaskCopy()
         revokeConvert()
         revokeSimple()
+        clipboardCapture = .init()
         revokeTaskField()
         revokeTaskTitle()
         revokeTaskComposition()
@@ -369,6 +373,7 @@ final class UnifiedSearchController {
         convertFailure = nil
         convertVerification = nil
         revokeSimple()
+        clipboardCapture.revoke()
         simpleFailure = nil
         simpleVerification = nil
         revokeTaskField()
@@ -443,7 +448,9 @@ final class UnifiedSearchController {
         if change == .privacyInvalidated || !operationVisible { revokeTaskTitle() }
         if change == .privacyInvalidated || !operationVisible { revokeBatch(); revokeTaskField() }
         if change == .privacyInvalidated || !operationVisible { revokeSubtask(); revokeRoutine() }
-        if change == .privacyInvalidated || !operationVisible { revokeTrash(); revokeTaskCopy(); revokeConvert(); revokeSimple() }
+        if change == .privacyInvalidated || !operationVisible {
+            revokeTrash(); revokeTaskCopy(); revokeConvert(); revokeSimple(); clipboardCapture.revoke()
+        }
         if change == .privacyInvalidated || !operationVisible { chainCreationPreparation = nil }
         if change != .published, objectSelection != nil || session.isMasked {
             cancelObjectSelection(returnFocus: false)

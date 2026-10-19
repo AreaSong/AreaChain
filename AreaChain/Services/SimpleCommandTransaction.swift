@@ -20,8 +20,8 @@ import SwiftData
         boundary.publish = { try environment.publish() }
         do {
             try ModelChanges.transaction(in: context, boundary: boundary, observe: { result.transaction = $0 }) {
-                try spec.apply(preview.input, in: context)
-                guard try spec.observe(preview.input, in: context) == preview.after else {
+                try spec.apply(preview.frozenCall, in: context)
+                guard try spec.observe(preview.frozenCall, in: context) == preview.after else {
                     throw CommandSimpleIssue.invalidTarget(.changed)
                 }
                 ModelChanges.afterCommit(in: context) {

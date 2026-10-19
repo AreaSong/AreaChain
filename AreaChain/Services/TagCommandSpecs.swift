@@ -7,10 +7,13 @@ import SwiftData
 /// 新建标签只来自显式 tag.create；搜索仍不能创建标签。
 @MainActor enum TagCommandSpecs {
     typealias Repository = @MainActor (ModelContext) -> any CatalogRepositoryProtocol
+    typealias Preset = @MainActor (TagItem) -> Bool
 
-    static func all(repository: @escaping Repository = { SwiftDataCatalogRepository(context: $0) }) -> [any SimpleCommandSpec] {
+    /// `isPreset` 生产沿用 TagItem.isDiaryPreset；测试可注入夹具判定（当前生产判定恒为 false）。
+    static func all(repository: @escaping Repository = { SwiftDataCatalogRepository(context: $0) },
+                    isPreset: @escaping Preset = { $0.isDiaryPreset }) -> [any SimpleCommandSpec] {
         [TagCreateSpec(repository: repository), TagRenameSpec(repository: repository),
-         TagColorSpec(repository: repository), TagOrderSpec(repository: repository)]
+         TagColorSpec(repository: repository, isPreset: isPreset), TagOrderSpec(repository: repository)]
     }
 
     /// 指令参数；目标已由固定集合派生出 target 参数，这里不再重复读取。
@@ -123,9 +126,11 @@ import SwiftData
     }
 }
 
-/// tag.color → batchSetColor(ids:colorToken:)：固定集合一次改色。预置标签整组拒绝，不像仓储那样静默跳过。
+/// tag.color → batchSetColor(ids:colorToken:)：固定集合一次改色。与原标签页一致：预置标签静默跳过，
+/// 并在预览与回执里列出被跳过的标签；全部是预置标签时与仓储一样拒绝。
 @MainActor struct TagColorSpec: SimpleCommandSpec {
     let repository: TagCommandSpecs.Repository
+    var isPreset: TagCommandSpecs.Preset = { $0.isDiaryPreset }
     let command = CommandID(rawValue: "tag.color")
     let shape = CommandSimpleShape.fixed(.tag)
     let copy = CommandSimpleCopy(preview: "unified.simple.tag.color.preview", saved: "unified.simple.tag.color.saved")
@@ -138,26 +143,33 @@ import SwiftData
         return TagColorToken.resolvedToken(raw)
     }
 
+    private func tags(_ input: CommandResolvedInput, in context: ModelContext) throws -> [TagItem] {
+        try input.targets.objects.map { try TagCommandSpecs.tag($0, in: context) }
+    }
+
+    /// 预置标签不进入字段行，只作为“已跳过”提示；读取前后都由同一判定给出，写后核对保持相等。
+    private func state(_ tags: [TagItem], color: (TagItem) -> String) -> CommandSimpleState {
+        .init(rows: tags.filter { !isPreset($0) }.map { TagCommandSpecs.row($0, TagCommandSpecs.colorField(color($0))) },
+              notices: tags.filter(isPreset).map { .init(key: "unified.simple.tag.color.skipped", title: $0.name) })
+    }
+
     func observe(_ input: CommandResolvedInput, in context: ModelContext) throws -> CommandSimpleState {
         _ = try token(input)
-        return .init(rows: try input.targets.objects.map {
-            let tag = try TagCommandSpecs.tag($0, in: context)
-            return TagCommandSpecs.row(tag, TagCommandSpecs.colorField(tag.colorToken))
-        })
+        return state(try tags(input, in: context)) { $0.colorToken }
     }
 
     func expect(_ input: CommandResolvedInput, from before: CommandSimpleState,
                 in context: ModelContext) throws -> CommandSimpleState {
         let token = try token(input)
-        return .init(rows: try input.targets.objects.map {
-            let tag = try TagCommandSpecs.tag($0, in: context)
-            guard !tag.isDiaryPreset else { throw CommandSimpleIssue.invalidTarget(.protected) }
-            return TagCommandSpecs.row(tag, TagCommandSpecs.colorField(token))
-        })
+        let tags = try tags(input, in: context)
+        guard tags.contains(where: { !isPreset($0) }) else { throw CommandSimpleIssue.invalidTarget(.protected) }
+        return state(tags) { _ in token }
     }
 
+    /// 只传非预置标签：生产上与仓储自己的跳过等价，注入判定的夹具也不会被仓储改色。
     func apply(_ input: CommandResolvedInput, in context: ModelContext) throws {
-        try repository(context).batchSetColor(ids: Set(input.targets.objects.map(\.id)), colorToken: token(input))
+        let ids = try tags(input, in: context).filter { !isPreset($0) }.map(\.id)
+        try repository(context).batchSetColor(ids: Set(ids), colorToken: token(input))
     }
 }
 

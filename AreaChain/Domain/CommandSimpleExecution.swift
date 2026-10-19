@@ -8,6 +8,8 @@ struct CommandSimpleFacts: Equatable, CustomStringConvertible, CustomDebugString
     let input: CommandResolvedInput
     let before: CommandSimpleState
     let after: CommandSimpleState
+    /// 新建型指令的新对象身份；回执用它打开新对象，未知核对用它只读查找。
+    let creation: CommandObjectReference?
     var state: State = .pending
     var save = CommandTaskTitleFacts.Call.notCalled
     var rollback = CommandTaskTitleFacts.Call.notCalled
@@ -15,6 +17,8 @@ struct CommandSimpleFacts: Equatable, CustomStringConvertible, CustomDebugString
     var registrationFailed = false
     var publicationFailed = false
     var conflict = false
+    /// 保存成功后是否发出了系统后续请求（如提醒授权）；只表示已请求，不代表系统已处理。
+    var followUpRequested = false
     var description: String { "CommandSimpleFacts(\(state))" }
     var debugDescription: String { description }
 
@@ -24,7 +28,9 @@ struct CommandSimpleFacts: Equatable, CustomStringConvertible, CustomDebugString
         input = accepted.preview.input
         before = accepted.preview.before
         after = accepted.preview.after
+        creation = accepted.preview.creation
     }
+    var frozenCall: CommandSimpleCall { .init(input: input, creation: creation, frozen: before.keys.union(after.keys)) }
 
     func receipt(in run: CommandExecutionRun, attempt: CommandAttemptStamp) throws -> (Int, CommandExecutionResult?) {
         guard attempt.execution == run.stamp, attempt.phase == .local, run.multiPlan == nil, run.permitsMember(attempt.unitID),

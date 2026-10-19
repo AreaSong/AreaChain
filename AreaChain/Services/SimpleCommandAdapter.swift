@@ -21,7 +21,9 @@ import SwiftData
     func supports(_ command: CommandID) -> Bool {
         guard capability == .open, environment != nil, specs[command.rawValue] != nil,
               let descriptor = CommandCatalog.standard.command(id: command) else { return false }
+        // 目录未决或不可用的指令即使提供了规格也不装配；只接可入普通队列的修改。
         return descriptor.category == .modification && descriptor.interactions.isEmpty
+            && descriptor.availability == .declared && descriptor.queue == .eligibleAfterWiring
     }
 
     func spec(_ command: CommandID) throws -> any SimpleCommandSpec {
@@ -47,11 +49,12 @@ import SwiftData
             let spec = try spec(draft.commandID)
             let item = try CommandSimplePreview.input(in: host, shape: spec.shape)
             let input = try item.checkedInput()
-            let before = try spec.observe(input, in: environment.context)
-            let after = try spec.expect(input, from: before, in: environment.context)
+            let call = CommandSimpleCall(input: input, creation: spec.creates.map { .init(type: $0, id: UUID()) })
+            let before = try spec.observe(call, in: environment.context)
+            let after = try spec.expect(call, from: before, in: environment.context)
             let preview = CommandSimplePreview(lease: lease, plan: plan, item: item.stamp, draft: item.draft.stamp,
                 command: item.draft.commandID, input: input, environmentID: environment.id, copy: spec.copy,
-                before: before, after: after)
+                before: before, after: after, creation: call.creation)
             try coordinator.simples.requireResolved(preview.lockKeys)
             try coordinator.validate(lease)
             try environment.validateClean()
@@ -130,10 +133,12 @@ import SwiftData
             try coordinator.finishTaskMutation(invocation, external: [:])
             return facts
         }
-        let facts = SimpleCommandTransaction.apply(accepted, spec: spec, environment: environment) { [coordinator] facts in
+        var facts = SimpleCommandTransaction.apply(accepted, spec: spec, environment: environment) { [coordinator] facts in
             try coordinator.recordSimple(invocation, facts: facts)
         }
         if facts.state == .unknown { coordinator.simples.markUnknown(accepted.preview, acceptanceID: accepted.id) }
+        // 与原界面一致：只有保存成功才发出系统后续请求。
+        if facts.state == .saved { facts.followUpRequested = spec.afterSave(accepted.preview.frozenCall, in: environment.context) }
         try coordinator.recordSimple(invocation, facts: facts)
         try coordinator.finishTaskMutation(invocation, external: [
             .taskPublication: facts.publication == .returned && !facts.publicationFailed ? .succeeded : .unknown
@@ -156,7 +161,7 @@ import SwiftData
         let spec = try spec(facts.command)
         let reader = ModelContext(environment.context.container)
         reader.autosaveEnabled = false
-        let current = try? spec.observe(facts.input, in: reader)
+        let current = try? spec.observe(facts.frozenCall, in: reader)
         try displaySession?.validateDisplayHost(expecting: lease)
         let outcome: CommandSimpleVerification.Outcome = current == facts.after ? .applied
             : current == facts.before ? .notApplied : .inconsistent
@@ -178,8 +183,8 @@ import SwiftData
     }
 
     private func verifyUnchanged(_ preview: CommandSimplePreview, spec: any SimpleCommandSpec, context: ModelContext) throws {
-        let before = try spec.observe(preview.input, in: context)
-        guard before == preview.before, try spec.expect(preview.input, from: before, in: context) == preview.after else {
+        let before = try spec.observe(preview.call, in: context)
+        guard before == preview.before, try spec.expect(preview.call, from: before, in: context) == preview.after else {
             throw CommandSimpleIssue.invalidTarget(.changed)
         }
     }
