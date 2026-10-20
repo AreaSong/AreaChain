@@ -24,7 +24,7 @@ import Testing
     let root = FileManager.default.temporaryDirectory.appending(path: "areachain-m2-tags-\(UUID().uuidString)", directoryHint: .isDirectory)
 
     init(capability: SimpleCommandAdapter.Capability = .open, isPreset: @escaping TagCommandSpecs.Preset = { $0.isDiaryPreset },
-         organize: Bool = false) throws {
+         organize: Bool = false, restore: Bool = false) throws {
         io = try TaskCaptureFixture()
         handoff = try HandoffFixture()
         tags = [TagItem(name: "工作 · Work", sortOrder: 0), TagItem(name: "家庭 · Home", sortOrder: 1, colorToken: "ink"),
@@ -46,7 +46,7 @@ import Testing
         self.isPreset = isPreset
         adapter = .init(coordinator: handoff.coordinator, environment: environment,
                         specs: TagCommandSpecs.all(repository: { [unowned self] in repository($0) }, isPreset: isPreset)
-                            + (organize ? TagOrganizeSpecs.all(organizing) : []),
+                            + (organize ? TagOrganizeSpecs.all(organizing) : []) + (restore ? TrashRestoreSpec.all() : []),
                         capability: capability)
     }
 
@@ -70,7 +70,7 @@ import Testing
     }
 
     func queue(_ command: String, targets: [CommandObjectReference] = [], arguments: [CommandArgument] = []) throws {
-        let single = ["tag.rename", "tag.order", "tag.trash", "tag.restore"].contains(command)
+        let single = ["tag.rename", "tag.order", "tag.trash", "tag.restore", "trash.restore"].contains(command)
         let selection: CommandDraftTargets = targets.isEmpty ? .none
             : .init(targets.count == 1 && single ? .single : .selected, objects: targets)
         try handoff.queue(.init(id: UUID(), hostID: HandoffFixture.source, commandID: .init(rawValue: command),

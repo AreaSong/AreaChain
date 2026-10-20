@@ -74,12 +74,21 @@ extension UnifiedSearchController {
                 system.terminate()
                 navigationMessage = "unified.system.quit.confirmed"
             case .privacyLock:
-                navigationMessage = "unified.navigation.unsupported"
+                lockPrivacy(system.vault)
             }
         } catch {
             let issue = error as? CommandPageIssue ?? .stale
             navigationMessage = Self.systemMessage(issue, command: command)
         }
+    }
+
+    /// privacy.lock：沿页头与隐私设置页的“立即锁定”（vault.lock）。锁定事件让结果展示、返回票据、查阅内容、
+    /// 长文托管与受保护预览按 C-M1、L-M1b 的现有规则全部撤销；未启用或已锁定时只说明原因。
+    func lockPrivacy(_ vault: PrivacyVault) {
+        guard vault.isConfigured else { navigationMessage = "unified.privacy.lock.unconfigured"; return }
+        guard vault.isUnlocked else { navigationMessage = "unified.privacy.lock.already"; return }
+        vault.lock()
+        navigationMessage = "unified.privacy.lock.done"
     }
 
     /// 总览活动行的打开沿总览页 DashboardNavigation 的路由，但页面一律经 N-M1 导航（保留返回票据）；

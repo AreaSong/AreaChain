@@ -58012,6 +58012,142 @@
           }
         }
       }
+    },
+    "unified.privacy.lock.unconfigured": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The privacy lock is not set up, so there is nothing to lock."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未启用私密锁，没有可锁定的内容。"
+          }
+        }
+      }
+    },
+    "unified.privacy.lock.already": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Private content is already locked."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "私密内容已经是锁定状态。"
+          }
+        }
+      }
+    },
+    "unified.privacy.lock.done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Locked. Unlock again to see private content."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已锁定，需要重新解锁才能查看私密内容。"
+          }
+        }
+      }
+    },
+    "unified.simple.trash.restore.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore this item from the Trash, as the Trash page does."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "把这一项从回收站恢复，与回收站页的“恢复”相同。"
+          }
+        }
+      }
+    },
+    "unified.simple.trash.restore.saved": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restored."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已恢复。"
+          }
+        }
+      }
+    },
+    "unified.simple.trash.restore.subtasks": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subtasks back with it: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "随之恢复的子任务：%@ 项"
+          }
+        }
+      }
+    },
+    "unified.simple.trash.restore.attachments": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Images back with it: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "随之恢复的图片：%@ 张"
+          }
+        }
+      }
+    },
+    "unified.simple.problem.ownerTrashed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The item this image belongs to is in the Trash too. Restore that item; the image comes back with it."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这张图片所属的对象也在回收站里，请恢复所属对象，图片会随之恢复。"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

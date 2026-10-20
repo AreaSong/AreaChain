@@ -50,6 +50,8 @@ enum CommandSimpleProblem: String, Equatable {
     case protectedTag, locked
     /// 合并批 M-2：要恢复的对象不在回收站里。
     case notTrashed
+    /// 合并批 M-3：附件的拥有者也在回收站里（或已不存在），附件不能单独恢复。
+    case ownerTrashed
 }
 
 /// 预览里的一个值：本地化键、原文（用户内容）或带一个整数参数的本地化键（如“N 字”）。

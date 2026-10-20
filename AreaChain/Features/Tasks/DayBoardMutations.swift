@@ -55,7 +55,9 @@ enum DayBoardMutations {
 
     @discardableResult
     static func restoreAttachment(_ item: AttachmentItem) -> Bool {
-        persist(context: item.modelContext) { item.deletedAt = nil }
+        persist(context: item.modelContext) {
+            try restorer(for: item.modelContext).restore(.init(type: .image, id: item.id), in: item.modelContext)
+        }
     }
 
     @discardableResult
@@ -179,7 +181,7 @@ enum DayBoardMutations {
 
     @discardableResult
     static func restoreTodo(_ todo: TodoItem) -> Bool {
-        ModelChanges.attempt(in: todo.modelContext) { try taskRepo(for: todo.modelContext).restoreTodo(id: todo.id) }
+        ModelChanges.attempt(in: todo.modelContext) { try restorer(for: todo.modelContext).restore(.init(type: .todo, id: todo.id)) }
     }
 
     @discardableResult
@@ -325,7 +327,7 @@ enum DayBoardMutations {
     @discardableResult
     static func restoreRoutine(_ routine: DailyRoutine) -> Bool {
         ModelChanges.attempt(in: routine.modelContext) {
-            try routineRepo(for: routine.modelContext).restoreRoutine(id: routine.id)
+            try restorer(for: routine.modelContext).restore(.init(type: .routine, id: routine.id))
         }
     }
 
@@ -418,7 +420,7 @@ enum DayBoardMutations {
 
     @discardableResult
     static func restoreDiary(_ entry: DiaryEntry) -> Bool {
-        ModelChanges.attempt(in: entry.modelContext) { try diaryRepo(for: entry.modelContext).restoreDiary(id: entry.id) }
+        ModelChanges.attempt(in: entry.modelContext) { try restorer(for: entry.modelContext).restore(.init(type: .diary, id: entry.id)) }
     }
 
     @discardableResult
@@ -429,7 +431,7 @@ enum DayBoardMutations {
     @discardableResult
     static func restoreTag(_ tag: TagItem) -> Bool {
         guard let context = tag.modelContext else { return false }
-        return ModelChanges.attempt(in: context) { try catalogRepo(for: context).restoreTag(id: tag.id) }
+        return ModelChanges.attempt(in: context) { try restorer(for: context).restore(.init(type: .tag, id: tag.id)) }
     }
 
     @discardableResult

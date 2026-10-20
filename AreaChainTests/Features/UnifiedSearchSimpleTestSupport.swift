@@ -10,13 +10,14 @@ import Testing
     var controller: UnifiedSearchController { results.controller }
 
     /// 合并批 M-2：organize 为真时另装配标签整理规格（合并、解绑、回收、恢复）。
-    init(organize: Bool = false) throws {
-        let service = try SimpleCommandFixture(organize: organize)
+    init(organize: Bool = false, restore: Bool = false) throws {
+        let service = try SimpleCommandFixture(organize: organize, restore: restore)
         self.service = service
         var batch = QueryBatchFixture.empty("/tags")
         _ = TagContentQueryReader(context: service.context).readSources(into: &batch)
         let environment = service.environment!
         let specs = TagCommandSpecs.all() + (organize ? TagOrganizeSpecs.all(service.organizing) : [])
+            + (restore ? TrashRestoreSpec.all() : [])
         results = try .init(batch, pageSize: 20, simple: { coordinator in
             SimpleCommandAdapter(coordinator: coordinator, environment: environment, specs: specs, capability: .open)
         })
