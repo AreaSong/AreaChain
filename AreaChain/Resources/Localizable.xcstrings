@@ -57247,6 +57247,771 @@
           }
         }
       }
+    },
+    "unified.system.run": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Run"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "执行"
+          }
+        }
+      }
+    },
+    "unified.system.workspace.open.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shows the workspace on Overview. No other window is created."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示工作台并打开总览，不新建窗口。"
+          }
+        }
+      }
+    },
+    "unified.system.workspace.reveal.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brings the workspace forward and keeps the current page."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "前置工作台，保留当前页面。"
+          }
+        }
+      }
+    },
+    "unified.system.workspace.close.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Closes the workspace window. Other windows stay open and the app keeps running."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭工作台窗口；其他窗口保留，应用不退出。"
+          }
+        }
+      }
+    },
+    "unified.system.overlay.toggle.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shows or hides the menu bar overlay."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开或收起菜单栏浮层。"
+          }
+        }
+      }
+    },
+    "unified.system.overlay.mode.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switches the menu bar overlay between Tasks and Diaries."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在菜单栏浮层的任务与手记之间切换。"
+          }
+        }
+      }
+    },
+    "unified.system.routine.add.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens the existing New Routine panel on Today."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在今日页打开原有的新建重复事项面板。"
+          }
+        }
+      }
+    },
+    "unified.system.routine.manage.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens the existing routine management panel on Today."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在今日页打开原有的重复事项管理面板。"
+          }
+        }
+      }
+    },
+    "unified.system.diary.open.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens the focused diary in its window. A diary that is already open is brought forward instead."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在小窗打开当前选中的手记；已打开的会前置，不新开。"
+          }
+        }
+      }
+    },
+    "unified.system.diary.draft.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moves the Diary page's draft into a window without saving it."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "把手记页的草稿转到小窗，不保存。"
+          }
+        }
+      }
+    },
+    "unified.system.diary.pinned.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keeps an open diary window on top, or stops doing so. The diary's own pin is not changed."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "让已打开的手记小窗置顶或取消置顶，不改手记本身的置顶。"
+          }
+        }
+      }
+    },
+    "unified.system.diary.close.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Closes an open diary window. If there are unsaved changes, the window asks first."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭已打开的手记小窗；有未保存内容时与小窗一样先确认。"
+          }
+        }
+      }
+    },
+    "unified.system.quit.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quits AreaChain after the usual confirmation, including the one for unsaved diaries."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按原有确认退出 AreaChain（含未保存手记的确认）。"
+          }
+        }
+      }
+    },
+    "unified.system.workspace.revealed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workspace brought forward."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已前置工作台。"
+          }
+        }
+      }
+    },
+    "unified.system.workspace.closed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workspace close requested."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已请求关闭工作台窗口。"
+          }
+        }
+      }
+    },
+    "unified.system.workspace.closeBlocked": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finish or discard the command draft and the pending list first."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先完成或放弃指令草稿与待执行列表。"
+          }
+        }
+      }
+    },
+    "unified.system.overlay.toggled": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menu bar overlay switched."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已切换菜单栏浮层。"
+          }
+        }
+      }
+    },
+    "unified.system.overlay.modeUnavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The overlay has no outside entry for switching pages. Switch it in the overlay itself."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "浮层没有从外部切换页面的入口，请在浮层里切换。"
+          }
+        }
+      }
+    },
+    "unified.system.routine.opened": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Panel opened on Today."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已在今日页打开面板。"
+          }
+        }
+      }
+    },
+    "unified.system.diary.opened": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diary window shown."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已显示手记小窗。"
+          }
+        }
+      }
+    },
+    "unified.system.diary.detached": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft moved to a window. Nothing was saved."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "草稿已转到小窗，没有保存。"
+          }
+        }
+      }
+    },
+    "unified.system.diary.pinned": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Window kept on top."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "小窗已置顶。"
+          }
+        }
+      }
+    },
+    "unified.system.diary.unpinned": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Window no longer kept on top."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "小窗已取消置顶。"
+          }
+        }
+      }
+    },
+    "unified.system.diary.closeRequested": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close requested. If there are unsaved changes, the window asks first."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已请求关闭；有未保存内容时由小窗先确认。"
+          }
+        }
+      }
+    },
+    "unified.system.diary.protected": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protected diaries open only after unlocking on their original page."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "受保护的手记要先在原页面解锁再打开。"
+          }
+        }
+      }
+    },
+    "unified.system.diary.draftProtected": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This draft is protected. Move it to a window from the Diary page."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这份草稿受保护，请在手记页转小窗。"
+          }
+        }
+      }
+    },
+    "unified.system.diary.noWindow": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No diary window is open."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有已打开的手记小窗。"
+          }
+        }
+      }
+    },
+    "unified.system.diary.chooseWindow": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Several diary windows are open. Focus the diary whose window you mean."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开了多个手记小窗，请先选中对应的手记。"
+          }
+        }
+      }
+    },
+    "unified.system.quit.cancelled": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quit cancelled."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已取消退出。"
+          }
+        }
+      }
+    },
+    "unified.system.quit.confirmed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quitting."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在退出。"
+          }
+        }
+      }
+    },
+    "unified.system.quit.unsaved": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The command draft and the pending list are not kept after quitting."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "退出后不会保留指令草稿与待执行列表。"
+          }
+        }
+      }
+    },
+    "unified.stats.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read-only, with the same numbers as Overview."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "只读，与总览页同一口径。"
+          }
+        }
+      }
+    },
+    "unified.stats.openDay.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shows this day in Calendar."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在日历里查看这一天。"
+          }
+        }
+      }
+    },
+    "unified.stats.shown": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statistics are shown above."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "统计见上方。"
+          }
+        }
+      }
+    },
+    "unified.stats.chooseActivity": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose an activity in the Recent activity statistics."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请在“最近活动”统计里选择一条。"
+          }
+        }
+      }
+    },
+    "unified.stats.open": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开"
+          }
+        }
+      }
+    },
+    "unified.stats.activity.empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No recent activity."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有最近活动。"
+          }
+        }
+      }
+    },
+    "unified.stats.today": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today: %lld of %lld done, %lld skipped, %lld open"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今日：完成 %lld / %lld，跳过 %lld，未完成 %lld"
+          }
+        }
+      }
+    },
+    "unified.stats.pending": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overdue %lld · Upcoming %lld"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "逾期 %lld · 即将 %lld"
+          }
+        }
+      }
+    },
+    "unified.stats.streaks": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current streak %lld days · Best %lld days"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前连击 %lld 天 · 最佳 %lld 天"
+          }
+        }
+      }
+    },
+    "unified.stats.routines": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active routines: %lld"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用中的重复事项：%lld"
+          }
+        }
+      }
+    },
+    "unified.stats.diaries": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diaries today: %lld (private diaries are not counted)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今日手记：%lld（私密手记不计入）"
+          }
+        }
+      }
+    },
+    "unified.stats.trendDay": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: %lld of %lld done"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@：完成 %lld / %lld"
+          }
+        }
+      }
+    },
+    "unified.stats.heatmap": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last 365 days: %lld days with completions, %lld done in total"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "近 365 天：%lld 天有完成，共完成 %lld 项"
+          }
+        }
+      }
+    },
+    "unified.privacy.lock.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Locks private content now. Protected previews, borrowed text and access are revoked, as with Lock Now."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "立即锁定私密内容；受保护的预览、借用与访问资格随之撤销，与“立即锁定”相同。"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

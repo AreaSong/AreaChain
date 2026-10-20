@@ -17,6 +17,8 @@ import SwiftData
     var calendar: Calendar = .current
     /// 合并批 M-2 D：剪贴板历史的复制／粘贴与小窗；默认 nil（未装配），由隔离夹具显式注入 fake 窗口与按键。
     var clipboard: ClipboardHistoryActions?
+    /// 合并批 M-3 B、C：窗口、面板、小窗、统计、退出与立即锁定；默认 nil（未装配），隔离夹具注入 fake 系统动作。
+    var system: WorkspaceSystemCommands?
     var navigation: WorkspaceNavigation { router.navigation }
 
     init(router: WorkspaceSearchRouter, filters: BoardFilterSession, drafts: EditDrafts, context: ModelContext,

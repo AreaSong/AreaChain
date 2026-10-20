@@ -18,9 +18,10 @@ struct UnifiedSearchReturnContext {
 extension UnifiedSearchController {
     var isNavigationInput: Bool { browsedCommand.map(Self.routesAsNavigation) == true }
 
-    /// 走导航面板（不建草稿）的指令：导航类，以及合并批 M-3 的“在原页面完成”对照。
+    /// 走导航面板（不建草稿）的指令：导航类，合并批 M-3 的“在原页面完成”对照与窗口／统计／退出等直接动作。
     static func routesAsNavigation(_ command: CommandDescriptor) -> Bool {
         command.category == .navigation || CommandOriginalPage.route(for: command.id) != nil
+            || CommandSystemAction.commands.contains(command.id.rawValue)
     }
     var isNavigationPresented: Bool { navigationRouter?.navigation.searchPresentation == false }
 
@@ -65,6 +66,8 @@ extension UnifiedSearchController {
             executeBoardNavigation(command.id, parsed: parsed, source: source, pages: pages)
         } else if let pages = pageCommands, let window = CommandClipboardWindow(rawValue: command.id.rawValue) {
             executeClipboardWindow(window, parsed: parsed, source: source, pages: pages)
+        } else if CommandSystemAction.commands.contains(command.id.rawValue) {
+            executeSystemAction(command, parsed: parsed, source: source)
         } else if let route = CommandOriginalPage.route(for: command.id) {
             executeOriginalPage(route, command: command, parsed: parsed, source: source)
         } else { navigationMessage = "unified.navigation.unsupported" }

@@ -247,10 +247,7 @@ struct DashboardActivitySection: View {
     }
 
     private func subject(_ activity: DashboardActivity) -> String {
-        if let key = activity.titleKey {
-            return L10n.string(String.LocalizationValue(key), locale: locale)
-        }
-        return activity.title
+        activity.displayTitle(locale: locale)
     }
 
     private func accessibilityText(_ activity: DashboardActivity) -> String {
@@ -263,14 +260,7 @@ struct DashboardActivitySection: View {
         )
     }
 
-    private func kindStringKey(_ kind: DashboardActivityKind) -> String {
-        switch kind {
-        case .completed: return "dashboard.activity.kind.completed"
-        case .skipped: return "dashboard.activity.kind.skipped"
-        case .created: return "dashboard.activity.kind.created"
-        case .trashed: return "dashboard.activity.kind.trashed"
-        }
-    }
+    private func kindStringKey(_ kind: DashboardActivityKind) -> String { kind.titleKey }
 
     // MARK: - 底部：内容资产与快捷入口栏（剪贴板 · 附件 · 全部事项 · 废纸篓）
 

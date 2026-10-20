@@ -123,12 +123,7 @@ struct DashboardView: View {
     }
 
     private func makeSnapshot(todayKey: String) -> DashboardSnapshot {
-        DashboardProjection.project(
-            todos: todos.map(\.snapshot),
-            routines: routines.map(\.snapshot),
-            checks: checks.compactMap(\.snapshot),
-            diaries: diaries.map { DashboardProjection.diarySource($0.snapshot, tags: tags) },
-            todayKey: todayKey
-        )
+        DashboardStatsReader.snapshot(todos: todos, routines: routines, checks: checks, diaries: diaries, tags: tags,
+                                      todayKey: todayKey)
     }
 }

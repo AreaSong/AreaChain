@@ -11,6 +11,8 @@ struct UnifiedSearchNavigationPanel: View {
         VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
             if let route = controller.browsedCommand.flatMap({ CommandOriginalPage.route(for: $0.id) }) {
                 UnifiedSearchOriginalPageBlock(controller: controller, route: route)
+            } else if let action = controller.systemAction {
+                UnifiedSearchSystemBlock(controller: controller, action: action)
             } else {
                 Text("unified.navigation.hint").font(DaybookType.body)
             }
@@ -40,7 +42,8 @@ struct UnifiedSearchNavigationPanel: View {
     }
 
     private var openTitle: LocalizedStringKey {
-        controller.browsedCommand?.completesOnOriginalPage == true ? "unified.originalPage.open" : "unified.navigation.open"
+        if controller.browsedCommand?.completesOnOriginalPage == true { return "unified.originalPage.open" }
+        return controller.systemAction == nil ? "unified.navigation.open" : "unified.system.run"
     }
 }
 

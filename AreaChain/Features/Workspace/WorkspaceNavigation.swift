@@ -164,6 +164,8 @@ final class WorkspaceNavigation {
     var tagDrafts = WorkspaceTagPageDrafts()
     /// 总览连击或重复事项数要求今日页打开重复事项面板。页面消费后清掉。
     var wantsRecurringList = false
+    /// 合并批 M-3 B：routine.addPanel 请求今日页打开原“新建重复事项”面板（同 wantsRecurringList 的消费方式）。
+    var wantsRecurringEditor = false
     /// 总览活动点进回收站时选中的行。离开回收站后清空。
     var focusedTrashID: UUID?
 
@@ -293,6 +295,11 @@ final class WorkspaceNavigation {
     func revealRecurringList() {
         revealTab(.today)
         wantsRecurringList = true
+    }
+
+    func revealRecurringEditor() {
+        revealTab(.today)
+        wantsRecurringEditor = true
     }
 
     func focusTrash(_ id: UUID) {

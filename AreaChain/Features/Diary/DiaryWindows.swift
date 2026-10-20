@@ -9,6 +9,8 @@ final class DiaryWindows {
     static let shared = DiaryWindows()
     private var controllers: [UUID: DiaryWindowController] = [:]
     var hostedWindows: [NSWindow] { controllers.values.map(\.window) }
+    /// 合并批 M-3 B：统一搜索的小窗置顶／关闭只作用于已打开的窗口，不新建。
+    var openControllers: [DiaryWindowController] { Array(controllers.values) }
 
     @discardableResult
     func open(entry: DiaryEntry, context: ModelContext, activate: Bool = true) -> DiaryWindowController {
