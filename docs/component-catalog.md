@@ -8,6 +8,13 @@
 
 能力默认关闭（`Capability.closed`）；控制器参数 `simple` 默认 nil，生产没有构造点。标签对象只对已装配的简单指令开放选择（`adaptedObjectTypes(for:)`），其他指令的对象字段不变。真实消费者：[TagCommandSpecs](../AreaChain/Services/TagCommandSpecs.swift) 的 tag.create／tag.rename／tag.color／tag.order，分别只调 `createTag(name:sortOrder: nil)`、`updateTag(id:name:…)`、`batchSetColor(ids:colorToken:)`、`reorderTags(orderedIDs:)`；名称规则沿用仓储与 TagManagementPage，私密标签与原界面一样可改名、改色、排序；搜索仍不能创建标签。验证入口为 TagSimpleCommandTests 与 UnifiedSearchSimpleInteractionTests；决定与缺口只见[权威 X-1](unified-search-commands.md#992-提速基建-x-1)。
 
+## 合并批 M-1 任务域收尾
+
+- **任务侧标签过滤**：[InputTagResolver](../AreaChain/Services/Repositories/InputTagResolver.swift) 的 `protection`（手记预置名，或按同一匹配落到的私密标签，含墓碑）是任务、子任务、习惯一侧的唯一判定；`resolveForTask`／`mergingForTask` 返回关联的 ID 与被跳过的名字，保存成功后经 `MutationFeedback.reportSkippedTags` 提示一次。消费者：TaskMutationService（快速新增、旧标题）、TaskNotesService、RoutineCaptureService、RoutineMutationService 旧标题、DayBoardMutations.addRecurringItem、SwiftDataTaskRepository 子任务新增与改名、ClipboardCapture；指令侧 `TaskDerivedRows.protectedTagNotices` 用同一判定（结果是整条拒绝）。手记与标签管理仍用原 `resolve`／`merging`。验证入口 TaskSideTagFilterTests。
+- **无备注证明**：[CommandNotesProofReader](../AreaChain/Services/CommandNotesProofReader.swift) 自读待办／习惯（执行实例按定义、子任务恒无备注）备注，给出协调者带键摘要的 `CommandNotesProof`，并以 `allowsNotes` 一处登记放宽的指令；`CommandTaskTitleEligibility.notes`、`CommandTaskTitleSource.notes` 承载证明参与原有相等比较。五个环境的 `notesKey` 由装配它的适配器设为 `simples.textDigest`。验证入口 NotesProofRelaxationTests。
+- **任务页交互与查询**：纯解析 [CommandPageAction](../AreaChain/Domain/CommandPageAction.swift)；页面宿主 [WorkspacePageCommands](../AreaChain/Features/Workspace/WorkspacePageCommands.swift)（读写页面自己的筛选会话、`allItemsQuery`、`pendingFilter`、`todaySections`、`selectedTaskIDs`、`EditDrafts`，复用 PendingCompletionManager 与 HabitStreakLogic）；控制器 `pageCommands`（默认 nil）与 [UnifiedSearchPageEditing](../AreaChain/Features/Search/UnifiedSearchPageEditing.swift)／`UnifiedSearchPageSubmission`。`TasksPage` 的 `externalSections` 与 `EditDrafts.key(todo:／subtask:)` 是本批新增的共享入口。验证入口 WorkspacePageCommandTests、UnifiedSearchPageCommandInteractionTests。
+- 规则、决定与缺口只见[权威 M-1](unified-search-commands.md#996-合并批-m-1任务域收尾)。
+
 ## L-M1b 长文受控借用
 
 普通长文（todo.notes／routine.notes／routine.capture）的唯一执行通道。三处入口、一个出口文件：

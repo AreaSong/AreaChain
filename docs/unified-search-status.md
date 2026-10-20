@@ -2,7 +2,7 @@
 
 本文是统一搜索与指令体系的**现状总览**：只记当前状态、覆盖、缺口和每批必读入口。设计、规则与历史证据仍以[权威设计](unified-search-commands.md)为准，本文不复制。每批怎样更新本文见[技能路由的路由维护](../skill-routing.md#路由维护)。
 
-最后更新：2026-10-20，里程碑 L-M1b（[§9.95](unified-search-commands.md#995-里程碑-l-m1b长文受控借用实现)）。
+最后更新：2026-10-20，合并批 M-1（[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾)）。
 
 ## 目标与阶段
 
@@ -21,15 +21,15 @@
 
 | ID | 功能 | 状态 | 已覆盖／未覆盖 | 里程碑 | 交接 |
 |---|---|---|---|---|---|
-| [T1](unified-search-commands.md#T1) | 新建任务、标题、备注 | 隔离实现（部分） | 已：todo.create、todo.title（G-1a 已复核）；todo.notes（T-M6 规格，L-M1b 经长文受控借用执行）；未：取消标题编辑 | 3T、T-M1、T-M6、L-M1b | [§9.73](unified-search-commands.md#973-里程碑-t-m1普通任务修改与受限依赖执行)、[§9.95](unified-search-commands.md#995-里程碑-l-m1b长文受控借用实现) |
-| [T2](unified-search-commands.md#T2) | 完成、改期、提醒、优先级、标签、截止 | 隔离实现（部分） | 已：todo.move／priority／reminder（T-M1）、completion／tags／createTag／due（T-M2），均 G-1a 已复核；未：完成反悔（命令不登记 CompletionUndo） | T-M1、T-M2 | [§9.74](unified-search-commands.md#974-里程碑-t-m2完成标签与截止时间的隔离闭环) |
-| [T3](unified-search-commands.md#T3) | 复制、回收 | 隔离实现 | 已：todo.copy、todo.trash；带备注对象的回收不开放；未复核 | T-M4 | [§9.90](unified-search-commands.md#990-里程碑-t-m4复制与回收) |
-| [T4](unified-search-commands.md#T4) | 子任务 | 隔离实现（部分） | 已：subtask.create／title／completion／tags（T-M3，G-1a 已复核）、subtask.delete（T-M4）、subtask.order（T-M6）；未：取消标题编辑 | T-M3、T-M4、T-M6 | [§9.75](unified-search-commands.md#975-里程碑-t-m3普通子任务的隔离闭环)、[§9.93](unified-search-commands.md#993-里程碑-t-m6任务类修改收尾) |
+| [T1](unified-search-commands.md#T1) | 新建任务、标题、备注 | 隔离实现 | 已：todo.create、todo.title（G-1a 已复核）；todo.notes（L-M1b）；todo.cancelTitle（M-1，去掉宿主保留的标题草稿）；原界面文字里的私密／预设标签不再关联（M-1 A，已接正式版行为） | 3T、T-M1、T-M6、L-M1b、M-1 | [§9.95](unified-search-commands.md#995-里程碑-l-m1b长文受控借用实现)、[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾) |
+| [T2](unified-search-commands.md#T2) | 完成、改期、提醒、优先级、标签、截止 | 隔离实现 | 已：todo.move／priority／reminder（T-M1）、completion／tags／createTag／due（T-M2），均 G-1a 已复核；todo.cancelCompletion（M-1，复用 0.4 秒反悔窗口）；move／priority／reminder／tags／due 自 M-1 起允许带备注对象 | T-M1、T-M2、M-1 | [§9.74](unified-search-commands.md#974-里程碑-t-m2完成标签与截止时间的隔离闭环)、[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾) |
+| [T3](unified-search-commands.md#T3) | 复制、回收 | 隔离实现 | 已：todo.copy、todo.trash；M-1 起带备注对象可复制、可回收（确认面板说明备注随对象进回收站）；未复核 | T-M4、M-1 | [§9.90](unified-search-commands.md#990-里程碑-t-m4复制与回收)、[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾) |
+| [T4](unified-search-commands.md#T4) | 子任务 | 隔离实现 | 已：subtask.create／title／completion／tags（T-M3，G-1a 已复核）、subtask.delete（T-M4）、subtask.order（T-M6）、subtask.cancelTitle（M-1）；父待办带备注仍拒绝 | T-M3、T-M4、T-M6、M-1 | [§9.75](unified-search-commands.md#975-里程碑-t-m3普通子任务的隔离闭环)、[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾) |
 | [T5](unified-search-commands.md#T5) | 重复事项定义 | 隔离实现 | 已：routine.title／weekdays／reminder／priority／tags（R-M1）、routine.create（R-M2）、routine.enabled（R-M3）、routine.trash（T-M4）、routine.order（T-M6）、routine.capture／routine.notes（T-M6 规格，L-M1b 经长文受控借用执行）；R-M1～R-M3 待 G-1b 补复核 | R-M1～R-M3、T-M4、T-M6、L-M1b | [§9.76](unified-search-commands.md#976-里程碑-r-m1习惯定义五字段的隔离闭环)、[§9.78](unified-search-commands.md#978-里程碑-r-m3兼容跳过习惯启停与指定执行日状态)、[§9.95](unified-search-commands.md#995-里程碑-l-m1b长文受控借用实现) |
-| [T6](unified-search-commands.md#T6) | 指定日完成／撤回／跳过、检查日、连击 | 隔离实现（部分） | 已：occurrence.complete／skip／reopen（R-M3）、inspector.day 定位（N-M1）；连击查询：待核实 | R-M3、N-M1 | [§9.78](unified-search-commands.md#978-里程碑-r-m3兼容跳过习惯启停与指定执行日状态) |
-| [T7](unified-search-commands.md#T7) | 批量任务／习惯 | 隔离实现（部分） | 已：batch.move／tags（B-M1）、batch.completion／enabled（B-M2）、batch.trash（T-M4）；清选择：待核实 | B-M1、B-M2、T-M4 | [§9.79](unified-search-commands.md#979-里程碑-b-m1固定多目标改期与混合标签共同提交)、[§9.80](unified-search-commands.md#980-里程碑-b-m2批量状态级联与补录总量控制) |
-| [T8](unified-search-commands.md#T8) | 待办↔重复事项转换 | 隔离实现 | 已：todo.toRoutine、routine.toTodo；带备注对象不开放；未复核 | T-M5 | [§9.91](unified-search-commands.md#991-里程碑-t-m5待办与重复事项互转) |
-| [T9](unified-search-commands.md#T9) | 页面筛选、全部事项、排序、延至今日 | 隔离实现（部分） | 已：tasks.order（单目标、position）、tasks.postponeYesterday（T-M6）；查询侧只读提供者与隔离结果列表（2A～2J、4A）；未：页面筛选双向同步，tasks.filter／clearFilter／kind／status／sections／select 的执行 | 2A～2J、4A、T-M6 | [§9.93](unified-search-commands.md#993-里程碑-t-m6任务类修改收尾) |
+| [T6](unified-search-commands.md#T6) | 指定日完成／撤回／跳过、检查日、连击 | 隔离实现 | 已：occurrence.complete／skip／reopen（R-M3）、inspector.day 定位（N-M1）、routine.streak（M-1，复用 HabitStreakLogic，只读） | R-M3、N-M1、M-1 | [§9.78](unified-search-commands.md#978-里程碑-r-m3兼容跳过习惯启停与指定执行日状态)、[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾) |
+| [T7](unified-search-commands.md#T7) | 批量任务／习惯 | 隔离实现 | 已：batch.move／tags（B-M1，M-1 起允许带备注）、batch.completion／enabled（B-M2）、batch.trash（T-M4，M-1 起允许带备注）、selection.clear（M-1） | B-M1、B-M2、T-M4、M-1 | [§9.79](unified-search-commands.md#979-里程碑-b-m1固定多目标改期与混合标签共同提交)、[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾) |
+| [T8](unified-search-commands.md#T8) | 待办↔重复事项转换 | 隔离实现 | 已：todo.toRoutine、routine.toTodo；M-1 起带备注对象可转换（损失清单列出“备注原样搬到新对象”）；未复核 | T-M5、M-1 | [§9.91](unified-search-commands.md#991-里程碑-t-m5待办与重复事项互转)、[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾) |
+| [T9](unified-search-commands.md#T9) | 页面筛选、全部事项、排序、延至今日 | 隔离实现（部分） | 已：tasks.order、tasks.postponeYesterday（T-M6）；tasks.filter／clearFilter（今日／待处理／全部事项，与页面双向同步）、tasks.kind／status、tasks.sections（昨天／即将）、tasks.select（待处理／全部事项）（M-1）；未：今日区收起（始终展开）、今日页与标签清单的多选指令 | 2A～2J、4A、T-M6、M-1 | [§9.93](unified-search-commands.md#993-里程碑-t-m6任务类修改收尾)、[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾) |
 | [T10](unified-search-commands.md#T10) | 剪贴板加今天 | 隔离实现且已复核 | 已：capture.clipboard（T-M6，无 Run 模式，提交才读剪贴板；T-M6 指定复核通过） | T-M6 | [§9.93](unified-search-commands.md#993-里程碑-t-m6任务类修改收尾) |
 | [B1](unified-search-commands.md#B1) | 日历导航与改期 | 待核实 | go.calendar、inspector.day（N-M1）与 todo.create／todo.move 可组合；月周切换等页面动作未见交接 | N-M1 | [§9.84](unified-search-commands.md#984-里程碑-n-m1导航与返回搜索) |
 | [B2](unified-search-commands.md#B2) | 四象限 | 待核实 | go.quadrant（N-M1）与 todo.priority 可用；quadrant.complete 在 1A 登记为未决 | N-M1 | [§9.6](unified-search-commands.md#96-阶段-1a-目录决策与证据) |
@@ -37,7 +37,7 @@
 | [J1](unified-search-commands.md#J1) | 手记新建与正文 | 未开始 | 长文编辑底座（C-M1～C-M3）已在隔离宿主，正文保存 handler 未做 | C-M1～C-M3 | [§9.88](unified-search-commands.md#988-里程碑-c-m3长文上限与超限引导) |
 | [J2](unified-search-commands.md#J2) | 手记组织 | 未开始 | — | — | — |
 | [J3](unified-search-commands.md#J3) | 手记复制、转任务、回收 | 未开始 | — | — | — |
-| [G1](unified-search-commands.md#G1) | 标签新建、改名、颜色、排序、搜索与视图 | 隔离实现（部分） | 已：tag.create／rename／color／order（X-1，未复核；原生选择器暂不能表达任意排序；T-M6 起 tag.color 跳过预置标签并列出）、标签只读查询（2F、2K-3、2K-8）、go.tagList（N-M2）；未：tag.cancel、tag.view 各视图、新建时设为私密 | X-1、2F、N-M2、T-M6 | [§9.92](unified-search-commands.md#992-提速基建-x-1)、[§9.93](unified-search-commands.md#993-里程碑-t-m6任务类修改收尾) |
+| [G1](unified-search-commands.md#G1) | 标签新建、改名、颜色、排序、搜索与视图 | 隔离实现（部分） | 已：tag.create／rename／color（X-1，未复核；T-M6 起 tag.color 跳过预置标签并列出）、tag.order（M-1 起单目标 + position）、标签只读查询（2F、2K-3、2K-8）、go.tagList（N-M2）；未：tag.cancel、tag.view 各视图、新建时设为私密 | X-1、2F、N-M2、T-M6、M-1 | [§9.92](unified-search-commands.md#992-提速基建-x-1)、[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾) |
 | [G2](unified-search-commands.md#G2) | 标签合并、解绑、软删／恢复、清理 | 未开始 | tag.merge、tag.cleanup 在 1A 登记为未决 | — | [§9.6](unified-search-commands.md#96-阶段-1a-目录决策与证据) |
 | [A1](unified-search-commands.md#A1) | 图片附件 | 隔离实现（部分） | 已：图片元数据只读查询（2E、2K-6）、普通图片查阅（N-M2）；未：选图、粘贴、截图、回收 | 2K-6、N-M2 | [§9.85](unified-search-commands.md#985-里程碑-n-m2标签导航普通手记全文与普通图片查阅) |
 | [C1](unified-search-commands.md#C1) | 剪贴板浏览与搜索 | 隔离实现（部分） | 已：显式 /clipboard 只读提供者与文件只读适配；未：原生浏览界面等价验收 | 2G、2K-5 | [§9.41](unified-search-commands.md#941-阶段-2k-5剪贴板历史文件只读适配与受门禁发布) |
@@ -63,14 +63,14 @@
 | [D4](unified-search-commands.md#D4) | 重置并退出 | 未开始 | 1A 登记为 unavailable | — | [§9.6](unified-search-commands.md#96-阶段-1a-目录决策与证据) |
 | [N1](unified-search-commands.md#N1) | 全页面与标签清单导航 | 隔离实现 | 已：16 个 go 入口（N-M1）、go.tagList（N-M2）；未复核 | N-M1、N-M2 | [§9.84](unified-search-commands.md#984-里程碑-n-m1导航与返回搜索) |
 | [N2](unified-search-commands.md#N2) | 工作台、浮层与面板 | 未开始 | — | — | — |
-| [N3](unified-search-commands.md#N3) | 检查器与选择 | 隔离实现（部分） | 已：inspector.open／inspector.day（N-M1）；未：列表全选／取消选择 | N-M1 | [§9.84](unified-search-commands.md#984-里程碑-n-m1导航与返回搜索) |
+| [N3](unified-search-commands.md#N3) | 检查器与选择 | 隔离实现 | 已：inspector.open／inspector.day（N-M1）、selection.all／clear（M-1，沿页面投影） | N-M1、M-1 | [§9.84](unified-search-commands.md#984-里程碑-n-m1导航与返回搜索)、[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾) |
 | [N4](unified-search-commands.md#N4) | 手记小窗 | 未开始 | diaryWindow.open 保持未装配（N-M2） | — | — |
 | [N5](unified-search-commands.md#N5) | 总览统计 | 未开始 | — | — | — |
 | [N6](unified-search-commands.md#N6) | 帮助与示例 | 未开始 | — | — | — |
 | [N7](unified-search-commands.md#N7) | 版本、反馈与链接 | 未开始 | — | — | — |
 | [N8](unified-search-commands.md#N8) | 退出与未保存确认 | 未开始 | — | — | — |
 
-合计 48 项：隔离实现 5（T3、T5、T8、S1、N1）；隔离实现且已复核 1（T10）；隔离实现（部分）11（T1、T2、T4、T6、T7、T9、G1、A1、C1、D1、N3）；待核实 2（B1、B2）；未开始 29；已接正式版 0。
+合计 48 项：隔离实现 11（T1～T8、S1、N1、N3）；隔离实现且已复核 1（T10）；隔离实现（部分）5（T9、G1、A1、C1、D1）；待核实 2（B1、B2）；未开始 29；已接正式版 0（M-1 A 的原界面私密标签修复属正式版行为修复，不计入指令接线）。
 
 ## 未闭合缺口
 
@@ -84,8 +84,9 @@
 - **长文受控借用**：已实现（隔离）。L-M1b 按 §9.94 与 2026-10-20 用户确认实现托管、一次性借用与带键摘要，接通 todo.notes／routine.notes／routine.capture；守卫改按目录类型判定，clear 漏口已复现并堵上。只开放普通长文（受保护、required、unknown 仍拒）；默认未装配；托管只听隔离环境私有事件中心，接正式版须转接隐私锁事件。来源：[§9.95](unified-search-commands.md#995-里程碑-l-m1b长文受控借用实现)。
 - **原界面备注私密标签缺口**：已修复（合并批 M-1 检查点 A）。任务、子任务、习惯一侧从文字解析标签时照常保存文字，跳过私密与预设标签并提示；判定与指令侧 L7 共用 `InputTagResolver.protection`，差别只在结果（指令整条拒绝）；手记一侧不变。来源：[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾)。
 - **正文与受保护内容**：手记正文保存 handler 未做；受保护内容查阅与敏感执行／转交不开放。来源：[§9.85](unified-search-commands.md#985-里程碑-n-m2标签导航普通手记全文与普通图片查阅)、[§9.88](unified-search-commands.md#988-里程碑-c-m3长文上限与超限引导)。
-- **有备注对象资格**：回收与转换拒绝带备注对象，是否放开待产品决定；放开还缺的五项见 §9.93（①长文契约与②“适配自读备注取带键摘要”的证明机制已由 L-M1b 建成，仅用于新三条；11 个已有适配器迁移与字段类门槛放宽留后续批次）。来源：[§9.93](unified-search-commands.md#993-里程碑-t-m6任务类修改收尾)、[§9.90](unified-search-commands.md#990-里程碑-t-m4复制与回收)、[§9.91](unified-search-commands.md#991-里程碑-t-m5待办与重复事项互转)。
+- **有备注对象资格**：M-1 B 已把 11 处适配改为自读备注取带键摘要，并放宽字段类、回收、转换、复制；仍未放宽：todo.title／subtask.title（`//` 派生备注另行定界）、完成、建标签、子任务与习惯字段类、删子任务时的父待办。来源：[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾)。
 - **已知历史问题**：T-M1 标题多目标面板消失的根因未判定；DetailSubtaskCompletionTests 两项 Expected Failure 保留；原生日期格按钮在统一搜索测试宿主里找不到标识（`nativeBooleanWeekdaysDayAndTime` 等）；`SubtaskModelTests.addTagSkipsDiaryPresetNames` 在未改动 HEAD 上同样失败。来源：[§9.73](unified-search-commands.md#973-里程碑-t-m1普通任务修改与受限依赖执行)、[§9.89](unified-search-commands.md#989-补复核-g-1at-系列)。
+- **工作台操作面板鼠标点击**：M-1 原生用例中，合成鼠标事件到不了工作台窗口操作面板里的按钮（缓冲版本与输入焦点均不变，原因未判定），改用 AXPress 验证同一按钮；真实鼠标点击未验证。来源：[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾)。
 - **G-1a 低级整改清单 9 条**：待单独批准的修复批次。来源：[§9.89](unified-search-commands.md#989-补复核-g-1at-系列)。
 - **目录未决项**：tag.merge（合并进私密标签）、tag.cleanup（预置标签范围）、backup.export（无锁可达性）、diary.tags（保护转换）等仍未定稿；习惯 skip 语义已由 R-M3 的 D1 处理。来源：[§9.6](unified-search-commands.md#96-阶段-1a-目录决策与证据)、[§9.78](unified-search-commands.md#978-里程碑-r-m3兼容跳过习惯启停与指定执行日状态)。
 - **现状差距**：备份未配置锁的可达性、剪贴板历史读取失败返回空、重置吞掉删除错误。来源：[§9.4](unified-search-commands.md#94-未决问题与单独授权边界)。
