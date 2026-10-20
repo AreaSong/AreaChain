@@ -18,7 +18,9 @@ import Testing
 
     @Test func unresolvedOrUnavailableCatalogEntriesAreNeverAssembled() throws {
         let f = try SimpleCommandFixture()
-        for (id, availability) in [("tag.merge", "unresolved"), ("tag.cleanup", "unresolved"), ("tag.unlinkGlobal", "unavailable")] {
+        // tag.merge 已在合并批 M-2 按用户决策 3（涉及私密标签整条拒绝）解决，不再是未决项。
+        #expect(CommandCatalog.standard.command(id: .init(rawValue: "tag.merge"))?.availability == .declared)
+        for (id, availability) in [("tag.cleanup", "unresolved"), ("tag.unlinkGlobal", "unavailable")] {
             let descriptor = try #require(CommandCatalog.standard.command(id: .init(rawValue: id)))
             #expect(descriptor.category == .modification && descriptor.interactions.isEmpty)
             #expect(String(describing: descriptor.availability).hasPrefix(availability))

@@ -82,7 +82,7 @@ struct UnifiedSearchTrashConfirmationDetails: View {
 
 /// 两个使用者共用的焦点与撤销路由；控制器在确认期间只放行 Esc（见 UnifiedSearchController 的键盘分派）。
 extension UnifiedSearchController {
-    var hasIndependentConfirmation: Bool { trashConfirmation != nil || convertConfirmation != nil }
+    var hasIndependentConfirmation: Bool { trashConfirmation != nil || convertConfirmation != nil || simpleConfirmation != nil }
 
     /// 面板出现后才递增：取消按钮须先存在，焦点修订的变化才会把默认焦点放到取消上。
     func focusIndependentConfirmationCancel() {
@@ -93,5 +93,6 @@ extension UnifiedSearchController {
     func cancelIndependentConfirmation() {
         if trashConfirmation != nil { cancelTrashConfirmation() }
         if convertConfirmation != nil { cancelConvertConfirmation() }
+        if simpleConfirmation != nil { cancelSimpleConfirmation() }
     }
 }

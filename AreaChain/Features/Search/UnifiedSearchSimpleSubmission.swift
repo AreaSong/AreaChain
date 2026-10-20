@@ -47,9 +47,20 @@ struct UnifiedSearchSimpleSubmission: View {
             UnifiedSearchPlanButton(title: "unified.simple.prepare", identifier: "unified.simple.prepare") {
                 controller.prepareSimple(source)
             }.disabled(controller.settingSubmitting || !controller.hasSimple)
-            UnifiedSearchPlanButton(title: "unified.simple.save", identifier: "unified.simple.save", variant: .prominent) {
-                controller.requestOperationSubmit(source)
-            }.disabled(controller.settingSubmitting || !accepted)
+            if let confirmation = controller.simpleConfirmation {
+                UnifiedSearchIndependentConfirmationPanel(controller: controller, identifier: "unified.simple",
+                    title: LocalizedStringKey(preview?.copy.preview ?? "unified.simple.pending"),
+                    confirmTitle: "unified.simple.confirm.action",
+                    confirm: { controller.confirmSimple(confirmation, source: source) }) {
+                    UnifiedSearchSimpleConfirmationDetails(confirmation: confirmation)
+                }
+            } else {
+                // 需要独立确认的指令先打开共用确认面板；其余接受后直接保存。按钮与 ⌘Return 同一入口。
+                UnifiedSearchPlanButton(title: controller.simpleNeedsConfirmation ? "unified.simple.confirm" : "unified.simple.save",
+                                        identifier: "unified.simple.save", variant: .prominent) {
+                    controller.requestOperationSubmit(source)
+                }.disabled(controller.settingSubmitting || !accepted)
+            }
         }
     }
 

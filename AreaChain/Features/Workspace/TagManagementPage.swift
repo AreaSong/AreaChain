@@ -19,13 +19,13 @@ struct TagManagementPage: View {
     @State private var filter: TagListFilter = .all
     @State private var query = ""
     @State private var searchFocused = false
-    @State private var draftName = ""
+    @State private var localDrafts = WorkspaceTagPageDrafts()
+    @Environment(\.workspaceHostContext) private var hostContext
+    @WorkspaceNavigationContext private var navigation
     @State private var createFocused = false
     @State private var createError: String?
     @State var createAsPrivate = false
     @State var selection: Set<UUID> = []
-    @State private var renamingID: UUID?
-    @State private var renameDraft = ""
     @State private var renameError: String?
     @State private var confirmDelete = false
     @State private var confirmCleanup = false
@@ -40,8 +40,21 @@ struct TagManagementPage: View {
     @State var pendingColorTagIDs: Set<UUID> = []
     @State var pageError: String?
 
+    /// 合并批 M-2：显式宿主里新建与改名草稿归宿主（tag.cancel 写同一份）；默认入口仍用页面自己的状态。
+    private var pageDrafts: WorkspaceTagPageDrafts {
+        get { hostContext == nil ? localDrafts : navigation.tagDrafts }
+        nonmutating set { if hostContext == nil { localDrafts = newValue } else { navigation.tagDrafts = newValue } }
+    }
+    private var draftName: String { get { pageDrafts.createName } nonmutating set { pageDrafts.createName = newValue } }
+    private var renamingID: UUID? { get { pageDrafts.renamingID } nonmutating set { pageDrafts.renamingID = newValue } }
+    private var renameDraft: String { get { pageDrafts.renameName } nonmutating set { pageDrafts.renameName = newValue } }
+
     var body: some View {
         tagPage
+            // 宿主取消了草稿（tag.cancel）时，一并收起页面自己的提示，同 cancelCreate／cancelRename。
+            .onChange(of: pageDrafts.isEmpty) { _, empty in
+                if empty, hostContext != nil { createError = nil; renameError = nil; createAsPrivate = false }
+            }
             .confirmationDialog("tags.delete.confirm.title", isPresented: $confirmDelete, titleVisibility: .visible) {
             Button("tags.batch.delete", role: .destructive, action: commitBatchDelete)
             Button("alert.cancel", role: .cancel) {}
@@ -175,20 +188,14 @@ struct TagManagementPage: View {
     }
 
     private var usage: [UUID: TagUsageRecord] {
-        TagUsage.records(TagUsage.subjects(todos: todos, routines: routines, diaries: diaries))
+        TagListQuery.usage(todos: todos, routines: routines, diaries: diaries)
     }
 
     var displayed: [TagItem] {
-        let base = showsDeleted ? deletedTags : TagUsage.filtered(tags, filter: filter, usage: usage)
-        let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !needle.isEmpty else { return base }
-        return base.filter { $0.name.localizedStandardContains(needle) }
+        TagListQuery.displayed(tags, filter: filter, showsDeleted: showsDeleted, query: query, usage: usage)
     }
 
-    private var deletedTags: [TagItem] {
-        tags.filter { $0.deletedAt != nil }
-            .sorted { ($0.deletedAt ?? .distantPast) > ($1.deletedAt ?? .distantPast) }
-    }
+    private var deletedTags: [TagItem] { TagListQuery.deleted(tags) }
 
     var deletedSelection: [TagItem] {
         deletedTags.filter { selection.contains($0.id) }
@@ -243,7 +250,7 @@ struct TagManagementPage: View {
                     .foregroundStyle(DaybookPalette.text.secondary)
             } field: {
                 DaybookTextField(
-                    text: $draftName,
+                    text: Binding(get: { draftName }, set: { draftName = $0 }),
                     placeholder: L10n.string("tags.create.name", locale: locale),
                     fontSize: 13,
                     focus: $createFocused,
@@ -335,7 +342,7 @@ struct TagManagementPage: View {
                 .accessibilityLabel(colorAccessibilityLabel(for: tag))
             if renamingID == tag.id {
                 DaybookTextField(
-                    text: $renameDraft,
+                    text: Binding(get: { renameDraft }, set: { renameDraft = $0 }),
                     placeholder: tag.name,
                     fontSize: 13,
                     focus: .constant(true),

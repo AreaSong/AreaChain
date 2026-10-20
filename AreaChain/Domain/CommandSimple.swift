@@ -10,6 +10,8 @@ enum CommandSimpleShape: Equatable {
     case fixed(CommandObjectType)
     /// 单个对象，类型可以是集合里的任一种（如同一天混排的待办或习惯）。
     case singleAny(Set<CommandObjectType>)
+    /// 合并批 M-2：显式固定集合，对象可以是集合里的任意几种（如从待办、习惯、子任务、手记上解绑标签）。
+    case fixedAny(Set<CommandObjectType>)
 
     func allows(_ targets: CommandDraftTargets) -> Bool {
         switch self {
@@ -20,6 +22,8 @@ enum CommandSimpleShape: Equatable {
             return [.single, .selected].contains(targets.selection) && !targets.objects.isEmpty && Self.plain(targets.objects, [type])
         case .singleAny(let types):
             return targets.selection == .single && targets.objects.count == 1 && Self.plain(targets.objects, types)
+        case .fixedAny(let types):
+            return [.single, .selected].contains(targets.selection) && !targets.objects.isEmpty && Self.plain(targets.objects, types)
         }
     }
 
@@ -33,6 +37,8 @@ enum CommandSimpleIssue: Error, Equatable {
     case invalidTarget(CommandSimpleProblem)
     /// 上次保存结果未知且尚未核对：同一对象不能再准备，避免未核实就重试。
     case verificationRequired
+    /// 合并批 M-2：需要独立确认的指令还没有在共用确认面板里确认（或确认已被撤销）。
+    case confirmationRequired
 }
 
 enum CommandSimpleProblem: String, Equatable {
@@ -42,6 +48,8 @@ enum CommandSimpleProblem: String, Equatable {
     case protectedSource, outOfRange, parentMismatch, notListed, crossesGroup, tooLong, nothingToMove, notToday, tooMany, untitled
     /// L-M1b：正文解析出私密或预置标签（L7）；托管正文因锁定、遮罩或隐私变化不再借出（须返回编辑后重新预览）。
     case protectedTag, locked
+    /// 合并批 M-2：要恢复的对象不在回收站里。
+    case notTrashed
 }
 
 /// 预览里的一个值：本地化键、原文（用户内容）或带一个整数参数的本地化键（如“N 字”）。
@@ -203,6 +211,8 @@ struct CommandSimpleVerification: Equatable {
     var preparing: [String: CommandHostOwnership] = [:]
     /// 协调者持有的带键摘要（L6）；随协调者存在，只在内存。
     let textDigest = CommandTextDigest()
+    /// 合并批 M-2：需要独立确认的简单指令沿共享的确认登记（见 CommandSimpleConfirmation.swift）。
+    let confirmations = CommandIndependentConfirmationLedger<CommandSimpleConfirmationSummary>()
     private(set) var acceptances: [UUID: CommandSimpleAcceptance] = [:]
     private var invoked: Set<UUID> = []
     private var notApplied: Set<UUID> = []
@@ -237,6 +247,7 @@ struct CommandSimpleVerification: Equatable {
         if let old = acceptances[preview.draft.draftID] {
             guard !wasInvoked(old.id) else { throw CommandSimpleIssue.alreadyInvoked }
             if old.preview == preview { return old }
+            confirmations.revoke(acceptanceID: old.id)
         }
         let accepted = CommandSimpleAcceptance(id: UUID(), preview: preview)
         acceptances[preview.draft.draftID] = accepted

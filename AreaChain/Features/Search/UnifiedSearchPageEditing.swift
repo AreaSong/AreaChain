@@ -122,6 +122,11 @@ extension UnifiedSearchController {
         case .transfer(let transfer):
             let name = L10n.string(.init(stringLiteral: "command." + transfer.command.rawValue + ".name"), locale: locale)
             return [L10n.format("unified.board.transfer", locale: locale, name)]
+        case .tagDraft(let kept): return [L10n.string(kept ? "unified.page.tagDraft.on" : "unified.page.tagDraft.off", locale: locale)]
+        case .results(let names, let total):
+            let more = total - names.count
+            return [L10n.format("unified.page.results", locale: locale, total)] + names
+                + (more > 0 ? [L10n.format("unified.page.results.more", locale: locale, more)] : [])
         }
     }
 

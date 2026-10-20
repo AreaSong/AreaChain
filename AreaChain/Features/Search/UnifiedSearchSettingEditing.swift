@@ -88,6 +88,7 @@ extension UnifiedSearchController {
         if showsClipboardCapture { submitClipboardCapture(source); return }
         if showsTrash { requestTrashConfirmation(source); return }
         if showsConvert { requestConvertConfirmation(source); return }
+        if showsSimple, simpleNeedsConfirmation { requestSimpleConfirmation(source); return }
         if showsSimple { submitSimple(source); return }
         if showsSubtask { submitSubtask(source); return }
         if showsRoutine { submitRoutine(source); return }

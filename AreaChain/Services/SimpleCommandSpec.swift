@@ -23,6 +23,10 @@ import SwiftData
     func afterSave(_ call: CommandSimpleCall, in context: ModelContext) -> Bool
     /// 新建型指令回执里“打开新对象”的位置；沿原导航解析，不另建打开规则。默认没有。
     func openTarget(_ creation: CommandObjectReference) -> ContentQueryBrowseOpen?
+    /// 合并批 M-2：为真时只接目录要求独立确认的指令，提交前必须在共用确认面板里确认一次。默认不需要。
+    var confirms: Bool { get }
+    /// 合并批 M-2：目录要求认证（只为受保护内容）的指令，规格对受保护目标一律拒绝时才可装配；指令里从不认证。
+    var refusesProtectedContent: Bool { get }
 }
 
 extension SimpleCommandSpec {
@@ -36,6 +40,8 @@ extension SimpleCommandSpec {
     func apply(_ call: CommandSimpleCall, in context: ModelContext) throws { try apply(call.input, in: context) }
     func afterSave(_ call: CommandSimpleCall, in context: ModelContext) -> Bool { false }
     func openTarget(_ creation: CommandObjectReference) -> ContentQueryBrowseOpen? { nil }
+    var confirms: Bool { false }
+    var refusesProtectedContent: Bool { false }
 }
 
 /// 只实现带调用参数版本的规格（新建身份、冻结目标）用这三个默认值满足协议；单独调用会被拒绝。

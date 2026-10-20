@@ -18,7 +18,13 @@ import Testing
     private(set) var adapter: SimpleCommandAdapter!
     var context: ModelContext { io.context }
 
-    init(capability: SimpleCommandAdapter.Capability = .open, isPreset: @escaping TagCommandSpecs.Preset = { $0.isDiaryPreset }) throws {
+    /// 合并批 M-2：organize 为真时另装配标签整理规格；手记仓储用隔离保险箱与临时附件目录，来源证明可逐对象改为受保护。
+    var protected: Set<UUID> = []
+    let vault = PrivacyVault(store: MemoryVaultConfigurationStore(), systemKeys: FakeSystemVaultKeys())
+    let root = FileManager.default.temporaryDirectory.appending(path: "areachain-m2-tags-\(UUID().uuidString)", directoryHint: .isDirectory)
+
+    init(capability: SimpleCommandAdapter.Capability = .open, isPreset: @escaping TagCommandSpecs.Preset = { $0.isDiaryPreset },
+         organize: Bool = false) throws {
         io = try TaskCaptureFixture()
         handoff = try HandoffFixture()
         tags = [TagItem(name: "工作 · Work", sortOrder: 0), TagItem(name: "家庭 · Home", sortOrder: 1, colorToken: "ink"),
@@ -37,10 +43,25 @@ import Testing
             transaction: boundary, validateBeforeTransaction: { [unowned self] in try beforeTransaction?() },
             registerLocalModification: { [unowned self] in io.trace.append("fact") },
             refresh: { [unowned self] includeCalendar in refreshes.append(includeCalendar) }))
+        self.isPreset = isPreset
         adapter = .init(coordinator: handoff.coordinator, environment: environment,
-                        specs: TagCommandSpecs.all(repository: { [unowned self] in repository($0) }, isPreset: isPreset),
+                        specs: TagCommandSpecs.all(repository: { [unowned self] in repository($0) }, isPreset: isPreset)
+                            + (organize ? TagOrganizeSpecs.all(organizing) : []),
                         capability: capability)
     }
+
+    private var isPreset: TagCommandSpecs.Preset = { $0.isDiaryPreset }
+    var organizing: TagOrganizeDependencies {
+        .init(catalog: { [unowned self] in repository($0) },
+              diaries: { [unowned self] in
+                  SwiftDataDiaryRepository(context: $0, vault: vault, attachmentStore: AttachmentStore(root: root), attachmentRoot: root)
+              },
+              source: { [unowned self] target in
+                  .init(revision: UUID(), protection: protected.contains(target.id) ? .required : .ordinary)
+              }, isPreset: isPreset)
+    }
+
+    deinit { try? FileManager.default.removeItem(at: root) }
 
     func target(_ tag: TagItem) -> CommandObjectReference { .init(type: .tag, id: tag.id) }
     func name(_ value: String) -> CommandArgument { .init(parameter: .name, operation: .assign, value: .shortText(value)) }
@@ -49,8 +70,9 @@ import Testing
     }
 
     func queue(_ command: String, targets: [CommandObjectReference] = [], arguments: [CommandArgument] = []) throws {
+        let single = ["tag.rename", "tag.order", "tag.trash", "tag.restore"].contains(command)
         let selection: CommandDraftTargets = targets.isEmpty ? .none
-            : .init(targets.count == 1 && ["tag.rename", "tag.order"].contains(command) ? .single : .selected, objects: targets)
+            : .init(targets.count == 1 && single ? .single : .selected, objects: targets)
         try handoff.queue(.init(id: UUID(), hostID: HandoffFixture.source, commandID: .init(rawValue: command),
             targets: selection, arguments: arguments))
     }

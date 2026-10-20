@@ -18,12 +18,15 @@ enum CommandPageAction: Equatable {
     case calendarMode(CommandBoardSpan)
     case ganttSelect(CommandGanttSelectMode, [CommandObjectReference])
     case transfer(CommandBoardTransfer)
+    /// 合并批 M-2 B：取消标签页的新建或改名草稿；标签只读查询。
+    case tagCancel
+    case tagQuery(CommandTagQuery)
 
     static let commands: Set<String> = Set([
         "todo.cancelTitle", "subtask.cancelTitle", "todo.cancelCompletion", "tasks.select", "selection.all", "selection.clear",
         "tasks.sections", "tasks.filter", "tasks.clearFilter", "tasks.kind", "tasks.status", "routine.streak",
-        "calendar.mode", "gantt.select",
-    ]).union(CommandBoardTransfer.commands)
+        "calendar.mode", "gantt.select", "tag.cancel",
+    ]).union(CommandBoardTransfer.commands).union(CommandTagQuery.commands)
 
     init(_ draft: CommandDraft) throws {
         let objects = draft.targets.objects
@@ -79,6 +82,8 @@ enum CommandPageAction: Equatable {
             }
             self = .ganttSelect(mode, objects)
         case let id where CommandBoardTransfer.commands.contains(id): self = .transfer(try CommandBoardTransfer(draft))
+        case "tag.cancel": self = .tagCancel
+        case let id where CommandTagQuery.commands.contains(id): self = .tagQuery(try CommandTagQuery(id, arguments: arguments))
         default: throw CommandPageIssue.unsupported
         }
     }

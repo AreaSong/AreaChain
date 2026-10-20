@@ -38,6 +38,8 @@ extension UnifiedSearchController {
     }
 
     func revokeSimple() {
+        if let confirmation = simpleConfirmation { coordinator.simples.cancel(confirmation) }
+        simpleConfirmation = nil
         simplePreview = nil
         simpleAcceptance = nil
     }
@@ -153,6 +155,7 @@ enum UnifiedSearchSimpleCopy {
         case .invalidTarget(let problem): return "unified.simple.problem." + problem.rawValue
         case .stale, .alreadyInvoked: return "unified.simple.stale"
         case .verificationRequired: return "unified.simple.verificationRequired"
+        case .confirmationRequired: return "unified.simple.confirmationRequired"
         }
     }
 

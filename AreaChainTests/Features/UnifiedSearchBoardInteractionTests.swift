@@ -10,58 +10,8 @@ import Testing
 @Suite(.serialized) @MainActor struct UnifiedSearchBoardInteractionTests {
     private func fixture(_ page: WorkspaceTab) throws -> UnifiedSearchNavigationFixture {
         let f = try UnifiedSearchNavigationFixture()
-        f.navigation.selectedTab = page
-        f.navigation.boardSelection.inspectingDayKey = f.day
-        let pages = WorkspacePageCommands(router: f.router, host: f.hostContext, context: f.context)
-        pages.today = { [day = f.day] in day }
-        f.controller.pageCommands = pages
+        _ = f.assemblePages(page)
         return f
-    }
-
-    private func begin(_ f: UnifiedSearchNavigationFixture, _ command: String) async throws {
-        try #require(f.controller.beginOperation(.init(rawValue: command), source: f.controller.buffer) != nil)
-        try await f.settle()
-    }
-
-    private func edit(_ f: UnifiedSearchNavigationFixture, _ argument: CommandArgument) async throws {
-        let stamp = try #require(f.controller.operations?.active?.stamp)
-        try #require(f.controller.sendOperation(.edit(stamp, argument), source: f.controller.buffer) != nil)
-        try await f.settle()
-    }
-
-    private func target(_ f: UnifiedSearchNavigationFixture, _ objects: [CommandObjectReference]) async throws {
-        let stamp = try #require(f.controller.operations?.active?.stamp)
-        try #require(f.controller.sendOperation(.selectTargets(stamp, .init(objects.count == 1 ? .single : .selected, objects: objects),
-                                                               baseline: nil), source: f.controller.buffer) != nil)
-        try await f.settle()
-    }
-
-    /// 同 M-1：先把控件滚进操作面板，再用 AXPress 触发同一入口（工作台窗口里合成鼠标到不了操作面板，见 §9.96）。
-    private func press(_ f: UnifiedSearchNavigationFixture, _ id: String) async throws {
-        let window = try #require(f.window)
-        let node = try #require(SettingsButtonTestSupport.elements(window.contentView).first {
-            SettingsButtonTestSupport.value($0, "accessibilityIdentifier") as? String == id
-        }, "缺少 \(id)")
-        let boundary = try #require(SettingsButtonTestSupport.elements(window.contentView)
-            .compactMap { $0 as? UnifiedSearchOperationBoundary }.first)
-        let scroll = try #require(SettingsButtonTestSupport.elements(window.contentView).compactMap { $0 as? NSScrollView }
-            .first { $0.convert($0.bounds, to: nil) == boundary.convert(boundary.bounds, to: nil) })
-        let document = try #require(scroll.documentView)
-        let rect = try SettingsButtonTestSupport.frame(node, in: window)
-        document.scrollToVisible(document.convert(rect.insetBy(dx: 0, dy: -60), from: nil))
-        scroll.reflectScrolledClipView(scroll.contentView)
-        try await f.settle()
-        _ = node.perform(NSSelectorFromString("accessibilityPerformPress"))
-        try await f.settle()
-        await f.controller.navigationTask?.value
-        try await f.settle()
-    }
-
-    private func exists(_ f: UnifiedSearchNavigationFixture, _ id: String) throws -> Bool {
-        let window = try #require(f.window)
-        return SettingsButtonTestSupport.elements(window.contentView).contains {
-            SettingsButtonTestSupport.value($0, "accessibilityIdentifier") as? String == id
-        }
     }
 
     private static func choice(_ id: CommandParameterID, _ value: String) -> CommandArgument {
@@ -100,13 +50,13 @@ import Testing
         let f = try fixture(.calendar)
         defer { f.stop() }
         try await f.start(style: style)
-        try await begin(f, "calendar.mode")
-        try await edit(f, Self.choice(.mode, "week"))
-        try await press(f, "unified.page.prepare")
-        try await press(f, "unified.page.apply")
+        try await f.begin("calendar.mode")
+        try await f.edit(Self.choice(.mode, "week"))
+        try await f.press("unified.page.prepare")
+        try await f.press("unified.page.apply")
         #expect(f.navigation.boardPages.calendarSpan == .week && f.saves == 0)
         try await f.go("/go/calendar")
-        #expect(try exists(f, "calendar.week.strip"))
+        #expect(try f.exists("calendar.week.strip"))
         try await f.snapshot("m2-calendar-week-\(style)")
     }
 
@@ -118,11 +68,11 @@ import Testing
         try await f.go("/gantt/current-month")
         #expect(f.navigation.boardPages.ganttMonth == f.day && f.navigation.boardPages.ganttOrder.contains(f.todo.id))
         try await f.back()
-        try await begin(f, "gantt.select")
-        try await target(f, [.init(type: .todo, id: f.todo.id)])
-        try await edit(f, Self.choice(.mode, "single"))
-        try await press(f, "unified.page.prepare")
-        try await press(f, "unified.page.apply")
+        try await f.begin("gantt.select")
+        try await f.target([.init(type: .todo, id: f.todo.id)])
+        try await f.edit(Self.choice(.mode, "single"))
+        try await f.press("unified.page.prepare")
+        try await f.press("unified.page.apply")
         #expect(f.navigation.selectedTab == .gantt && f.navigation.boardPages.ganttSelection.ids == [f.todo.id])
         #expect(f.controller.navigationMessage == "unified.page.selected" && f.saves == 0)
         try await f.snapshot("m2-gantt-selected")
@@ -146,12 +96,12 @@ import Testing
         let f = try fixture(.quadrant)
         defer { f.stop() }
         try await f.start(style: style)
-        try await begin(f, "quadrant.complete")
-        try await target(f, [.init(type: .todo, id: f.todo.id)])
-        try await press(f, "unified.page.prepare")
+        try await f.begin("quadrant.complete")
+        try await f.target([.init(type: .todo, id: f.todo.id)])
+        try await f.press("unified.page.prepare")
         #expect(f.controller.pageFailure == nil && f.controller.currentPagePreview != nil)
         try await f.snapshot("m2-quadrant-transfer-\(style)")
-        try await press(f, "unified.page.apply")
+        try await f.press("unified.page.apply")
         #expect(f.controller.pageFailure == nil)
         let active = try #require(f.controller.operations?.active)
         #expect(active.commandID.rawValue == "todo.completion" && active.targets.objects == [.init(type: .todo, id: f.todo.id)])

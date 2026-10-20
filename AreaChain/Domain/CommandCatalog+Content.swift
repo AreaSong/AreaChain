@@ -60,7 +60,8 @@ extension CommandCatalogBuilder {
                 .scope(.trash),
             entry("tag.merge", "/tags/merge", .modification, "G2:merge",
                   [p(.destination, .object([.tag]))])
-                .targets([.tag], batch: .explicitMultiple).unresolved("privateTagMerge"),
+                // 合并批 M-2：按用户决策 3 解决——只合并普通标签，来源或目标里有私密标签整条拒绝（去原标签页做）。
+                .targets([.tag], batch: .explicitMultiple).ordinary(),
             entry("tag.unlinkObject", "/tags/unlink-object", .modification, "G2:unlinkObject",
                   [p(.tags, .tags)])
                 .targets([.todo, .routine, .subtask, .diary], batch: .explicitMultiple).ordinary(),
@@ -68,8 +69,9 @@ extension CommandCatalogBuilder {
                 .targets([.tag]).unavailable("globalUnlink"),
             entry("tag.trash", "/tags/trash", .modification, "G2:trash")
                 .targets([.tag]).ordinary().requiring([.independentConfirmation]),
-            entry("tag.restore", "/tags/restore", .systemAction, "G2:restore")
-                .targets([.tag]).requiring([.independentConfirmation]),
+            // 合并批 M-2：恢复是数据修改（撤回软删），与回收一样入普通计划（仍只单项执行、须独立确认）。
+            entry("tag.restore", "/tags/restore", .modification, "G2:restore")
+                .targets([.tag]).ordinary().requiring([.independentConfirmation]),
             entry("tag.delete", "/tags/delete", .systemAction, "G2:delete")
                 .targets([.tag]).risk([.permanentDeletion]),
             entry("tag.cleanup", "/tags/cleanup", .modification, "G2:cleanup")

@@ -2,7 +2,8 @@ import Foundation
 import SwiftData
 
 /// X-1 简单修改指令的唯一适配器：流程固定为 prepare → accept → submit，可选只读核对未知结果。
-/// 能力默认关闭；只接普通、无确认、无认证的指令。需要独立确认或认证的指令不能借此绕过，必须另行接入。
+/// 能力默认关闭；只接普通指令。需要独立确认的只接声明了 `confirms` 的规格（合并批 M-2），提交前必须经共用确认面板
+/// 确认，且只能单项执行；指令里从不认证——目录要求认证的，规格须对受保护目标一律拒绝（`refusesProtectedContent`）。
 @MainActor final class SimpleCommandAdapter {
     enum Capability { case closed, open }
     let coordinator: CommandHandoffCoordinator
@@ -22,12 +23,27 @@ import SwiftData
     }
 
     func supports(_ command: CommandID) -> Bool {
-        guard capability == .open, environment != nil, specs[command.rawValue] != nil,
-              let descriptor = CommandCatalog.standard.command(id: command) else { return false }
-        // 目录未决或不可用的指令即使提供了规格也不装配；只接可入普通队列的修改。
-        return descriptor.category == .modification && descriptor.interactions.isEmpty
-            && descriptor.availability == .declared && descriptor.queue == .eligibleAfterWiring
+        guard capability == .open, environment != nil, let spec = specs[command.rawValue],
+              let descriptor = CommandCatalog.standard.command(id: command), descriptor.availability == .declared else { return false }
+        // 目录未决或不可用的指令即使提供了规格也不装配；只接可入普通计划的修改。需要确认的只接“独立确认、无破坏性风险”的；
+        // 目录要求的认证只为受保护内容，规格须对受保护目标一律拒绝（指令里从不认证）。
+        guard descriptor.category == .modification, descriptor.queue == .eligibleAfterWiring else { return false }
+        guard spec.confirms else { return descriptor.interactions.isEmpty }
+        let allowed: Set<CommandInteractionRequirement> = spec.refusesProtectedContent
+            ? [.independentConfirmation, .authentication] : [.independentConfirmation]
+        return descriptor.interactions.contains(.independentConfirmation) && descriptor.interactions.isSubset(of: allowed)
+            && descriptor.hazards.isEmpty
     }
+
+    /// 合并批 M-2：为当前接受签发独立确认；确认前重新核对预览。
+    func confirm(_ accepted: CommandSimpleAcceptance, expecting lease: CommandHostLease,
+                 displaySession: ContentQueryReadSession? = nil) throws -> CommandSimpleConfirmation {
+        guard try spec(accepted.preview.command).confirms else { throw CommandSimpleIssue.unsupportedPlan }
+        try validatePreview(accepted.preview, expecting: lease, displaySession: displaySession)
+        return try coordinator.simples.confirm(accepted)
+    }
+
+    func needsConfirmation(_ command: CommandID) -> Bool { specs[command.rawValue]?.confirms == true && supports(command) }
 
     func spec(_ command: CommandID) throws -> any SimpleCommandSpec {
         guard supports(command), let spec = specs[command.rawValue] else { throw CommandSimpleIssue.unassembled }
@@ -95,6 +111,7 @@ import SwiftData
         try validatePreview(accepted.preview, expecting: lease, displaySession: displaySession)
         guard coordinator.simples.acceptances[accepted.preview.draft.draftID] == accepted,
               !coordinator.simples.wasInvoked(accepted.id) else { throw CommandSimpleIssue.stale }
+        if try spec(accepted.preview.command).confirms { _ = try coordinator.simples.confirmation(for: accepted) }
         if try spec(accepted.preview.command) is any SimpleLongTextCommandSpec {
             try longTextEscrow().seal(accepted, runID: UUID(), expecting: lease)
         } else {

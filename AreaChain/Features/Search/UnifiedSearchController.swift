@@ -71,6 +71,8 @@ final class UnifiedSearchController {
     var simpleAcceptance: CommandSimpleAcceptance?
     var simpleFailure: String?
     var simpleVerification: CommandSimpleVerification?
+    /// 合并批 M-2：需要独立确认的简单指令在共用确认面板里的当前确认。
+    var simpleConfirmation: CommandSimpleConfirmation?
     var taskCopyPreview: CommandTaskCopyPreview?
     var taskCopyResult: CommandTaskCopyResult?
     var taskCopyFailure: String?

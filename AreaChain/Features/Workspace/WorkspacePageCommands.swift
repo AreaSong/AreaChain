@@ -75,7 +75,9 @@ import SwiftData
             if let routine { navigation.allItemsQuery.routineStatus = routine }
         case .calendarMode(let span):
             applyCalendarMode(span)
-        case .streak, .select, .selectAll, .ganttSelect, .transfer:
+        case .tagCancel:
+            applyContent(action)
+        case .streak, .select, .selectAll, .ganttSelect, .transfer, .tagQuery:
             break
         }
         // 取消类执行后已无可读的草稿／驻留，回执用预期状态；其余重读页面状态，证明确实写到了页面那一份。
@@ -119,6 +121,7 @@ import SwiftData
         let allowed: [WorkspaceTab]
         switch action {
         case .calendarMode, .ganttSelect, .transfer: return try boardPage(for: action)
+        case .tagCancel, .tagQuery: return try contentPage(for: action)
         case .cancelTitle, .cancelCompletion, .streak: return nil
         case .filter, .clearFilter: allowed = [.today, .pending, .allItems]
         case .kind, .status: allowed = [.allItems]
@@ -152,6 +155,7 @@ import SwiftData
         case .calendarMode, .ganttSelect, .transfer:
             guard let snapshot = boardSnapshot(action) else { throw CommandPageIssue.stale }
             return snapshot
+        case .tagCancel, .tagQuery: return try contentSnapshot(action)
         }
     }
 
@@ -163,6 +167,7 @@ import SwiftData
         case (.select(let objects), _): return .selection(Set(objects.map(\.id)))
         case (.selectAll, _), (.streak, _): return nil
         case (.calendarMode, _), (.ganttSelect, _), (.transfer, _): return boardExpected(action)
+        case (.tagCancel, _), (.tagQuery, _): return contentExpected(action)
         case (.sections(let section, let expanded), .sections(var sections)):
             if section == .yesterday { sections.yesterday = expanded } else { sections.upcoming = expanded }
             return .sections(sections)
@@ -229,6 +234,9 @@ enum WorkspacePageSnapshot: Equatable {
     /// 合并批 M-2：日历月／周（CalendarSpan 的 rawValue）与看板修改转交的目标指令。
     case calendarSpan(String)
     case transfer(CommandBoardTransfer)
+    /// 合并批 M-2 B～D：标签页草稿是否还在；只读查询的结果（前若干条的原文与总数）。
+    case tagDraft(Bool)
+    case results([String], total: Int)
 }
 
 struct WorkspacePagePreview: Equatable {
