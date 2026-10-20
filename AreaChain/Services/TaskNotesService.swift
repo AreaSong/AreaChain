@@ -27,7 +27,7 @@ import SwiftData
     static func apply(_ notes: String, to todo: TodoItem, repository: any TaskRepositoryProtocol,
                       in context: ModelContext, attachments: Attachments = .init()) throws -> Int? {
         let parsed = NaturalLanguageParser.parseTaskNotes(notes)
-        let merged = try InputTagResolver.merging(parsed.tagNames, into: todo.tagIDs, in: context)
+        let merged = try InputTagResolver.mergingForTask(parsed.tagNames, into: todo.tagIDs, in: context).encoded
         try repository.applyParsedNotes(id: todo.id, update: update(notes, parsed: parsed, tagIDs: merged))
         InputAttachmentResolver.linkIfPresent(in: notes, ownerKind: .todo, ownerID: todo.id, context: context,
                                               store: attachments.store, root: attachments.root)
@@ -38,7 +38,7 @@ import SwiftData
     static func apply(_ notes: String, to routine: DailyRoutine, repository: any RoutineRepositoryProtocol,
                       in context: ModelContext, attachments: Attachments = .init()) throws -> Int? {
         let parsed = NaturalLanguageParser.parseTaskNotes(notes)
-        let merged = try InputTagResolver.merging(parsed.tagNames, into: routine.tagIDs, in: context)
+        let merged = try InputTagResolver.mergingForTask(parsed.tagNames, into: routine.tagIDs, in: context).encoded
         try repository.applyParsedNotes(id: routine.id, update: update(notes, parsed: parsed, tagIDs: merged))
         InputAttachmentResolver.linkIfPresent(in: notes, ownerKind: .routine, ownerID: routine.id, context: context,
                                               store: attachments.store, root: attachments.root)

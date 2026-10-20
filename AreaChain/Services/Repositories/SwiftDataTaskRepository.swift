@@ -285,7 +285,7 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
             throw RepositoryError.invalidArgument("子任务标题不能为空")
         }
         return try ModelChanges.transaction(in: context) {
-            let tagIDs = try InputTagResolver.merging(edit.tagNames, into: "", in: context)
+            let tagIDs = try InputTagResolver.mergingForTask(edit.tagNames, into: "", in: context).encoded
             return try addSubtask(.init(parentID: todoID, title: edit.title, tagIDs: tagIDs))
         }
     }
@@ -346,7 +346,7 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
             throw RepositoryError.invalidArgument("子任务标题不能为空")
         }
         try ModelChanges.transaction(in: context) {
-            let tags = try InputTagResolver.merging(edit.tagNames, into: subtask.tagIDs, in: context)
+            let tags = try InputTagResolver.mergingForTask(edit.tagNames, into: subtask.tagIDs, in: context).encoded
             SubtaskFields.title(subtask, title: edit.title, tagIDs: tags)
         }
     }

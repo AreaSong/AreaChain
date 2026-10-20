@@ -7952,3 +7952,13 @@ L-M1b 必须的反例（合成内存库、fake 系统依赖）：借用签发后
 - 原界面备注私密标签缺口待单独批次；11 个适配器迁移与字段类门槛放宽留后续批次。
 - 进程内 String 不零化；同文件代码仍能复制正文，靠单文件审查与守卫。
 - 人工与平台验收（真人输入法、VoiceOver、最低系统）未做；正常开发描述文件 2026-10-22 到期。
+
+### 9.96 合并批 M-1：任务域收尾
+
+2026-10-20（Asia/Shanghai）。2026-10-20 提速方案的第一个合并批，五个检查点逐个本地提交、不推送；开工前决策均已由用户确认，执行中不再询问。除 A（正式版行为修复）外仍在隔离环境：新指令能力默认关闭，生产代码不新增指令构造点。
+
+#### A 原界面私密标签（用户确认决策 1）
+
+- **唯一规则**：[InputTagResolver](../AreaChain/Services/Repositories/InputTagResolver.swift) 的 `protection`（手记预置名，或按同一匹配落到的私密标签，活的或墓碑）；`resolveForTask`／`mergingForTask` 返回关联的 ID 与被跳过的名字，跳过的不关联、不新建、不恢复；保存成功后经 `ModelChanges.afterPublication` 调 `MutationFeedback.reportSkippedTags` 弹一次说明（`tags.skipped.*`，中英文），失败不提示。指令侧 `TaskDerivedRows.protectedTagNotices` 改为调用同一 `protection`。
+- **调用方**（只限任务、子任务、习惯）：`TaskMutationService.createCaptured`、`editTitle(rawInput:)`、`TaskNotesService.apply` 两个重载、`RoutineCaptureService.apply`、`RoutineMutationService` 的旧标题路径、`DayBoardMutations.addRecurringItem`、`SwiftDataTaskRepository.addSubtask(to:title:)`／`editSubtask`、`ClipboardCapture.apply`。手记（DiaryQuickComposerView、SwiftDataDiaryRepository）与标签管理（SwiftDataCatalogRepository）不变。已关联的私密／预设标签不自动移除。
+- **两侧差异**：指令遇到这些标签整条不可执行（L7）；原界面照常保存文字、跳过标签并提示。三条锁定旧行为的测试（TaskMutationServiceTests、TaskTitleMutationTests、LongTextCommandTests 各一）按本决定改为新期望。

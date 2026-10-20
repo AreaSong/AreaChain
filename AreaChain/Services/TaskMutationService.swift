@@ -77,7 +77,7 @@ enum TaskMutationService {
                 InputAttachmentResolver.linkIfPresent(in: text, ownerKind: .todo, ownerID: todo.id, context: context)
             }
         ) {
-            let ids = try InputTagResolver.merging(parsed.tagNames, into: TagIDList.encode(input.tagIDs), in: context)
+            let ids = try InputTagResolver.mergingForTask(parsed.tagNames, into: TagIDList.encode(input.tagIDs), in: context).encoded
             return CreateTodoParams(
                 title: parsed.cleanTitle, dayKey: input.dayKey, notes: parsed.notes,
                 remindMinutes: parsed.remindMinutes,

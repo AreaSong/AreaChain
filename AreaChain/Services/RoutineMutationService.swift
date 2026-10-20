@@ -85,7 +85,7 @@ import SwiftData
             }
             if let minutes = title.remindMinutes { try repository.setRemind(id: routine.id, minutes: minutes) }
             let tags = try accepted.map { try applyTags($0, in: context) }
-                ?? InputTagResolver.merging(title.tagNames, into: routine.tagIDs, in: context)
+                ?? InputTagResolver.mergingForTask(title.tagNames, into: routine.tagIDs, in: context).encoded
             try repository.replaceTagIDs(id: routine.id, tagIDs: tags)
         case .weekdays(let mask): try repository.setWeekdayMask(id: routine.id, mask: mask)
         case .reminder(let minutes): try repository.setRemind(id: routine.id, minutes: minutes)

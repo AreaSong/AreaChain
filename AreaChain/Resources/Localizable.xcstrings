@@ -36756,6 +36756,40 @@
         }
       }
     },
+    "tags.skipped.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your text was saved. %@ is a private or diary preset tag, so it wasn't linked to this item."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文字已保存。%@ 是私密或预设标签，没有关联到这一项。"
+          }
+        }
+      }
+    },
+    "tags.skipped.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some tags weren't linked"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "部分标签没有关联"
+          }
+        }
+      }
+    },
     "tags.usage.count": {
       "extractionState": "manual",
       "localizations": {

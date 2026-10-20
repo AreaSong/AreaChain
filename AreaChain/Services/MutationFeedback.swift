@@ -6,6 +6,9 @@ import Foundation
 final class MutationFeedback {
     static let shared = MutationFeedback()
     private(set) var failureCount = 0
+    /// 测试观察点：提示不在测试进程里弹出，只计数并记下最近一次的标签名。
+    private(set) var skippedTagNoticeCount = 0
+    private(set) var lastSkippedTags: [String] = []
     private var isPresenting = false
 
     func reportFailure(_ error: Error? = nil) {
@@ -14,23 +17,36 @@ final class MutationFeedback {
         if error is ModelRecoveryError { message = "save.rollback.failure" }
         else if error is AttachmentCleanupError { message = "attachment.cleanup.pending" }
         else { message = "save.failure.message" }
-        present(title: "save.failure.title", message: message)
+        present(title: "save.failure.title") { L10n.string(String.LocalizationValue(stringLiteral: message), locale: $0) }
     }
 
     func reportMemoryFallback() {
-        present(title: "store.fallback.title", message: "store.fallback.message")
+        present(title: "store.fallback.title") { L10n.string("store.fallback.message", locale: $0) }
     }
 
-    private func present(title: String, message: String) {
+    /// 任务侧文字已保存，但其中的私密或预设标签没有关联；由 InputTagResolver 在保存成功后调用。
+    func reportSkippedTags(_ names: [String]) {
+        guard !names.isEmpty else { return }
+        skippedTagNoticeCount += 1
+        lastSkippedTags = names
+        present(title: "tags.skipped.title", style: .informational) { locale in
+            let list = ListFormatter()
+            list.locale = locale
+            let joined = list.string(from: names.map { "#" + $0 }) ?? names.joined(separator: ", ")
+            return L10n.format("tags.skipped.message", locale: locale, joined)
+        }
+    }
+
+    private func present(title: String, style: NSAlert.Style = .warning, message: @escaping (Locale) -> String) {
         guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil,
               !isPresenting else { return }
         isPresenting = true
         DispatchQueue.main.async {
             let locale = AppPreferences.shared.resolvedLocale
             let alert = NSAlert()
-            alert.alertStyle = .warning
+            alert.alertStyle = style
             alert.messageText = L10n.string(String.LocalizationValue(stringLiteral: title), locale: locale)
-            alert.informativeText = L10n.string(String.LocalizationValue(stringLiteral: message), locale: locale)
+            alert.informativeText = message(locale)
             alert.addButton(withTitle: L10n.string("common.close", locale: locale))
             if let window = NSApp.keyWindow, window.attachedSheet == nil {
                 alert.beginSheetModal(for: window) { _ in self.isPresenting = false }

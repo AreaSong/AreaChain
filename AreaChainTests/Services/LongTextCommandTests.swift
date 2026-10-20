@@ -43,14 +43,15 @@ import Testing
         #expect(try f.stored(TagItem.self).count == 3)
     }
 
-    /// 原界面行为本批不改：详情页保存同一正文仍会关联私密标签（缺口另开批次）。
-    @Test func detailPanelSaveIsUnchanged() throws {
+    /// 合并批 M-1 A：同一判定，结果不同——指令整条拒绝（上一用例），详情页照常保存文字、不关联私密标签并提示。
+    @Test func detailPanelSavesTextButSkipsPrivateTag() throws {
         let f = try TaskSimpleFixture(longText: true)
-        let secret = try f.insert(TagItem(name: "私密", sortOrder: 0, isPrivateDiary: true))
+        _ = try f.insert(TagItem(name: "私密", sortOrder: 0, isPrivateDiary: true))
         let todo = try f.insert(TodoItem(title: "界面", dayKey: TaskSimpleFixture.today))
         #expect(TaskNotesService.save("界面保存 #私密", for: todo, in: f.context, repository: SwiftDataTaskRepository(context: f.context),
                                       requestReminderAccess: { _ in }))
-        #expect(TagIDList.parse(todo.tagIDs) == [secret.id])
+        #expect(todo.notes == "界面保存 #私密" && TagIDList.parse(todo.tagIDs).isEmpty)
+        #expect(MutationFeedback.shared.lastSkippedTags == ["私密"])
     }
 
     /// 预置名在任务备注里不被解析成标签（沿 TagSyntax），因此不会关联；规则本身与命令标签一致地拒绝预置名。

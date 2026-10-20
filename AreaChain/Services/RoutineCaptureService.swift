@@ -25,7 +25,7 @@ import SwiftData
                       attachments: TaskNotesService.Attachments = .init()) throws -> (DailyRoutine, Int?) {
         guard let text = trimmed(request.text) else { throw RepositoryError.invalidArgument("习惯标题不能为空") }
         let parsed = NaturalLanguageParser.parseTaskCapture(text)
-        let ids = try InputTagResolver.resolve(parsed.tagNames, in: context)
+        let ids = try InputTagResolver.resolveForTask(parsed.tagNames, in: context).ids
         let routine = try repository.addRoutine(CreateRoutineParams(
             title: parsed.cleanTitle, sortOrder: request.sortOrder, remindMinutes: parsed.remindMinutes,
             tagIDs: ids, isImportant: parsed.isImportant, isUrgent: parsed.isUrgent, notes: parsed.notes,

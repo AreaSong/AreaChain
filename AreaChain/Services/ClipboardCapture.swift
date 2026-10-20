@@ -144,7 +144,7 @@ enum ClipboardCapture {
         let payload = capture.payload
         let todo = TodoItem(id: capture.todoID, title: payload.title, dayKey: capture.dayKey, sourceBundleID: capture.sourceBundleID)
         let names = TagSyntax.names(in: payload.title, includesDiaryTags: false)
-        todo.tagIDs = try InputTagResolver.merging(names, into: "", in: context)
+        todo.tagIDs = try InputTagResolver.mergingForTask(names, into: "", in: context).encoded
         context.insert(todo)
         if payload.attachImage {
             guard let image = capture.image, let data = ImageBytes.png(from: image) else { throw ScreenCaptureFailure.encode }

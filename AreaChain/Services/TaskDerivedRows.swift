@@ -40,18 +40,14 @@ import SwiftData
         }
     }
 
-    /// L7：正文解析出的标签命中手记预置名或已有私密标签（活的或墓碑），整条指令不可执行；与 CommandTaskTagCatalog
-    /// 的命令标签规则一致。逐个标签说明原因；原界面的保存行为不在此改变。
+    /// L7：正文解析出的标签命中手记预置名或已有私密标签（活的或墓碑），整条指令不可执行。判定与原界面共用
+    /// `InputTagResolver.protection`；差别只在结果：指令整条拒绝，原界面照常保存文字、跳过这些标签并提示。
     static func protectedTagNotices(_ names: [String], in context: ModelContext) throws -> [CommandSimpleNotice] {
         try InputTagResolver.preview(names, in: context).compactMap { name, effect in
-            let key = TagSyntax.normalizedName(name)
-            if DiaryMemoTags.presets.contains(where: { TagSyntax.normalizedName($0) == key }) {
-                return .init(key: "unified.simple.notice.presetTag", title: name, blocking: true)
-            }
-            switch effect {
-            case .existing(let tag), .restore(let tag):
-                return tag.isPrivateDiary ? .init(key: "unified.simple.notice.privateTag", title: tag.name, blocking: true) : nil
-            case .create: return nil
+            switch InputTagResolver.protection(name, effect) {
+            case (.preset, let title)?: return .init(key: "unified.simple.notice.presetTag", title: title, blocking: true)
+            case (.privateTag, let title)?: return .init(key: "unified.simple.notice.privateTag", title: title, blocking: true)
+            case nil: return nil
             }
         }
     }

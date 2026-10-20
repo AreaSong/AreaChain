@@ -48,7 +48,7 @@ extension DayBoardMutations {
             || !tagNames.isEmpty || !draft.tagIDs.isEmpty
         guard hasBody else { return false }
         let saved = ModelChanges.perform(in: context) {
-            let parsedIDs = try InputTagResolver.resolve(tagNames, in: context)
+            let parsedIDs = try InputTagResolver.resolveForTask(tagNames, in: context).ids
             var ids = draft.tagIDs
             for id in parsedIDs where !ids.contains(id) {
                 ids.append(id)

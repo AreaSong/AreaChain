@@ -78,7 +78,8 @@ struct TaskTitleMutationTests {
         #expect(fixture.io.authorizations == [1080])
     }
 
-    @Test func oldPrivateTagPolicyStillWorksOnlyOnCompatibilityPath() throws {
+    /// 合并批 M-1 A：旧界面路径也跳过文字里的私密标签；已关联的预设标签不自动移除；指令侧照旧整条拒绝。
+    @Test func compatibilityPathSkipsPrivateTagAndKeepsExistingPreset() throws {
         let fixture = try TaskTitleFixture()
         fixture.live.isPrivateDiary = true
         let preset = TagItem(name: "日记", sortOrder: 2)
@@ -86,7 +87,7 @@ struct TaskTitleMutationTests {
         fixture.todo.tagIDs = TagIDList.encode([preset.id])
         try fixture.io.context.save()
         #expect(fixture.edit("标题 #Work").saved)
-        #expect(TagIDList.parse(fixture.todo.tagIDs) == [preset.id, fixture.live.id])
+        #expect(TagIDList.parse(fixture.todo.tagIDs) == [preset.id])
         try fixture.queue("普通指令")
         #expect(throws: CommandTaskTitlePreviewIssue.self) { try fixture.preview() }
     }
