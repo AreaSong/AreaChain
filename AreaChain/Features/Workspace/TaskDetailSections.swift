@@ -8,12 +8,12 @@ struct TodoBasicsSectionView: View {
 
     var body: some View {
         DrawerSectionGroup(title: "drawer.section.basics") {
-            TaskDetailTitleEditor(draftKey: "todo-\(todo.id)", title: todo.title) { newTitle in
+            TaskDetailTitleEditor(draftKey: EditDrafts.key(todo: todo.id), title: todo.title) { newTitle in
                 DayBoardMutations.editTodo(todo, title: newTitle)
             }
             .id("title-\(todo.id)")
 
-            TaskDetailNotesView(draftKey: "todo-\(todo.id)", notes: todo.notes) { newNotes in
+            TaskDetailNotesView(draftKey: EditDrafts.key(todo: todo.id), notes: todo.notes) { newNotes in
                 DayBoardMutations.updateNotes(for: todo, notes: newNotes)
             }
             .id("notes-\(todo.id)")

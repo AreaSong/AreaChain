@@ -2,23 +2,34 @@ import AppKit
 import SwiftData
 import SwiftUI
 
+/// 今日页“昨天／即将”两个可展开区的状态。工作台由宿主持有（合并批 M-1 C，tasks.sections 与页面共用这一份）；
+/// 其他宿主仍用页面自己的状态。initialized 记录首次出现时的默认展开只做一次。
+struct TasksPageSections: Equatable {
+    var yesterday = false
+    var upcoming = false
+    var initialized = false
+}
+
 /// 待办页面配置选项（<= 5 属性）
 struct TasksPageConfig {
     var yesterdayKey: String? = nil
     var maxScrollHeight: CGFloat? = nil
     var interaction: DayBoardInteraction = DayBoardInteraction()
     var externalFilter: Binding<BoardFilter>? = nil
+    var externalSections: Binding<TasksPageSections>? = nil
 
     init(
         yesterdayKey: String? = nil,
         maxScrollHeight: CGFloat? = nil,
         interaction: DayBoardInteraction = DayBoardInteraction(),
-        externalFilter: Binding<BoardFilter>? = nil
+        externalFilter: Binding<BoardFilter>? = nil,
+        externalSections: Binding<TasksPageSections>? = nil
     ) {
         self.yesterdayKey = yesterdayKey
         self.maxScrollHeight = maxScrollHeight
         self.interaction = interaction
         self.externalFilter = externalFilter
+        self.externalSections = externalSections
     }
 
     var focusedTaskID: Binding<UUID?>? { interaction.focusedTaskID }
@@ -67,16 +78,30 @@ struct TasksPage: View {
         self.config = config
     }
 
-    @State var showYesterday = false
-    @State var showUpcoming = false
+    @State private var localSections = TasksPageSections()
     @State var pendingTrash: PendingTrash?
     @State var boardFilter = BoardFilter()
     @State var taskSelection = TaskSelection()
-    @State private var didInitializeExpandedState = false
     @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     var effectiveFilter: BoardFilter {
         config.externalFilter?.wrappedValue ?? boardFilter
+    }
+
+    /// 有外部绑定时读写宿主那一份，否则用页面自己的状态；两者不会同时生效。
+    var sections: TasksPageSections {
+        get { config.externalSections?.wrappedValue ?? localSections }
+        nonmutating set {
+            if let external = config.externalSections { external.wrappedValue = newValue } else { localSections = newValue }
+        }
+    }
+    var showYesterday: Bool {
+        get { sections.yesterday }
+        nonmutating set { sections.yesterday = newValue }
+    }
+    var showUpcoming: Bool {
+        get { sections.upcoming }
+        nonmutating set { sections.upcoming = newValue }
     }
 
     var body: some View {
@@ -156,11 +181,13 @@ struct TasksPage: View {
             taskSelection.focus(id)
         }
         .onAppear {
-            if !didInitializeExpandedState {
-                didInitializeExpandedState = true
+            if !sections.initialized {
+                var next = sections
+                next.initialized = true
                 if page.totalOpenTodosCount == 0 && !page.yesterdayItems.isEmpty {
-                    showYesterday = true
+                    next.yesterday = true
                 }
+                sections = next
             }
         }
         .onDisappear {

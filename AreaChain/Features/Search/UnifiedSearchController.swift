@@ -74,6 +74,11 @@ final class UnifiedSearchController {
     var taskCopyPreview: CommandTaskCopyPreview?
     var taskCopyResult: CommandTaskCopyResult?
     var taskCopyFailure: String?
+    /// 合并批 M-1 C 页面指令；默认未装配（nil），生产没有构造点。
+    @ObservationIgnored var pageCommands: WorkspacePageCommands?
+    var pagePreview: WorkspacePagePreview?
+    var pageReceipt: WorkspacePageReceipt?
+    var pageFailure: CommandPageIssue?
     var clipboardCapture = UnifiedSearchClipboardCaptureState()
     var chainCreationPreparation: CommandTaskCreatePreparation?
     var chainFailure: String?
@@ -333,6 +338,7 @@ final class UnifiedSearchController {
         revokeBatch()
         revokeTrash()
         revokeTaskCopy()
+        revokePage()
         revokeConvert()
         revokeSimple()
         clipboardCapture = .init()
@@ -368,6 +374,8 @@ final class UnifiedSearchController {
         trashFailure = nil
         trashProblems = []
         revokeTaskCopy()
+        revokePage()
+        pageFailure = nil
         taskCopyFailure = nil
         revokeConvert()
         convertFailure = nil
@@ -449,7 +457,7 @@ final class UnifiedSearchController {
         if change == .privacyInvalidated || !operationVisible { revokeBatch(); revokeTaskField() }
         if change == .privacyInvalidated || !operationVisible { revokeSubtask(); revokeRoutine() }
         if change == .privacyInvalidated || !operationVisible {
-            revokeTrash(); revokeTaskCopy(); revokeConvert(); revokeSimple(); clipboardCapture.revoke()
+            revokeTrash(); revokeTaskCopy(); revokeConvert(); revokeSimple(); revokePage(); clipboardCapture.revoke()
         }
         if change == .privacyInvalidated || !operationVisible { chainCreationPreparation = nil }
         if change != .published, objectSelection != nil || session.isMasked {

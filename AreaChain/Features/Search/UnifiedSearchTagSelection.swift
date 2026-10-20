@@ -21,7 +21,8 @@ extension UnifiedSearchController {
                 || command.id.rawValue == "batch.tags" && batch?.supports(command.id) == true
                 || command.id.rawValue == "todo.tags" && taskField?.supports(command.id) == true
                 || ["routine.tags", "routine.create"].contains(command.id.rawValue) && routesRoutine(command.id)
-                || ["subtask.create", "subtask.tags"].contains(command.id.rawValue) && subtask?.supports(command.id) == true)
+                || ["subtask.create", "subtask.tags"].contains(command.id.rawValue) && subtask?.supports(command.id) == true
+                || command.id.rawValue == "tasks.filter" && routesPage(command.id))
     }
 
     func beginTagSelection(source: UnifiedSearchBuffer) {
@@ -51,6 +52,9 @@ extension UnifiedSearchController {
 
     private func tagCandidates(draft: CommandDraft, source: UnifiedSearchBuffer,
                                evidence: CommandTaskTagCatalog.Evidence? = nil) throws -> CommandTaskTagCandidates {
+        if draft.commandID.rawValue == "tasks.filter", routesPage(draft.commandID), let pageCommands {
+            return try pageCommands.tagCandidates(evidence: evidence)
+        }
         if draft.commandID.rawValue == "batch.tags", let batch {
             return try batch.tagCandidates(draft: draft.stamp, expecting: source.lease,
                                            displaySession: session, evidence: evidence)

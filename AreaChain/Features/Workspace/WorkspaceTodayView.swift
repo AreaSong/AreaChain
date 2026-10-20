@@ -59,7 +59,8 @@ struct WorkspaceTodayView: View {
                     externalFilter: Binding(
                         get: { filterSession.filters.tasks },
                         set: { writeTaskFilter($0) }
-                    )
+                    ),
+                    externalSections: $navigation.todaySections
                 )
             )
         }

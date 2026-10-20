@@ -181,13 +181,13 @@ struct SubtaskRowView: View {
         }
         .zIndex(isEditing ? 20 : 0)
         .onAppear {
-            draftTitle = hostContext == nil ? subtask.title : drafts.titles["subtask-\(subtask.id)"] ?? subtask.title
-            isEditing = hostContext != nil && drafts.titles["subtask-\(subtask.id)"] != nil
+            draftTitle = hostContext == nil ? subtask.title : drafts.titles[EditDrafts.key(subtask: subtask.id)] ?? subtask.title
+            isEditing = hostContext != nil && drafts.titles[EditDrafts.key(subtask: subtask.id)] != nil
         }
         .onChange(of: draftTitle) { _, value in
-            if isEditing, hostContext != nil { drafts.titles["subtask-\(subtask.id)"] = value }
+            if isEditing, hostContext != nil { drafts.titles[EditDrafts.key(subtask: subtask.id)] = value }
         }
-        .onDisappear { if isEditing, hostContext != nil { drafts.titles["subtask-\(subtask.id)"] = draftTitle } }
+        .onDisappear { if isEditing, hostContext != nil { drafts.titles[EditDrafts.key(subtask: subtask.id)] = draftTitle } }
         .onChange(of: subtask.title) { _, val in
             // 回滚或外部刷新不能覆盖仍在编辑的失败草稿。
             if !isEditing { draftTitle = val }
@@ -283,7 +283,7 @@ struct SubtaskRowView: View {
         } else {
             draftTitle = subtask.title
         }
-        drafts.titles.removeValue(forKey: "subtask-\(subtask.id)")
+        drafts.titles.removeValue(forKey: EditDrafts.key(subtask: subtask.id))
         isEditing = false
         editFocused = false
     }
@@ -291,7 +291,7 @@ struct SubtaskRowView: View {
     private func cancelEdit() {
         _ = boardSelection.consumeEscapeCancelsEdits()
         draftTitle = subtask.title
-        drafts.titles.removeValue(forKey: "subtask-\(subtask.id)")
+        drafts.titles.removeValue(forKey: EditDrafts.key(subtask: subtask.id))
         isEditing = false
         editFocused = false
     }

@@ -85,8 +85,10 @@ extension UnifiedSearchController {
         } catch { navigationMessage = navigationFailure(error as? WorkspaceOpenFailure ?? .invalidTarget) }
     }
 
-    private func navigate(_ destination: WorkspaceNavigationDestination, source: UnifiedSearchBuffer,
-                          content: ContentQueryBrowseOpen? = nil, origin: CommandObjectReference? = nil) {
+    /// `then` 在页面实际显示后调用（合并批 M-1 C 的选择类指令据此在页面投影上执行）；被拒或过期不调用。
+    func navigate(_ destination: WorkspaceNavigationDestination, source: UnifiedSearchBuffer,
+                  content: ContentQueryBrowseOpen? = nil, origin: CommandObjectReference? = nil,
+                  then completion: ((WorkspaceNavigationOutcome) -> Void)? = nil) {
         guard validates(source), let router = navigationRouter else { return }
         do { try router.validateHost(); try session.validateDisplayHost(expecting: source.lease) }
         catch { navigationMessage = navigationFailure(error as? WorkspaceOpenFailure ?? .stale); return }
@@ -131,6 +133,7 @@ extension UnifiedSearchController {
             case .displayed:
                 self.navigationMessage = router.contents?.failure.map { "unified.content." + $0.rawValue }
                     ?? "unified.navigation.displayed"
+                completion?(result)
             case .locatedWithoutInspector: self.navigationMessage = "unified.navigation.needsSpace"
             case .rejected(let reason):
                 self.navigationMessage = self.navigationFailure(reason)
@@ -301,7 +304,7 @@ extension UnifiedSearchController {
     private func revokeNavigationAcceptances() {
         multiPlan?.invalidatePresentation()
         revokeRoutine(); revokeSubtask(); revokeBatch(); revokeTaskField(); revokeTaskTitle(); revokeTaskComposition()
-        revokeTrash(); revokeTaskCopy(); revokeConvert(); revokeSimple(); clipboardCapture.revoke()
+        revokeTrash(); revokeTaskCopy(); revokeConvert(); revokeSimple(); revokePage(); clipboardCapture.revoke()
         chainCreationPreparation = nil
     }
 

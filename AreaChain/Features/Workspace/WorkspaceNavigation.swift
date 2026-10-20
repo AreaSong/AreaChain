@@ -157,6 +157,8 @@ final class WorkspaceNavigation {
     var pendingFilter = BoardFilter()
     /// 全部事项筛选。保留和清空的时机与待处理相同。
     var allItemsQuery = ItemsListingQuery(todayKey: DayClock.shared.todayKey)
+    /// 今日页“昨天／即将”展开状态；离开今日页即复位，与原页面状态的生命周期一致。
+    var todaySections = TasksPageSections()
     /// 总览连击或重复事项数要求今日页打开重复事项面板。页面消费后清掉。
     var wantsRecurringList = false
     /// 总览活动点进回收站时选中的行。离开回收站后清空。
@@ -413,6 +415,8 @@ final class WorkspaceNavigation {
             pendingFilter = BoardFilter()
         case .allItems:
             allItemsQuery = ItemsListingQuery(todayKey: DayClock.shared.todayKey)
+        case .today:
+            todaySections = TasksPageSections()
         case .trash:
             focusedTrashID = nil
         default:
