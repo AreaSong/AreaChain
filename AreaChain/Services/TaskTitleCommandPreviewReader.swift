@@ -9,12 +9,15 @@ final class TaskTitleCommandPreviewReader {
     private let sourceProtection: @MainActor () throws -> CommandProtectionRequirement
     private let environmentID = UUID()
     private let sourceRevision: @MainActor () throws -> UUID?
+    private let sourceNotes: @MainActor () -> CommandNotesProof?
     private let catalogReader: TaskCreateTagCatalogReader
 
     init(context: ModelContext, sourceProtection: @escaping @MainActor () throws -> CommandProtectionRequirement,
          repository: (any TaskRepositoryProtocol)? = nil,
-         sourceRevision: @escaping @MainActor () throws -> UUID? = { nil }) {
+         sourceRevision: @escaping @MainActor () throws -> UUID? = { nil },
+         sourceNotes: @escaping @MainActor () -> CommandNotesProof? = { nil }) {
         self.sourceRevision = sourceRevision
+        self.sourceNotes = sourceNotes
         self.context = context
         self.sourceProtection = sourceProtection
         self.repository = repository ?? SwiftDataTaskRepository(context: context)
@@ -129,7 +132,7 @@ final class TaskTitleCommandPreviewReader {
         guard todo.id == input.target.id, todo.modelContext === context else { throw CommandTaskTitlePreviewIssue.invalidTarget }
         guard todo.deletedAt == nil else { throw CommandTaskTitlePreviewIssue.deletedTarget }
         let tags = try CommandTaskTitleTags.merge(rawIDs: todo.tagIDs, title: input.title, catalog: catalog)
-        // 资格先于标题投影；不显式读取 notes，也不调用包含正文的完整 snapshot。
+        // 资格先于标题投影；备注只经来源闭包的带键摘要证明（L8），这里不读取 notes，也不调用包含正文的完整 snapshot。
         var values: [TaskTitleField: TaskTitleFieldValue] = [.title: .text(todo.title), .tagIDs: .text(todo.tagIDs)]
         if input.edit.priority != nil {
             values[.isImportant] = .flag(todo.isImportant)
@@ -137,7 +140,8 @@ final class TaskTitleCommandPreviewReader {
         }
         if input.edit.remindMinutes != nil { values[.remindMinutes] = .minutes(todo.remindMinutes) }
         let source = CommandTaskTitleSource(environmentID: environmentID, contextID: ObjectIdentifier(context),
-                                            storageID: ObjectIdentifier(context.container), protection: protection, revision: revision)
+                                            storageID: ObjectIdentifier(context.container), protection: protection, revision: revision,
+                                            notes: sourceNotes())
         return .init(todo: todo, source: source,
                      impact: .init(target: input.target, edit: input.edit, originalValues: values, tags: tags),
                      followUp: .init(dayKey: todo.dayKey, isDone: todo.isDone, calendarEventID: todo.calendarEventID))

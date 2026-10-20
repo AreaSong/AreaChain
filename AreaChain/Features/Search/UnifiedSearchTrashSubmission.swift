@@ -94,6 +94,10 @@ struct UnifiedSearchTrashImpact: View {
         VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
             Text(verbatim: L10n.format("unified.trash.count", locale: locale, counts.targets, counts.subtasks, counts.attachments))
                 .font(DaybookType.body.weight(.semibold)).accessibilityIdentifier("unified.trash.count")
+            if counts.notes > 0 {
+                Text(verbatim: L10n.format("unified.trash.notes", locale: locale, counts.notes)).font(DaybookType.caption)
+                    .fixedSize(horizontal: false, vertical: true).accessibilityIdentifier("unified.trash.notes")
+            }
             if counts.exceedsLimit { Text("unified.trash.writeLimit").font(DaybookType.caption) }
             if impacts.count > 3 {
                 ScrollView { rows }.frame(height: 160).modifier(DaybookScrollTargetModifier())

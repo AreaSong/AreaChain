@@ -7,6 +7,7 @@ import Foundation
     init(coordinator: CommandHandoffCoordinator, environment: BatchCommandEnvironment? = nil) {
         self.coordinator = coordinator
         self.environment = environment
+        environment?.notesKey = coordinator.simples.textDigest
     }
     func supports(_ command: CommandID) -> Bool {
         environment != nil && (CommandBatchEdit.basicCommands.contains(command.rawValue)

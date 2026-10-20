@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// 只接受显式内存库与私有事件；来源分别证明定义和本次输入，绝不读取 notes 猜资格。
+/// 只接受显式内存库与私有事件；来源分别证明定义和本次输入。备注由适配自读、只取带键摘要（L8）。
 @MainActor final class RoutineCommandEnvironment {
     let id = UUID()
     let context: ModelContext
@@ -14,6 +14,8 @@ import SwiftData
     let creation: Creation?
     var beforePublication: () throws -> Void = {}
     var afterPublication: () throws -> Void = {}
+    /// 协调者的带键摘要（L6）；由装配它的适配器设置，用于自读备注的无备注证明（L8）。未设置即无证明、不可执行。
+    var notesKey: CommandTextDigest?
     lazy var reader = RoutineCommandReader(environment: self)
     lazy var creationReader = RoutineCreateCommandReader(environment: self)
 
@@ -49,10 +51,15 @@ import SwiftData
         guard evidence.target.protection == .ordinary, evidence.input.protection == .ordinary else {
             throw RoutineCommandIssue.protectedContent
         }
-        guard evidence.target.notes == .absent else { throw TaskTitleCommandIssue.notesNotSupported }
+        // L8：自读习惯备注取带键摘要；习惯字段类指令本批不放宽，有备注仍拒绝。摘要随资格参与后续相等比较。
+        let target = CommandNotesProofReader.proving(evidence.target, of: request.target, in: context, key: notesKey)
+        guard target.notes != .unproven else { throw RoutineCommandIssue.sourceUnavailable }
+        guard CommandNotesProofReader.admits(request.command.rawValue, target.notes) else {
+            throw TaskTitleCommandIssue.notesNotSupported
+        }
         try validateClean()
         return .init(environmentID: id, contextID: ObjectIdentifier(context), storageID: ObjectIdentifier(context.container),
-                     eligibility: evidence)
+                     eligibility: .init(target: target, input: evidence.input))
     }
 
     func publish(_ effects: TaskTitleCommandEnvironment.Effects, target: CommandObjectReference) throws {

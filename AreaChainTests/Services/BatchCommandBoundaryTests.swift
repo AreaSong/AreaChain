@@ -16,8 +16,9 @@ import Testing
         case 4: f.sourceRevision = UUID()
         case 5: f.tags[1].name = "Changed catalog"
         case 6: f.tags[1].deletedAt = .now
-        case 7: f.sourceOverride[f.taskTargets[1]] = .init(revision: UUID(), protection: .ordinary, notes: .present)
-        default: f.sourceOverride[f.taskTargets[1]] = .init(revision: UUID(), protection: .required, notes: .absent)
+        // 合并批 M-1 B：预览后备注被改，带键摘要不再相等。
+        case 7: f.todos[1].notes = "预览后写入的备注"
+        default: f.sourceOverride[f.taskTargets[1]] = .init(revision: UUID(), protection: .required)
         }
         try f.context.save()
         let before = f.todos[0].snapshot

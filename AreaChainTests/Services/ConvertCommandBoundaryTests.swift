@@ -4,25 +4,25 @@ import Testing
 @testable import AreaChain
 
 @Suite(.serialized) @MainActor struct ConvertCommandBoundaryTests {
-    @Test func notesAndProtectedSourcesAreRejectedWithReason() throws {
+    /// 合并批 M-1 B：带备注可以转换，损失清单标出“备注搬到新对象”；受保护来源与无法证明仍拒绝。
+    @Test func notesAreListedAndProtectedSourcesAreRejectedWithReason() throws {
         let f = try ConvertCommandFixture()
         f.todo.notes = "有备注"
         try f.context.save()
         try f.queue("todo.toRoutine", target: f.todoTarget)
-        #expect(throws: CommandConvertIssue.invalidTarget(.notes)) { try f.preview() }
-        f.todo.notes = ""
-        try f.context.save()
-        f.base.sourceOverride[f.todoTarget] = .init(revision: UUID(), protection: .ordinary, notes: .present)
-        #expect(throws: CommandConvertIssue.invalidTarget(.notes)) { try f.preview() }
-        f.base.sourceOverride[f.todoTarget] = .init(revision: UUID(), protection: .required, notes: .absent)
+        guard case .todoToRoutine(let losses) = try f.preview().impact.losses else { Issue.record("losses"); return }
+        #expect(losses.notes)
+        f.base.sourceOverride[f.todoTarget] = .init(revision: UUID(), protection: .required)
         #expect(throws: CommandConvertIssue.invalidTarget(.protectedContent)) { try f.preview() }
         f.base.sourceOverride = [:]
-        #expect(try f.preview().impact.target == f.todoTarget)
+        f.base.environment.notesKey = nil
+        #expect(throws: CommandConvertIssue.invalidTarget(.source)) { try f.preview() }
         let g = try ConvertCommandFixture()
         g.routine.notes = "习惯备注"
         try g.context.save()
         try g.queue("routine.toTodo", target: g.routineTarget)
-        #expect(throws: CommandConvertIssue.invalidTarget(.notes)) { try g.preview() }
+        guard case .routineToTodo(let back) = try g.preview().impact.losses else { Issue.record("losses"); return }
+        #expect(back.notes)
         #expect(f.count("save") == 0 && g.count("save") == 0)
     }
 

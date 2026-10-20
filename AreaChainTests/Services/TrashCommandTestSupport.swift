@@ -78,7 +78,7 @@ import Testing
     let handoff: HandoffFixture
     let todo: TodoItem
     let writer = FakeClipboardWriter()
-    var source = CommandTaskTitleEligibility(revision: UUID(), protection: .ordinary, notes: .present)
+    var source = CommandTaskTitleEligibility(revision: UUID(), protection: .ordinary)
     var sourceRead: (() throws -> Void)?
     private(set) var adapter: TaskCopyCommandAdapter!
 
@@ -88,7 +88,6 @@ import Testing
         todo = TodoItem(title: title, dayKey: "2026-10-18", notes: notes)
         io.context.insert(todo)
         try io.context.save()
-        if TaskCopyContent.notes(notes) == nil { source = .init(revision: source.revision, protection: .ordinary, notes: .absent) }
         let environment = try TaskCopyCommandEnvironment(context: io.context, source: { [unowned self] _ in
             try sourceRead?()
             return source

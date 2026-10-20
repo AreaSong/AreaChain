@@ -12,6 +12,7 @@ import SwiftData
          capability: Capability = .basic) {
         self.coordinator = coordinator
         self.environment = environment
+        environment?.notesKey = coordinator.simples.textDigest
         self.capability = capability
     }
     func supports(_ command: CommandID) -> Bool {

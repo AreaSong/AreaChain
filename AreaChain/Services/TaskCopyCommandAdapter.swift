@@ -7,6 +7,8 @@ import SwiftData
     let context: ModelContext
     let source: (CommandObjectReference) throws -> CommandTaskTitleEligibility
     let writer: any ClipboardTextWriting
+    /// 协调者的带键摘要（L6）；由装配它的适配器设置，用于自读备注的无备注证明（L8）。未设置即无证明、不可执行。
+    var notesKey: CommandTextDigest?
 
     init(context: ModelContext, source: @escaping (CommandObjectReference) throws -> CommandTaskTitleEligibility,
          writer: any ClipboardTextWriting) throws {
@@ -33,6 +35,7 @@ import SwiftData
     init(coordinator: CommandHandoffCoordinator, environment: TaskCopyCommandEnvironment? = nil) {
         self.coordinator = coordinator
         self.environment = environment
+        environment?.notesKey = coordinator.simples.textDigest
     }
 
     func supports(_ command: CommandID) -> Bool { environment != nil && command.rawValue == CommandTaskCopyPreview.command }
@@ -85,9 +88,9 @@ import SwiftData
         let todo = try live(target, environment: environment)
         let source = try qualification(target, environment: environment)
         let notes = TaskCopyContent.notes(todo.notes)
-        // 来源声明须与真实备注一致；未知时不读备注猜测资格。
-        guard source.notes != .unknown else { throw TaskCopyCommandIssue.notesUnverified }
-        guard (source.notes == .present) == (notes != nil) else { throw TaskCopyCommandIssue.changed }
+        // L8：备注证明由适配自读取带键摘要（与 TaskCopyContent 同口径），不再核对来源所有者的声明；没有密钥即无证明。
+        guard source.notes != .unproven else { throw TaskCopyCommandIssue.notesUnverified }
+        guard CommandNotesProofReader.admits(draft.commandID.rawValue, source.notes) else { throw TaskCopyCommandIssue.changed }
         guard let text = TaskCopyContent.text(section, title: todo.title, notes: notes) else {
             throw TaskCopyCommandIssue.notesEmpty
         }
@@ -113,6 +116,6 @@ import SwiftData
         let source: CommandTaskTitleEligibility
         do { source = try environment.source(target) } catch { throw TaskCopyCommandIssue.sourceUnavailable }
         guard source.protection == .ordinary else { throw TaskCopyCommandIssue.protectedContent }
-        return source
+        return CommandNotesProofReader.proving(source, of: target, in: environment.context, key: environment.notesKey)
     }
 }

@@ -39384,6 +39384,23 @@
         }
       }
     },
+    "unified.convert.loss.notes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes move to the new item unchanged."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "备注会原样搬到新对象。"
+          }
+        }
+      }
+    },
     "unified.field.accept": {
       "localizations": {
         "en": {
@@ -50213,6 +50230,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "无法安全核验目标；原结果仍为未知。"
+          }
+        }
+      }
+    },
+    "unified.trash.notes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of these items have notes; the notes go to Trash with them."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "其中 %lld 项带备注，备注会随对象一起进回收站。"
           }
         }
       }

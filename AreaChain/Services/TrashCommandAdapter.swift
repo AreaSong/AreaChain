@@ -13,6 +13,7 @@ import Foundation
          capability: Capability = .closed) {
         self.coordinator = coordinator
         self.environment = environment
+        environment?.notesKey = coordinator.simples.textDigest
         self.capability = capability
         reader = environment.map(TrashCommandReader.init)
     }

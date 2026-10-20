@@ -6,7 +6,13 @@ import Testing
 @MainActor final class TaskTitleCommandIO {
     let base: TaskTitleFixture
     var revision = UUID()
-    var notes = CommandTaskTitleEligibility.Notes.absent
+    /// 合并批 M-1 B：切换真实备注状态（见 SyntheticNotesSwitch）；不再由来源所有者声明。
+    let notesSwitch = SyntheticNotesSwitch()
+    var notes: SyntheticNotes {
+        get { notesSwitch.state }
+        set { notesSwitch.state = newValue }
+    }
+    weak var builtEnvironment: TaskTitleCommandEnvironment?
     var sourceRead: (() throws -> Void)?
     var beforeTransaction: (() throws -> Void)?
     var afterRegistration: (() throws -> Void)?
@@ -26,6 +32,12 @@ import Testing
     }
 
     func environment() throws -> TaskTitleCommandEnvironment {
+        let built = try makeEnvironment()
+        builtEnvironment = built
+        return built
+    }
+
+    private func makeEnvironment() throws -> TaskTitleCommandEnvironment {
         var dependencies = base.dependencies
         dependencies.transaction.save = { [self] context in
             base.io.trace.append("save")
@@ -41,7 +53,9 @@ import Testing
                          source: { [self] target in
             #expect(target == base.todo.id)
             try sourceRead?()
-            return .init(revision: revision, protection: base.protection, notes: notes)
+            try notesSwitch.apply(to: .init(type: .todo, id: target), in: base.io.context, environment: builtEnvironment,
+                                  key: \.notesKey)
+            return .init(revision: revision, protection: base.protection)
         }, refresh: { [self] context, includeCalendar in
             observedContexts.append(context)
             base.io.events.requestRefresh(includeCalendar)

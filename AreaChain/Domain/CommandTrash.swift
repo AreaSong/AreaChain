@@ -42,6 +42,8 @@ struct CommandTrashCounts: Equatable {
     let targets: Int
     let subtasks: Int
     let attachments: Int
+    /// 带备注的目标数（合并批 M-1 B）：备注随对象一起进回收站，只用于确认说明，不另计写入实体。
+    var notes = 0
     var total: Int { targets + subtasks + attachments }
     var limit: Int { CommandBatchWriteSet.Counts.entityLimit }
     var exceedsLimit: Bool { total > limit }
@@ -54,7 +56,8 @@ extension CommandTrashCounts {
             subtasks += impact.subtasks.count
             attachments += impact.attachments.count
         }
-        self.init(targets: impacts.count, subtasks: subtasks, attachments: attachments)
+        self.init(targets: impacts.count, subtasks: subtasks, attachments: attachments,
+                  notes: impacts.filter { $0.source.notes.isPresent }.count)
     }
 }
 

@@ -51,6 +51,11 @@ struct UnifiedSearchTrashConfirmationDetails: View {
                 .font(DaybookType.caption).fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("unified.trash.confirmCascade")
         }
+        if confirmation.counts.notes > 0 {
+            Text(verbatim: L10n.format("unified.trash.notes", locale: locale, confirmation.counts.notes))
+                .font(DaybookType.caption).fixedSize(horizontal: false, vertical: true)
+                .accessibilityIdentifier("unified.trash.confirmNotes")
+        }
         if confirmation.targets.contains(where: { $0.type == .subtask }) {
             Text("unified.trash.confirm.subtaskNote").font(DaybookType.caption).fixedSize(horizontal: false, vertical: true)
         }

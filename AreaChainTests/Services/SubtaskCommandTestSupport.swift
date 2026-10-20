@@ -16,7 +16,13 @@ import Testing
     var parentProtection = CommandProtectionRequirement.ordinary
     var childProtection: CommandProtectionRequirement? = .ordinary
     var inputProtection = CommandProtectionRequirement.ordinary
-    var notes = CommandTaskTitleEligibility.Notes.absent
+    /// 合并批 M-1 B：切换真实备注状态（见 SyntheticNotesSwitch）；不再由来源所有者声明。
+    let notesSwitch = SyntheticNotesSwitch()
+    var notes: SyntheticNotes {
+        get { notesSwitch.state }
+        set { notesSwitch.state = newValue }
+    }
+    weak var builtEnvironment: SubtaskCommandEnvironment?
     var sourceRead: (() throws -> Void)?
     var beforeTransaction: (() throws -> Void)?
     var afterRegistration: (() throws -> Void)?
@@ -45,6 +51,7 @@ import Testing
         context.insert(tombstone)
         try context.save()
         environment = try makeEnvironment()
+        builtEnvironment = environment
         adapter = .init(coordinator: handoff.coordinator, environment: environment)
     }
 
@@ -69,7 +76,8 @@ import Testing
         return try .init(context: context, center: base.io.center, dependencies: dependencies, source: { [unowned self] request in
             sourceTargets.append(request.target)
             try sourceRead?()
-            return .init(parent: .init(revision: parentRevision, protection: parentProtection, notes: notes),
+            try notesSwitch.apply(to: request.parent, in: context, environment: builtEnvironment, key: \.notesKey)
+            return .init(parent: .init(revision: parentRevision, protection: parentProtection),
                 subtask: request.target == nil ? nil : childProtection.map { .init(revision: childRevision, protection: $0) },
                 input: .init(revision: inputRevision, protection: inputProtection))
         }, refresh: { [unowned self] _, includeCalendar in

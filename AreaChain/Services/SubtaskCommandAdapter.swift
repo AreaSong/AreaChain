@@ -8,6 +8,7 @@ import SwiftData
     init(coordinator: CommandHandoffCoordinator, environment: SubtaskCommandEnvironment? = nil) {
         self.coordinator = coordinator
         self.environment = environment
+        environment?.notesKey = coordinator.simples.textDigest
     }
     func supports(_ command: CommandID) -> Bool { environment != nil && CommandSubtaskEdit.commands.contains(command.rawValue) }
     func assembled() throws -> SubtaskCommandEnvironment {

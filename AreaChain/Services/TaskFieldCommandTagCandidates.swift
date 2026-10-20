@@ -19,7 +19,11 @@ extension TaskFieldCommandAdapter {
                 throw TaskFieldCommandIssue.unsupportedPlan
             }
             let source = try environment.source(target.id)
-            guard source.protection == .ordinary, source.notes == .absent else { throw TaskTitleCommandIssue.notesNotSupported }
+            let notes = CommandNotesProofReader.proof(of: .init(type: .todo, id: target.id), in: environment.context,
+                                                      key: environment.notesKey)
+            guard source.protection == .ordinary, CommandNotesProofReader.admits(draft.commandID.rawValue, notes) else {
+                throw TaskTitleCommandIssue.notesNotSupported
+            }
             let reader = environment.fieldReader.catalogReader
             let catalog = try evidence.map(reader.validate) ?? reader.current()
             let rows = try SwiftDataTaskRepository(context: environment.context).fetchTodos(withID: target.id)

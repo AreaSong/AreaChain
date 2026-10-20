@@ -37,29 +37,31 @@ import SwiftData
         let targets = item.draft.targets
         let target = targets.objects[0]
         try environment.validateClean()
-        let source = try qualification(target)
+        let source = try qualification(target, command: item.draft.commandID)
         let impact = edit == .todoToRoutine ? try todoImpact(target, source: source) : try routineImpact(target, source: source)
         // 来源回调可能重入；整次采样后再核对一次来源资格。
-        guard try qualification(target) == source else { throw CommandConvertIssue.stale }
+        guard try qualification(target, command: item.draft.commandID) == source else { throw CommandConvertIssue.stale }
         try environment.validateClean()
         return CommandConvertPreview(lease: lease, plan: plan, item: item.stamp, draft: item.draft.stamp, targets: targets,
             edit: edit, environmentID: environment.id, contextID: ObjectIdentifier(environment.context),
             storageID: ObjectIdentifier(environment.context.container), impact: impact)
     }
 
-    /// 沿 B-M1／T-M4 的“普通无备注”门槛：来源 ordinary、声明无备注，且真实备注为空。
-    private func qualification(_ target: CommandObjectReference) throws -> CommandTaskTitleEligibility {
-        let source: CommandTaskTitleEligibility
-        do { source = try environment.source(target) } catch { throw CommandConvertIssue.invalidTarget(.source) }
-        guard source.protection == .ordinary else { throw CommandConvertIssue.invalidTarget(.protectedContent) }
-        guard source.notes == .absent else { throw CommandConvertIssue.invalidTarget(.notes) }
+    /// 来源须 ordinary；备注由适配自读取带键摘要（L8），带备注也可转换（确认面板列出“备注搬到新对象”），
+    /// 摘要随资格冻结，确认前后备注被改即 changed。
+    private func qualification(_ target: CommandObjectReference, command: CommandID) throws -> CommandTaskTitleEligibility {
+        let owned: CommandTaskTitleEligibility
+        do { owned = try environment.source(target) } catch { throw CommandConvertIssue.invalidTarget(.source) }
+        guard owned.protection == .ordinary else { throw CommandConvertIssue.invalidTarget(.protectedContent) }
+        let source = CommandNotesProofReader.proving(owned, of: target, in: environment.context, key: environment.notesKey)
+        guard source.notes != .unproven else { throw CommandConvertIssue.invalidTarget(.source) }
+        guard CommandNotesProofReader.admits(command.rawValue, source.notes) else { throw CommandConvertIssue.invalidTarget(.notes) }
         return source
     }
 
     private func todoImpact(_ target: CommandObjectReference, source: CommandTaskTitleEligibility) throws -> CommandConvertImpact {
         let todo = try live(SwiftDataTaskRepository(context: environment.context).fetchTodos(withID: target.id),
                             deleted: \.deletedAt)
-        guard TaskCopyContent.notes(todo.notes) == nil else { throw CommandConvertIssue.invalidTarget(.notes) }
         let children = ItemConversionService.liveSubtasks(of: todo)
         let family: [SubtaskItem]
         do { family = try TaskFamilyCommandIdentity.children(of: todo, in: environment.context) }
@@ -72,9 +74,9 @@ import SwiftData
         let losses = CommandConvertLosses.FromTodo(dayKey: todo.dayKey,
             weekdayMask: ItemConversionService.weekdayMask(for: todo, calendar: clock.calendar), dueMinutes: todo.dueMinutes,
             wasDone: todo.isDone, subtasks: children.count, doneSubtasks: children.filter(\.isDone).count,
-            attachments: attachments.count)
+            attachments: attachments.count, notes: source.notes.isPresent)
         return .init(target: target, record: todo.persistentModelID, title: todo.title, source: source,
-                     fingerprint: .todo(todo.snapshot), subtasks: Set(children.map(\.persistentModelID)),
+                     fingerprint: .todo(CommandNotesProofReader.redacted(todo.snapshot)), subtasks: Set(children.map(\.persistentModelID)),
                      attachments: attachments, checks: [], losses: .todoToRoutine(losses))
     }
 
@@ -82,14 +84,14 @@ import SwiftData
                                source: CommandTaskTitleEligibility) throws -> CommandConvertImpact {
         let routine = try live(SwiftDataRoutineRepository(context: environment.context).fetchRoutines(withID: target.id),
                                deleted: \.deletedAt)
-        guard TaskCopyContent.notes(routine.notes) == nil else { throw CommandConvertIssue.invalidTarget(.notes) }
         let attachments = try liveAttachments(routine.id, kind: .routine)
         let checks = Set(routine.checks.map(\.persistentModelID))
         let losses = CommandConvertLosses.FromRoutine(today: clock.today(), weekdayMask: routine.resolvedWeekdayMask,
             isEnabled: routine.isEnabled, paused: routine.pausedOnDayKey != nil, checks: checks.count,
-            templates: ItemConversionService.orderedTemplates(of: routine).count, attachments: attachments.count)
+            templates: ItemConversionService.orderedTemplates(of: routine).count, attachments: attachments.count,
+            notes: source.notes.isPresent)
         return .init(target: target, record: routine.persistentModelID, title: routine.title, source: source,
-                     fingerprint: .routine(routine.snapshot), subtasks: [], attachments: attachments, checks: checks,
+                     fingerprint: .routine(CommandNotesProofReader.redacted(routine.snapshot)), subtasks: [], attachments: attachments, checks: checks,
                      losses: .routineToTodo(losses))
     }
 

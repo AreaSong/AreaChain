@@ -105,18 +105,19 @@ import Testing
         try host.snapshot("tm5-changed-rejected")
     }
 
-    @Test(arguments: [0, 3]) func todoWithNotesIsRejectedWithReason(style: Int) async throws {
+    /// 合并批 M-1 B：带备注的待办可以转换；损失清单与独立确认面板都单列“备注原样搬到新对象”。
+    @Test(arguments: [0, 3]) func todoWithNotesListsNotesInLossesAndConfirmation(style: Int) async throws {
         let f = try UnifiedSearchConvertFixture(todoNotes: "合成备注 · synthetic note")
         defer { f.results.stop() }
         let host = try await f.host(style)
         defer { host.close() }
         try await f.choose("/tasks/convert-to-routine", f.service.todoTarget, host: host)
-        try await host.clickCompositionControl("unified.convert.prepare")
-        #expect(f.controller.currentConvertPreview == nil && f.controller.convertFailure == "unified.convert.problem.notes")
-        let text = L10n.string("unified.convert.problem.notes", locale: Locale(identifier: style < 2 ? "en" : "zh-Hans"))
-        #expect(try f.text("unified.convert.issue", host: host) == text)
+        _ = try await f.prepareAndAccept(host, name: "notes-\(style)")
+        let text = L10n.string("unified.convert.loss.notes", locale: Locale(identifier: style < 2 ? "en" : "zh-Hans"))
+        #expect(try f.text("unified.convert.loss.notes", host: host) == text)
+        _ = try await f.openConfirmation(host, chord: style % 2 == 0)
+        #expect(try f.text("unified.convert.loss.notes", host: host) == text)
         #expect(f.service.count("save") == 0)
-        try await host.revealSettingControlInsidePanel("unified.convert.issue")
-        try host.snapshot("tm5-notes-rejected-\(style)")
+        try host.snapshot("m1-convert-notes-\(style)")
     }
 }

@@ -9,6 +9,7 @@ import SwiftData
     init(coordinator: CommandHandoffCoordinator, environment: RoutineCommandEnvironment? = nil) {
         self.coordinator = coordinator
         self.environment = environment
+        environment?.notesKey = coordinator.simples.textDigest
     }
     func supports(_ command: CommandID) -> Bool {
         environment != nil && (CommandRoutineEdit.commands.contains(command.rawValue)

@@ -128,6 +128,7 @@ struct UnifiedSearchConvertLossList: View {
             if value.attachments > 0 {
                 result.append(line("attachments.toRoutine") { L10n.format($0, locale: locale, value.attachments) })
             }
+            if value.notes { result.append(line("notes", plain)) }
             result.append(line("original.todo", plain))
             return result
         case .routineToTodo(let value):
@@ -137,6 +138,7 @@ struct UnifiedSearchConvertLossList: View {
             if value.attachments > 0 {
                 result.append(line("attachments.toTodo") { L10n.format($0, locale: locale, value.attachments) })
             }
+            if value.notes { result.append(line("notes", plain)) }
             result.append(line("original.routine", plain))
             return result
         }

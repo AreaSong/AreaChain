@@ -124,11 +124,13 @@ struct TaskTitleCommandBoundaryTests {
         #expect(fixture.base.io.trace.isEmpty && !fixture.base.io.context.hasChanges)
     }
 
-    @Test(arguments: [CommandTaskTitleEligibility.Notes.present, .unknown])
-    func missingNoNotesProofRejectsBeforeProjection(notes: CommandTaskTitleEligibility.Notes) throws {
+    /// 合并批 M-1 B：todo.title 不放宽——真实备注拒绝为 notesNotSupported，无法证明（无密钥）为 sourceUnavailable。
+    @Test(arguments: [SyntheticNotes.present, .unknown])
+    func missingNoNotesProofRejectsBeforeProjection(notes: SyntheticNotes) throws {
         let fixture = try TaskTitleCommandFixture()
         fixture.io.notes = notes
-        #expect(throws: TaskTitleCommandIssue.notesNotSupported) { try fixture.prepare() }
+        let expected: TaskTitleCommandIssue = notes == .present ? .notesNotSupported : .sourceUnavailable
+        #expect(throws: expected) { try fixture.prepare() }
         #expect(fixture.base.io.trace.isEmpty)
     }
 

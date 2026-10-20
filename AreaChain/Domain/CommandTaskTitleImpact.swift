@@ -13,6 +13,8 @@ struct CommandTaskTitleSource: Equatable {
     let storageID: ObjectIdentifier
     let protection: CommandProtectionRequirement
     var revision: UUID?
+    /// 适配器自读备注的带键摘要证明（L8）；参与相等比较，执行期间备注被改即不相等。
+    var notes: CommandNotesProof?
 }
 
 /// 只给后续提醒/日历处理使用，不参与标题合成或冲突比较；执行时必须重新采样。

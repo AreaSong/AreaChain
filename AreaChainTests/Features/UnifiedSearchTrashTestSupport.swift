@@ -26,9 +26,8 @@ import Testing
         batch.facts.metadata = .init(tagNames: Dictionary(uniqueKeysWithValues: service.base.tags.map { ($0.id, $0.name) }),
                                      privateTagIDs: [])
         let base = service.base
-        let copy = try TaskCopyCommandEnvironment(context: service.context, source: { target in
-            let notes = base.todos.first { $0.id == target.id }.flatMap { TaskCopyContent.notes($0.notes) }
-            return .init(revision: base.sourceRevision, protection: .ordinary, notes: notes == nil ? .absent : .present)
+        let copy = try TaskCopyCommandEnvironment(context: service.context, source: { _ in
+            .init(revision: base.sourceRevision, protection: .ordinary)
         }, writer: writer)
         results = try .init(batch, pageSize: 20, privacyCenter: privacy, trashEnvironment: service.base.environment,
                             trashCapability: .softTrash, taskCopyEnvironment: copy)

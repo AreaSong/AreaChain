@@ -46,10 +46,10 @@ import SwiftData
         let targets = item.draft.targets
         let lookup = CommandTaskTagLookup(catalog)
         try validateSelectedTags(edit, lookup: lookup)
-        let sources = try qualifications(targets.objects)
+        let sources = try qualifications(targets.objects, command: item.draft.commandID)
         try environment.validateClean()
         // 来源回调可能重入；整次采样结束后统一再核对来源与目录，不按对象反复全表读取。
-        guard try qualifications(targets.objects) == sources else { throw CommandBatchIssue.stale }
+        guard try qualifications(targets.objects, command: item.draft.commandID) == sources else { throw CommandBatchIssue.stale }
         let impacts = try edit.isState ? readStateImpacts(targets.objects, edit: edit, sources: sources, lookup: lookup)
             : readImpacts(targets.objects, edit: edit, sources: sources, lookup: lookup)
         guard try catalogReader.current().evidence() == catalog.evidence() else { throw CommandBatchIssue.catalogChanged }
@@ -61,14 +61,20 @@ import SwiftData
                      writeSet: edit.isState ? try CommandBatchWriteSet(impacts: impacts) : nil)
     }
 
-    private func qualifications(_ targets: [CommandObjectReference]) throws -> [CommandTaskTitleEligibility] {
+    /// L8：每个目标自读备注取带键摘要，随资格进入影响；batch.move／batch.tags 允许带备注，状态类仍要求无备注。
+    /// 执行前复核时资格（含摘要）不相等即该目标 changed。
+    private func qualifications(_ targets: [CommandObjectReference], command: CommandID) throws -> [CommandTaskTitleEligibility] {
         var problems: [CommandBatchTargetProblem] = []
         var sources: [CommandTaskTitleEligibility] = []
         for target in targets {
             do {
-                let source = try environment.source(target)
+                let source = CommandNotesProofReader.proving(try environment.source(target), of: target,
+                                                             in: environment.context, key: environment.notesKey)
                 if source.protection != .ordinary { problems.append(.init(target: target, reason: .protectedContent)) }
-                else if source.notes != .absent { problems.append(.init(target: target, reason: .notes)) }
+                else if source.notes == .unproven { problems.append(.init(target: target, reason: .source)) }
+                else if !CommandNotesProofReader.admits(command.rawValue, source.notes) {
+                    problems.append(.init(target: target, reason: .notes))
+                }
                 sources.append(source)
             } catch { problems.append(.init(target: target, reason: .source)) }
         }

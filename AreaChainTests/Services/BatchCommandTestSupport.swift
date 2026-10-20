@@ -64,7 +64,7 @@ import Testing
         environment = try .init(context: context, center: io.center, dependencies: dependencies,
             source: { [unowned self] target in
                 try sourceRead?()
-                return sourceOverride[target] ?? .init(revision: sourceRevision, protection: .ordinary, notes: .absent)
+                return sourceOverride[target] ?? .init(revision: sourceRevision, protection: .ordinary)
             }, refresh: { [unowned self] target, includeCalendar in
                 refreshTargets.append(target)
                 return .init(notificationRequested: true, calendarRequested: includeCalendar,

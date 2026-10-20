@@ -13,7 +13,13 @@ import Testing
     var inputRevision = UUID()
     var targetProtection = CommandProtectionRequirement.ordinary
     var inputProtection = CommandProtectionRequirement.ordinary
-    var notes = CommandTaskTitleEligibility.Notes.absent
+    /// 合并批 M-1 B：切换真实备注状态（见 SyntheticNotesSwitch）；不再由来源所有者声明。
+    let notesSwitch = SyntheticNotesSwitch()
+    var notes: SyntheticNotes {
+        get { notesSwitch.state }
+        set { notesSwitch.state = newValue }
+    }
+    weak var builtEnvironment: RoutineCommandEnvironment?
     var stateOperations = false
     var today = "2026-10-08"
     var stateHistory: [RoutineScheduleEvidence] = []
@@ -50,6 +56,7 @@ import Testing
         }
         try context.save()
         environment = try makeEnvironment()
+        builtEnvironment = environment
         adapter = .init(coordinator: handoff.coordinator, environment: environment)
     }
 
@@ -75,7 +82,8 @@ import Testing
         return try .init(context: context, center: base.io.center, dependencies: dependencies, source: { [unowned self] request in
             sourceTargets.append(request.target)
             try sourceRead?()
-            return .init(target: .init(revision: targetRevision, protection: targetProtection, notes: notes),
+            try notesSwitch.apply(to: request.target, in: context, environment: builtEnvironment, key: \.notesKey)
+            return .init(target: .init(revision: targetRevision, protection: targetProtection),
                          input: .init(revision: inputRevision, protection: inputProtection))
         }, refresh: { [unowned self] _, includeCalendar in
             base.io.events.requestRefresh(includeCalendar)

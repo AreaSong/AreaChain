@@ -35,7 +35,7 @@ import Testing
             source: { [unowned self] request in
                 subtaskSourceRequests.append(request)
                 try subtaskSourceRead?()
-                return .init(parent: .init(revision: sourceRevision, protection: .ordinary, notes: .absent),
+                return .init(parent: .init(revision: sourceRevision, protection: .ordinary),
                     subtask: request.target == nil ? nil : .init(revision: childRevision, protection: .ordinary),
                     input: .init(revision: sourceRevision, protection: .ordinary))
             }, refresh: { _, calendar in

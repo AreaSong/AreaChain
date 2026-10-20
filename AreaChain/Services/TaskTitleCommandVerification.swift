@@ -25,7 +25,11 @@ extension TaskTitleCommandAdapter {
         do {
             let qualification = try environment.source(facts.targetID)
             try displaySession?.validateDisplayHost(expecting: lease)
-            guard qualification.protection == .ordinary, qualification.notes == .absent,
+            let notes = CommandNotesProofReader.proof(of: .init(type: .todo, id: facts.targetID), in: reader,
+                                                      key: environment.notesKey)
+            // 读不到唯一对象时交给下方的 absent／ambiguous 判定；能读到时备注必须仍为空且摘要与预览一致。
+            guard qualification.protection == .ordinary,
+                  notes == .unreadable || (notes.isAbsent && notes == accepted.preview.binding.source.notes),
                   qualification.revision == accepted.preview.binding.source.revision else { return result(.unreadable) }
             try coordinator.validate(lease)
             let rows = try SwiftDataTaskRepository(context: reader).fetchTodos(withID: facts.targetID)

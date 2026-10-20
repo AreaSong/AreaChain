@@ -45,6 +45,25 @@ import Testing
         try host.snapshot("tm4-single-result-\(style)")
     }
 
+    /// 合并批 M-1 B：带备注的对象可以回收；预览与独立确认面板都说明“备注随对象进回收站”。
+    @Test(arguments: [0, 3]) func trashWithNotesExplainsNotesInPreviewAndConfirmation(style: Int) async throws {
+        let f = try UnifiedSearchTrashFixture()
+        defer { f.results.stop() }
+        f.service.parent.notes = "合成备注 · synthetic note"
+        try f.service.context.save()
+        let host = try await f.host(style)
+        defer { host.close() }
+        try await f.command("/tasks/trash", host: host)
+        try await f.select([f.service.todoTarget], host: host)
+        let accepted = try await f.prepareAndAccept(host, name: "notes-\(style)")
+        #expect(accepted.preview.counts.notes == 1)
+        _ = try host.resultNode("unified.trash.notes")
+        _ = try await f.openConfirmation(host, chord: true)
+        _ = try host.resultNode("unified.trash.confirmNotes")
+        #expect(f.service.count("save") == 0)
+        try host.snapshot("m1-trash-notes-\(style)")
+    }
+
     @Test(arguments: [1, 2]) func batchTrashCancelButtonKeepsDraftThenConfirms(style: Int) async throws {
         let f = try UnifiedSearchTrashFixture()
         defer { f.results.stop() }

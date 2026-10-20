@@ -41,6 +41,8 @@ enum CommandConvertLosses: Equatable {
         let subtasks: Int
         let doneSubtasks: Int
         let attachments: Int
+        /// 带备注（合并批 M-1 B）：备注原样搬到新对象，确认面板单列一行。
+        var notes = false
     }
     struct FromRoutine: Equatable {
         /// 新待办落在这一天（执行当天）；跨日后须重新预览。
@@ -51,6 +53,8 @@ enum CommandConvertLosses: Equatable {
         let checks: Int
         let templates: Int
         let attachments: Int
+        /// 带备注（合并批 M-1 B）：备注原样搬到新对象，确认面板单列一行。
+        var notes = false
     }
     case todoToRoutine(FromTodo), routineToTodo(FromRoutine)
 }

@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// 属性命令沿用普通来源证明与目录规则；只采样实际影响字段，不读取正文来猜资格。
+/// 属性命令沿用普通来源证明与目录规则；只采样实际影响字段。备注只读来取带键摘要（L8），不进入预览明文。
 @MainActor final class TaskFieldCommandReader {
     unowned let environment: TaskTitleCommandEnvironment
     private let id = UUID()
@@ -36,7 +36,9 @@ import SwiftData
         guard owns(preview.source) else { throw TaskFieldCommandIssue.stale }
         let source = try source(target: preview.target.id)
         let catalog = try catalogReader.current().evidence()
-        return source.protection == .ordinary && source.notes == .absent && source.revision == preview.source.revision
+        let notes = CommandNotesProofReader.proof(of: .init(type: .todo, id: preview.target.id), in: environment.context,
+                                                  key: environment.notesKey)
+        return source.protection == .ordinary && notes == preview.source.notes && source.revision == preview.source.revision
             && catalog == preview.catalog
     }
 
@@ -78,7 +80,7 @@ import SwiftData
         let target = (resolved?.targets ?? item.draft.targets).objects[0]
         let source = try source(target: target.id)
         guard source.protection == .ordinary else { throw CommandTaskTitlePreviewIssue.protectedContent }
-        guard source.notes == .absent else { throw TaskTitleCommandIssue.notesNotSupported }
+        let notes = try notesProof(target, command: item.draft.commandID)
         guard try catalogReader.current().evidence() == catalog.evidence() else { throw TaskTitleCommandIssue.catalogChanged }
         try environment.validateClean()
         let rows = try SwiftDataTaskRepository(context: environment.context).fetchTodos(withID: target.id)
@@ -103,7 +105,7 @@ import SwiftData
         return .init(todo: todo, target: target, original: original, edit: edit,
                      source: .init(environmentID: id, contextID: ObjectIdentifier(environment.context),
                                    storageID: ObjectIdentifier(environment.context.container), protection: source.protection,
-                                   revision: source.revision), catalog: try catalog.evidence(),
+                                   revision: source.revision, notes: notes), catalog: try catalog.evidence(),
                      completion: try completion(todo, edit: edit, catalog: catalog),
                      tags: try CommandTaskTagMutation.prepare(rawIDs: todo.tagIDs, edit: edit, catalog: catalog))
     }
@@ -116,6 +118,16 @@ import SwiftData
         catch { throw TaskFieldCommandIssue.fieldsChanged }
         return try TaskFamilyCommandIdentity.completion(of: todo, done: done, children: children,
                                                        lookup: CommandTaskTagLookup(catalog))
+    }
+
+    /// L8：自读备注取带键摘要；字段类（move／priority／reminder／tags／due）允许带备注，完成与建标签仍要求无备注。
+    /// 摘要随来源证明进入预览，执行前复核时备注被改即 stale。
+    private func notesProof(_ target: CommandObjectReference, command: CommandID) throws -> CommandNotesProof {
+        let notes = CommandNotesProofReader.proof(of: .init(type: .todo, id: target.id), in: environment.context,
+                                                  key: environment.notesKey)
+        guard notes != .unproven else { throw TaskTitleCommandIssue.sourceUnavailable }
+        guard CommandNotesProofReader.admits(command.rawValue, notes) else { throw TaskTitleCommandIssue.notesNotSupported }
+        return notes
     }
 
     private func source(target: UUID) throws -> CommandTaskTitleEligibility {

@@ -15,6 +15,7 @@ import Foundation
          capability: Capability = .closed, clock: ItemConversionService.Clock, refreshCalendar: @escaping () -> Void) {
         self.coordinator = coordinator
         self.environment = environment
+        environment?.notesKey = coordinator.simples.textDigest
         self.capability = capability
         conversion = .init(clock: clock, refreshCalendar: refreshCalendar)
         reader = environment.map { ConvertCommandReader(environment: $0, clock: clock) }

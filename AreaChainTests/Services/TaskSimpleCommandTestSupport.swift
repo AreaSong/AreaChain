@@ -48,7 +48,7 @@ import Testing
     var dependencies: TaskCommandDependencies {
         .init(tasks: { [unowned self] in tasks($0) },
               source: { [unowned self] target in
-                  .init(revision: UUID(), protection: protected.contains(target.id) ? .required : .ordinary, notes: .unknown)
+                  .init(revision: UUID(), protection: protected.contains(target.id) ? .required : .ordinary)
               },
               attachments: attachments, today: { Self.today },
               requestReminderAccess: { [unowned self] minutes in authorizations.append(minutes) },

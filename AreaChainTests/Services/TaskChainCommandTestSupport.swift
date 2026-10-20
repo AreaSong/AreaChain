@@ -6,7 +6,12 @@ import Testing
 @MainActor final class TaskChainCommandIO {
     let creation: TaskCreateCommandIO
     var revision = UUID()
-    var notes = CommandTaskTitleEligibility.Notes.absent
+    /// 合并批 M-1 B：切换真实备注状态（见 SyntheticNotesSwitch）；不再由来源所有者声明。
+    let notesSwitch = SyntheticNotesSwitch()
+    var notes: SyntheticNotes {
+        get { notesSwitch.state }
+        set { notesSwitch.state = newValue }
+    }
     var titleSaveMode = TaskCreateCommandIO.SaveMode.normal
     var titleBeforeTransaction: (() throws -> Void)?
     var titleSourceRead: (() throws -> Void)?
@@ -33,9 +38,11 @@ import Testing
                 registerLocalModification: { [unowned self] id in creation.capture.registered.append(id) },
                 requestReminderAccessIfNeeded: creation.capture.dependencies.requestReminderAccessIfNeeded,
                 validateBeforeTransaction: { [unowned self] in try titleBeforeTransaction?() }),
-            source: { [unowned self] _ in
+            source: { [unowned self] target in
                 try titleSourceRead?()
-                return .init(revision: revision, protection: .ordinary, notes: notes)
+                try notesSwitch.apply(to: .init(type: .todo, id: target), in: creation.capture.context,
+                                      environment: titleEnvironment, key: \.notesKey)
+                return .init(revision: revision, protection: .ordinary)
             }, refresh: { [unowned self] _, includeCalendar in
                 titleNotifications += 1
                 if includeCalendar { titleCalendars += 1 }

@@ -64,24 +64,19 @@ import Testing
         #expect(f.count("save") == 0)
     }
 
+    /// 合并批 M-1 B：带备注的目标可以回收（计入 counts.notes 供确认面板说明）；受保护来源仍逐个报原因。
     @Test func ineligibleTargetsAreReportedPerTarget() throws {
         let f = try TrashCommandFixture()
         let notes = f.base.todos[1]
         notes.notes = "有备注"
         try f.context.save()
         try f.queue("batch.trash", targets: f.base.mixedTargets)
-        f.base.sourceOverride[f.base.taskTargets[2]] = .init(revision: UUID(), protection: .required, notes: .absent)
+        f.base.sourceOverride[f.base.taskTargets[2]] = .init(revision: UUID(), protection: .required)
         #expect(throws: CommandTrashIssue.invalidTargets([.init(target: f.base.taskTargets[2], reason: .protectedContent)])) {
             try f.preview()
         }
         f.base.sourceOverride = [:]
-        #expect(throws: CommandTrashIssue.invalidTargets([.init(target: f.base.taskTargets[1], reason: .notes)])) {
-            try f.preview()
-        }
-        f.base.sourceOverride[f.base.taskTargets[1]] = .init(revision: UUID(), protection: .ordinary, notes: .present)
-        #expect(throws: CommandTrashIssue.invalidTargets([.init(target: f.base.taskTargets[1], reason: .notes)])) {
-            try f.preview()
-        }
+        #expect(try f.preview().counts.notes == 1)
         #expect(f.count("save") == 0)
     }
 

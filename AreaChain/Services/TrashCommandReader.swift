@@ -33,7 +33,7 @@ import SwiftData
         let edit = try CommandTrashEdit(command: item.draft.commandID)
         let targets = item.draft.targets
         try environment.validateClean()
-        let sources = try qualifications(targets.objects)
+        let sources = try qualifications(targets.objects, command: item.draft.commandID)
         var impacts: [CommandTrashTargetImpact] = []
         var problems: [CommandTrashTargetProblem] = []
         for (target, source) in zip(targets.objects, sources) {
@@ -45,7 +45,7 @@ import SwiftData
         }
         guard problems.isEmpty else { throw CommandTrashIssue.invalidTargets(problems) }
         // 来源回调可能重入；整次采样后统一复核来源与父项资格。
-        guard try qualifications(targets.objects) == sources,
+        guard try qualifications(targets.objects, command: item.draft.commandID) == sources,
               try impacts.map({ try $0.parent.map(parentQualification) }) == impacts.map(\.parentSource) else {
             throw CommandTrashIssue.stale
         }
@@ -57,14 +57,19 @@ import SwiftData
         return preview
     }
 
-    private func qualifications(_ targets: [CommandObjectReference]) throws -> [CommandTaskTitleEligibility] {
+    /// L8：自读备注取带键摘要；todo.trash／routine.trash／batch.trash 允许带备注（确认面板列出去向），摘要随资格冻结。
+    private func qualifications(_ targets: [CommandObjectReference], command: CommandID) throws -> [CommandTaskTitleEligibility] {
         var problems: [CommandTrashTargetProblem] = []
         var sources: [CommandTaskTitleEligibility] = []
         for target in targets {
             do {
-                let source = try environment.source(target)
+                let source = CommandNotesProofReader.proving(try environment.source(target), of: target,
+                                                             in: environment.context, key: environment.notesKey)
                 if source.protection != .ordinary { problems.append(.init(target: target, reason: .protectedContent)) }
-                else if source.notes != .absent { problems.append(.init(target: target, reason: .notes)) }
+                else if source.notes == .unproven { problems.append(.init(target: target, reason: .source)) }
+                else if !CommandNotesProofReader.admits(command.rawValue, source.notes) {
+                    problems.append(.init(target: target, reason: .notes))
+                }
                 sources.append(source)
             } catch { problems.append(.init(target: target, reason: .source)) }
         }
@@ -75,8 +80,10 @@ import SwiftData
     private func parentQualification(_ parent: CommandObjectReference) throws -> CommandTaskTitleEligibility {
         let source: CommandTaskTitleEligibility
         do { source = try environment.source(parent) } catch { throw CommandTrashIssue.stale }
-        guard source.protection == .ordinary, source.notes == .absent else { throw CommandTrashIssue.stale }
-        return source
+        // 删子任务不放宽：父待办仍须无备注（沿原门槛，只把证明换成自读摘要）。
+        let proven = CommandNotesProofReader.proving(source, of: parent, in: environment.context, key: environment.notesKey)
+        guard proven.protection == .ordinary, proven.notes.isAbsent else { throw CommandTrashIssue.stale }
+        return proven
     }
 
     private func impact(_ target: CommandObjectReference, source: CommandTaskTitleEligibility) throws -> CommandTrashTargetImpact {
@@ -87,20 +94,18 @@ import SwiftData
         case .todo:
             let todo = try live(SwiftDataTaskRepository(context: environment.context).fetchTodos(withID: target.id),
                                 deleted: \.deletedAt, target: target)
-            guard TaskCopyContent.notes(todo.notes) == nil else { throw problem(.notes) }
             let children: [SubtaskItem]
             do { children = try TaskFamilyCommandIdentity.children(of: todo, in: environment.context) }
             catch { throw problem(.family) }
             return .init(target: target, record: todo.persistentModelID, title: todo.title, source: source,
-                         parent: nil, parentSource: nil, parentTitle: nil, fingerprint: .todo(todo.snapshot),
+                         parent: nil, parentSource: nil, parentTitle: nil, fingerprint: .todo(CommandNotesProofReader.redacted(todo.snapshot)),
                          subtasks: Set(children.filter { $0.deletedAt == nil }.map(\.persistentModelID)),
                          attachments: try liveAttachments(todo.id, kind: .todo))
         case .routine:
             let routine = try live(SwiftDataRoutineRepository(context: environment.context).fetchRoutines(withID: target.id),
                                    deleted: \.deletedAt, target: target)
-            guard TaskCopyContent.notes(routine.notes) == nil else { throw problem(.notes) }
             return .init(target: target, record: routine.persistentModelID, title: routine.title, source: source,
-                         parent: nil, parentSource: nil, parentTitle: nil, fingerprint: .routine(routine.snapshot),
+                         parent: nil, parentSource: nil, parentTitle: nil, fingerprint: .routine(CommandNotesProofReader.redacted(routine.snapshot)),
                          subtasks: [], attachments: try liveAttachments(routine.id, kind: .routine))
         case .subtask: return try subtaskImpact(target, source: source)
         default: throw CommandTrashIssue.invalidArguments
@@ -122,7 +127,7 @@ import SwiftData
         do { parentSource = try parentQualification(parent) } catch { throw family }
         return .init(target: target, record: child.persistentModelID, title: child.title, source: source,
                      parent: parent, parentSource: parentSource, parentTitle: todo.title,
-                     fingerprint: .subtask(snapshot, parent: todo.snapshot), subtasks: [], attachments: [])
+                     fingerprint: .subtask(snapshot, parent: CommandNotesProofReader.redacted(todo.snapshot)), subtasks: [], attachments: [])
     }
 
     private func live<T: PersistentModel>(_ rows: [T], deleted: KeyPath<T, Date?>, target: CommandObjectReference) throws -> T {

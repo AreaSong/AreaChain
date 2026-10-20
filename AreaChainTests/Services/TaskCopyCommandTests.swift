@@ -76,12 +76,14 @@ import Testing
     @Test func ineligibleSourcesAndShapesAreRejected() throws {
         let f = try TaskCopyCommandFixture()
         try f.start(.record)
-        f.source = .init(revision: UUID(), protection: .required, notes: .present)
+        f.source = .init(revision: UUID(), protection: .required)
         #expect(throws: TaskCopyCommandIssue.protectedContent) { try f.preview() }
-        f.source = .init(revision: UUID(), protection: .ordinary, notes: .unknown)
+        // 合并批 M-1 B：备注证明由适配自读；没有协调者密钥即无法证明。
+        f.source = .init(revision: UUID(), protection: .ordinary)
+        let key = f.adapter.environment?.notesKey
+        f.adapter.environment?.notesKey = nil
         #expect(throws: TaskCopyCommandIssue.notesUnverified) { try f.preview() }
-        f.source = .init(revision: UUID(), protection: .ordinary, notes: .absent)
-        #expect(throws: TaskCopyCommandIssue.changed) { try f.preview() }
+        f.adapter.environment?.notesKey = key
         f.sourceRead = { throw TaskCreateCommandIO.Failure.injected }
         #expect(throws: TaskCopyCommandIssue.sourceUnavailable) { try f.preview() }
         let g = try TaskCopyCommandFixture()
