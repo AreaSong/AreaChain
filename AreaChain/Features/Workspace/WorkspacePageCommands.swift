@@ -15,6 +15,8 @@ import SwiftData
     /// 合并批 M-2：看板“回今天／本月”的今天与日期推算；与页面同源，测试可注入。
     var today: () -> String = { DayClock.shared.todayKey }
     var calendar: Calendar = .current
+    /// 合并批 M-2 D：剪贴板历史的复制／粘贴与小窗；默认 nil（未装配），由隔离夹具显式注入 fake 窗口与按键。
+    var clipboard: ClipboardHistoryActions?
     var navigation: WorkspaceNavigation { router.navigation }
 
     init(router: WorkspaceSearchRouter, filters: BoardFilterSession, drafts: EditDrafts, context: ModelContext,
@@ -55,6 +57,7 @@ import SwiftData
     func apply(_ preview: WorkspacePagePreview, draft: CommandDraft) throws -> WorkspacePageReceipt {
         let action = try validate(preview, draft: draft)
         guard !preview.revealsPage else { throw CommandPageIssue.stale }
+        if case .clipboard(let clipboard) = action { return .init(action: action, after: try applyClipboard(clipboard)) }
         switch action {
         case .cancelTitle(let object):
             drafts.titles.removeValue(forKey: Self.titleKey(object))
@@ -77,7 +80,7 @@ import SwiftData
             applyCalendarMode(span)
         case .tagCancel:
             applyContent(action)
-        case .streak, .select, .selectAll, .ganttSelect, .transfer, .tagQuery, .image:
+        case .streak, .select, .selectAll, .ganttSelect, .transfer, .tagQuery, .image, .clipboard:
             break
         }
         // 取消类执行后已无可读的草稿／驻留，回执用预期状态；其余重读页面状态，证明确实写到了页面那一份。
@@ -121,7 +124,7 @@ import SwiftData
         let allowed: [WorkspaceTab]
         switch action {
         case .calendarMode, .ganttSelect, .transfer: return try boardPage(for: action)
-        case .tagCancel, .tagQuery, .image: return try contentPage(for: action)
+        case .tagCancel, .tagQuery, .image, .clipboard: return try contentPage(for: action)
         case .cancelTitle, .cancelCompletion, .streak: return nil
         case .filter, .clearFilter: allowed = [.today, .pending, .allItems]
         case .kind, .status: allowed = [.allItems]
@@ -156,6 +159,7 @@ import SwiftData
             guard let snapshot = boardSnapshot(action) else { throw CommandPageIssue.stale }
             return snapshot
         case .tagCancel, .tagQuery, .image: return try contentSnapshot(action)
+        case .clipboard(let clipboard): return try clipboardSnapshot(clipboard)
         }
     }
 
@@ -168,6 +172,7 @@ import SwiftData
         case (.selectAll, _), (.streak, _): return nil
         case (.calendarMode, _), (.ganttSelect, _), (.transfer, _): return boardExpected(action)
         case (.tagCancel, _), (.tagQuery, _), (.image, _): return contentExpected(action)
+        case (.clipboard(let clipboard), _): return clipboardExpected(clipboard)
         case (.sections(let section, let expanded), .sections(var sections)):
             if section == .yesterday { sections.yesterday = expanded } else { sections.upcoming = expanded }
             return .sections(sections)
@@ -237,6 +242,8 @@ enum WorkspacePageSnapshot: Equatable {
     /// 合并批 M-2 B～D：标签页草稿是否还在；只读查询的结果（前若干条的原文与总数）。
     case tagDraft(Bool)
     case results([String], total: Int)
+    /// 合并批 M-2 D：剪贴板条目是否置顶、小窗是否置顶、复制／粘贴实际发生了什么（copied／pasted／needsAccessibility）。
+    case clipboardPin(Bool), windowPinned(Bool), clipboardResult(String)
 }
 
 struct WorkspacePagePreview: Equatable {

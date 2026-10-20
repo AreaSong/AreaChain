@@ -28,7 +28,8 @@ import Testing
     var context: ModelContext { data.context }
     let day = "2026-10-07"
 
-    init(handoff provided: HandoffFixture? = nil) throws {
+    /// 合并批 M-2：可注入隔离剪贴板会话（私有命名剪贴板与 fake 门），工作台剪贴板页与剪贴板指令读同一份。
+    init(handoff provided: HandoffFixture? = nil, clipboard injected: ClipboardHistorySession? = nil) throws {
         data = try TaskContentQueryFixture()
         todo = data.todo("needle parent")
         todo.dayKey = day
@@ -45,7 +46,7 @@ import Testing
         session.install()
         let defaults = try #require(UserDefaults(suiteName: "AreaChain.NM1." + UUID().uuidString))
         prefs = AppPreferences(defaults: defaults)
-        let clipboard = ClipboardHistorySession(store: .init(root: FileManager.default.temporaryDirectory
+        let clipboard = injected ?? ClipboardHistorySession(store: .init(root: FileManager.default.temporaryDirectory
             .appending(path: "AreaChain-NM1-clipboard-" + UUID().uuidString)), defaults: defaults, pasteboard: nil,
             gate: .init(isTrusted: { false }, prompt: {}, sendCommandV: {}))
         let shortcuts = ShortcutStore(defaults: defaults, center: HotKeyCenter(defaults: defaults,

@@ -23,12 +23,15 @@ enum CommandPageAction: Equatable {
     case tagQuery(CommandTagQuery)
     /// 合并批 M-2 C：图片浏览与原图查阅。
     case image(CommandImageAction)
+    /// 合并批 M-2 D：剪贴板历史的浏览、搜索、复制、粘贴、置顶与小窗置顶。
+    case clipboard(CommandClipboardAction)
 
     static let commands: Set<String> = Set([
         "todo.cancelTitle", "subtask.cancelTitle", "todo.cancelCompletion", "tasks.select", "selection.all", "selection.clear",
         "tasks.sections", "tasks.filter", "tasks.clearFilter", "tasks.kind", "tasks.status", "routine.streak",
         "calendar.mode", "gantt.select", "tag.cancel",
     ]).union(CommandBoardTransfer.commands).union(CommandTagQuery.commands).union(CommandImageAction.commands)
+        .union(CommandClipboardAction.commands)
 
     init(_ draft: CommandDraft) throws {
         let objects = draft.targets.objects
@@ -88,6 +91,8 @@ enum CommandPageAction: Equatable {
         case let id where CommandTagQuery.commands.contains(id): self = .tagQuery(try CommandTagQuery(id, arguments: arguments))
         case let id where CommandImageAction.commands.contains(id):
             self = .image(try CommandImageAction(id, arguments: arguments, objects: objects))
+        case let id where CommandClipboardAction.commands.contains(id):
+            self = .clipboard(try CommandClipboardAction(id, arguments: arguments, objects: objects))
         default: throw CommandPageIssue.unsupported
         }
     }
@@ -168,4 +173,6 @@ enum CommandPageIssue: Error, Equatable {
     case notesUnsupported
     /// 合并批 M-2：受保护内容（加密、敏感手记、需解锁）不在指令里打开或读取。
     case protectedContent
+    /// 合并批 M-2 D：写系统剪贴板失败（不报“已复制”）；剪贴板历史保存失败（不报“已置顶”）。
+    case copyFailed, saveFailed
 }

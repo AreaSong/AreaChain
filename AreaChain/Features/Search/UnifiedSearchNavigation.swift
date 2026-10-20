@@ -58,6 +58,8 @@ extension UnifiedSearchController {
             browse(.init(version: page.snapshot.version, action: .open(inputEditing: false)), source: source)
         } else if let pages = pageCommands, pages.supportsBoardNavigation(command.id) {
             executeBoardNavigation(command.id, parsed: parsed, source: source, pages: pages)
+        } else if let pages = pageCommands, let window = CommandClipboardWindow(rawValue: command.id.rawValue) {
+            executeClipboardWindow(window, parsed: parsed, source: source, pages: pages)
         } else { navigationMessage = "unified.navigation.unsupported" }
     }
 

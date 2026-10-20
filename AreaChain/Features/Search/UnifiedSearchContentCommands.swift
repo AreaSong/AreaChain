@@ -27,4 +27,21 @@ extension UnifiedSearchController {
             }
         }
     }
+
+    /// 小窗的打开、关闭与返回工作台沿小窗现有窗口管理（只有一个窗口）；返回工作台再沿 N-M1 显示剪贴板页。
+    func executeClipboardWindow(_ window: CommandClipboardWindow, parsed: CommandPathResult, source: UnifiedSearchBuffer,
+                                pages: WorkspacePageCommands) {
+        guard parsed.state == .command, parsed.arguments.isEmpty else { navigationMessage = "unified.page.invalidArguments"; return }
+        do {
+            let visible = try pages.applyClipboardWindow(window)
+            switch window {
+            case .open: navigationMessage = visible ? "unified.clipboard.window.opened" : "unified.page.unavailable"
+            case .close: navigationMessage = "unified.clipboard.window.closed"
+            case .workspace: navigate(.page(.clipboard), source: source)
+            }
+        } catch {
+            let issue = error as? CommandPageIssue ?? .stale
+            navigationMessage = issue == .nothingToCancel ? "unified.clipboard.window.notOpen" : UnifiedSearchPageCopy.key(issue)
+        }
+    }
 }

@@ -44,6 +44,12 @@ final class ClipboardHistoryPanel: NSObject, NSWindowDelegate {
         window.makeKeyAndOrderFront(nil)
     }
 
+    /// 小窗现有窗口管理的注入形式（ClipboardHistoryActions 与剪贴板窗口指令共用）；始终是这一个面板。
+    var window: ClipboardHistoryActions.Window {
+        .init(isVisible: { [unowned self] in panel?.isVisible == true }, toggle: { [unowned self] in toggle() },
+              close: { [unowned self] in closeReturning() }, setStaysOnTop: { [unowned self] in setStaysOnTop($0) })
+    }
+
     func setStaysOnTop(_ enabled: Bool) {
         ClipboardHistorySession.shared.setPanelStaysOnTop(enabled)
         applyLevel()
@@ -186,29 +192,10 @@ enum ClipboardHistoryKeys {
         }
     }
 
+    /// 复制／粘贴的唯一实现在 ClipboardHistoryActions（合并批 M-2 抽出）；这里只装配共享会话与小窗。
     static func commit(id: UUID, plain: Bool, paste: Bool, inPanel: Bool) {
-        let session = ClipboardHistorySession.shared
-        guard session.stage(id, plainOnly: plain) == .copied else { return }
-        guard paste else {
-            if inPanel { ClipboardHistoryPanel.shared.closeReturning() }
-            return
-        }
-        guard session.allowKeystroke(prompt: true) else {
-            session.noticeKey = "clipboard.paste.needsAccess"
-            if inPanel { ClipboardHistoryPanel.shared.closeReturning() }
-            return
-        }
-        if inPanel {
-            ClipboardHistoryPanel.shared.closeReturning()
-        } else {
-            NSApp.keyWindow?.makeFirstResponder(nil)
-        }
-        // 先交还前台，再送 ⌘V，避免按键落进历史浮窗或搜索框。
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-            MainActor.assumeIsolated {
-                session.sendPasteKeystroke()
-            }
-        }
+        ClipboardHistoryActions(session: ClipboardHistorySession.shared, window: ClipboardHistoryPanel.shared.window)
+            .commit(id: id, plain: plain, paste: paste, inPanel: inPanel)
     }
 
     private static func handle(_ event: ClipboardKeySnapshot) -> Bool {
