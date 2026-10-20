@@ -7983,3 +7983,27 @@ L-M1b 必须的反例（合成内存库、fake 系统依赖）：借用签发后
 
 - **tag.order**：目录改为单目标 + `position`（1 起、整数，同 subtask／routine／tasks.order），规格沿 `OrderRows` 与 `TaskCommandSpecs.position`：全部活标签按 sortOrder（同值按 UUID）排序后移动一项，写入仍只调 `reorderTags(orderedIDs:)`；墓碑不参与。“须选全部活标签”的旧规则随之取消（`incompleteOrder` 枚举值保留未用）。TagSimpleCommandTests 与两个原生用例改为位置输入与越界拒绝。
 - **门禁**：`scripts/quality_gate.py` 敏感日志规则前加 `\b`，`imprint(` 等不再误报为打印；test_quality_gate 增正例（真正的 `print(…notes)` 仍报）与反例（`imprint(…notes…)` 不报）。
+
+#### 集中验证（批次 m1，证据在被忽略的 build/M1/）
+
+| 项目 | 结果 |
+|---|---|
+| `qa-compile`、正常 `./scripts/build.sh` | 通过；严格验签；Debug staticSignatureVerified、hardenedRuntime 为 true，描述文件剩约 49 小时 |
+| 本批新增与修改的 16 个测试类 | 132 方法全过 |
+| 原生回归一轮 45 类 | 265 方法／460 次，40 失败：焦点未就绪 9 类（前台被其他应用占用、一次宿主挂起被结束重启）同类单独重跑全过；其余均在 `git archive 9915bdb` 解出的基线上持原锁以相同断言位置复现 |
+| Domain＋Services 全部 346 类 | 2329 方法／3286 次，7 失败 1 跳过（真实钥匙串默认关闭）；7 个即 §9.95 所列既有失败，基线同位置复现 |
+| 整改后定向重跑 | 页面指令服务层与原生、剪贴板指令、任务侧标签、标签排序、T-M6 原生均通过 |
+| `check_workflow.py`、`scripts/tests` 290 项、`quality_gate.py --profile static --strict`（敏感日志候选 0）、全库 `swiftlint lint --strict`（0）、`git diff --check`、单文件不超过 500 行 | 全部通过 |
+
+既有失败（未修、未放宽）：上述 7 个服务／领域用例；YesterdayCardAction／Consumer 6 方法（失败行在两次对照中相同，个别像素断言次数随运行波动）；WorkspaceInspectorSizing 两项、WorkspaceRendering.diaryComposerKeepsNewlinesAndSavesOnce、MenuBarPopoverRendering 两项；DetailSubtaskCompletion 两项 Expected Failure；UnifiedSearchOperationInteraction.nativeBooleanWeekdaysDayAndTime。`MenuBarPopoverRendering.popoutButton…` 首次在 `window.sendEvent` 鼠标点击处挂起约 50 分钟，单独重跑当前与基线都以 :225 同一断言失败、不再挂起。集中验证发现并整改一处：今日页展开状态只在显式宿主由宿主持有（b93c3de）。
+
+#### 指定只读复核
+
+- Claude Code `verifier` 首轮**不通过**：中 1（capture.clipboard 与菜单栏共用写入，指令侧未按 L7 拒绝，文档与行为不符）、低 1（TagOrderSpec 过时注释）。只按清单整改为 de09bb2；第二轮**通过**，它重跑定向 3 类 32 方法、静态门禁与全库 SwiftLint。
+- 第二轮余一条低级意见（判定读取失败时放行）已改为失败即按未提交处理，定向重跑通过，未再派发复核。verifier 首轮把一次测试输出写到了被忽略的 `build/m1verify-run.log`，超出约定的写入范围，已如实记录，未删除。
+- verifier 未重跑：原生回归与基线对照、Domain＋Services 全量、正常构建、scripts/tests，以执行者证据为准。
+
+#### 缺口
+
+- 人工与平台验收未做；工作台操作面板的真实鼠标点击未验证（原生用例用 AXPress）；今日区收起、今日页与标签清单的多选、cancelTitle 在编辑器仍挂载时的表现未覆盖。
+- 生产接线授权、正常开发描述文件 2026-10-22 到期等既有缺口不变；完成、建标签、子任务与习惯字段类、title 两条的备注门槛未放宽。

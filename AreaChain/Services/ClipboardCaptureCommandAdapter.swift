@@ -89,8 +89,12 @@ import SwiftData
                                                sourceBundleID: environment.capture.sourceBundleID())
         // L7：与其他指令同一判定（TaskDerivedRows.protectedTagNotices → InputTagResolver.protection），命中即整条不写；
         // 内容只在提交时读取，因此在写入前拦截，不能在预览阶段提前告知。
-        let notices = (try? TaskDerivedRows.protectedTagNotices(TagSyntax.names(in: payload.title, includesDiaryTags: false),
-                                                               in: environment.context)) ?? []
+        // 判定读不出来时按未提交处理（失败即拒绝），不能退回到“跳过标签照常保存”。
+        let notices: [CommandSimpleNotice]
+        do {
+            notices = try TaskDerivedRows.protectedTagNotices(TagSyntax.names(in: payload.title, includesDiaryTags: false),
+                                                              in: environment.context)
+        } catch { return facts }
         guard notices.isEmpty else {
             facts.state = .protectedTag
             facts.protectedTags = notices
