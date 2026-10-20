@@ -8046,6 +8046,22 @@ L-M1b 必须的反例（合成内存库、fake 系统依赖）：借用签发后
 
 - A：服务层 5 类 38 方法／41 次；原生看板 6 方法／10 次。B：服务层 11 类 78 方法／88 次（含多项计划、回收、转换边界回归）；原生标签 4 方法／8 次，X-1 原生 3 方法／7 次。C：服务层 2 类 5 方法；原生图片 2 方法／3 次。D：服务层与剪贴板捕获回归 2 类 15 方法／20 次；原生剪贴板 3 方法／4 次。均 0 失败（中途失败与整改见各检查点提交）。
 
+#### 集中验证（批次 m2，证据在被忽略的 build/M2/）
+
+| 项目 | 结果 |
+|---|---|
+| `qa-compile`、正常 `./scripts/build.sh` | 通过；严格验签，Debug staticSignatureVerified 为 true，描述文件 2026-10-22 到期 |
+| 本批新增与修改 22 类 | 121 方法／152 次，3 个原生失败（控件不在面板内），同 2 类单独重跑 8 方法／16 次全过 |
+| Domain＋Services 357 类 | 2382 方法／3339 次，8 失败 1 跳过（真实钥匙串默认关闭）；7 个即 §9.96 所列既有失败，在 `git archive c1f8db1` 基线持原锁同断言行复现；1 个 CommandParameterTests 锁定 tag.merge 旧 unavailable，改为新期望（05011d8）后 13 方法全过 |
+| 受影响原生回归 115 类 | 490 方法／880 次，28 失败 2 跳过（开跑时前台为其他应用）；逐类单独重跑后日历 3 类、QuadrantLayout（含崩溃）、QuadrantPreviewInteraction、UnifiedSearchContentLegacy、nativeBooleanWeekdaysDayAndTime 仍失败，基线同测试失败（既有）；多项计划 3 类第一次重跑失焦、第二次全过；其余重跑通过 |
+| `check_workflow.py`、`scripts/tests` 290 项、`quality_gate.py --profile static --strict`、全库 `swiftlint lint --strict`（0）、`git diff --check`、单文件不超过 500 行 | 全部通过 |
+
+#### 指定只读复核
+
+- Claude Code `verifier` 第一次派发遇使用限额中断，恢复后完成：结论**通过**，七条验收逐条符合；它亲自重跑全库 SwiftLint、check_workflow、`git diff --check`，以及服务层 10 类 54 方法与原生 4 类 15 方法（1 个图片查阅用例组合运行失败、单独重跑通过）。
+- 两条低级意见已整改为 d737443：标签页提示只随 tag.cancel 的 `cancelRevision` 收起（显式宿主里手动删空名字不再清掉“设为私密”）；图片查阅用例有上限地等两段异步任务结束。重跑 5 类 18 方法／28 次，其中标签回收用例一次对象选择器未打开、单独重跑 4 方法／8 次全过；未再派发复核。
+- verifier 未重跑：Domain＋Services 全量、原生回归与基线对照、正常构建、scripts/tests、quality_gate，以执行者证据为准。
+
 #### 缺口与生产接线所需授权
 
 - 生产接线须另行授权：页面宿主与骨架规格装配、剪贴板粘贴的真实辅助功能权限请求与 ⌘V 发送、小窗真实窗口适配（ClipboardHistoryPanel 读共享会话，隔离宿主用自己的会话）、手记解绑标签所需的保险箱、附件文件存储根。
