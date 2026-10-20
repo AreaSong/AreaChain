@@ -8007,3 +8007,47 @@ L-M1b 必须的反例（合成内存库、fake 系统依赖）：借用签发后
 
 - 人工与平台验收未做；工作台操作面板的真实鼠标点击未验证（原生用例用 AXPress）；今日区收起、今日页与标签清单的多选、cancelTitle 在编辑器仍挂载时的表现未覆盖。
 - 生产接线授权、正常开发描述文件 2026-10-22 到期等既有缺口不变；完成、建标签、子任务与习惯字段类、title 两条的备注门槛未放宽。
+
+### 9.97 合并批 M-2：看板、标签、附件、剪贴板
+
+2026-10-20（Asia/Shanghai）。提速方案的第二个合并批，四个实现检查点逐个本地提交（68b212d、efe2ebb、4f5c0e5、7551ddd）、不推送；开工前决策均由用户确认。全部在隔离环境：新指令能力默认关闭（页面宿主 `pageCommands`、其 `clipboard`、骨架 `simple` 都默认 nil），生产没有新的构造点。
+
+#### 用户决策的落实
+
+- **不做（决策 1、2，留给 M-3 改为“打开原页面”）**：tag.delete、tag.cleanup、clipboard.delete／prune／empty；clipboard.recording／skipNext／ignoreApp（C4）与 C5 全部偏好（含 add／removePattern、add／removeType、unignoreApp）；image.pick／paste／capture。目录条目保持原样，没有任何规格或页面动作。
+- **决策 3**：tag.merge 只合并普通标签，来源或目标里有私密（或预置）标签整条拒绝；目录 `unresolved("privateTagMerge")` 改为已声明。
+- **决策 4**：tag.trash／tag.restore／image.trash 经共用独立确认面板，只能单项执行；多项计划凡目录要求独立确认的一律 `independentConfirmation` 拒绝。
+
+#### A 看板（B1～B3）
+
+- **核实**：B1 原“待核实”——go.calendar、inspector.day 与 todo.create／todo.move 可组合完成导航与改期，但月周切换、上／下、回今天、进入当日清单没有执行入口；B2 原“待核实”——go.quadrant 与 todo.priority 可用，quadrant.complete 在 1A 等的是习惯 skip 语义，R-M3 D1 已定，只缺执行入口，本批接通（不是产品歧义）。
+- **导航类**（calendar.step／today／day／dayList、quadrant.day／step、gantt.step／currentMonth、quadrant／gantt.inspect）沿 N-M1 的导航执行（路径参数、不建草稿）：先核对当前页（不对就说明，不切页），`navigate(.page(当前页))` 显示后只写一次页面状态。日期写共享 BoardSelection；月周、安排页月份与选择、标签页草稿放进 `WorkspaceNavigation.boardPages`／`tagDrafts`，只在显式宿主里由宿主持有（同 M-1 的 todaySections，离开页面复位）。检查器沿页面的 inspect，目标须在页面投影里。导航路径只接一个尾段参数，calendar.step 去掉 period，月／周跟随当前视图（与页面上一／下一按钮一致）。
+- **交互类**：calendar.mode、gantt.select 走 M-1 页面指令宿主（预览 → 执行；页面改了旧预览失效）；选择沿 TaskSelection 与页面登记的色块顺序 `ganttOrder`。
+- **转交**：calendar.create、quadrant.create／priority／complete／copy、gantt.complete 不另写执行，预览说明“转到某指令”，执行时把参数与目标搬进 todo.create／todo.priority／routine.priority／todo.completion／occurrence.complete／todo.copy（标题段）／batch.completion 的新草稿，由它们自己的适配器准备、确认与保存；看板草稿按“放弃”结束。备注（长文）不搬运，quadrant.copy 不接习惯。
+- **gantt.shift**：X-1 骨架；写入抽到 [GanttRescheduleService](../AreaChain/Services/GanttRescheduleService.swift)（原拖动 GanttRescheduling 转调），平移沿 GanttDragState 的同一索引规则，保留间隔，越出当月整组拒绝（不像拖动那样钳边），总量沿 `CommandBatchWriteSet.Counts.entityLimit`，一次事务。
+
+#### B 标签（G1 剩余、G2）
+
+- tag.cancel（去掉宿主持有的新建／改名草稿）、tag.search／view／deleted（只读，取法抽到 [TagListQuery](../AreaChain/Domain/TagListQuery.swift)，原标签页转调）走页面指令宿主。
+- [TagOrganizeCommandSpecs](../AreaChain/Services/TagOrganizeCommandSpecs.swift)：merge→`mergeTags`；unlinkObject 逐个调对象原有的标签切换入口（待办、子任务、习惯、手记），受保护手记（私密、挂私密标签或加密正文）拿不到资格就拒绝，不读正文；trash／restore→`deleteTag(soft: true)`／`restoreTag`，确认列出受影响对象数（TagUsage 口径）。tag.restore 目录由 systemAction 改为可入普通计划的修改（与回收对称）。
+- **骨架补独立确认**：[CommandSimpleConfirmation](../AreaChain/Domain/CommandSimpleConfirmation.swift) 沿共享的 CommandIndependentConfirmationLedger；规格声明 `confirms` 才装配，提交前必须确认，新接受、取消或执行即撤销；界面用原 UnifiedSearchIndependentConfirmationPanel（默认焦点在取消、Esc 只撤销确认）。目录要求认证的（image.trash）规格须声明 `refusesProtectedContent` 并拒绝受保护目标，指令里从不认证。
+
+#### C 图片附件（A1）
+
+- image.trash：写入抽到 [AttachmentTrashService](../AreaChain/Services/AttachmentTrashService.swift)（DayBoardMutations.trashAttachment、附件中心 trashItems 转调），只打删除戳；资格同附件中心 `AttachmentAccess.canBrowse`——拥有者已删或不存在的孤儿附件拒绝，加密或敏感手记的附件拒绝。
+- image.browse（2E 口径、按所属类型）与 image.preview 走页面宿主；查阅沿 N-M2 的普通图片打开。指令事件会推进租约、使结果的展示许可失效，因此先同返回搜索一样 `resumeDisplay` 并按当前查询重读，图片仍可见才打开，WorkspaceContentSession 的门禁不变。
+
+#### D 剪贴板（C1、C2、C3 非删除部分、C6）
+
+- 复制／粘贴／纯文本粘贴的唯一实现抽到 [ClipboardHistoryActions](../AreaChain/Services/ClipboardHistoryActions.swift)（ClipboardHistoryKeys.commit 转调）：写入失败返回 empty、不报成功；粘贴只说明按键已安排发送（没有目标应用回执）。历史条目带 HTML／RTF／图片并要登记自身回写，因此复制沿历史的 stage，没有改用 T-M4 的纯文本 ClipboardTextWriter。
+- clipboard.browse／search 沿 `ClipboardHistoryRules.filtered`（与历史页 visibleItems 同一取法，模式显式）；pinned 沿 `togglePin`（改为返回是否保存成功）；copyLetter 沿空查询字母快捷复制（指令不在小窗里，不关窗）；小窗四条沿 ClipboardHistoryPanel 的现有窗口管理，只有一个面板，返回工作台再沿 N-M1 显示剪贴板页。
+
+#### 检查点内验证（隔离入口 `--qa-batch m2`，证据在被忽略的 build/M2/）
+
+- A：服务层 5 类 38 方法／41 次；原生看板 6 方法／10 次。B：服务层 11 类 78 方法／88 次（含多项计划、回收、转换边界回归）；原生标签 4 方法／8 次，X-1 原生 3 方法／7 次。C：服务层 2 类 5 方法；原生图片 2 方法／3 次。D：服务层与剪贴板捕获回归 2 类 15 方法／20 次；原生剪贴板 3 方法／4 次。均 0 失败（中途失败与整改见各检查点提交）。
+
+#### 缺口与生产接线所需授权
+
+- 生产接线须另行授权：页面宿主与骨架规格装配、剪贴板粘贴的真实辅助功能权限请求与 ⌘V 发送、小窗真实窗口适配（ClipboardHistoryPanel 读共享会话，隔离宿主用自己的会话）、手记解绑标签所需的保险箱、附件文件存储根。
+- image.preview 只能打开当前结果里可见的普通图片；tag.create 的“设为私密”、受保护手记的标签解绑、受保护图片的回收与查阅仍须原页面解锁。
+- 人工与平台验收、工作台操作面板真实鼠标点击（原生用例用 AXPress）、正常开发描述文件 2026-10-22 到期等既有缺口不变。

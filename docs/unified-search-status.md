@@ -2,7 +2,7 @@
 
 本文是统一搜索与指令体系的**现状总览**：只记当前状态、覆盖、缺口和每批必读入口。设计、规则与历史证据仍以[权威设计](unified-search-commands.md)为准，本文不复制。每批怎样更新本文见[技能路由的路由维护](../skill-routing.md#路由维护)。
 
-最后更新：2026-10-20，合并批 M-1（[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾)）。
+最后更新：2026-10-20，合并批 M-2（[§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板)）。
 
 ## 目标与阶段
 
@@ -31,21 +31,21 @@
 | [T8](unified-search-commands.md#T8) | 待办↔重复事项转换 | 隔离实现 | 已：todo.toRoutine、routine.toTodo；M-1 起带备注对象可转换（损失清单列出“备注原样搬到新对象”）；未复核 | T-M5、M-1 | [§9.91](unified-search-commands.md#991-里程碑-t-m5待办与重复事项互转)、[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾) |
 | [T9](unified-search-commands.md#T9) | 页面筛选、全部事项、排序、延至今日 | 隔离实现（部分） | 已：tasks.order、tasks.postponeYesterday（T-M6）；tasks.filter／clearFilter（今日／待处理／全部事项，与页面双向同步）、tasks.kind／status、tasks.sections（昨天／即将）、tasks.select（待处理／全部事项）（M-1）；未：今日区收起（始终展开）、今日页与标签清单的多选指令 | 2A～2J、4A、T-M6、M-1 | [§9.93](unified-search-commands.md#993-里程碑-t-m6任务类修改收尾)、[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾) |
 | [T10](unified-search-commands.md#T10) | 剪贴板加今天 | 隔离实现且已复核 | 已：capture.clipboard（T-M6，无 Run 模式，提交才读剪贴板；T-M6 指定复核通过）；M-1 起读到私密／预置标签整条不写并说明（L7），菜单栏入口跳过标签照常保存 | T-M6 | [§9.93](unified-search-commands.md#993-里程碑-t-m6任务类修改收尾) |
-| [B1](unified-search-commands.md#B1) | 日历导航与改期 | 待核实 | go.calendar、inspector.day（N-M1）与 todo.create／todo.move 可组合；月周切换等页面动作未见交接 | N-M1 | [§9.84](unified-search-commands.md#984-里程碑-n-m1导航与返回搜索) |
-| [B2](unified-search-commands.md#B2) | 四象限 | 待核实 | go.quadrant（N-M1）与 todo.priority 可用；quadrant.complete 在 1A 登记为未决 | N-M1 | [§9.6](unified-search-commands.md#96-阶段-1a-目录决策与证据) |
-| [B3](unified-search-commands.md#B3) | 安排页平移与完成 | 未开始 | 只有 go.gantt 导航（N-M1） | — | — |
+| [B1](unified-search-commands.md#B1) | 日历导航与改期 | 隔离实现 | 已：calendar.mode／step／today／day／dayList（页面指令，月周与选中日写页面那一份）、calendar.create（转交 todo.create）；拖拽改期沿 todo.move（T-M1）。核实：原组合只覆盖导航与改期，页面动作在 M-2 补齐；calendar.step 只留 offset，月周跟随当前视图 | N-M1、M-2 | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板) |
+| [B2](unified-search-commands.md#B2) | 四象限 | 隔离实现 | 已：quadrant.day／step／inspect（页面指令）、create／priority／complete／copy（转交 todo.create／todo.priority 或 routine.priority／todo.completion 或 occurrence.complete／todo.copy 标题段）；quadrant.complete 的 1A 未决（习惯 skip 语义）已由 R-M3 D1 定，M-2 解决；copy 不接习惯 | N-M1、M-2 | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板) |
+| [B3](unified-search-commands.md#B3) | 安排页平移与完成 | 隔离实现 | 已：gantt.step／currentMonth／select／inspect（页面指令）、gantt.shift（X-1 骨架，GanttRescheduleService，一次事务、保留间隔、越出当月拒绝）、gantt.complete（转交 batch.completion） | N-M1、M-2 | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板) |
 | [J1](unified-search-commands.md#J1) | 手记新建与正文 | 未开始 | 长文编辑底座（C-M1～C-M3）已在隔离宿主，正文保存 handler 未做 | C-M1～C-M3 | [§9.88](unified-search-commands.md#988-里程碑-c-m3长文上限与超限引导) |
 | [J2](unified-search-commands.md#J2) | 手记组织 | 未开始 | — | — | — |
 | [J3](unified-search-commands.md#J3) | 手记复制、转任务、回收 | 未开始 | — | — | — |
-| [G1](unified-search-commands.md#G1) | 标签新建、改名、颜色、排序、搜索与视图 | 隔离实现（部分） | 已：tag.create／rename／color（X-1，未复核；T-M6 起 tag.color 跳过预置标签并列出）、tag.order（M-1 起单目标 + position）、标签只读查询（2F、2K-3、2K-8）、go.tagList（N-M2）；未：tag.cancel、tag.view 各视图、新建时设为私密 | X-1、2F、N-M2、T-M6、M-1 | [§9.92](unified-search-commands.md#992-提速基建-x-1)、[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾) |
-| [G2](unified-search-commands.md#G2) | 标签合并、解绑、软删／恢复、清理 | 未开始 | tag.merge、tag.cleanup 在 1A 登记为未决 | — | [§9.6](unified-search-commands.md#96-阶段-1a-目录决策与证据) |
-| [A1](unified-search-commands.md#A1) | 图片附件 | 隔离实现（部分） | 已：图片元数据只读查询（2E、2K-6）、普通图片查阅（N-M2）；未：选图、粘贴、截图、回收 | 2K-6、N-M2 | [§9.85](unified-search-commands.md#985-里程碑-n-m2标签导航普通手记全文与普通图片查阅) |
-| [C1](unified-search-commands.md#C1) | 剪贴板浏览与搜索 | 隔离实现（部分） | 已：显式 /clipboard 只读提供者与文件只读适配；未：原生浏览界面等价验收 | 2G、2K-5 | [§9.41](unified-search-commands.md#941-阶段-2k-5剪贴板历史文件只读适配与受门禁发布) |
-| [C2](unified-search-commands.md#C2) | 剪贴板复制／粘贴 | 未开始 | — | — | — |
-| [C3](unified-search-commands.md#C3) | 剪贴板置顶、删除、清空 | 未开始 | — | — | — |
-| [C4](unified-search-commands.md#C4) | 记录暂停、跳过、忽略来源 | 未开始 | — | — | — |
-| [C5](unified-search-commands.md#C5) | 剪贴板偏好 | 未开始 | — | — | — |
-| [C6](unified-search-commands.md#C6) | 剪贴板小窗 | 未开始 | — | — | — |
+| [G1](unified-search-commands.md#G1) | 标签新建、改名、颜色、排序、搜索与视图 | 隔离实现（部分） | 已：tag.create／rename／color（X-1）、tag.order（M-1）、tag.cancel、tag.search／view／deleted（M-2，取法即标签页的 TagListQuery）、go.tagList（N-M2）；未：新建时设为私密（需解锁） | X-1、2F、N-M2、T-M6、M-1、M-2 | [§9.92](unified-search-commands.md#992-提速基建-x-1)、[§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板) |
+| [G2](unified-search-commands.md#G2) | 标签合并、解绑、软删／恢复、清理 | 隔离实现（部分） | 已：tag.merge（决策 3：涉及私密标签整条拒绝）、tag.unlinkObject（受保护手记拒绝）、tag.trash／tag.restore（共用独立确认、只能单项）；未：tag.delete、tag.cleanup（决策 1，留给 M-3 打开原页面）、tag.unlinkGlobal（目录 unavailable） | M-2 | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板) |
+| [A1](unified-search-commands.md#A1) | 图片附件 | 隔离实现（部分） | 已：图片元数据只读查询（2E、2K-6）、普通图片查阅（N-M2）、image.browse／image.preview／image.trash（M-2；孤儿与受保护附件拒绝，回收经共用独立确认）；未：image.pick／paste／capture（决策 2，留给 M-3 打开原页面） | 2K-6、N-M2、M-2 | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板) |
+| [C1](unified-search-commands.md#C1) | 剪贴板浏览与搜索 | 隔离实现 | 已：显式 /clipboard 只读提供者与文件只读适配（2G、2K-5）；clipboard.browse／search（M-2，与历史页 visibleItems 同一取法，原生等价验收逐行比对）；默认不进普通搜索不变 | 2G、2K-5、M-2 | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板) |
+| [C2](unified-search-commands.md#C2) | 剪贴板复制／粘贴 | 隔离实现 | 已：clipboard.copy／paste／pastePlain（ClipboardHistoryActions，写入失败不报成功；QA 中门与按键全为 fake、私有命名剪贴板）；真实辅助功能权限与 ⌘V 未接线 | M-2 | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板) |
+| [C3](unified-search-commands.md#C3) | 剪贴板置顶、删除、清空 | 隔离实现（部分） | 已：clipboard.pinned（togglePin，保存成功才报告）、clipboard.copyLetter；未：delete、prune、empty（决策 1，留给 M-3 打开原页面） | M-2 | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板) |
+| [C4](unified-search-commands.md#C4) | 记录暂停、跳过、忽略来源 | 未开始 | 决策 2：留给 M-3 打开原页面（clipboard.recording／skipNext／ignoreApp） | — | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板) |
+| [C5](unified-search-commands.md#C5) | 剪贴板偏好 | 未开始 | 决策 2：留给 M-3 打开原页面（含 add／removePattern、add／removeType、unignoreApp） | — | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板) |
+| [C6](unified-search-commands.md#C6) | 剪贴板小窗 | 隔离实现 | 已：clipboard.openWindow／closeWindow／pinWindow／workspace（沿 ClipboardHistoryPanel 现有窗口管理，只有一个面板）；真实窗口适配读共享会话，生产接线另需授权 | M-2 | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板) |
 | [S1](unified-search-commands.md#S1) | 语言、外观、标题省略、捕获来源 | 隔离实现 | 单项与共同提交（聚合文件后端）都在隔离宿主；未复核 | 3A | [§9.62](unified-search-commands.md#962-阶段-3a-3b3b普通设置共同提交的原生接线) |
 | [S2](unified-search-commands.md#S2) | 登录启动 | 未开始 | — | — | — |
 | [S3](unified-search-commands.md#S3) | 通知权限与测试 | 未开始 | — | — | — |
@@ -70,7 +70,7 @@
 | [N7](unified-search-commands.md#N7) | 版本、反馈与链接 | 未开始 | — | — | — |
 | [N8](unified-search-commands.md#N8) | 退出与未保存确认 | 未开始 | — | — | — |
 
-合计 48 项：隔离实现 11（T1～T8、S1、N1、N3）；隔离实现且已复核 1（T10）；隔离实现（部分）5（T9、G1、A1、C1、D1）；待核实 2（B1、B2）；未开始 29；已接正式版 0（M-1 A 的原界面私密标签修复属正式版行为修复，不计入指令接线）。
+合计 48 项：隔离实现 17（T1～T8、S1、N1、N3、B1～B3、C1、C2、C6）；隔离实现且已复核 1（T10）；隔离实现（部分）6（T9、G1、G2、A1、C3、D1）；待核实 0；未开始 24；已接正式版 0（M-1 A 的原界面私密标签修复属正式版行为修复，不计入指令接线）。
 
 ## 未闭合缺口
 
@@ -88,7 +88,9 @@
 - **已知历史问题**：T-M1 标题多目标面板消失的根因未判定；DetailSubtaskCompletionTests 两项 Expected Failure 保留；原生日期格按钮在统一搜索测试宿主里找不到标识（`nativeBooleanWeekdaysDayAndTime` 等）；`SubtaskModelTests.addTagSkipsDiaryPresetNames` 在未改动 HEAD 上同样失败。来源：[§9.73](unified-search-commands.md#973-里程碑-t-m1普通任务修改与受限依赖执行)、[§9.89](unified-search-commands.md#989-补复核-g-1at-系列)。
 - **工作台操作面板鼠标点击**：M-1 原生用例中，合成鼠标事件到不了工作台窗口操作面板里的按钮（缓冲版本与输入焦点均不变，原因未判定），改用 AXPress 验证同一按钮；真实鼠标点击未验证。来源：[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾)。
 - **G-1a 低级整改清单 9 条**：待单独批准的修复批次。来源：[§9.89](unified-search-commands.md#989-补复核-g-1at-系列)。
-- **目录未决项**：tag.merge（合并进私密标签）、tag.cleanup（预置标签范围）、backup.export（无锁可达性）、diary.tags（保护转换）等仍未定稿；习惯 skip 语义已由 R-M3 的 D1 处理。来源：[§9.6](unified-search-commands.md#96-阶段-1a-目录决策与证据)、[§9.78](unified-search-commands.md#978-里程碑-r-m3兼容跳过习惯启停与指定执行日状态)。
+- **目录未决项**：tag.cleanup（预置标签范围）、backup.export（无锁可达性）、diary.tags（保护转换）等仍未定稿；习惯 skip 语义已由 R-M3 的 D1 处理；tag.merge 已按决策 3、quadrant.complete 已按 R-M3 语义在 M-2 解决。来源：[§9.6](unified-search-commands.md#96-阶段-1a-目录决策与证据)、[§9.78](unified-search-commands.md#978-里程碑-r-m3兼容跳过习惯启停与指定执行日状态)、[§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板)。
+- **留给 M-3 打开原页面**（2026-10-20 用户决策 1、2）：tag.delete、tag.cleanup、clipboard.delete／prune／empty（永久删除类），C4 记录控制、C5 剪贴板偏好，image.pick／paste／capture（系统面板、截屏、解锁）。来源：[§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板)。
+- **M-2 生产接线前置**：剪贴板粘贴的真实辅助功能权限与 ⌘V、小窗真实窗口适配（读共享会话）、手记解绑标签的保险箱、附件存储根均只在隔离夹具里注入；image.preview 只能打开当前结果里可见的普通图片。来源：[§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板)。
 - **现状差距**：备份未配置锁的可达性、剪贴板历史读取失败返回空、重置吞掉删除错误。来源：[§9.4](unified-search-commands.md#94-未决问题与单独授权边界)。
 - **性能基线**：新查询延迟、长文编辑、最大候选规模与内存均未建立基线。来源：[§9.3](unified-search-commands.md#93-后续回归入口与证据缺口)。
 
