@@ -50,7 +50,7 @@ import Testing
 
     func queue(_ command: String, targets: [CommandObjectReference] = [], arguments: [CommandArgument] = []) throws {
         let selection: CommandDraftTargets = targets.isEmpty ? .none
-            : .init(targets.count == 1 && command == "tag.rename" ? .single : .selected, objects: targets)
+            : .init(targets.count == 1 && ["tag.rename", "tag.order"].contains(command) ? .single : .selected, objects: targets)
         try handoff.queue(.init(id: UUID(), hostID: HandoffFixture.source, commandID: .init(rawValue: command),
             targets: selection, arguments: arguments))
     }

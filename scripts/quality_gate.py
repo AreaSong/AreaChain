@@ -197,8 +197,9 @@ ACCESS_KEY = re.compile(r"\b(?:AKIA|ASIA)[0-9A-Z]{16}\b")
 TOKEN = re.compile(
     r"\b(?:ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9_\-]{20,})\b"
 )
+# 词边界：imprint(、blueprint( 一类标识符里含 print 的调用不是打印（合并批 M-1 D）。
 SENSITIVE_LOG = re.compile(
-    r"(?:NSLog|print|Logger|logger\.[A-Za-z]+)\s*\([^\n]*(?:request\.title|\.notes\b|password|secret|clipboard|accessToken|apiKey)",
+    r"\b(?:NSLog|print|Logger|logger\.[A-Za-z]+)\s*\([^\n]*(?:request\.title|\.notes\b|password|secret|clipboard|accessToken|apiKey)",
     re.IGNORECASE,
 )
 

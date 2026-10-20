@@ -48,8 +48,10 @@ extension CommandCatalogBuilder {
             entry("tag.color", "/tags/color", .modification, "G1:color",
                   [p(.color, .choice(TagColorToken.allCases.map { CommandChoice(value: $0.rawValue) }))])
                 .targets([.tag], batch: .explicitMultiple).ordinary(),
-            entry("tag.order", "/tags/order", .modification, "G1:order")
-                .targets([.tag], batch: .explicitMultiple).ordinary(),
+            // 合并批 M-1 D：与三个任务排序指令一致，用 1 起的 position 表达新位置，不依赖选择器的登记顺序；一次移动一项。
+            entry("tag.order", "/tags/order", .modification, "G1:order",
+                  [p(.position, .number(0...Double(Int.max), integer: true))])
+                .targets([.tag]).ordinary(),
             entry("tag.search", "/tags/search", .query, "G1:search",
                   [p(.query, .shortText)]),
             entry("tag.view", "/tags/view", .query, "G1:all G1:frequent G1:recent G1:unused",

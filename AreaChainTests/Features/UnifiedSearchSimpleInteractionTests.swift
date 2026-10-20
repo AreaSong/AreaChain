@@ -52,40 +52,41 @@ import Testing
         #expect(color.service.tags[0].colorToken == "ink" && color.service.tags[2].colorToken == "ink")
         host.close()
 
+        // 合并批 M-1 D：tag.order 用 position 表达新位置，不再依赖选择器的登记顺序。
         let order = try UnifiedSearchSimpleFixture()
         defer { order.results.stop() }
-        // 先倒排现有位置，使结果列表顺序大概率与当前位置不同，覆盖真正写入的路径。
-        for (index, tag) in order.service.tags.reversed().enumerated() { tag.sortOrder = index }
-        try order.service.context.save()
         host = try await order.host(style)
         defer { host.close() }
-        let wanted = [order.service.tags[1], order.service.tags[2], order.service.tags[0]]
+        let before = try order.service.live()
         try await order.begin("/tags/order", host: host)
-        try await order.chooseTargets(wanted, host: host)
+        try await order.chooseTargets([before[2]], host: host)
+        try await typePosition("1", host: host)
         let accepted = try await order.prepareAndAccept(host, name: "order-\(style)")
-        // 原选择器按结果列表顺序登记多选（不是点击顺序，且随语言排序）；新顺序以冻结目标为准并在预览里逐项列出。
-        let frozen = accepted.preview.input.targets.objects
-        #expect(Set(frozen.map(\.id)) == Set(wanted.map(\.id)))
-        if accepted.preview.noChange {
-            try await host.clickCompositionControl("unified.simple.save")
-            #expect(order.controller.simpleUnit?.simple?.state == .noChange && order.service.count("save") == 0)
-        } else {
-            _ = try await order.save(host, name: "order-\(style)", chord: false)
-        }
-        #expect(try order.service.live().map(\.id) == frozen.map(\.id))
+        #expect(accepted.preview.after.rows.map(\.key) == [before[2], before[0], before[1]].map(\.id.uuidString))
+        _ = try await order.save(host, name: "order-\(style)", chord: false)
+        #expect(try order.service.live().map(\.id) == [before[2], before[0], before[1]].map(\.id))
     }
 
-    /// 只选部分标签排序：准备即拒绝，显示原因，不写入。
-    @Test func partialOrderShowsReasonAndWritesNothing() async throws {
+    /// 同 UnifiedSearchTM6Fixture.type：聚焦参数框、输入、回车确认。
+    private func typePosition(_ text: String, host: UnifiedSearchTestHost) async throws {
+        let editor = try await host.focusParameter(.position)
+        editor.insertText(text, replacementRange: editor.selectedRange())
+        try await host.settle()
+        try await host.key(36, "\r")
+    }
+
+    /// 越界位置：准备即拒绝，显示原因，不写入。
+    @Test func outOfRangeTagPositionShowsReasonAndWritesNothing() async throws {
         let f = try UnifiedSearchSimpleFixture()
         defer { f.results.stop() }
         let host = try await f.host(0)
         defer { host.close() }
         try await f.begin("/tags/order", host: host)
-        try await f.chooseTargets([f.service.tags[1], f.service.tags[0]], host: host)
+        try await f.chooseTargets([f.service.tags[0]], host: host)
+        try await typePosition("9", host: host)
         try await host.clickCompositionControl("unified.simple.prepare")
-        #expect(f.controller.currentSimplePreview == nil && f.controller.simpleFailure == "unified.simple.problem.incompleteOrder")
-        #expect(try f.text("unified.simple.issue", host: host) == Self.localized("unified.simple.problem.incompleteOrder", style: 0))
+        #expect(f.controller.currentSimplePreview == nil && f.controller.simpleFailure == "unified.simple.problem.outOfRange")
+        #expect(try f.text("unified.simple.issue", host: host) == Self.localized("unified.simple.problem.outOfRange", style: 0))
         #expect(f.service.count("save") == 0 && f.controller.settingExecution == nil)
     }
 }

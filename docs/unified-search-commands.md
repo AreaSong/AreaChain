@@ -7978,3 +7978,8 @@ L-M1b 必须的反例（合成内存库、fake 系统依赖）：借用签发后
 - **复用**：取消标题编辑 = 去掉宿主 `EditDrafts` 里保留的标题草稿（同编辑器 Esc，键统一为 `EditDrafts.key(todo:)／key(subtask:)`）；取消完成 = `PendingCompletionManager.cancelPending`（0.4 秒窗口，不另计时）；连击 = `HabitStreakLogic.calculate`（同详情抽屉的输入）；筛选写法沿 `BoardFilter.with…`，标签候选沿 `TaskCreateTagCatalogReader`／`CommandTaskTagCandidates`，页面筛选一次一个活标签。
 - **未实现**：tasks.sections 的 today 段（今日区始终展开，说明后拒绝）；今日页的多选（其 `TaskSelection` 是页面私有状态，选择指令只开放待处理／全部事项）；标签清单页的筛选与选择。
 - **测试**：WorkspacePageCommandTests（服务层 12 方法：筛选两个方向、各页面状态、单标签、错页不切、选择投影、两种取消、连击）；UnifiedSearchPageCommandInteractionTests（原生 5 方法：筛选双向同步、全选先显示当前页、错页说明、取消标题、连击；中英文 × 浅深色 × 标准／最小窗口）。工作台窗口里合成鼠标事件到不了操作面板按钮（缓冲版本与输入焦点均不变，原因未判定），原生用例改用 AXPress 触发同一按钮；真实鼠标点击该面板未验证。
+
+#### D 两个小收口
+
+- **tag.order**：目录改为单目标 + `position`（1 起、整数，同 subtask／routine／tasks.order），规格沿 `OrderRows` 与 `TaskCommandSpecs.position`：全部活标签按 sortOrder（同值按 UUID）排序后移动一项，写入仍只调 `reorderTags(orderedIDs:)`；墓碑不参与。“须选全部活标签”的旧规则随之取消（`incompleteOrder` 枚举值保留未用）。TagSimpleCommandTests 与两个原生用例改为位置输入与越界拒绝。
+- **门禁**：`scripts/quality_gate.py` 敏感日志规则前加 `\b`，`imprint(` 等不再误报为打印；test_quality_gate 增正例（真正的 `print(…notes)` 仍报）与反例（`imprint(…notes…)` 不报）。

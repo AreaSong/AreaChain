@@ -174,29 +174,37 @@ import SwiftData
 }
 
 /// tag.order → reorderTags(orderedIDs:)：与原界面拖动一致，固定集合必须是全部活标签的新顺序。
+/// tag.order → reorderTags(orderedIDs:)：全部活标签（同标签页拖动的口径）中把目标移到 position 指定的位置。
+/// 合并批 M-1 D 起与 subtask／routine／tasks.order 一致用 position，不再把选择器登记顺序当新顺序。
 @MainActor struct TagOrderSpec: SimpleCommandSpec {
     let repository: TagCommandSpecs.Repository
     let command = CommandID(rawValue: "tag.order")
-    let shape = CommandSimpleShape.fixed(.tag)
+    let shape = CommandSimpleShape.single(.tag)
     let copy = CommandSimpleCopy(preview: "unified.simple.tag.order.preview", saved: "unified.simple.tag.order.saved")
 
+    /// 标签页按 sortOrder 排活标签；同值时再按 UUID，保证每次读取顺序一致。
+    private func rows(_ input: CommandResolvedInput, in context: ModelContext) throws -> [OrderRows.Item] {
+        guard let target = input.targets.objects.first else { throw CommandSimpleIssue.invalidArguments }
+        _ = try TagCommandSpecs.tag(target, in: context)
+        return try context.fetch(FetchDescriptor<TagItem>(predicate: #Predicate { $0.deletedAt == nil }))
+            .sorted { ($0.sortOrder, $0.id.uuidString) < ($1.sortOrder, $1.id.uuidString) }
+            .map { ($0.id, $0.persistentModelID, $0.name) }
+    }
+
     func observe(_ input: CommandResolvedInput, in context: ModelContext) throws -> CommandSimpleState {
-        guard TagCommandSpecs.arguments(input).isEmpty else { throw CommandSimpleIssue.invalidArguments }
-        let tags = try input.targets.objects.map { try TagCommandSpecs.tag($0, in: context) }
-        let live = try context.fetch(FetchDescriptor<TagItem>(predicate: #Predicate { $0.deletedAt == nil }))
-        guard Set(live.map(\.id)) == Set(tags.map(\.id)), live.count == tags.count else {
-            throw CommandSimpleIssue.invalidTarget(.incompleteOrder)
-        }
-        return .init(rows: tags.map { TagCommandSpecs.row($0, TagCommandSpecs.orderField($0.sortOrder)) })
+        OrderRows.state(try rows(input, in: context))
     }
 
     func expect(_ input: CommandResolvedInput, from before: CommandSimpleState,
                 in context: ModelContext) throws -> CommandSimpleState {
-        let tags = try input.targets.objects.map { try TagCommandSpecs.tag($0, in: context) }
-        return .init(rows: tags.enumerated().map { TagCommandSpecs.row($1, TagCommandSpecs.orderField($0)) })
+        let rows = try rows(input, in: context)
+        let index = try TaskCommandSpecs.position(input, count: rows.count)
+        return OrderRows.state(OrderRows.moved(rows, moving: input.targets.objects[0].id, to: index))
     }
 
     func apply(_ input: CommandResolvedInput, in context: ModelContext) throws {
-        try repository(context).reorderTags(orderedIDs: input.targets.objects.map(\.id))
+        let rows = try rows(input, in: context)
+        let index = try TaskCommandSpecs.position(input, count: rows.count)
+        try repository(context).reorderTags(orderedIDs: OrderRows.moved(rows, moving: input.targets.objects[0].id, to: index).map(\.0))
     }
 }

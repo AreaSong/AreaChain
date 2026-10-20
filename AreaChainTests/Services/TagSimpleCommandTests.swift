@@ -79,16 +79,28 @@ import Testing
         #expect(mixed.tags[0].colorToken == TagColorToken.default.rawValue && mixed.count("save") == 0)
     }
 
-    /// 与原界面拖动一致：只接受全部活标签的新顺序。
-    @Test func orderNeedsAllLiveTagsAndWritesNewPositions() throws {
-        let partial = try SimpleCommandFixture()
-        try partial.queue("tag.order", targets: [partial.target(partial.tags[1]), partial.target(partial.tags[0])])
-        #expect(throws: CommandSimpleIssue.invalidTarget(.incompleteOrder)) { try partial.preview() }
+    /// 合并批 M-1 D：用 position 表达新位置（同三个任务排序指令），越界与非整数拒绝；墓碑不参与排序。
+    @Test func orderMovesOneTagToTypedPosition() throws {
         let f = try SimpleCommandFixture()
-        let order = [f.tags[2], f.tags[0], f.tags[1]]
-        let (_, facts) = try f.run("tag.order", targets: order.map(f.target))
+        let before = try f.live()
+        let (_, facts) = try f.run("tag.order", targets: [f.target(before[2])], arguments: [Self.position(1)])
         #expect(facts.state == .saved && f.count("save") == 1)
-        #expect(try f.live().map(\.id) == order.map(\.id) && f.deleted.sortOrder == 3)
+        #expect(try f.live().map(\.id) == [before[2], before[0], before[1]].map(\.id) && f.deleted.sortOrder == 3)
+        for (raw, issue) in [(0.0, CommandSimpleIssue.invalidTarget(.outOfRange)), (9, .invalidTarget(.outOfRange)),
+                             (1.5, .invalidArguments)] {
+            let g = try SimpleCommandFixture()
+            try g.queue("tag.order", targets: [g.target(g.tags[0])], arguments: [Self.position(raw)])
+            #expect(throws: issue) { try g.preview() }
+            #expect(g.count("save") == 0)
+        }
+        let unchanged = try SimpleCommandFixture()
+        let first = try unchanged.live()[0]
+        let (accepted, _) = try unchanged.run("tag.order", targets: [unchanged.target(first)], arguments: [Self.position(1)])
+        #expect(accepted.preview.noChange && unchanged.count("save") == 0)
+    }
+
+    static func position(_ value: Double) -> CommandArgument {
+        .init(parameter: .position, operation: .assign, value: .number(value))
     }
 
     @Test func targetChangedAfterAcceptanceIsNotSubmitted() throws {

@@ -127,6 +127,16 @@ class QualityGateTests(unittest.TestCase):
         findings = quality.security_findings([path])
         self.assertEqual({item["severity"] for item in findings}, {"high", "medium"})
 
+    def test_security_scanner_flags_real_print_of_notes(self):
+        path = self.write("AreaChain/Services/Example.swift", "pri" + "nt(item.no" + "tes)\n")
+        findings = quality.security_findings([path])
+        self.assertEqual([item["severity"] for item in findings], ["medium"])
+
+    def test_security_scanner_does_not_treat_imprint_as_print(self):
+        path = self.write("AreaChain/Services/Example.swift",
+                          "let mark = digest.imprint(item" + ".notes, parameter: .notes)\n")
+        self.assertEqual(quality.security_findings([path]), [])
+
     def test_security_scanner_does_not_flag_normal_logs(self):
         path = self.write("AreaChain/Services/Example.swift", "NSLog(\"count=%ld\", count)\n")
         self.assertEqual(quality.security_findings([path]), [])
