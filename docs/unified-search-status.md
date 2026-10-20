@@ -2,7 +2,7 @@
 
 本文是统一搜索与指令体系的**现状总览**：只记当前状态、覆盖、缺口和每批必读入口。设计、规则与历史证据仍以[权威设计](unified-search-commands.md)为准，本文不复制。每批怎样更新本文见[技能路由的路由维护](../skill-routing.md#路由维护)。
 
-最后更新：2026-10-20，合并批 M-2（[§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板)）。
+最后更新：2026-10-21，合并批 M-3（[§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口)）。
 
 ## 目标与阶段
 
@@ -11,13 +11,13 @@
 - 阶段划分见 [§9.1](unified-search-commands.md#91-建议的分阶段边界)，当前状态一句话一行：
   - **阶段 1 领域协议**：1A～1D 已实现（目录、解析、查询会话、草稿、计划、转交），仅 1A～1D 自身证据，见 [§9.6](unified-search-commands.md#96-阶段-1a-目录决策与证据)～§9.13。
   - **阶段 2 只读数据**：2A～2J 注入快照提供者与 2K-1～2K-8 SwiftData／文件只读适配已在隔离环境实现；真实宿主的异步调度与生产接线未做，见 [§9.14](unified-search-commands.md#914-阶段-2atodo-只读快照提供者与类型化结果)～[§9.44](unified-search-commands.md#944-阶段-2k-8全来源标签使用统计的只读存储适配与受门禁发布)。
-  - **阶段 3 业务动作适配**：进行中；普通设置（3A）、任务／子任务／习惯／批量／转换／标签等指令已在隔离环境逐批实现，覆盖见下表。
+  - **阶段 3 业务动作适配**：进行中；普通设置（3A）、任务／子任务／习惯／批量／转换／标签等指令已在隔离环境逐批实现；系统类、永久删除类与附件系统动作自 M-3 起“打开原页面”。覆盖见下表，未开始只剩手记写入 J1～J3（M-4）。
   - **阶段 4 共享界面**：4A 公共输入、结果列表、参数、对象、计划与长文编辑只在隔离宿主装配；正式版没有构造 `UnifiedSearchController`，生产入口未接线。
   - 阶段 5～7（队列执行与撤销、独立系统流程、模板与全目录收口）：未开始。
 
 ## 功能覆盖表
 
-状态只用：**未开始 / 隔离实现 / 隔离实现且已复核 / 已接正式版 / 待核实**。一行内只有部分动作完成时写“隔离实现（部分）”，并在“已覆盖／未覆盖”列写清哪些动作完成、哪些没有；不把未覆盖动作算作已实现。“已复核”只指按[指定只读复核入口](../skill-routing.md#指定只读复核入口)通过的部分。功能名称见 §8 对应行（ID 链接）。
+状态只用：**未开始 / 隔离实现 / 隔离实现且已复核 / 打开原页面 / 已接正式版 / 待核实**。“打开原页面”（M-3，2026-10-20 用户决策 1、2）指指令只导航到原页面、由原页面完成操作，不在指令里执行，**不算隔离实现**；对照只在 [CommandOriginalPage](../AreaChain/Domain/CommandOriginalPage.swift)。一行内既有隔离实现又有打开原页面的动作时写“隔离实现＋打开原页面”。一行内只有部分动作完成时写“隔离实现（部分）”，并在“已覆盖／未覆盖”列写清哪些动作完成、哪些没有；不把未覆盖动作算作已实现。“已复核”只指按[指定只读复核入口](../skill-routing.md#指定只读复核入口)通过的部分。功能名称见 §8 对应行（ID 链接）。
 
 | ID | 功能 | 状态 | 已覆盖／未覆盖 | 里程碑 | 交接 |
 |---|---|---|---|---|---|
@@ -38,45 +38,45 @@
 | [J2](unified-search-commands.md#J2) | 手记组织 | 未开始 | — | — | — |
 | [J3](unified-search-commands.md#J3) | 手记复制、转任务、回收 | 未开始 | — | — | — |
 | [G1](unified-search-commands.md#G1) | 标签新建、改名、颜色、排序、搜索与视图 | 隔离实现（部分） | 已：tag.create／rename／color（X-1）、tag.order（M-1）、tag.cancel、tag.search／view／deleted（M-2，取法即标签页的 TagListQuery）、go.tagList（N-M2）；未：新建时设为私密（需解锁） | X-1、2F、N-M2、T-M6、M-1、M-2 | [§9.92](unified-search-commands.md#992-提速基建-x-1)、[§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板) |
-| [G2](unified-search-commands.md#G2) | 标签合并、解绑、软删／恢复、清理 | 隔离实现（部分） | 已：tag.merge（决策 3：涉及私密标签整条拒绝）、tag.unlinkObject（受保护手记拒绝）、tag.trash／tag.restore（共用独立确认、只能单项）；未：tag.delete、tag.cleanup（决策 1，留给 M-3 打开原页面）、tag.unlinkGlobal（目录 unavailable） | M-2 | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板) |
-| [A1](unified-search-commands.md#A1) | 图片附件 | 隔离实现（部分） | 已：图片元数据只读查询（2E、2K-6）、普通图片查阅（N-M2）、image.browse／image.preview／image.trash（M-2；孤儿与受保护附件拒绝，回收经共用独立确认）；未：image.pick／paste／capture（决策 2，留给 M-3 打开原页面） | 2K-6、N-M2、M-2 | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板) |
+| [G2](unified-search-commands.md#G2) | 标签合并、解绑、软删／恢复、清理 | 隔离实现＋打开原页面 | 已：tag.merge（决策 3：涉及私密标签整条拒绝）、tag.unlinkObject（受保护手记拒绝）、tag.trash／tag.restore（共用独立确认、只能单项）；打开原页面：tag.delete、tag.cleanup → 标签页（M-3）；tag.unlinkGlobal 目录 unavailable（原界面没有该功能，不算缺口） | M-2、M-3 | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板)、[§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
+| [A1](unified-search-commands.md#A1) | 图片附件 | 隔离实现＋打开原页面 | 已：图片元数据只读查询（2E、2K-6）、普通图片查阅（N-M2）、image.browse／image.preview／image.trash（M-2）；打开原页面：image.pick／paste／capture → 焦点对象的详情（手记打开手记页，习惯定义须先选执行日）（M-3） | 2K-6、N-M2、M-2、M-3 | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板)、[§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
 | [C1](unified-search-commands.md#C1) | 剪贴板浏览与搜索 | 隔离实现 | 已：显式 /clipboard 只读提供者与文件只读适配（2G、2K-5）；clipboard.browse／search（M-2，与历史页 visibleItems 同一取法，原生等价验收逐行比对）；默认不进普通搜索不变 | 2G、2K-5、M-2 | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板) |
 | [C2](unified-search-commands.md#C2) | 剪贴板复制／粘贴 | 隔离实现 | 已：clipboard.copy／paste／pastePlain（ClipboardHistoryActions，写入失败不报成功；QA 中门与按键全为 fake、私有命名剪贴板）；真实辅助功能权限与 ⌘V 未接线 | M-2 | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板) |
-| [C3](unified-search-commands.md#C3) | 剪贴板置顶、删除、清空 | 隔离实现（部分） | 已：clipboard.pinned（togglePin，保存成功才报告）、clipboard.copyLetter；未：delete、prune、empty（决策 1，留给 M-3 打开原页面） | M-2 | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板) |
-| [C4](unified-search-commands.md#C4) | 记录暂停、跳过、忽略来源 | 未开始 | 决策 2：留给 M-3 打开原页面（clipboard.recording／skipNext／ignoreApp） | — | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板) |
-| [C5](unified-search-commands.md#C5) | 剪贴板偏好 | 未开始 | 决策 2：留给 M-3 打开原页面（含 add／removePattern、add／removeType、unignoreApp） | — | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板) |
+| [C3](unified-search-commands.md#C3) | 剪贴板置顶、删除、清空 | 隔离实现＋打开原页面 | 已：clipboard.pinned、clipboard.copyLetter（M-2）；打开原页面：delete、prune、empty → 剪贴板页（M-3） | M-2、M-3 | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板)、[§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
+| [C4](unified-search-commands.md#C4) | 记录暂停、跳过、忽略来源 | 打开原页面 | clipboard.recording／skipNext／ignoreApp → 剪贴板页（M-3，决策 2） | M-3 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
+| [C5](unified-search-commands.md#C5) | 剪贴板偏好 | 打开原页面 | 全部 13 条（含 add／removePattern、add／removeType、unignoreApp）→ 剪贴板页的“剪贴板选项”（设置页没有剪贴板分节，M-3 核实） | M-3 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
 | [C6](unified-search-commands.md#C6) | 剪贴板小窗 | 隔离实现 | 已：clipboard.openWindow／closeWindow／pinWindow／workspace（沿 ClipboardHistoryPanel 现有窗口管理，只有一个面板）；真实窗口适配读共享会话，生产接线另需授权 | M-2 | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板) |
 | [S1](unified-search-commands.md#S1) | 语言、外观、标题省略、捕获来源 | 隔离实现 | 单项与共同提交（聚合文件后端）都在隔离宿主；未复核 | 3A | [§9.62](unified-search-commands.md#962-阶段-3a-3b3b普通设置共同提交的原生接线) |
-| [S2](unified-search-commands.md#S2) | 登录启动 | 未开始 | — | — | — |
-| [S3](unified-search-commands.md#S3) | 通知权限与测试 | 未开始 | — | — | — |
-| [S4](unified-search-commands.md#S4) | 通知完成与延后 | 未开始 | — | — | — |
-| [S5](unified-search-commands.md#S5) | 日历同步 | 未开始 | — | — | — |
-| [S6](unified-search-commands.md#S6) | iCloud 说明 | 未开始 | — | — | — |
-| [S7](unified-search-commands.md#S7) | 快捷键配置 | 未开始 | — | — | — |
-| [P1](unified-search-commands.md#P1) | 创建私密锁 | 未开始 | 高风险，需单独授权 | — | — |
-| [P2](unified-search-commands.md#P2) | 隐私管理 | 未开始 | 高风险，需单独授权 | — | — |
-| [P3](unified-search-commands.md#P3) | 解除单条手记保护 | 未开始 | 高风险，需单独授权 | — | — |
-| [P4](unified-search-commands.md#P4) | 隐私维护重试 | 未开始 | 高风险，需单独授权 | — | — |
-| [D1](unified-search-commands.md#D1) | 回收站 | 隔离实现（部分） | 已：显式回收范围的墓碑只读搜索（2H、2K-7）；未：恢复、永久删除、清空 | 2H、2K-7 | [§9.43](unified-search-commands.md#943-阶段-2k-7完整墓碑只读适配与受门禁回收站搜索) |
-| [D2](unified-search-commands.md#D2) | JSON 导出导入 | 未开始 | — | — | — |
-| [D3](unified-search-commands.md#D3) | 加密备份与恢复 | 未开始 | 高风险，需单独授权 | — | — |
-| [D4](unified-search-commands.md#D4) | 重置并退出 | 未开始 | 1A 登记为 unavailable | — | [§9.6](unified-search-commands.md#96-阶段-1a-目录决策与证据) |
+| [S2](unified-search-commands.md#S2) | 登录启动 | 打开原页面 | setting.login、loginSettings → 设置“启动”分节（M-3） | M-3 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
+| [S3](unified-search-commands.md#S3) | 通知权限与测试 | 打开原页面 | notification.status／request／test／settings → 设置“通知”分节（M-3） | M-3 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
+| [S4](unified-search-commands.md#S4) | 通知完成与延后 | 隔离实现＋打开原页面 | 已：notification.open 沿 inspector.open 打开对象；complete／snooze 只说明并给出改用 todo.completion／occurrence.complete／todo.reminder 的入口，不另写执行（M-3） | M-3 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
+| [S5](unified-search-commands.md#S5) | 日历同步 | 打开原页面 | calendarSync.enabled／status／retry／settings／conflicts → 设置“系统日历”分节；openLocal 也改为打开该分节（搜索里没有冲突对象来源，偏离原“直接执行”，见 §9.98）（M-3） | M-3 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
+| [S6](unified-search-commands.md#S6) | iCloud 说明 | 打开原页面 | setting.icloud → 设置“iCloud”分节（M-3） | M-3 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
+| [S7](unified-search-commands.md#S7) | 快捷键配置 | 打开原页面 | shortcut.record／reset／resetAll／cancel → 快捷键页（M-3） | M-3 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
+| [P1](unified-search-commands.md#P1) | 创建私密锁 | 打开原页面 | privacy.create／setupMethod／setupTags／protectExisting → 隐私与解锁页（M-3）；不新增隐私转换执行路径 | M-3 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
+| [P2](unified-search-commands.md#P2) | 隐私管理 | 隔离实现＋打开原页面 | 已：privacy.lock 直接执行（沿“立即锁定”，锁定撤权，M-3）；打开原页面：unlock、systemUnlock、set／change／removePassword、idle、tags → 隐私与解锁页 | M-3 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
+| [P3](unified-search-commands.md#P3) | 解除单条手记保护 | 打开原页面 | privacy.unprotect → 隐私与解锁页（M-3） | M-3 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
+| [P4](unified-search-commands.md#P4) | 隐私维护重试 | 打开原页面 | privacy.retryImages／retryKeys／quitForCleanup → 隐私与解锁页（M-3） | M-3 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
+| [D1](unified-search-commands.md#D1) | 回收站 | 隔离实现＋打开原页面 | 已：显式回收范围的墓碑只读搜索（2H、2K-7）、trash.restore（M-3：与回收站页同一写入 TrashRestoreService，共用独立确认、只能单项，受保护拒绝）；打开原页面：trash.delete、trash.empty → 回收站（定位焦点项） | 2H、2K-7、M-3 | [§9.43](unified-search-commands.md#943-阶段-2k-7完整墓碑只读适配与受门禁回收站搜索)、[§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
+| [D2](unified-search-commands.md#D2) | JSON 导出导入 | 打开原页面 | data.export／selectImport／validateImport／previewImport／applyImport → 数据与备份页（M-3）；不新增导入执行路径 | M-3 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
+| [D3](unified-search-commands.md#D3) | 加密备份与恢复 | 打开原页面 | backup.export／inspect／preview／restore → 数据与备份页（M-3）；不新增备份恢复执行路径 | M-3 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
+| [D4](unified-search-commands.md#D4) | 重置并退出 | 打开原页面 | recovery.status、recovery.resetQuit → 数据与备份页（降级提示就在该页，M-3）；resetQuit 目录仍 unavailable | M-3 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
 | [N1](unified-search-commands.md#N1) | 全页面与标签清单导航 | 隔离实现 | 已：16 个 go 入口（N-M1）、go.tagList（N-M2）；未复核 | N-M1、N-M2 | [§9.84](unified-search-commands.md#984-里程碑-n-m1导航与返回搜索) |
-| [N2](unified-search-commands.md#N2) | 工作台、浮层与面板 | 未开始 | — | — | — |
+| [N2](unified-search-commands.md#N2) | 工作台、浮层与面板 | 隔离实现（部分） | 已：workspace.open／reveal／close、overlay.toggle、routine.addPanel／managePanel（沿 AppWindows 与今日页原面板，不新建窗口，M-3）；未：overlay.mode（浮层的任务／手记页没有外部切换入口，只说明） | M-3 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
 | [N3](unified-search-commands.md#N3) | 检查器与选择 | 隔离实现 | 已：inspector.open／inspector.day（N-M1）、selection.all／clear（M-1，沿页面投影） | N-M1、M-1 | [§9.84](unified-search-commands.md#984-里程碑-n-m1导航与返回搜索)、[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾) |
-| [N4](unified-search-commands.md#N4) | 手记小窗 | 未开始 | diaryWindow.open 保持未装配（N-M2） | — | — |
-| [N5](unified-search-commands.md#N5) | 总览统计 | 未开始 | — | — | — |
-| [N6](unified-search-commands.md#N6) | 帮助与示例 | 未开始 | — | — | — |
-| [N7](unified-search-commands.md#N7) | 版本、反馈与链接 | 未开始 | — | — | — |
-| [N8](unified-search-commands.md#N8) | 退出与未保存确认 | 未开始 | — | — | — |
+| [N4](unified-search-commands.md#N4) | 手记小窗 | 隔离实现（部分） | 已：diaryWindow.open（受保护手记拒绝）／draft（不写入，受保护草稿留给原页面）／pinned／close（沿小窗原有确认）（M-3）；未：diaryWindow.save（写正文，归 M-4） | M-3 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
+| [N5](unified-search-commands.md#N5) | 总览统计 | 隔离实现 | 已：stats.* 八项只读（DashboardStatsReader，与总览页同一投影，私密手记口径不变）、stats.openDay、活动行打开（沿总览路由；搜索里没有活动对象，stats.openActivity 指向 stats.activity 的列表）（M-3） | M-3 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
+| [N6](unified-search-commands.md#N6) | 帮助与示例 | 打开原页面 | help.syntax（语法帮助卡）、help.page（来时页面的说明）、help.example（只预填示例到搜索框，不执行）（M-3） | M-3 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
+| [N7](unified-search-commands.md#N7) | 版本、反馈与链接 | 打开原页面 | support.* 七条 → 设置“版本／支持／关于”分节；不在指令里打开外部网址（M-3） | M-3 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
+| [N8](unified-search-commands.md#N8) | 退出与未保存确认 | 隔离实现 | 已：app.quit 走 AppDelegate.applicationShouldTerminate 的原有确认（含未保存手记），同意后才调注入的 terminate；QA 中为 fake（M-3） | M-3 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
 
-合计 48 项：隔离实现 17（T1～T8、S1、N1、N3、B1～B3、C1、C2、C6）；隔离实现且已复核 1（T10）；隔离实现（部分）6（T9、G1、G2、A1、C3、D1）；待核实 0；未开始 24；已接正式版 0（M-1 A 的原界面私密标签修复属正式版行为修复，不计入指令接线）。
+合计 48 项：隔离实现 19（T1～T8、S1、N1、N3、N5、N8、B1～B3、C1、C2、C6）；隔离实现且已复核 1（T10）；隔离实现（部分）4（T9、G1、N2、N4）；隔离实现＋打开原页面 6（G2、A1、C3、S4、P2、D1）；打开原页面 15（C4、C5、S2、S3、S5、S6、S7、P1、P3、P4、D2、D3、D4、N6、N7）；待核实 0；未开始 3（J1～J3，留给 M-4）；已接正式版 0（M-1 A 的原界面私密标签修复属正式版行为修复，不计入指令接线）。
 
 ## 未闭合缺口
 
 合并去重自各交接节，每条附来源；关闭某条时只改本节对应行。
 
-- **指定只读复核**：G-1a 已关闭 T-M1～T-M3 的复核缺口；X-1、T-M6、L-M1b、合并批 M-1、合并批 M-2 已通过（见各自交接）；其余里程碑（2*、4A、3A、3T、R、B、P、N、C 系列、T-M4、T-M5）仍未经指定复核。来源：[§9.89](unified-search-commands.md#989-补复核-g-1at-系列)、[§9.91](unified-search-commands.md#991-里程碑-t-m5待办与重复事项互转)。
+- **指定只读复核**：G-1a 已关闭 T-M1～T-M3 的复核缺口；X-1、T-M6、L-M1b、合并批 M-1、合并批 M-2 已通过（见各自交接）；其余里程碑（2*、4A、3A、3T、R、B、P、N、C 系列、T-M4、T-M5）仍未经指定复核；合并批 M-3 见其交接。来源：[§9.89](unified-search-commands.md#989-补复核-g-1at-系列)、[§9.91](unified-search-commands.md#991-里程碑-t-m5待办与重复事项互转)。
 - **正常签名构建**：正常开发描述文件曾于 2026-10-07 到期，各里程碑的正常 Debug 证据因此 partial；当前描述文件 2026-10-22 到期，到期后正常构建记为阻塞，不续签、不改个人签名配置。来源：[§9.75](unified-search-commands.md#975-里程碑-t-m3普通子任务的隔离闭环)、[§9.89](unified-search-commands.md#989-补复核-g-1at-系列)。
 - **人工与平台验收**：真人输入法、VoiceOver、最低支持系统、真实多窗口、原生截图逐类查看均未做。来源：[§9.85](unified-search-commands.md#985-里程碑-n-m2标签导航普通手记全文与普通图片查阅)、[§9.89](unified-search-commands.md#989-补复核-g-1at-系列)。
 - **C2B 原生接受与锁定交错**：敏感输入不开放，mutable textStorage 只能事后检测。来源：[§9.52](unified-search-commands.md#952-阶段-4a-3c2b原生接受与锁定交错的隔离可行性)、[§9.86](unified-search-commands.md#986-里程碑-c-m1命令长文原生编辑与受控组合输入)。
@@ -89,7 +89,9 @@
 - **工作台操作面板鼠标点击**：M-1 原生用例中，合成鼠标事件到不了工作台窗口操作面板里的按钮（缓冲版本与输入焦点均不变，原因未判定），改用 AXPress 验证同一按钮；真实鼠标点击未验证。来源：[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾)。
 - **G-1a 低级整改清单 9 条**：待单独批准的修复批次。来源：[§9.89](unified-search-commands.md#989-补复核-g-1at-系列)。
 - **目录未决项**：tag.cleanup（预置标签范围）、backup.export（无锁可达性）、diary.tags（保护转换）等仍未定稿；习惯 skip 语义已由 R-M3 的 D1 处理；tag.merge 已按决策 3、quadrant.complete 已按 R-M3 语义在 M-2 解决。来源：[§9.6](unified-search-commands.md#96-阶段-1a-目录决策与证据)、[§9.78](unified-search-commands.md#978-里程碑-r-m3兼容跳过习惯启停与指定执行日状态)、[§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板)。
-- **留给 M-3 打开原页面**（2026-10-20 用户决策 1、2）：tag.delete、tag.cleanup、clipboard.delete／prune／empty（永久删除类），C4 记录控制、C5 剪贴板偏好，image.pick／paste／capture（系统面板、截屏、解锁）。来源：[§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板)。
+- **留给 M-3 打开原页面**：已关闭（合并批 M-3 A）。tag.delete／cleanup、clipboard.delete／prune／empty、C4、C5、image.pick／paste／capture 与 S2、S3、S5～S7、P1～P4（除 privacy.lock）、D1 永久删除、D2～D4、N6、N7 都只导航到原页面，对照唯一在 CommandOriginalPage。来源：[§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口)。
+- **M-3 偏离与限制**：calendarSync.openLocal 改为打开设置“系统日历”分节（搜索里没有冲突对象来源）；C5 指向剪贴板页的“剪贴板选项”（设置页没有剪贴板分节）；分节只在说明里指明，页面不自动滚动；overlay.mode 只说明（浮层切页没有外部入口）；stats.openActivity 没有活动对象来源，改在 stats.activity 的列表里打开；diaryWindow.save 归 M-4。来源：[§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口)。
+- **M-3 生产接线前置**：WorkspaceSystemCommands 的工作台显示／关闭、浮层开关、手记小窗管理、退出确认与 terminate、保险箱，以及 trash.restore 规格装配都只在隔离夹具里注入；接正式版需逐项授权（真实 AppWindows／StatusItemController／DiaryWindows.shared／NSApp.terminate）。来源：[§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口)。
 - **M-2 生产接线前置**：剪贴板粘贴的真实辅助功能权限与 ⌘V、小窗真实窗口适配（读共享会话）、手记解绑标签的保险箱、附件存储根均只在隔离夹具里注入；image.preview 只能打开当前结果里可见的普通图片。来源：[§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板)。
 - **现状差距**：备份未配置锁的可达性、剪贴板历史读取失败返回空、重置吞掉删除错误。来源：[§9.4](unified-search-commands.md#94-未决问题与单独授权边界)。
 - **性能基线**：新查询延迟、长文编辑、最大候选规模与内存均未建立基线。来源：[§9.3](unified-search-commands.md#93-后续回归入口与证据缺口)。
@@ -101,6 +103,7 @@
 - L-M1b：指定复核第二轮通过，见 [§9.95](unified-search-commands.md#995-里程碑-l-m1b长文受控借用实现)。
 - 合并批 M-1：指定复核第二轮通过，见 [§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾)。
 - 合并批 M-2：指定复核通过（两条低级意见已整改），见 [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板)。
+- 合并批 M-3：指定复核结论见 [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口)。
 - T-M4、T-M5 的指定复核另需安排；X-1 已复核通过，见 [§9.92](unified-search-commands.md#992-提速基建-x-1)；T-M6 已复核通过，见 [§9.93](unified-search-commands.md#993-里程碑-t-m6任务类修改收尾)。
 
 ## 每批最少必读

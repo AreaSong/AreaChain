@@ -8067,3 +8067,57 @@ L-M1b 必须的反例（合成内存库、fake 系统依赖）：借用签发后
 - 生产接线须另行授权：页面宿主与骨架规格装配、剪贴板粘贴的真实辅助功能权限请求与 ⌘V 发送、小窗真实窗口适配（ClipboardHistoryPanel 读共享会话，隔离宿主用自己的会话）、手记解绑标签所需的保险箱、附件文件存储根。
 - image.preview 只能打开当前结果里可见的普通图片；tag.create 的“设为私密”、受保护手记的标签解绑、受保护图片的回收与查阅仍须原页面解锁。
 - 人工与平台验收、工作台操作面板真实鼠标点击（原生用例用 AXPress）、正常开发描述文件 2026-10-22 到期等既有缺口不变。
+
+### 9.98 合并批 M-3：导航、窗口与系统入口
+
+2026-10-21（Asia/Shanghai）。提速方案的第三个合并批，检查点 A～C 逐个本地提交（1e31ac6、b684835、9000266）、文档为检查点 D，均不推送；开工前决策都由用户确认。全部在隔离环境：页面宿主 `pageCommands`、其 `system`、骨架 `simple` 都默认 nil，生产没有新的构造点。
+
+#### 用户决策的落实
+
+- **决策 1、2**：系统类、永久删除类、附件系统动作一律“打开原页面”——面板说明为什么要在原页面完成，回车只沿 N-M1 导航（先校验宿主与资格，保留返回票据），不建草稿、不写数据、不调系统 API、不申请权限、不打开外部网址。现状总览新增状态“打开原页面”，不算隔离实现。
+- **直接执行只有两条**：privacy.lock（立即锁定）、trash.restore（共用独立确认、只能单项）。不新增永久删除、隐私转换、备份恢复、导入、系统权限申请的执行路径。
+
+#### A “打开原页面”唯一对照（[CommandOriginalPage](../AreaChain/Domain/CommandOriginalPage.swift)）
+
+目录标记 `completesOnOriginalPage` 只来自本表，不另起可用性规则；`routesAsNavigation` 让这些指令走导航面板，候选接受与 `beginOperation` 同一判定，永不建草稿。分节只在说明里指明，页面不自动滚动；遮罩时说明需先解锁。
+
+| 指令 | 目标 |
+|---|---|
+| tag.delete（分节“已删除”）、tag.cleanup | 标签页 |
+| clipboard.delete／prune／empty、recording／skipNext／ignoreApp | 剪贴板页 |
+| C5 全部 13 条（ignoreUniversal … removeType） | 剪贴板页“剪贴板选项”（设置页没有剪贴板分节） |
+| image.pick／paste／capture | 焦点对象详情：待办、执行日沿 inspector.open；手记打开手记页；习惯定义说明须先选执行日 |
+| setting.login／loginSettings | 设置“启动” |
+| notification.status／request／test／settings | 设置“通知” |
+| calendarSync.enabled／status／retry／settings／conflicts、openLocal | 设置“系统日历”（openLocal 偏离：搜索里没有冲突对象来源） |
+| setting.icloud | 设置“iCloud” |
+| notification.open | 焦点对象详情（指令本身即导航） |
+| notification.complete／snooze | 只说明，给出改用 todo.completion／occurrence.complete、todo.reminder 的入口 |
+| shortcut.record／reset／resetAll／cancel | 快捷键页 |
+| privacy.* 除 lock 外 15 条 | 隐私与解锁页 |
+| trash.delete／empty | 回收站（定位当前焦点项） |
+| data.* 5 条、backup.* 4 条、recovery.status／resetQuit | 数据与备份页（降级提示就在该页） |
+| help.syntax／page／example | 语法帮助卡／来时页面的说明（`WorkspaceTab.helpKeyName`，页头共用）／只预填示例到搜索框 |
+| support.version；discussion／suggestion／issue；about／repository／license | 设置“版本”；“支持”；“关于” |
+
+#### B 窗口、面板、统计、退出（[CommandSystemAction](../AreaChain/Domain/CommandSystemAction.swift)、[WorkspaceSystemCommands](../AreaChain/Features/Workspace/WorkspaceSystemCommands.swift)）
+
+- N2：workspace.open 沿 `AppWindows.revealWorkspace(opening:)` 后经 N-M1 显示总览；reveal 只前置；close 在有指令草稿或待执行列表时拒绝；overlay.toggle 调注入的浮层开关；overlay.mode 只说明（浮层切页是浮层自己的状态，没有外部入口）；routine 两个面板经今日页原 sheet（新增 `wantsRecurringEditor`，同 `wantsRecurringList`）。
+- N4：diaryWindow.open／pinned／close 沿 DiaryWindows（同一手记一个窗口；受保护手记拒绝；关闭沿 windowShouldClose 的原有确认）；draft 把手记页草稿转小窗、不写入，受保护草稿留给原页面。**diaryWindow.save 不在本批**（写正文，归 M-4）。
+- N5：stats.* 八项只读，取数抽为 [DashboardStatsReader](../AreaChain/Services/DashboardStatsReader.swift)（总览页转调，私密手记按 diarySource 口径）；openDay 沿 inspector.day；活动行打开沿总览路由并经 objects.resolve，stats.openActivity 没有活动对象来源，指向 stats.activity 的列表。
+- N8：app.quit 走 `AppDelegate.applicationShouldTerminate`（退出确认＋未保存手记确认），同意后才调注入的 terminate；QA 中为 fake，绝不退出测试宿主。
+
+#### C 直接执行的两条
+
+- privacy.lock：沿页头与隐私设置的“立即锁定”（`vault.lock`）；锁定事件按 C-M1、L-M1b 规则撤销结果展示、返回票据、查阅内容与长文托管；未启用或已锁定只说明。
+- trash.restore：写入抽为 [TrashRestoreService](../AreaChain/Services/TrashRestoreService.swift)（回收站页 DayBoardMutations.restore* 转调），规格 [TrashRestoreSpec](../AreaChain/Services/TrashRestoreCommandSpecs.swift) 走骨架的共用独立确认；目录由 systemAction 改为可入普通计划的修改（同 M-2 tag.restore），多项计划按独立确认拒绝。确认面板列出随之恢复的子任务与图片；受保护手记及其图片、加密图片拒绝；拥有者也在回收站的图片拒绝（新原因 `ownerTrashed`）。
+
+#### 检查点内验证（隔离入口 `--qa-batch m3`，证据在被忽略的 build/M3/）
+
+- A：CommandOriginalPageTests 3、UnifiedSearchOriginalPageTests 5（73 条页面路由逐条预览／导航／零写入／返回）全过；首轮 2 处测试时序与 1 处读取方式失败，整改后通过。B：CommandSystemActionTests 1、UnifiedSearchSystemCommandTests 4 全过。C：TrashRestoreCommandTests 4、UnifiedSearchPrivacyRestoreTests 3 全过。
+- 受影响回归：A 4 类 28 方法、B 11 类 60 方法、C 17 类 122 方法；失败中 DashboardProjectionTests、DashboardScrollTests、DiaryWindowLifecycleTests、UnifiedSearchNavigationBoundaryTests（崩溃）在 `git archive cc7b530` 基线持原锁同断言复现，SubtaskModelTests.addTagSkipsDiaryPresetNames 即总览所列既有失败。
+
+#### 缺口与生产接线所需授权
+
+- 生产接线须另行授权：页面宿主与 `system` 的真实依赖（AppWindows／StatusItemController／DiaryWindows.shared／NSApp.terminate、真实保险箱）、trash.restore 规格装配。
+- 偏离与限制：openLocal 改为打开分节；C5 指向剪贴板页；分节不自动滚动；overlay.mode 只说明；diaryWindow.save 留给 M-4。人工与平台验收、工作台操作面板真实鼠标点击（原生用例用 AXPress）等既有缺口不变。
