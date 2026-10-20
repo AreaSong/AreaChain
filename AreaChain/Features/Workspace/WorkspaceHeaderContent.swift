@@ -66,7 +66,10 @@ extension WorkspaceTab {
         }
     }
 
-    var helpKey: LocalizedStringKey? {
+    var helpKey: LocalizedStringKey? { helpKeyName.map { LocalizedStringKey($0) } }
+
+    /// 页面说明的唯一文案键；页头说明与统一搜索的 help.page（合并批 M-3）共用。
+    var helpKeyName: String? {
         switch self {
         case .tags: "tags.page.subtitle"
         case .diary: "diary.page.subtitle"

@@ -56635,6 +56635,618 @@
           }
         }
       }
+    },
+    "unified.originalPage.hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This action is finished on its original page. The command only opens that page; nothing is changed here."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这个操作要在原页面完成。指令只负责打开那一页，这里不做任何修改。"
+          }
+        }
+      }
+    },
+    "unified.originalPage.target": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens:"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将打开："
+          }
+        }
+      }
+    },
+    "unified.originalPage.section": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Section:"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分节："
+          }
+        }
+      }
+    },
+    "unified.originalPage.object": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens the detail of the focused result."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开当前选中结果的详情。"
+          }
+        }
+      }
+    },
+    "unified.originalPage.open": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open original page"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开原页面"
+          }
+        }
+      }
+    },
+    "unified.originalPage.displayed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opened. Finish the action on this page."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已打开，请在这一页完成操作。"
+          }
+        }
+      }
+    },
+    "unified.originalPage.missingPage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This page is not available here."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这里没有对应的页面。"
+          }
+        }
+      }
+    },
+    "unified.originalPage.needsDay": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose one day of this routine first; its detail is opened per day."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先选中这个重复事项某一天的执行项，详情按天打开。"
+          }
+        }
+      }
+    },
+    "unified.originalPage.useCommand": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "改用"
+          }
+        }
+      }
+    },
+    "unified.originalPage.useInstead.choose": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose one of the commands above."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请选择上面的一条指令。"
+          }
+        }
+      }
+    },
+    "command.originalPage.note.permanentDeletion": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permanent deletion is only done on its original page, where you can review what will be removed and confirm."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "永久删除只在原页面完成，在那里核对要删除的内容并确认。"
+          }
+        }
+      }
+    },
+    "command.originalPage.note.cleanup": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cleaning up unused tags is done on the Tags page, after reviewing the range there."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清理未使用的标签要在标签页完成，先在那里核对范围。"
+          }
+        }
+      }
+    },
+    "command.originalPage.note.clipboardControl": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pausing recording, skipping the next copy and ignoring a source app are done on the Clipboard page."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂停记录、跳过下一次和忽略来源 App 要在剪贴板页完成。"
+          }
+        }
+      }
+    },
+    "command.originalPage.note.preference": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clipboard preferences are changed in Clipboard options on the Clipboard page."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剪贴板偏好在剪贴板页的“剪贴板选项”里修改。"
+          }
+        }
+      }
+    },
+    "command.originalPage.note.attachment": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choosing, pasting or capturing an image needs a system panel, screen access or unlocking. Finish it from the attachment button in the item's detail."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选图、粘贴图和截图需要系统面板、屏幕权限或解锁，请在对象详情的附件按钮完成。"
+          }
+        }
+      }
+    },
+    "command.originalPage.note.system": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This involves a system permission or System Settings. Finish it in Settings."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这一步涉及系统权限或系统设置，请在设置里完成。"
+          }
+        }
+      }
+    },
+    "command.originalPage.note.calendarConflict": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calendar conflicts are listed in the Calendar section of Settings; open the local item from there."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "日历冲突列在设置的“系统日历”分节，请从那里打开本地项。"
+          }
+        }
+      }
+    },
+    "command.originalPage.note.info": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This information is shown in Settings."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这项说明在设置里查看。"
+          }
+        }
+      }
+    },
+    "command.originalPage.note.shortcut": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recording or restoring shortcuts is done on the Shortcuts page."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "录制或恢复快捷键要在快捷键页完成。"
+          }
+        }
+      }
+    },
+    "command.originalPage.note.privacy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy changes need authentication or a verified backup. Finish them on Privacy & Unlock."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "隐私设置需要认证或已验证的备份，请在“隐私与解锁”页完成。"
+          }
+        }
+      }
+    },
+    "command.originalPage.note.data": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export and import need a file panel and a preview. Finish them on Data & Backup."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导出和导入需要选择文件并预览，请在“数据与备份”页完成。"
+          }
+        }
+      }
+    },
+    "command.originalPage.note.backup": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Encrypted backups need a password and a file panel. Finish them on Data & Backup."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "加密备份需要口令和文件面板，请在“数据与备份”页完成。"
+          }
+        }
+      }
+    },
+    "command.originalPage.note.recovery": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recovery status and reset appear on Data & Backup only when the library has fallen back to memory."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "恢复状态与重置只在数据库降级为内存时出现在“数据与备份”页。"
+          }
+        }
+      }
+    },
+    "command.originalPage.note.support": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version, feedback and links are in Settings. A command never opens a web address."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "版本、反馈与链接在设置里查看；指令不会直接打开外部网址。"
+          }
+        }
+      }
+    },
+    "command.originalPage.note.openObject": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens the item this notification is about."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开这条通知对应的事项。"
+          }
+        }
+      }
+    },
+    "command.originalPage.note.useInstead": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is an action on a notification banner, and search has no notifications. Use one of these commands instead."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这是通知横幅上的动作，搜索里没有对应的通知。请改用下面的指令。"
+          }
+        }
+      }
+    },
+    "command.originalPage.note.syntaxHelp": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shows the syntax help card. Nothing is changed."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示语法帮助卡，不做任何修改。"
+          }
+        }
+      }
+    },
+    "command.originalPage.note.pageHelp": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shows the description of the page you came from."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示你来时那一页的说明。"
+          }
+        }
+      }
+    },
+    "command.originalPage.note.example": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Puts an example into the search box without running it."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "把示例放进搜索框，不执行。"
+          }
+        }
+      }
+    },
+    "unified.help.syntax.show": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show syntax help"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "查看语法帮助"
+          }
+        }
+      }
+    },
+    "unified.help.syntax.shown": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Syntax help is open."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "语法帮助已打开。"
+          }
+        }
+      }
+    },
+    "unified.help.page.none": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This page has no description."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这一页没有说明。"
+          }
+        }
+      }
+    },
+    "unified.help.page.shown": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The page description is shown above."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "页面说明见上方。"
+          }
+        }
+      }
+    },
+    "unified.help.example.prefilled": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The example is in the search box. It has not been run."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "示例已放进搜索框，没有执行。"
+          }
+        }
+      }
+    },
+    "unified.help.example.choose": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose an example in the syntax help."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请在语法帮助里选一个示例。"
+          }
+        }
+      }
+    },
+    "unified.originalPage.needsUnlock": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Content is locked. Unlock it on its original page first."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "内容已锁定，请先在原页面解锁。"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

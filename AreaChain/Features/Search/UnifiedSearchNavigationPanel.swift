@@ -9,7 +9,11 @@ struct UnifiedSearchNavigationPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
-            Text("unified.navigation.hint").font(DaybookType.body)
+            if let route = controller.browsedCommand.flatMap({ CommandOriginalPage.route(for: $0.id) }) {
+                UnifiedSearchOriginalPageBlock(controller: controller, route: route)
+            } else {
+                Text("unified.navigation.hint").font(DaybookType.body)
+            }
             if let command = controller.browsedCommand,
                command.id.rawValue == "inspector.day" || UnifiedSearchNavigationPanel.boardDayCommands.contains(command.id.rawValue) {
                 Button("unified.navigation.chooseDay") { showsDate = true }
@@ -28,11 +32,15 @@ struct UnifiedSearchNavigationPanel: View {
             }
             Text(LocalizedStringKey(controller.navigationMessage)).font(DaybookType.caption)
                 .accessibilityIdentifier("unified.navigation.message")
-            Button("unified.navigation.open") { controller.executeNavigation(source: controller.buffer) }
+            Button(openTitle) { controller.executeNavigation(source: controller.buffer) }
                 .buttonStyle(DaybookButtonStyle(.prominent))
                 .accessibilityIdentifier("unified.navigation.open")
         }
         .padding(DaybookSpacing.md)
+    }
+
+    private var openTitle: LocalizedStringKey {
+        controller.browsedCommand?.completesOnOriginalPage == true ? "unified.originalPage.open" : "unified.navigation.open"
     }
 }
 

@@ -53,7 +53,7 @@ extension UnifiedSearchController {
 
     func accept(_ request: UnifiedSearchEdit) -> UnifiedSearchBuffer? {
         guard validates(request.source), let acceptance = request.acceptance else { return nil }
-        if CommandPathParser().parse(.init(text: request.text)).command?.category == .navigation {
+        if let command = CommandPathParser().parse(.init(text: request.text)).command, Self.routesAsNavigation(command) {
             return navigationInput(request.text)
         }
         switch acceptance.intent {

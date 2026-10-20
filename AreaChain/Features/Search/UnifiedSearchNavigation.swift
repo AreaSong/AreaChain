@@ -16,7 +16,12 @@ struct UnifiedSearchReturnContext {
 }
 
 extension UnifiedSearchController {
-    var isNavigationInput: Bool { browsedCommand?.category == .navigation }
+    var isNavigationInput: Bool { browsedCommand.map(Self.routesAsNavigation) == true }
+
+    /// 走导航面板（不建草稿）的指令：导航类，以及合并批 M-3 的“在原页面完成”对照。
+    static func routesAsNavigation(_ command: CommandDescriptor) -> Bool {
+        command.category == .navigation || CommandOriginalPage.route(for: command.id) != nil
+    }
     var isNavigationPresented: Bool { navigationRouter?.navigation.searchPresentation == false }
 
     func navigationInput(_ text: String) -> UnifiedSearchBuffer? {
@@ -60,10 +65,13 @@ extension UnifiedSearchController {
             executeBoardNavigation(command.id, parsed: parsed, source: source, pages: pages)
         } else if let pages = pageCommands, let window = CommandClipboardWindow(rawValue: command.id.rawValue) {
             executeClipboardWindow(window, parsed: parsed, source: source, pages: pages)
+        } else if let route = CommandOriginalPage.route(for: command.id) {
+            executeOriginalPage(route, command: command, parsed: parsed, source: source)
         } else { navigationMessage = "unified.navigation.unsupported" }
     }
 
-    func openResult(_ open: ContentQueryBrowseOpen, source: UnifiedSearchBuffer) {
+    func openResult(_ open: ContentQueryBrowseOpen, source: UnifiedSearchBuffer,
+                    then completion: ((WorkspaceNavigationOutcome) -> Void)? = nil) {
         guard validates(source), let router = navigationRouter else {
             navigationMessage = "unified.navigation.unassembled"
             return
@@ -85,7 +93,7 @@ extension UnifiedSearchController {
             guard validates(source), (try? session.presentation().pagination.snapshot.version) == page.snapshot.version else {
                 throw WorkspaceOpenFailure.stale
             }
-            navigate(.object(location), source: source)
+            navigate(.object(location), source: source, then: completion)
         } catch { navigationMessage = navigationFailure(error as? WorkspaceOpenFailure ?? .invalidTarget) }
     }
 
@@ -318,7 +326,7 @@ extension UnifiedSearchController {
         _ = navigationInput(content.source)
     }
 
-    private func navigationFailure(_ failure: WorkspaceOpenFailure) -> String {
+    func navigationFailure(_ failure: WorkspaceOpenFailure) -> String {
         "unified.navigation." + failure.rawValue
     }
 }

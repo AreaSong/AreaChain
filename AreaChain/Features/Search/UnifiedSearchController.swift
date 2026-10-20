@@ -12,6 +12,8 @@ final class UnifiedSearchController {
     var restoreSearchScroll: (version: UUID, point: CGPoint)?
     var preservedSearchScrollVersion: UUID?
     var navigationMessage = "unified.navigation.hint"
+    /// 合并批 M-3：help.syntax／help.example 在导航面板里打开语法帮助卡。
+    var helpCardPresented = false
     var contentOwnerMessage = "unified.content.ownerHint"
     @ObservationIgnored var navigationTask: Task<Void, Never>?
     var navigationRequestID: UUID?
