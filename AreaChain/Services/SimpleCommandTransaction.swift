@@ -10,8 +10,9 @@ import SwiftData
         init(_ facts: CommandSimpleFacts) { self.facts = facts }
     }
 
+    /// `write` 为长文规格的借用写入；缺省时调用规格自己的 `apply(call)`。
     static func apply(_ accepted: CommandSimpleAcceptance, spec: any SimpleCommandSpec,
-                      environment: SimpleCommandEnvironment,
+                      environment: SimpleCommandEnvironment, write: ((ModelContext) throws -> Void)? = nil,
                       register: @escaping (CommandSimpleFacts) throws -> Void) -> CommandSimpleFacts {
         let result = Result(.init(accepted))
         let preview = accepted.preview
@@ -20,7 +21,7 @@ import SwiftData
         boundary.publish = { try environment.publish() }
         do {
             try ModelChanges.transaction(in: context, boundary: boundary, observe: { result.transaction = $0 }) {
-                try spec.apply(preview.frozenCall, in: context)
+                if let write { try write(context) } else { try spec.apply(preview.frozenCall, in: context) }
                 guard try spec.observe(preview.frozenCall, in: context) == preview.after else {
                     throw CommandSimpleIssue.invalidTarget(.changed)
                 }

@@ -48,7 +48,7 @@ struct CommandDraftPayload: Codable, CustomStringConvertible, CustomDebugStringC
             case .tags(let x): self = .tags(x)
             case .object(let x): self = .object(.init(x))
             case .objects(let x): self = .objects(x.map(Object.init))
-            case .nativeSelection, .shortcut: throw CommandDraftProtectionError.unsupported
+            case .nativeSelection, .shortcut, .longTextImprint: throw CommandDraftProtectionError.unsupported
             }
         }
         func decoded() throws -> CommandValue {

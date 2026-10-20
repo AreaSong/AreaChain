@@ -106,8 +106,8 @@ struct TaskCreatePreviewCompositionTests {
         let fixture = try TaskCreatePreviewFixture(extra: [
             .init(parameter: .notes, operation: operation, value: operation.requiresValue ? .longText("正文") : nil)
         ])
-        // 带长文时保护闸门先拒绝且不检查正文；无值操作才落到 notes 不支持。两者都须是预览域问题。
-        let expected: CommandTaskCreatePreviewIssue = operation.requiresValue ? .protectedContent : .notesNotSupported
-        #expect(throws: expected) { try fixture.preview() }
+        // L-M1b（L9）起守卫按目录类型判定：notes 是 longText，带正文、clear 或未指定都须经托管，保护闸门先拒绝且不检查正文；
+        // todo.create 不接长文托管，因此四种操作都停在 protectedContent，仍是预览域问题。
+        #expect(throws: CommandTaskCreatePreviewIssue.protectedContent) { try fixture.preview() }
     }
 }

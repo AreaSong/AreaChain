@@ -32,7 +32,11 @@ struct UnifiedSearchSimpleSubmission: View {
                     UnifiedSearchSimpleChangeList(changes: preview.before.changes(to: preview.after), notices: preview.after.notices)
                 }.accessibilityElement(children: .contain).accessibilityIdentifier("unified.simple.values")
                 if accepted { Text("unified.simple.accepted").font(DaybookType.caption) }
-                else {
+                else if !preview.executable {
+                    // L7：私密或预置标签使整条不可执行；原因已逐个列在上方，不提供接受。
+                    Text("unified.simple.blocked").font(DaybookType.caption).fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("unified.simple.blocked")
+                } else {
                     UnifiedSearchPlanButton(title: "unified.simple.accept", identifier: "unified.simple.accept", variant: .prominent) {
                         controller.acceptSimple(preview, source: source)
                     }.disabled(controller.settingSubmitting)
@@ -59,6 +63,11 @@ struct UnifiedSearchSimpleSubmission: View {
                     .font(DaybookType.caption)
                 if facts.registrationFailed { Text("unified.field.registrationIssue").font(DaybookType.caption) }
             }
+            if facts.state == .saved, controller.simple?.openTarget(facts) != nil {
+                UnifiedSearchPlanButton(title: "unified.simple.open.routine", identifier: "unified.simple.open", variant: .prominent) {
+                    controller.openSimpleCreated(facts, source: source)
+                }
+            }
             if facts.conflict { Text("unified.simple.problem.changed").font(DaybookType.caption) }
             if facts.state == .unknown {
                 Text("unified.simple.unknownDetail").font(DaybookType.caption).fixedSize(horizontal: false, vertical: true)
@@ -70,7 +79,11 @@ struct UnifiedSearchSimpleSubmission: View {
                         .fixedSize(horizontal: false, vertical: true).accessibilityIdentifier("unified.simple.verification")
                 }
             }
-            Text("unified.simple.held").font(DaybookType.caption)
+            if controller.simpleReturnable {
+                UnifiedSearchPlanButton(title: "unified.simple.return", identifier: "unified.simple.return") {
+                    controller.returnSimpleLongText(source)
+                }
+            } else { Text("unified.simple.held").font(DaybookType.caption) }
         }
     }
 }

@@ -4,7 +4,7 @@ import Testing
 @testable import AreaChain
 
 /// T-M6 任务类简单指令的隔离夹具：内存库、私有事件、计数 fake 刷新与授权、临时附件目录、固定今天。
-/// 七个任务类规格只在这里显式打开；来源证明默认 ordinary，可逐对象改为受保护。
+/// 七个任务类规格只在这里显式打开（长文三条另需 longText: true）；来源证明默认 ordinary，可逐对象改为受保护。
 @MainActor final class TaskSimpleFixture {
     static let today = "2026-10-19"
     static let yesterday = "2026-10-18"
@@ -22,7 +22,7 @@ import Testing
     var context: ModelContext { io.context }
     var attachments: TaskNotesService.Attachments { .init(store: AttachmentStore(root: root), root: root) }
 
-    init(capability: SimpleCommandAdapter.Capability = .open) throws {
+    init(capability: SimpleCommandAdapter.Capability = .open, longText: Bool = false) throws {
         io = try TaskCaptureFixture()
         handoff = try HandoffFixture()
         root = FileManager.default.temporaryDirectory
@@ -39,7 +39,8 @@ import Testing
             registerLocalModification: { [unowned self] in io.trace.append("fact") },
             refresh: { [unowned self] includeCalendar in refreshes.append(includeCalendar) }))
         adapter = .init(coordinator: handoff.coordinator, environment: environment,
-                        specs: TaskCommandSpecs.all(dependencies), capability: capability)
+                        specs: TaskCommandSpecs.all(dependencies) + (longText ? TaskCommandSpecs.longText(dependencies) : []),
+                        capability: capability)
     }
 
     deinit { try? FileManager.default.removeItem(at: root) }
@@ -51,7 +52,7 @@ import Testing
               },
               attachments: attachments, today: { Self.today },
               requestReminderAccess: { [unowned self] minutes in authorizations.append(minutes) },
-              calendar: Self.calendar)
+              calendar: Self.calendar, digest: handoff.coordinator.textDigest)
     }
 
     static let calendar: Calendar = {
@@ -74,7 +75,8 @@ import Testing
     func parent(_ todo: TodoItem) -> CommandArgument {
         .init(parameter: .parent, operation: .assign, value: .object(.init(type: .todo, id: todo.id)))
     }
-    func body(_ text: String) -> CommandArgument { .init(parameter: .body, operation: .replace, value: .longText(text)) }
+    /// routine.capture 的 body 按目录声明只有 assign。
+    func body(_ text: String) -> CommandArgument { .init(parameter: .body, operation: .assign, value: .longText(text)) }
 
     func queue(_ command: String, targets: [CommandObjectReference] = [], single: Bool = true,
                arguments: [CommandArgument] = []) throws {
@@ -109,17 +111,11 @@ import Testing
     }
 }
 
-/// 备注与快速新增的规格暂不装配（长文受导出守卫）：测试直接运行规格，流程与骨架相同——
-/// 读当前值、推出保存后的值、在一次事务内写入并按冻结行再读核对，保存成功后才发出系统后续。
+/// 长文规格（备注与快速新增）：预览断言直接读规格的 observe／expect（原文调用，与准备期同一入口）；
+/// 执行一律经适配器完整流程（准备 → 接受 → 托管封存 → 借用写入），没有绕过借用的写入口。
 extension TaskSimpleFixture {
-    struct SpecRun {
-        let before: CommandSimpleState
-        let after: CommandSimpleState
-        let followUp: Bool
-    }
-
     func pending(_ command: String) throws -> any SimpleCommandSpec {
-        try #require(TaskCommandSpecs.pendingLongText(dependencies).first { $0.command.rawValue == command })
+        try #require(TaskCommandSpecs.longText(dependencies).first { $0.command.rawValue == command })
     }
 
     func input(_ targets: [CommandObjectReference] = [], _ arguments: [CommandArgument]) -> CommandResolvedInput {
@@ -131,13 +127,13 @@ extension TaskSimpleFixture {
         return (before, try spec.expect(call, from: before, in: context))
     }
 
-    func runSpec(_ spec: any SimpleCommandSpec, _ call: CommandSimpleCall) throws -> SpecRun {
-        let (before, after) = try preview(spec, call)
-        let frozen = CommandSimpleCall(input: call.input, creation: call.creation, frozen: before.keys.union(after.keys))
-        try ModelChanges.transaction(in: context, boundary: environment.dependencies.transaction) {
-            try spec.apply(frozen, in: context)
-            guard try spec.observe(frozen, in: context) == after else { throw CommandSimpleIssue.invalidTarget(.changed) }
-        }
-        return .init(before: before, after: after, followUp: spec.afterSave(frozen, in: context))
+    var escrow: CommandLongTextEscrow { adapter.escrow! }
+
+    /// 当前 Run 的唯一一项（长文 Run 只有一项）。
+    func execution() throws -> CommandExecutionRun { try #require(handoff.state().execution) }
+
+    /// 把未提交的长文 Run 还回草稿。
+    func returnToDraft() throws {
+        try adapter.returnLongText(execution().stamp, expecting: handoff.owned().lease)
     }
 }

@@ -41,6 +41,7 @@ enum CommandArgumentValidation {
             return parameter.required && parameter.defaultValue == nil ? [.missing(id)] : []
         }
         guard parameter.operations.contains(argument.operation) else { return [.invalidOperation(id)] }
+        if case .longTextImprint(let imprint)? = argument.value { return validate(imprint, argument, against: parameter) }
         if !argument.operation.requiresValue {
             guard argument.value == nil else { return [.unexpectedValue(id)] }
             if argument.operation == .clear, [.longText, .shortText].contains(parameter.type), !parameter.allowsEmpty {
@@ -53,6 +54,18 @@ enum CommandArgumentValidation {
             return [.tooLong(id)]
         }
         return accepts(value, type: parameter.type) ? [] : [.invalidValue(id)]
+    }
+
+    /// 印记的正文已在封存前按原值校验过；这里只核对形状：参数与操作一致、字节数不超限，clear 只能是空文。
+    private static func validate(_ imprint: CommandLongTextImprint, _ argument: CommandArgument,
+                                 against parameter: CommandParameter) -> [CommandArgumentIssue] {
+        let id = parameter.id
+        guard parameter.type == .longText, imprint.parameter == id, imprint.operation == argument.operation else {
+            return [.invalidValue(id)]
+        }
+        guard imprint.byteCount <= CommandLongTextLimit.maxUTF8Bytes else { return [.tooLong(id)] }
+        if argument.operation == .clear { return parameter.allowsEmpty && imprint.byteCount == 0 ? [] : [.invalidValue(id)] }
+        return imprint.byteCount > 0 ? [] : [.invalidValue(id)]
     }
 
     static func accepts(_ value: CommandValue, type: CommandParameterType) -> Bool {

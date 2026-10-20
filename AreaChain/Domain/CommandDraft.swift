@@ -83,6 +83,8 @@ struct CommandDraft: Equatable, CustomStringConvertible, CustomDebugStringConver
     // 写入入口由 reducer 校验身份；每次接受编辑都推进版本，即使内容相同也使旧确认失效。
     mutating func edit(_ argument: CommandArgument, expecting stamp: CommandDraftStamp) {
         guard protectedReference == nil, self.stamp == stamp, argument.parameter != .target else { return }
+        // 印记只能由封存核对放入 Snapshot，编辑入口不接受（L-M1b）。
+        if case .longTextImprint? = argument.value { return }
         textPositions[argument.parameter] = nil
         arguments.removeAll { $0.parameter == argument.parameter }
         arguments.append(argument)
@@ -129,6 +131,48 @@ struct CommandDraft: Equatable, CustomStringConvertible, CustomDebugStringConver
     }
 
     mutating func activate() { version += 1 }
+
+    /// 封存核对：每个 longText 参数的正文（clear 视为空文）换成调用方给出的印记；操作、字节数与带键摘要
+    /// 必须与当前正文一致，否则 stale。不推进版本：Snapshot 里仍是同一份已确认草稿，只是正文已移交托管。
+    mutating func sealLongText(_ imprints: [CommandLongTextImprint], digest: CommandTextDigest) throws {
+        var remaining = imprints
+        var next = arguments
+        for index in next.indices where declaredType(next[index].parameter) == .longText {
+            let argument = next[index]
+            let text: String
+            switch argument.value {
+            case .longText(let value)?: text = value
+            case nil where argument.operation == .clear: text = ""
+            default: throw CommandPlanError.protectedContent
+            }
+            guard let position = remaining.firstIndex(where: { $0.parameter == argument.parameter }) else {
+                throw CommandPlanError.protectedContent
+            }
+            let imprint = remaining.remove(at: position)
+            guard imprint == digest.imprint(text, parameter: argument.parameter, operation: argument.operation,
+                                            escrow: imprint.escrow) else { throw CommandPlanError.stale }
+            next[index] = .init(parameter: argument.parameter, operation: argument.operation, value: .longTextImprint(imprint))
+        }
+        guard remaining.isEmpty else { throw CommandPlanError.stale }
+        arguments = next
+    }
+
+    /// 归还：托管里的正文按印记核对后放回草稿；任一印记缺正文或摘要不符都拒绝，草稿保持原样。
+    mutating func restoreLongText(_ texts: [CommandParameterID: String], digest: CommandTextDigest) throws {
+        var next = arguments
+        var used = 0
+        for index in next.indices {
+            guard case .longTextImprint(let imprint)? = next[index].value else { continue }
+            guard let text = texts[imprint.parameter],
+                  digest.imprint(text, parameter: imprint.parameter, operation: imprint.operation,
+                                 escrow: imprint.escrow) == imprint else { throw CommandPlanError.stale }
+            next[index] = .init(parameter: imprint.parameter, operation: imprint.operation,
+                                value: imprint.operation == .clear ? nil : .longText(text))
+            used += 1
+        }
+        guard used == texts.count, used > 0 else { throw CommandPlanError.stale }
+        arguments = next
+    }
 
     /// 仅迁移运行内归属，业务身份、参数与原始选择不重建、不重新解析。
     func handedOff(to hostID: String) -> Self {

@@ -82,10 +82,10 @@ struct CommandHostSession: Equatable, CustomStringConvertible, CustomDebugString
     }
 
     /// 封存只启动纯协议。目录仍 unwired；将来调用业务前还必须经过独立执行资格门禁。
-    mutating func sealPlanForProtocol(_ stamp: CommandPlanStamp, runID: UUID) throws {
+    mutating func sealPlanForProtocol(_ stamp: CommandPlanStamp, runID: UUID, longText: CommandLongTextSealing? = nil) throws {
         guard execution == nil else { throw CommandPlanError.busy }
         guard !usedRunIDs.contains(runID) else { throw CommandPlanError.duplicate }
-        let snapshot = try plan.seal(expecting: stamp)
+        let snapshot = try plan.seal(expecting: stamp, longText: longText)
         execution = .init(id: runID, snapshot: snapshot)
         usedRunIDs.insert(runID)
     }
@@ -161,6 +161,13 @@ struct CommandHostSession: Equatable, CustomStringConvertible, CustomDebugString
         guard let execution, execution.stamp == attempt.execution, plan.stamp == stamp,
               operations.active == nil, operations.pending == nil else { throw CommandExecutionError.stale }
         try plan.restoreUnsubmittedPreference(execution, attempt: attempt)
+        self.execution = nil
+    }
+
+    mutating func returnLongText(texts: [UUID: [CommandParameterID: String]], digest: CommandTextDigest,
+                                 verifiedNotApplied: Bool) throws {
+        guard let execution, operations.active == nil, operations.pending == nil else { throw CommandExecutionError.stale }
+        try plan.restoreLongText(execution, texts: texts, digest: digest, verifiedNotApplied: verifiedNotApplied)
         self.execution = nil
     }
 

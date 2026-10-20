@@ -60,6 +60,8 @@ enum CommandValue: Equatable, Sendable, CustomStringConvertible, CustomDebugStri
     case day(String), time(Int), weekdays(Int), tags([UUID])
     case object(CommandObjectReference), objects([CommandObjectReference])
     case nativeSelection(UUID), shortcut(ShortcutChord)
+    /// L-M1b：封存后 longText 正文的替身（不含正文）；只出现在 Snapshot 与 Run 输入里。
+    case longTextImprint(CommandLongTextImprint)
 
     // 参数数组和原值字典也会被直接描述；在值边界隐藏载荷，避免绕过草稿外壳泄出正文。
     var description: String { "CommandValue(redacted)" }

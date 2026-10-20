@@ -10,6 +10,11 @@ extension UnifiedSearchController {
 
     func routesSimple(_ command: CommandID) -> Bool { simple?.supports(command) == true }
 
+    /// 由简单骨架经托管执行的普通长文草稿；受保护、required、unknown 不算。
+    func escrowsLongText(_ draft: CommandDraft) -> Bool {
+        routesSimple(draft.commandID) && simple?.isLongText(draft.commandID) == true && !draft.blocksUnprotectedTransfer
+    }
+
     var hasSimple: Bool {
         let drafts = (operations?.allDrafts ?? []) + (plan?.items.map(\.draft) ?? [])
         return drafts.count == 1 && drafts.allSatisfy { routesSimple($0.commandID) }
@@ -104,6 +109,25 @@ extension UnifiedSearchController {
         }
     }
 
+    /// 长文 Run 未提交、取消未开始、锁定阻塞或核为未写入时可以返回编辑：托管正文还回草稿，须重新预览。
+    var simpleReturnable: Bool {
+        guard let simple, let unit = simpleUnit, let run = settingExecution,
+              run.snapshot.items.first.map({ simple.isLongText($0.draft.commandID) }) == true else { return false }
+        return unit.simple?.state == .notSubmitted || unit.state == .notExecuted
+            || unit.simple?.state == .unknown && simpleVerification?.outcome == .notApplied
+    }
+
+    func returnSimpleLongText(_ source: UnifiedSearchBuffer) {
+        guard validates(source), let simple, let run = settingExecution, simpleReturnable else { return }
+        do {
+            try simple.returnLongText(run.stamp, expecting: source.lease, displaySession: session)
+            revokeSimple()
+            simpleVerification = nil
+            simpleFailure = nil
+            _ = publishOperation(text: buffer.text)
+        } catch { simpleFailure = UnifiedSearchSimpleCopy.error(error) }
+    }
+
     /// 只读核对未知结果；不自动重试、不恢复同一计划的执行资格。
     func verifySimpleUnknown(_ source: UnifiedSearchBuffer) {
         guard validates(source), let simple, let run = settingExecution, let unit = simpleUnit,
@@ -117,6 +141,7 @@ extension UnifiedSearchController {
 
 enum UnifiedSearchSimpleCopy {
     static func error(_ error: Error) -> String {
+        if error as? CommandLongTextLoanError == .revoked { return "unified.simple.problem.locked" }
         guard let issue = error as? CommandSimpleIssue else {
             if error as? CommandExecutionError == .busy { return "unified.simple.busy" }
             return "unified.simple.stale"

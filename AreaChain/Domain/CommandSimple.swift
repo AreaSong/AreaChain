@@ -40,6 +40,8 @@ enum CommandSimpleProblem: String, Equatable {
     /// T-M6：来源不是普通内容、位置越界、父任务不符、不在那天的清单里、跨“带子任务”分组、正文超限、
     /// 没有可延期对象、日期不是今天、目标超过总量上限、快速新增解析不出内容。
     case protectedSource, outOfRange, parentMismatch, notListed, crossesGroup, tooLong, nothingToMove, notToday, tooMany, untitled
+    /// L-M1b：正文解析出私密或预置标签（L7）；托管正文因锁定、遮罩或隐私变化不再借出（须返回编辑后重新预览）。
+    case protectedTag, locked
 }
 
 /// 预览里的一个值：本地化键、原文（用户内容）或带一个整数参数的本地化键（如“N 字”）。
@@ -51,6 +53,8 @@ enum CommandSimpleDisplay: Equatable {
 struct CommandSimpleNotice: Equatable {
     let key: String
     let title: String
+    /// 为真时整条指令不可执行（如 L7 私密标签）；预览照常列出原因，接受被拒。
+    var blocking = false
 }
 
 struct CommandSimpleField: Equatable {
@@ -125,6 +129,7 @@ struct CommandSimplePreview: Equatable, CustomStringConvertible, CustomDebugStri
     var creation: CommandObjectReference?
     let semanticsVersion = 1
     var noChange: Bool { before == after }
+    var executable: Bool { !after.notices.contains(where: \.blocking) }
     /// 未知结果期间被锁定的行身份：原有目标与新建行都算；新建型指令另锁整条指令，未核对前不能再建。
     var lockKeys: Set<String> {
         before.keys.union(after.keys).union(creation == nil ? [] : ["create:" + command.rawValue])
@@ -147,13 +152,28 @@ struct CommandSimplePreview: Equatable, CustomStringConvertible, CustomDebugStri
         return item
     }
 
-    static func validate(_ item: CommandPlanItem, shape: CommandSimpleShape) throws {
+    static func validate(_ item: CommandPlanItem, shape: CommandSimpleShape, longText: Bool = false) throws {
         let draft = item.draft
         guard item.atomicGroup == nil, item.links.predecessors.isEmpty, item.links.results.isEmpty,
               item.hasSupportedOrigins, item.executionOrigin == nil else { throw CommandSimpleIssue.unsupportedPlan }
-        guard !draft.blocksUnprotectedExport, draft.protectionRequirement == .ordinary,
+        // 封存前的长文草稿只放开“普通、未托管的正文”（L1）；受保护、required、unknown 与计划里的印记仍拒绝。
+        let exportable = longText ? !draft.blocksUnprotectedTransfer && draft.longTextImprints.isEmpty
+            : !draft.blocksUnprotectedExport
+        guard exportable, draft.protectionRequirement == .ordinary,
               draft.baseline == CommandDraftBaseline(), draft.check().staticallyValid,
               shape.allows(draft.targets) else { throw CommandSimpleIssue.invalidArguments }
+    }
+
+    /// 长文规格的准备入口：与 `input(in:shape:)` 同一计划约束，只是正文仍在宿主草稿里（由托管同步读取）。
+    static func longTextInput(in host: CommandOwnedHost, shape: CommandSimpleShape) throws -> CommandPlanItem {
+        let session = host.session
+        guard session.execution == nil, session.operations.allDrafts.isEmpty, session.operations.pending == nil,
+              session.plan.editing == nil, session.plan.items.count == 1,
+              let item = session.plan.items.first, item.draft.hostID == session.hostID else {
+            throw CommandSimpleIssue.unsupportedPlan
+        }
+        try validate(item, shape: shape, longText: true)
+        return item
     }
 
     /// 封存后的 Run 必须仍是接受时那一项、那一份参数与目标。
@@ -181,8 +201,11 @@ struct CommandSimpleVerification: Equatable {
 
 @MainActor final class CommandSimpleRegistry {
     var preparing: [String: CommandHostOwnership] = [:]
+    /// 协调者持有的带键摘要（L6）；随协调者存在，只在内存。
+    let textDigest = CommandTextDigest()
     private(set) var acceptances: [UUID: CommandSimpleAcceptance] = [:]
     private var invoked: Set<UUID> = []
+    private var notApplied: Set<UUID> = []
     /// 保存结果未知的行身份 → 对应接受；核对出确定结果前不允许再准备。
     private(set) var unresolved: [String: UUID] = [:]
     func wasInvoked(_ id: UUID) -> Bool { invoked.contains(id) }
@@ -199,10 +222,17 @@ struct CommandSimpleVerification: Equatable {
     /// 只有确定结果才解除；不一致时保持阻止。
     func resolve(_ verification: CommandSimpleVerification) {
         guard verification.outcome != .inconsistent else { return }
+        if verification.outcome == .notApplied { notApplied.insert(verification.acceptanceID) }
         unresolved = unresolved.filter { $0.value != verification.acceptanceID }
     }
 
+    func verifiedNotApplied(_ acceptanceID: UUID) -> Bool { notApplied.contains(acceptanceID) }
+
+    /// 长文 Run 归还草稿后放开该草稿的接受；草稿版本已推进，旧接受不会再匹配新预览。
+    func release(_ draftID: UUID) { acceptances[draftID] = nil }
+
     func accept(_ preview: CommandSimplePreview) throws -> CommandSimpleAcceptance {
+        guard preview.executable else { throw CommandSimpleIssue.invalidTarget(.protectedTag) }
         try requireResolved(preview.lockKeys)
         if let old = acceptances[preview.draft.draftID] {
             guard !wasInvoked(old.id) else { throw CommandSimpleIssue.alreadyInvoked }

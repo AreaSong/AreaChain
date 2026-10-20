@@ -7910,3 +7910,45 @@ L-M1b 必须的反例（合成内存库、fake 系统依赖）：借用签发后
 - 只改本节与[现状总览](unified-search-status.md)的“最后更新”及缺口一行；`check_workflow.py`、`git diff --check` 均 exit 0。
 - Claude Code `verifier` 首轮**不通过**（高 1：预览期取不到正文；中 2：单文件出口、宿主失效归宿；低 3：Sendable 表述、行号、routine.notes 与 notesField 消费者），已只按整改清单修改，复核结论见下行。
 - 第二轮 `verifier` 结论**通过**：6 项整改逐条核实，没有出现不允许的设计，也没有改 Swift、测试、脚本或目录声明。另有一条低级意见留给 L-M1b：RoutineCaptureSpec 和已装配的剪贴板指令同在 CaptureCommandSpecs.swift:68 所在文件，出口守卫要按符号放行，或者把 RoutineCaptureSpec 拆成单独文件，不能整份文件放行。clear 漏口仍是静态推理，没有运行验证。
+
+#### 用户确认（2026-10-20）
+
+用户已于 2026-10-20 逐条确认：
+- L1～L6、L9 全部按 §9.94 的推荐方案：只开放普通长文；身份全绑定、缺一即拒；预览期同步直读宿主草稿、封存时托管、每个 attempt 一次借用、失败与取消归还草稿、结果未知时不再借出、锁定即阻塞；
+  托管与借用凭据、两个保存出口集中在一个文件里，并加检查器符号守卫；封存和 Run 里只存印记与句柄；摘要改为带随机内存密钥的 HMAC，替换 T-M6 的纯 SHA-256；守卫改为按目录声明的类型判断，clear 也必须走托管。
+- L7：指令遇到备注里解析出的私密标签或预设标签，整条不可执行并说明原因。原界面行为本批不改（原界面的同一缺口另开批次）。
+- L8：无备注证明改为适配器自己读备注、取带键摘要比对。本批只建好这套证明机制并用于新接通的三条指令；
+  已有 11 个适配器改用新证明、以及放宽字段类指令的"普通无备注"门槛，都留给后续批次，本批不迁移、不放宽。
+
+### 9.95 里程碑 L-M1b：长文受控借用实现
+
+2026-10-20（Asia/Shanghai）。按 §9.94 与其“用户确认（2026-10-20）”实现并接通 todo.notes／routine.notes／routine.capture。隔离环境、能力默认关闭、生产代码无新构造点；未提交、未推送。入口与守卫见[组件目录 L-M1b](component-catalog.md#l-m1b-长文受控借用)。
+
+#### 决定
+
+- **A 守卫（L9）**：`blocksUnprotectedExport` 改按目录声明的 longText 判定，正文、空值、clear 都须换成印记；印记只能由协调者封存核对放入 Snapshot，编辑入口忽略、计划里出现即拒封存。clear 漏口在 HEAD 79f07dc 上用 LongTextGuardTests 复现（未托管的 clear 草稿直接封存成功、建出 Run；`unspecified` 与 routine.create 的 clear 同样不拦），改后通过。各消费点（PlanValidation、link、seal、偏好基线、Run 输入、约 20 处适配准入）未改代码，对未托管长文照旧拒绝；带印记的草稿只会由长文托管封存产生。
+- **B 托管与借用（L1～L5）**：唯一出口文件 `CommandLongTextEscrow.swift`。准备期同步读宿主草稿、预览只留印记（句柄在准备时分配，接受与封存沿用）；封存先核对草稿正文印记与已接受预览一致（否则 stale），协调者 `sealLongText` 用自己的密钥复核后换成印记，成功才移入托管；每 attempt 只签一次借用，绑定 ownership、plan、item、draft、参数、操作、run、attempt 与摘要（lease 沿 `frozenItem` 的 previewLeaseMatches）。saved／noChange／核为已写入销毁；未提交、取消未开始、锁定阻塞与核为未写入经 `returnLongText` 逐字还回草稿；unknown 不再签发；锁定、遮罩、隐私变化推进代次、整项阻塞；宿主放弃 `discard`，且宿主代次或 Run 不在即自动清除。
+- **C 带键摘要（L6）**：协调者 `simples.textDigest`（随机内存密钥 HMAC-SHA256）替换 `notesField` 的纯 SHA-256，字段语义不变；replace、append、clear 的基线都含目标旧备注摘要与标签、提醒、优先级。未知核对仍是写前、期望最终全文、当前三者比较，当前值不提升原回执。
+- **D 接通（L7、L8）**：`TaskCommandSpecs.longText` 只在 QA 测试显式装配；写入只经 `TaskNotesService.applyLent`／`RoutineCaptureService.applyLent`。正文解析出的私密（含墓碑）或预置标签生成阻止型说明，预览照常列出派生行但不可接受（规则同 CommandTaskTagCatalog:111）；原界面不改。新三条以“适配读备注取带键摘要比对”作冲突证明；11 个已有适配器未迁移、门槛未放宽。界面复用 C-M1 长文编辑与原简单面板，新增“不能执行”说明、“返回编辑”和 routine.capture 的“打开新习惯”（同 openConvertedObject 的解析与导航）。
+- **出口守卫选拆文件**：RoutineCaptureSpec 移到 `RoutineCaptureCommandSpec.swift`。`check_workflow.py` 的 long-text-loan 按符号放行（`lentText`、`consumeText` 只在托管文件；`applyLent` 只在托管文件与两份规格文件），拆文件后不必在已装配指令所在文件放行出口，也不靠行号区分。
+- **与条款字面的两处差异（复核后补记）**：L4 的“签发符号只在托管文件与两份规格引用”未做——`lend` 由骨架的 `SimpleCommandAdapter+LongText.swift` 调用，检查器只守 `lentText`、`consumeText`、`applyLent`（拿到借用也取不出正文）；L2 的“签发时另记 vault generation”未做——托管不持有 vault，只用托管 epoch，由注入的隐私事件推进。
+- **实现中发现的两处偏差（不改设计）**：目录里 routine.capture 的 body 只声明 assign，T-M6 规格与夹具写成 replace，从未经骨架运行；本批改规格对齐目录，未改目录。归还时不记 `returnedAttempts`：整个 Run 丢弃，重新封存是新 Run，保留旧记录会让简单骨架拒绝该项。
+
+#### 验证
+
+证据在被忽略的 `build/LM1B/`；隔离入口 `./scripts/build.sh qa --qa-batch lm1b`，六项钥匙串变量由脚本清除，只用合成数据，原生串行。
+- A：clear 漏口复现（HEAD 上 LongTextGuardTests 3 方法中 2 失败）；修改后 A 组 29 类 176 次通过。B：29 次通过；C：63 次通过（含剪贴板、排序、延期、骨架、标签回归）；D：服务与原生 9 方法（四种样式）通过。
+- 原界面与适配回归 34 类 197 次：183 通过，14 个原生用例因系统通知抢占前台（`com.apple.UserNotificationCenter`）焦点失败，同 4 类重跑 18 方法全部通过。
+- Domain＋Services 全部 351 类：2333 方法／3274 次执行，8 失败、1 跳过（真实钥匙串默认关闭）。其中 7 个（AIPlanTemplateService、ContentQueryBodyRead、DashboardProjection、ImageAssociationPrivacy、ImageContentQueryPrivacy、SubtaskModelTests.addTagSkipsDiaryPresetNames、TrashTombstonePrivacy）在未改动的 HEAD 79f07dc 隔离副本上以同样断言复现，判为既有失败；另 1 个 TaskCreatePreviewCompositionTests.allNotesOperationsStayClosed 按 L9 把 clear／未指定的期望由 notesNotSupported 改为 protectedContent（仍关闭），重跑通过。
+- 最后编辑（托管改主队列投递、守卫测试整理）后定向 12 类 65 方法／110 次通过。整 App 全量 QA 运行 105 分钟后中止，无结果包，不计为证据。
+- 正常 `./scripts/build.sh`：Debug 构建与静态验签通过（描述文件剩约 56 小时）。`check_workflow.py`、`scripts/tests` 288 项、`quality_gate.py --profile static --strict`（敏感日志候选 0）、全库 `swiftlint lint --strict` 0、`git diff --check` 均通过；单个 Swift 文件不超过 500 行。
+- 指定复核：Claude Code `verifier` 首轮**不通过**（中 1：宿主失效路径无测试且清除延迟；低 2：`lend` 未入守卫、未记 vault generation 未写成偏差），已只按整改清单修改（`revoke` 先清理、补 Run 撤走不经 discard 的测试、§9.95 补记差异与延迟清除）；第二轮**通过**，余两条低级不阻塞：新测试分辨不出 `revoke` 里的清理（读取前本就清理），宿主代次变化分支仍无测试。
+- 静态扫描的 `print` 规则无词边界，`imprint(` 与 `.notes` 同行会被误报；本批把测试里的重复构造收进辅助函数，未改门禁。
+
+#### 缺口
+
+- 托管只听隔离环境私有事件中心；接正式版须把 PrivacyVault 的 willLock／didChange／mask 转入，并补宿主关闭时的 `discard` 调用（协调者本身没有关闭宿主入口）。宿主代次或 Run 消失后的清除是延迟的：下一次访问托管或下一次隐私事件时才清，期间明文仍在内存托管里。
+- P-M3 多项计划返回不适用：长文项进不了多项计划（多项封存仍按守卫拒绝）。
+- 原界面备注私密标签缺口待单独批次；11 个适配器迁移与字段类门槛放宽留后续批次。
+- 进程内 String 不零化；同文件代码仍能复制正文，靠单文件审查与守卫。
+- 人工与平台验收（真人输入法、VoiceOver、最低系统）未做；正常开发描述文件 2026-10-22 到期。

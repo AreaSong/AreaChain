@@ -1,4 +1,3 @@
-import CryptoKit
 import Foundation
 import SwiftData
 
@@ -14,6 +13,8 @@ import SwiftData
     /// 保存成功后的提醒授权请求；隔离环境注入计数 fake。
     var requestReminderAccess: (Int?) -> Void
     var calendar: Calendar = .current
+    /// 协调者的带键摘要（L6）；备注基线只存它给出的 HMAC，不存明文。
+    var digest: CommandTextDigest
 }
 
 /// 任务类简单指令共用的读取与显示规则。
@@ -24,9 +25,9 @@ import SwiftData
          DayOrderSpec(dependencies: dependencies), PostponeYesterdaySpec(dependencies: dependencies)]
     }
 
-    /// 备注与快速新增的规格：参数是 longText，草稿受 blocksUnprotectedExport 守卫，不能解析成执行输入或封存进 Run。
-    /// 在“受控借用”安全契约另行批准并实现之前不装配（2026-10-19 用户决定）；即使装配，准备也会被守卫拒绝。
-    static func pendingLongText(_ dependencies: TaskCommandDependencies) -> [any SimpleCommandSpec] {
+    /// 备注与快速新增的长文规格（L-M1b）：准备期由托管同步读宿主草稿，封存后只剩印记，写入只经一次性借用。
+    /// 默认不装配；只在隔离 QA 测试里显式传给 SimpleCommandAdapter，生产没有构造点。
+    static func longText(_ dependencies: TaskCommandDependencies) -> [any SimpleCommandSpec] {
         [NotesCommandSpec(kind: .todo, dependencies: dependencies), NotesCommandSpec(kind: .routine, dependencies: dependencies),
          RoutineCaptureSpec(dependencies: dependencies)]
     }
@@ -69,9 +70,9 @@ import SwiftData
         .init(id: "position", value: String(index), display: .verbatim(String(index + 1)))
     }
 
-    /// 只给摘要，不存明文；摘要只用于冲突比较，不写日志。
-    static func notesField(_ notes: String) -> CommandSimpleField {
-        let digest = SHA256.hash(data: Data(notes.utf8)).map { String(format: "%02x", $0) }.joined()
+    /// 只给带键摘要（L6：协调者随机内存密钥的 HMAC-SHA256），不存明文；摘要只用于冲突比较，不写日志。
+    static func notesField(_ notes: String, _ key: CommandTextDigest) -> CommandSimpleField {
+        let digest = key.hex(notes)
         let display: CommandSimpleDisplay = notes.isEmpty ? .localized("unified.simple.value.none")
             : .count("unified.simple.value.characters", notes.count)
         return .init(id: "notes", value: digest, display: display)

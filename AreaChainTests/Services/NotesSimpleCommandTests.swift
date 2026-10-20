@@ -96,25 +96,26 @@ import Testing
         #expect(try Array(ui.snapshot().dropLast()) == Array(legacy.snapshot().dropLast()))
     }
 
-    /// 长文守卫保持：即使把备注规格装进骨架，准备也被 blocksUnprotectedExport 拒绝，不写库、不发布。
-    @Test func longTextGuardStillBlocksExecution() throws {
+    /// 默认不装配：未显式打开长文规格时准备报未装配；未经托管的普通封存仍被守卫拒绝，不写库、不发布。
+    @Test func longTextStaysUnassembledByDefault() throws {
         let f = try TaskSimpleFixture()
         let todo = try f.insert(TodoItem(title: "守卫", dayKey: TaskSimpleFixture.today, notes: "原备注"))
-        let guarded = SimpleCommandAdapter(coordinator: f.handoff.coordinator, environment: f.environment,
-                                           specs: TaskCommandSpecs.pendingLongText(f.dependencies), capability: .open)
         try f.queue("todo.notes", targets: [.init(type: .todo, id: todo.id)], arguments: [f.notes(.replace, "新备注")])
-        #expect(throws: CommandSimpleIssue.invalidArguments) {
-            try guarded.prepare(plan: f.handoff.state().plan.stamp, expecting: f.handoff.owned().lease)
+        #expect(throws: CommandSimpleIssue.unassembled) {
+            try f.adapter.prepare(plan: f.handoff.state().plan.stamp, expecting: f.handoff.owned().lease)
         }
         #expect(throws: CommandPlanError.protectedContent) {
             try f.handoff.send(.sealPlan(f.handoff.state().plan.stamp, runID: UUID()))
         }
         #expect(!f.adapter.supports(.init(rawValue: "todo.notes")) && !f.adapter.supports(.init(rawValue: "routine.capture")))
         #expect(todo.notes == "原备注" && f.count("save") == 0 && f.count("ui") == 0)
+        let open = try TaskSimpleFixture(longText: true)
+        #expect(open.adapter.supports(.init(rawValue: "todo.notes")) && open.adapter.supports(.init(rawValue: "routine.notes"))
+                && open.adapter.supports(.init(rawValue: "routine.capture")))
     }
 
     @Test func specPreviewListsDerivedChangesAndSavesLikeTheDetailPanel() throws {
-        let f = try TaskSimpleFixture()
+        let f = try TaskSimpleFixture(longText: true)
         let work = try f.insert(TagItem(name: "工作", sortOrder: 0))
         let old = try f.insert(TagItem(name: "旧", sortOrder: 1, deletedAt: Date(timeIntervalSince1970: 5)))
         let todo = try f.insert(TodoItem(title: "写周报", dayKey: TaskSimpleFixture.today, tagIDs: work.id.uuidString, notes: "原备注"))
@@ -130,11 +131,14 @@ import Testing
         #expect(changes.contains { $0.title == "#新标签" && $0.before == nil })
         #expect(changes.contains { $0.title == "@图.png" && $0.before == nil })
         #expect(f.count("save") == 0 && !f.context.hasChanges && old.deletedAt != nil && todo.notes == "原备注")
-        // 基线只存摘要：没有原备注明文，描述也不含内容。
+        // 基线只存带键摘要：没有原备注明文，描述也不含内容。
         let baseline = try #require(before.rows.first { $0.key == todo.id.uuidString }?.fields.first { $0.id == "notes" })
         #expect(baseline.value != "原备注" && baseline.value.count == 64 && !String(describing: before).contains("原备注"))
-        let result = try f.runSpec(spec, call)
-        #expect(result.after == after && result.followUp && f.authorizations == [1080] && f.count("save") == 1)
+        let (accepted, facts) = try f.run("todo.notes", targets: [.init(type: .todo, id: todo.id)],
+                                          arguments: [f.notes(.replace, text)])
+        #expect(accepted.preview.before == before && accepted.preview.after == after)
+        #expect(facts.state == .saved && facts.after == after && facts.followUpRequested && f.authorizations == [1080]
+                && f.count("save") == 1)
         // 与详情页同一入口：在另一份相同的库里直接调 TaskNotesService，结果逐项一致。
         let stored = try #require(try f.stored(TodoItem.self).first { $0.id == todo.id })
         let tags = try f.stored(TagItem.self)
@@ -142,17 +146,19 @@ import Testing
         #expect(TagIDList.parse(stored.tagIDs).compactMap { id in tags.first { $0.id == id }?.name } == ["工作", "旧", "新标签"])
         #expect(tags.allSatisfy { $0.deletedAt == nil })
         #expect(try f.stored(AttachmentItem.self).contains { $0.ownerID == todo.id && $0.filename == "图.png" })
+        #expect(f.escrow.count == 0)
     }
 
     @Test func appendClearAndUnchangedFollowTheSameFinalText() throws {
-        let f = try TaskSimpleFixture()
+        let f = try TaskSimpleFixture(longText: true)
         let todo = try f.insert(TodoItem(title: "追加", dayKey: TaskSimpleFixture.today, notes: "第一行"))
-        let append = try f.runSpec(f.pending("todo.notes"),
-                                   .init(input: f.input([.init(type: .todo, id: todo.id)], [f.notes(.append, "第二行 !p2")])))
-        #expect(todo.notes == "第一行\n第二行 !p2" && todo.isImportant && !todo.isUrgent && !append.followUp)
-        let routine = try f.insert(DailyRoutine(title: "清空", sortOrder: 0, createdDayKey: "2026-10-01", notes: "旧备注"))
-        _ = try f.runSpec(f.pending("routine.notes"), .init(input: f.input([.init(type: .routine, id: routine.id)], [f.notes(.clear)])))
-        #expect(routine.notes.isEmpty && f.authorizations.isEmpty)
+        let (_, append) = try f.run("todo.notes", targets: [.init(type: .todo, id: todo.id)], arguments: [f.notes(.append, "第二行 !p2")])
+        #expect(append.state == .saved && todo.notes == "第一行\n第二行 !p2" && todo.isImportant && !todo.isUrgent
+                && !append.followUpRequested)
+        let g = try TaskSimpleFixture(longText: true)
+        let routine = try g.insert(DailyRoutine(title: "清空", sortOrder: 0, createdDayKey: "2026-10-01", notes: "旧备注"))
+        let (_, clear) = try g.run("routine.notes", targets: [.init(type: .routine, id: routine.id)], arguments: [g.notes(.clear)])
+        #expect(clear.state == .saved && routine.notes.isEmpty && g.authorizations.isEmpty)
         let same = try f.insert(TodoItem(title: "不变", dayKey: TaskSimpleFixture.today, notes: "保持"))
         let (before, after) = try f.preview(f.pending("todo.notes"),
                                             .init(input: f.input([.init(type: .todo, id: same.id)], [f.notes(.replace, "保持")])))
@@ -160,30 +166,33 @@ import Testing
     }
 
     @Test func multipleTargetsListEachAndRollBackTogether() throws {
-        let f = try TaskSimpleFixture()
+        let f = try TaskSimpleFixture(longText: true)
         let first = try f.insert(TodoItem(title: "第一", dayKey: TaskSimpleFixture.today))
         let second = try f.insert(TodoItem(title: "第二", dayKey: TaskSimpleFixture.today))
-        let call = CommandSimpleCall(input: f.input([.init(type: .todo, id: first.id), .init(type: .todo, id: second.id)],
-                                                    [f.notes(.replace, "共同 #共享新标签")]))
+        let targets: [CommandObjectReference] = [.init(type: .todo, id: first.id), .init(type: .todo, id: second.id)]
+        let call = CommandSimpleCall(input: f.input(targets, [f.notes(.replace, "共同 #共享新标签")]))
         let (_, after) = try f.preview(f.pending("todo.notes"), call)
         // 每个目标各自一行；两个目标引用同一个新标签只建一次。
         #expect(after.rows.filter { [first.id.uuidString, second.id.uuidString].contains($0.key) }.count == 2)
         #expect(after.rows.filter { $0.key.hasPrefix("tag:") }.count == 1)
-        // 同一个失败仓储贯穿两次写入：第二个目标写入后抛错。
+        // 同一个失败仓储贯穿两次写入：第二个目标写入后抛错，一次借用、一次事务整体回滚。
         let failing = TaskTM6FailureRepository(f.context, failOn: 2)
         f.tasks = { _ in failing }
-        #expect(throws: (any Error).self) { try f.runSpec(f.pending("todo.notes"), call) }
-        #expect(failing.calls == 2)
+        let (_, failed) = try f.run("todo.notes", targets: targets, single: false, arguments: [f.notes(.replace, "共同 #共享新标签")])
+        #expect(failed.state == .notSubmitted && failing.calls == 2)
         #expect(first.notes.isEmpty && second.notes.isEmpty && f.count("save") == 0 && f.authorizations.isEmpty)
         #expect(try f.stored(TagItem.self).isEmpty)
+        // 未提交：正文还回草稿，重新预览、接受后再提交一次。
         f.tasks = { SwiftDataTaskRepository(context: $0) }
-        _ = try f.runSpec(f.pending("todo.notes"), call)
+        try f.returnToDraft()
+        #expect(try f.escrow.count == 0 && f.handoff.state().execution == nil)
+        let saved = try f.submit(f.accept())
         let tags = try f.stored(TagItem.self)
-        #expect(first.notes == "共同 #共享新标签" && second.notes == first.notes && tags.count == 1)
+        #expect(saved.state == .saved && first.notes == "共同 #共享新标签" && second.notes == first.notes && tags.count == 1)
     }
 
     @Test func protectedSourceDeletedTargetAndOversizeAreRejected() throws {
-        let f = try TaskSimpleFixture()
+        let f = try TaskSimpleFixture(longText: true)
         let todo = try f.insert(TodoItem(title: "受保护", dayKey: TaskSimpleFixture.today))
         let deleted = try f.insert(TodoItem(title: "已删", dayKey: TaskSimpleFixture.today, deletedAt: .now))
         let full = try f.insert(TodoItem(title: "长", dayKey: TaskSimpleFixture.today,

@@ -188,6 +188,14 @@ extension UnifiedSearchController {
         catch { convertFailure = navigationFailure(error as? WorkspaceOpenFailure ?? .invalidTarget) }
     }
 
+    /// routine.capture 回执“打开新习惯”：位置由规格给出，与转换后打开习惯同一解析与导航。
+    func openSimpleCreated(_ facts: CommandSimpleFacts, source: UnifiedSearchBuffer) {
+        guard validates(source), let open = simple?.openTarget(facts) else { return }
+        guard let router = navigationRouter else { simpleFailure = "unified.navigation.unassembled"; return }
+        do { navigate(.object(try router.objects.resolve(open)), source: source) }
+        catch { simpleFailure = navigationFailure(error as? WorkspaceOpenFailure ?? .invalidTarget) }
+    }
+
     func validReturn(_ ticket: UnifiedSearchReturnContext) -> Bool {
         ticket.id == returnSearch?.id && ticket.queryRevision == navigationQueryRevision
             && ticket.privacyRevision == buffer.privacyRevision && ticket.ownership == buffer.lease.ownership

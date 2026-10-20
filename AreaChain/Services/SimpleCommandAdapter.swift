@@ -8,6 +8,8 @@ import SwiftData
     let coordinator: CommandHandoffCoordinator
     let environment: SimpleCommandEnvironment?
     let capability: Capability
+    /// L-M1b 长文托管：随适配器与隔离环境存在；隐私事件取隔离环境的私有事件中心。
+    let escrow: CommandLongTextEscrow?
     private let specs: [String: any SimpleCommandSpec]
 
     init(coordinator: CommandHandoffCoordinator, environment: SimpleCommandEnvironment? = nil,
@@ -15,6 +17,7 @@ import SwiftData
         self.coordinator = coordinator
         self.environment = environment
         self.capability = capability
+        escrow = environment.map { CommandLongTextEscrow(coordinator: coordinator, privacy: $0.center) }
         self.specs = Dictionary(specs.map { ($0.command.rawValue, $0) }, uniquingKeysWith: { first, _ in first })
     }
 
@@ -47,14 +50,11 @@ import SwiftData
                 throw CommandSimpleIssue.stale
             }
             let spec = try spec(draft.commandID)
-            let item = try CommandSimplePreview.input(in: host, shape: spec.shape)
-            let input = try item.checkedInput()
-            let call = CommandSimpleCall(input: input, creation: spec.creates.map { .init(type: $0, id: UUID()) })
-            let before = try spec.observe(call, in: environment.context)
-            let after = try spec.expect(call, from: before, in: environment.context)
+            let creation = spec.creates.map { CommandObjectReference(type: $0, id: UUID()) }
+            let (item, input, before, after) = try states(host, spec: spec, creation: creation, context: environment.context)
             let preview = CommandSimplePreview(lease: lease, plan: plan, item: item.stamp, draft: item.draft.stamp,
                 command: item.draft.commandID, input: input, environmentID: environment.id, copy: spec.copy,
-                before: before, after: after, creation: call.creation)
+                before: before, after: after, creation: creation)
             try coordinator.simples.requireResolved(preview.lockKeys)
             try coordinator.validate(lease)
             try environment.validateClean()
@@ -74,11 +74,9 @@ import SwiftData
             guard preview.lease == lease, preview.environmentID == environment.id, host.session.plan.stamp == preview.plan else {
                 throw CommandSimpleIssue.stale
             }
-            let item = try CommandSimplePreview.input(in: host, shape: spec.shape)
-            guard item.stamp == preview.item, item.draft.stamp == preview.draft, try item.checkedInput() == preview.input else {
-                throw CommandSimpleIssue.stale
-            }
-            try verifyUnchanged(preview, spec: spec, context: environment.context)
+            let (_, _, before, after) = try states(host, spec: spec, creation: preview.creation, expected: preview,
+                                                   context: environment.context)
+            guard before == preview.before, after == preview.after else { throw CommandSimpleIssue.invalidTarget(.changed) }
             try coordinator.simples.requireResolved(preview.lockKeys)
             try coordinator.validate(lease)
             try environment.validateClean()
@@ -97,7 +95,11 @@ import SwiftData
         try validatePreview(accepted.preview, expecting: lease, displaySession: displaySession)
         guard coordinator.simples.acceptances[accepted.preview.draft.draftID] == accepted,
               !coordinator.simples.wasInvoked(accepted.id) else { throw CommandSimpleIssue.stale }
-        try coordinator.send(.sealPlan(accepted.preview.plan, runID: UUID()), expecting: lease)
+        if try spec(accepted.preview.command) is any SimpleLongTextCommandSpec {
+            try longTextEscrow().seal(accepted, runID: UUID(), expecting: lease)
+        } else {
+            try coordinator.send(.sealPlan(accepted.preview.plan, runID: UUID()), expecting: lease)
+        }
         var host = try coordinator.host(lease.ownership.hostID)
         guard let run = host.session.execution else { throw CommandSimpleIssue.stale }
         let effect = try coordinator.send(.beginStep(run.stamp), expecting: host.lease)
@@ -130,11 +132,16 @@ import SwiftData
             var facts = CommandSimpleFacts(accepted)
             facts.state = .noChange
             try coordinator.recordSimple(invocation, facts: facts)
+            escrow?.settle(accepted.preview, .saved)
             try coordinator.finishTaskMutation(invocation, external: [:])
             return facts
         }
-        var facts = SimpleCommandTransaction.apply(accepted, spec: spec, environment: environment) { [coordinator] facts in
+        let write = lentWrite(accepted.preview, spec: spec, invocation: invocation)
+        var facts = SimpleCommandTransaction.apply(accepted, spec: spec, environment: environment, write: write) { [coordinator] facts in
             try coordinator.recordSimple(invocation, facts: facts)
+        }
+        if spec is any SimpleLongTextCommandSpec {
+            escrow?.settle(accepted.preview, facts.state == .saved ? .saved : facts.state == .unknown ? .unknown : .notSubmitted)
         }
         if facts.state == .unknown { coordinator.simples.markUnknown(accepted.preview, acceptanceID: accepted.id) }
         // 与原界面一致：只有保存成功才发出系统后续请求。
@@ -167,6 +174,8 @@ import SwiftData
             : current == facts.before ? .notApplied : .inconsistent
         let verification = CommandSimpleVerification(acceptanceID: accepted.id, outcome: outcome)
         coordinator.simples.resolve(verification)
+        // 核为已写入即销毁托管；核为未写入仍保留、不再签发，只能经 returnLongText 还回草稿。
+        if outcome == .applied { escrow?.settle(accepted.preview, .saved) }
         return verification
     }
 
@@ -177,7 +186,15 @@ import SwiftData
             throw CommandSimpleIssue.stale
         }
         _ = try preview.frozenItem(in: run, lease: invocation.lease, shape: spec.shape)
-        try verifyUnchanged(preview, spec: spec, context: environment.context)
+        if spec is any SimpleLongTextCommandSpec {
+            // 封存后没有正文：冲突证明只比冻结行的当前值（含目标备注的带键摘要）；写后再按冻结行核对新值。
+            guard try spec.observe(preview.frozenCall, in: environment.context) == preview.before else {
+                throw CommandSimpleIssue.invalidTarget(.changed)
+            }
+            try longTextEscrow().checkLendable(invocation, preview: preview)
+        } else {
+            try verifyUnchanged(preview, spec: spec, context: environment.context)
+        }
         try coordinator.validateRuntimeInvocation(invocation)
         try environment.validateClean()
     }

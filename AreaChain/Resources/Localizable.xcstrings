@@ -55003,6 +55003,125 @@
           }
         }
       }
+    },
+    "unified.simple.notice.privateTag": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "#%@ is a private tag; commands can't write it. Remove it from the text."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "#%@ 是私密标签，指令不能写入；请从正文中删去。"
+          }
+        }
+      }
+    },
+    "unified.simple.notice.presetTag": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "#%@ is a built-in journal tag; commands can't write it. Remove it from the text."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "#%@ 是手记预置标签，指令不能写入；请从正文中删去。"
+          }
+        }
+      }
+    },
+    "unified.simple.problem.protectedTag": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The text has a private or built-in tag, so this command can't run."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正文含私密或预置标签，这条指令不能执行。"
+          }
+        }
+      }
+    },
+    "unified.simple.problem.locked": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy lock changed before saving. Return to edit, then preview again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存前隐私锁定状态有变化。请返回编辑后重新预览。"
+          }
+        }
+      }
+    },
+    "unified.simple.blocked": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Can't run: see the reasons above."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不能执行：原因见上方。"
+          }
+        }
+      }
+    },
+    "unified.simple.return": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Return to edit"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "返回编辑"
+          }
+        }
+      }
+    },
+    "unified.simple.open.routine": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open new habit"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开新习惯"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

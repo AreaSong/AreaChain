@@ -14,12 +14,20 @@ enum CommandParameterCompleteness: Equatable { case complete, incomplete, protec
 extension CommandDraft {
     var blocksUnprotectedTransfer: Bool { protectedReference != nil || protectionRequirement != .ordinary }
 
-    /// 自由长文的协议导出尚无受控借用契约；不根据关键词缺失放行。
+    /// L9：按目录声明的类型判定。凡声明为 longText 的参数，值是正文、空值还是 clear，都必须经托管、只剩印记才放行；
+    /// 长文值落在其他参数上、印记落在非 longText 参数上同样拦下。不根据关键词缺失放行。
     var blocksUnprotectedExport: Bool {
         blocksUnprotectedTransfer
-            || arguments.contains { if case .longText = $0.value { return true }; return false }
+            || arguments.contains { !escrowedOrPlain($0) }
             || baseline.values.values.contains {
                 if case .uniform(.longText) = $0 { return true }; return false
             }
+    }
+
+    private func escrowedOrPlain(_ argument: CommandArgument) -> Bool {
+        if case .longText? = argument.value { return false }
+        let longText = declaredType(argument.parameter) == .longText
+        guard case .longTextImprint(let imprint)? = argument.value else { return !longText }
+        return longText && imprint.parameter == argument.parameter && imprint.operation == argument.operation
     }
 }

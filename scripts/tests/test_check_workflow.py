@@ -145,6 +145,7 @@ class WorkflowCheckTests(unittest.TestCase):
         self.write(".gitignore", ".agents/*\n!.agents/skills/\n.agents/skills/*\n"
                    "!.agents/skills/areachain-workflow/\n"
                    "!.agents/skills/areachain-ui/\n!.agents/skills/areachain-verify/\n")
+        self.write_loan_fixture()
         subprocess.run(["git", "init", "--quiet", str(self.root)], check=True,
                        capture_output=True, timeout=15)
 
@@ -254,7 +255,7 @@ class WorkflowCheckTests(unittest.TestCase):
                           {"project-identity", "project-links", "workflow-contract",
                           "component-catalog", "performance-baselines", "domain-imports",
                           "ci-contract", "skill-format", "skill-git-scope", "theme-tokens",
-                          "swift-file-size"})
+                          "swift-file-size", "long-text-loan"})
 
     def test_performance_manifest_rejects_non_object_root(self):
         self.make_project()
@@ -1481,6 +1482,58 @@ class WorkflowCheckTests(unittest.TestCase):
         result = workflow.check_swift_file_size(self.root)
         self.assertEqual(result["status"], "failed")
         self.assertIn("超过 500 行", result["issues"][0]["message"])
+
+    LOAN_ESCROW = (
+        "@MainActor final class CommandLongTextLoan {\n"
+        "    fileprivate var lentText: String?\n"
+        "    fileprivate init(text: String) { lentText = text }\n"
+        "    fileprivate func consumeText(_ body: (String) throws -> Void) throws { try body(lentText ?? \"\") }\n"
+        "}\n"
+        "extension TaskNotesService { static func applyLent(_ loan: CommandLongTextLoan) throws {} }\n"
+    )
+
+    def write_loan_fixture(self, escrow=None):
+        self.write(workflow.LOAN_FILE, self.LOAN_ESCROW if escrow is None else escrow)
+        self.write("AreaChain/Services/NotesCommandSpec.swift", "func run(_ loan: CommandLongTextLoan) throws { try TaskNotesService.applyLent(loan) }\n")
+        self.write("AreaChain/Services/RoutineCaptureCommandSpec.swift", "// fixture\n")
+
+    def test_long_text_loan_guard_passes_for_allowed_symbols(self):
+        self.write_loan_fixture()
+        self.write("AreaChain/Services/Other.swift", "// lentText 只在注释里\nlet note = \"consumeText\"\n")
+        self.assertEqual(workflow.check_long_text_loan(self.root)["status"], "passed")
+
+    def test_long_text_loan_guard_rejects_getter_or_exit_elsewhere(self):
+        cases = [("AreaChain/Services/SimpleCommandAdapter.swift", "let text = loan.lentText\n"),
+                 ("AreaChain/Services/CaptureCommandSpecs.swift", "try loan.consumeText { _ in }\n"),
+                 ("AreaChain/Services/CaptureCommandSpecs.swift", "try TaskNotesService.applyLent(loan)\n"),
+                 ("AreaChainTests/Services/LoanTests.swift", "_ = loan.lentText\n")]
+        for relative, text in cases:
+            with self.subTest(relative=relative, text=text):
+                self.write_loan_fixture()
+                self.write(relative, text)
+                result = workflow.check_long_text_loan(self.root)
+                (self.root / relative).unlink()
+                self.assertEqual(result["status"], "failed")
+                self.assertTrue(result["issues"][0]["file"].endswith(relative), result["issues"])
+
+    def test_long_text_loan_guard_requires_declarations_and_symbols(self):
+        broken = [self.LOAN_ESCROW.replace("fileprivate var lentText", "var lentText"),
+                  self.LOAN_ESCROW.replace("fileprivate init", "init"),
+                  self.LOAN_ESCROW.replace("consumeText", "take"),
+                  self.LOAN_ESCROW.replace("applyLent", "applyText"),
+                  self.LOAN_ESCROW + "func leak() { Task { } }\n",
+                  self.LOAN_ESCROW + "func leak() async {}\n",
+                  self.LOAN_ESCROW + "struct Copy: Codable {}\n"]
+        for escrow in broken:
+            with self.subTest(escrow=escrow[-40:]):
+                self.write_loan_fixture(escrow)
+                self.assertEqual(workflow.check_long_text_loan(self.root)["status"], "failed")
+
+    def test_long_text_loan_guard_requires_escrow_file(self):
+        self.write("AreaChain/Services/NotesCommandSpec.swift", "// fixture\n")
+        result = workflow.check_long_text_loan(self.root)
+        self.assertEqual(result["status"], "failed")
+        self.assertIn("缺少长文托管", result["issues"][0]["message"])
 
     def test_theme_rejects_services_diary_content_dependency(self):
         self.write("AreaChain/Theme/SampleView.swift",

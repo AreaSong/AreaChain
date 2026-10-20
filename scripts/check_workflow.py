@@ -32,6 +32,7 @@ LIMITATIONS = [
     "component-catalog 只核对少量稳定入口的文件和符号仍存在；不把所有内部类型自动变成公共 API。",
     "ci-contract 只核对工作流中的关键文本标记与 checkout revision；不替代 GitHub Actions YAML 语义或远端运行验证。",
     "swift-file-size 只数源码行数，不判断函数是否该拆，也不证明行为等价。",
+    "long-text-loan 只核对借用符号出现的文件与声明形状；不证明同文件代码不复制正文，也不替代运行时测试。",
 ]
 
 WORKFLOW_CONTRACT = {
@@ -830,6 +831,59 @@ def required_skill_files(root, prefixes):
     return sorted(required)
 
 
+LOAN_FILE = "AreaChain/Services/CommandLongTextEscrow.swift"
+LOAN_SPEC_FILES = {"AreaChain/Services/NotesCommandSpec.swift", "AreaChain/Services/RoutineCaptureCommandSpec.swift"}
+# L-M1b 长文借用：正文取值器只在托管文件里；两个保存出口只由托管文件与两份规格引用。按符号放行，不按整份文件放行。
+LOAN_SYMBOLS = {
+    "lentText": {LOAN_FILE},
+    "consumeText": {LOAN_FILE},
+    "applyLent": {LOAN_FILE} | LOAN_SPEC_FILES,
+}
+LOAN_DECLARATIONS = (
+    (re.compile(r"final\s+class\s+CommandLongTextLoan\b"), "借用必须是 final class CommandLongTextLoan"),
+    (re.compile(r"fileprivate\s+init\s*\("), "借用的构造器必须是 fileprivate"),
+    (re.compile(r"fileprivate\s+(?:private\(set\)\s+)?var\s+lentText\b"), "正文取值器 lentText 必须是 fileprivate"),
+    (re.compile(r"fileprivate\s+func\s+consumeText\b"), "借用 consumeText 必须是 fileprivate"),
+)
+LOAN_FORBIDDEN = re.compile(r"\bTask\s*(?:\{|\.detached|\.init)|\bDispatchQueue\b|\basync\b|\b(?:Codable|Encodable)\b")
+
+
+def check_long_text_loan(root):
+    """借用凭据的出口守卫：只看符号出现的位置与声明形状，不证明运行时不复制正文。"""
+    issues, paths = [], []
+    for folder in ("AreaChain", "AreaChainTests"):
+        directory = root / folder
+        if directory.is_dir():
+            paths.extend(sorted(directory.rglob("*.swift")))
+    escrow = root / LOAN_FILE
+    if not escrow.is_file():
+        issues.append(issue(escrow, "缺少长文托管与借用文件。"))
+    for path in paths:
+        relative = path.relative_to(root).as_posix()
+        try:
+            code = swift_code(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, RuntimeError) as error:
+            issues.append(issue(path, f"无法读取 Swift 文件：{type(error).__name__}"))
+            continue
+        for symbol, allowed in LOAN_SYMBOLS.items():
+            if relative in allowed:
+                continue
+            for match in re.finditer(r"\b" + symbol + r"\b", code):
+                issues.append(issue(path, f"{symbol} 只能出现在 {'、'.join(sorted(allowed))}。",
+                                    code.count("\n", 0, match.start()) + 1))
+        if relative == LOAN_FILE:
+            for pattern, message in LOAN_DECLARATIONS:
+                if not pattern.search(code):
+                    issues.append(issue(path, message + "。"))
+            for symbol in LOAN_SYMBOLS:
+                if not re.search(r"\b" + symbol + r"\b", code):
+                    issues.append(issue(path, f"托管文件缺少守卫符号 {symbol}。"))
+            for match in LOAN_FORBIDDEN.finditer(code):
+                issues.append(issue(path, "托管文件不得出现异步、跨队列或编码能力：" + match.group(0),
+                                    code.count("\n", 0, match.start()) + 1))
+    return result("long-text-loan", len(paths), issues)
+
+
 def check_swift_file_size(root, limit=500):
     """拦住单文件重新超过结构上限；不评价函数长短。"""
     issues, checked = [], 0
@@ -975,7 +1029,7 @@ def run_checks(root, personal_root=None):
                        check_component_catalog(root), check_performance_manifest(root),
                        check_ci_contract(root), check_skill_format(root),
                        check_skill_scope(root), check_theme_tokens(root),
-                       check_swift_file_size(root)])
+                       check_swift_file_size(root), check_long_text_loan(root)])
     if personal_root is not None:
         checks.append(check_links(personal_root, personal_docs(personal_root), "personal-links", restrict_targets=True))
     passed = all(check["status"] == "passed" for check in checks)

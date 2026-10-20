@@ -72,11 +72,12 @@ import Testing
     }
 
     @Test func specPreviewListsParseResultsAndCreatesOnceWithReservedIdentity() throws {
-        let f = try TaskSimpleFixture()
+        let f = try TaskSimpleFixture(longText: true)
         let work = try f.insert(TagItem(name: "Work", sortOrder: 0))
         try f.insert(DailyRoutine(title: "已有", sortOrder: 7, createdDayKey: "2026-10-01", deletedAt: .now))
         let creation = CommandObjectReference(type: .routine, id: UUID())
-        let call = CommandSimpleCall(input: f.input([], [f.body("晨读 !p1 @07:30 #work #新标签")]), creation: creation)
+        let text = "晨读 !p1 @07:30 #work #新标签"
+        let call = CommandSimpleCall(input: f.input([], [f.body(text)]), creation: creation)
         let spec = try f.pending("routine.capture")
         #expect(spec.creates == .routine)
         let (before, after) = try f.preview(spec, call)
@@ -88,14 +89,17 @@ import Testing
         #expect(changes.contains { $0.title == "#新标签" && $0.before == nil } && !changes.contains { $0.title == "#Work" })
         let existing = try f.stored(DailyRoutine.self)
         #expect(f.count("save") == 0 && existing.count == 1)
-        let result = try f.runSpec(spec, call)
-        #expect(result.followUp && f.authorizations == [450] && f.count("save") == 1)
-        let created = try #require(try f.stored(DailyRoutine.self).first { $0.id == creation.id })
+        // 经骨架执行：身份在准备时分配一次，接受与写入沿用。
+        let (accepted, facts) = try f.run("routine.capture", arguments: [f.body(text)])
+        let reserved = try #require(accepted.preview.creation)
+        #expect(facts.state == .saved && facts.creation == reserved && facts.followUpRequested && f.authorizations == [450]
+                && f.count("save") == 1)
+        let created = try #require(try f.stored(DailyRoutine.self).first { $0.id == reserved.id })
         #expect(created.sortOrder == 8 && created.isImportant && created.isUrgent && created.remindMinutes == 450)
         #expect(created.createdDayKey == TaskSimpleFixture.today && TagIDList.parse(created.tagIDs).first == work.id)
-        // 同一身份再新建会被仓储拒绝，不会另建第二个。
-        #expect(throws: (any Error).self) { try f.runSpec(spec, call) }
-        #expect(try f.stored(DailyRoutine.self).filter { $0.id == creation.id }.count == 1)
+        // 同一份接受再提交会被拒绝，不会另建第二个。
+        #expect(throws: (any Error).self) { try f.submit(accepted) }
+        #expect(try f.stored(DailyRoutine.self).filter { $0.id == reserved.id }.count == 1 && f.count("save") == 1)
     }
 
     @Test func emptyOrTokenlessTextIsRejectedAndLongTextGuardHolds() throws {
@@ -106,13 +110,18 @@ import Testing
             try f.preview(spec, .init(input: f.input([], [f.body("   ")]), creation: creation))
         }
         #expect(throws: CommandSimpleIssue.invalidArguments) { try f.preview(spec, .init(input: f.input([], [f.body("没有身份")]))) }
-        let guarded = SimpleCommandAdapter(coordinator: f.handoff.coordinator, environment: f.environment,
-                                           specs: TaskCommandSpecs.pendingLongText(f.dependencies), capability: .open)
+        // 默认不装配；装配后受保护要求（required）的草稿仍在准备前被拒。
         try f.queue("routine.capture", arguments: [f.body("散步")])
-        #expect(throws: CommandSimpleIssue.invalidArguments) {
-            try guarded.prepare(plan: f.handoff.state().plan.stamp, expecting: f.handoff.owned().lease)
+        #expect(throws: CommandSimpleIssue.unassembled) {
+            try f.adapter.prepare(plan: f.handoff.state().plan.stamp, expecting: f.handoff.owned().lease)
         }
-        let stored = try f.stored(DailyRoutine.self)
-        #expect(f.count("save") == 0 && stored.isEmpty)
+        let g = try TaskSimpleFixture(longText: true)
+        let required = CommandDraft(id: UUID(), hostID: HandoffFixture.source, commandID: .init(rawValue: "routine.capture"),
+                                    arguments: [g.body("散步")], protectionRequirement: .required)
+        #expect(throws: CommandSimpleIssue.invalidArguments) {
+            try CommandSimplePreview.validate(.init(id: UUID(), draft: required), shape: .none, longText: true)
+        }
+        let stored = try f.stored(DailyRoutine.self) + g.stored(DailyRoutine.self)
+        #expect(f.count("save") == 0 && g.count("save") == 0 && stored.isEmpty)
     }
 }

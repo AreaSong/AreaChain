@@ -21,6 +21,8 @@ import SwiftData
     func apply(_ call: CommandSimpleCall, in context: ModelContext) throws
     /// 保存成功并发布之后的系统后续（如提醒授权请求），返回是否发出了请求；隔离环境由规格注入 fake。
     func afterSave(_ call: CommandSimpleCall, in context: ModelContext) -> Bool
+    /// 新建型指令回执里“打开新对象”的位置；沿原导航解析，不另建打开规则。默认没有。
+    func openTarget(_ creation: CommandObjectReference) -> ContentQueryBrowseOpen?
 }
 
 extension SimpleCommandSpec {
@@ -33,6 +35,7 @@ extension SimpleCommandSpec {
     }
     func apply(_ call: CommandSimpleCall, in context: ModelContext) throws { try apply(call.input, in: context) }
     func afterSave(_ call: CommandSimpleCall, in context: ModelContext) -> Bool { false }
+    func openTarget(_ creation: CommandObjectReference) -> ContentQueryBrowseOpen? { nil }
 }
 
 /// 只实现带调用参数版本的规格（新建身份、冻结目标）用这三个默认值满足协议；单独调用会被拒绝。
@@ -44,6 +47,12 @@ extension SimpleCommandCallSpec {
     func expect(_ input: CommandResolvedInput, from before: CommandSimpleState,
                 in context: ModelContext) throws -> CommandSimpleState { throw CommandSimpleIssue.unassembled }
     func apply(_ input: CommandResolvedInput, in context: ModelContext) throws { throw CommandSimpleIssue.unassembled }
+}
+
+/// L-M1b：参数含 longText 的规格。准备期由托管同步读宿主草稿推出前后状态；执行不经 `apply(call)`，
+/// 只经托管为本 attempt 签发的一次性借用写入（借用出口见 CommandLongTextEscrow.swift）。
+@MainActor protocol SimpleLongTextCommandSpec: SimpleCommandSpec {
+    func apply(_ call: CommandSimpleCall, loan: CommandLongTextLoan, in context: ModelContext) throws
 }
 
 /// 简单指令的显式隔离装配：唯一事务边界与私有发布；只接受内存库、关闭自动保存的干净 context。

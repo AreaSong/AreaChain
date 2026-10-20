@@ -287,12 +287,21 @@ struct CommandPlan: Equatable, CustomStringConvertible, CustomDebugStringConvert
         items.remove(at: last)
     }
 
-    mutating func seal(expecting stamp: CommandPlanStamp) throws -> CommandPlanSnapshot {
+    /// longText 只有经 `longText` 核对、换成印记后才可封存；计划里原有的印记不是经托管来的，一律拒绝。
+    mutating func seal(expecting stamp: CommandPlanStamp, longText: CommandLongTextSealing? = nil) throws -> CommandPlanSnapshot {
         guard self.stamp == stamp else { throw CommandPlanError.stale }
         guard editing == nil else { throw CommandPlanError.busy }
-        guard !items.contains(where: { $0.draft.blocksUnprotectedExport }) else { throw CommandPlanError.protectedContent }
-        guard check().canSealProtocol else { throw CommandPlanError.incomplete }
-        let snapshot = CommandPlanSnapshot(stamp: stamp, items: items)
+        guard !items.contains(where: { !$0.draft.longTextImprints.isEmpty }) else { throw CommandPlanError.protectedContent }
+        var sealed = items
+        if let longText {
+            guard Set(longText.imprints.keys).isSubset(of: Set(items.map(\.id))) else { throw CommandPlanError.stale }
+            for index in sealed.indices {
+                try sealed[index].draft.sealLongText(longText.imprints[sealed[index].id] ?? [], digest: longText.digest)
+            }
+        }
+        guard !sealed.contains(where: { $0.draft.blocksUnprotectedExport }) else { throw CommandPlanError.protectedContent }
+        guard CommandPlanValidation.check(sealed).canSealProtocol else { throw CommandPlanError.incomplete }
+        let snapshot = CommandPlanSnapshot(stamp: stamp, items: sealed)
         items = []
         revision += 1
         return snapshot
@@ -352,6 +361,26 @@ struct CommandPlan: Equatable, CustomStringConvertible, CustomDebugStringConvert
         items = run.snapshot.items.map { original in
             var item = original
             item.returnedAttempts.append(attempt)
+            item.version += 1
+            item.draft.activate()
+            return item
+        }
+        revision += 1
+    }
+
+    /// L-M1b：单项长文 Run 未提交（失败、冲突、取消未开始）或核为未写入时，托管正文按印记核对后还回草稿。
+    /// 不记 returnedAttempts：归还后整个 Run 丢弃，重新预览封存是新的 Run 与新的 attempt，不沿用旧 Run 的重试许可。
+    mutating func restoreLongText(_ run: CommandExecutionRun, texts: [UUID: [CommandParameterID: String]],
+                                  digest: CommandTextDigest, verifiedNotApplied: Bool) throws {
+        guard items.isEmpty, editing == nil, run.multiPlan == nil, run.stamp.plan.planID == id,
+              run.snapshot.stamp.hostID == hostID, run.units.count == 1, let unit = run.units.first,
+              unit.effects.isEmpty, run.outputs.isEmpty,
+              unit.local == .notSubmitted && [.conflict, .failed, .notExecuted].contains(unit.state)
+                || verifiedNotApplied && unit.local == .unknown,
+              Set(texts.keys) == Set(run.snapshot.items.map(\.id)) else { throw CommandExecutionError.notRetryable }
+        items = try run.snapshot.items.map { original in
+            var item = original
+            try item.draft.restoreLongText(texts[item.id] ?? [:], digest: digest)
             item.version += 1
             item.draft.activate()
             return item
