@@ -157,7 +157,7 @@ final class WorkspaceNavigation {
     var pendingFilter = BoardFilter()
     /// 全部事项筛选。保留和清空的时机与待处理相同。
     var allItemsQuery = ItemsListingQuery(todayKey: DayClock.shared.todayKey)
-    /// 今日页“昨天／即将”展开状态；离开今日页即复位，与原页面状态的生命周期一致。
+    /// 今日页“昨天／即将”展开状态：只在显式宿主里使用（见 WorkspaceTodayView）；离开今日页即复位。
     var todaySections = TasksPageSections()
     /// 总览连击或重复事项数要求今日页打开重复事项面板。页面消费后清掉。
     var wantsRecurringList = false

@@ -12,6 +12,7 @@ struct WorkspaceTodayView: View {
 
     @WorkspaceNavigationContext private var navigation
     @WorkspaceFilterContext private var filterSession
+    @Environment(\.workspaceHostContext) private var hostContext
     @State private var dayTick = Date()
     @State private var composerFocused = false
     @State private var showingRecurringEditor = false
@@ -60,7 +61,8 @@ struct WorkspaceTodayView: View {
                         get: { filterSession.filters.tasks },
                         set: { writeTaskFilter($0) }
                     ),
-                    externalSections: $navigation.todaySections
+                    // 只有显式装配的宿主（页面指令所在）才由宿主持有展开状态；默认入口保持页面自己的状态与生命周期。
+                    externalSections: hostContext == nil ? nil : $navigation.todaySections
                 )
             )
         }
