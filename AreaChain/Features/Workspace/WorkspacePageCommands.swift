@@ -12,6 +12,9 @@ import SwiftData
     let context: ModelContext
     /// 宿主窗口可用性（沿 N-M1 的 validateHost）；服务层测试可注入。
     var hostAvailable: () throws -> Void
+    /// 合并批 M-2：看板“回今天／本月”的今天与日期推算；与页面同源，测试可注入。
+    var today: () -> String = { DayClock.shared.todayKey }
+    var calendar: Calendar = .current
     var navigation: WorkspaceNavigation { router.navigation }
 
     init(router: WorkspaceSearchRouter, filters: BoardFilterSession, drafts: EditDrafts, context: ModelContext,
@@ -70,7 +73,9 @@ import SwiftData
         case .status(let todo, let routine):
             if let todo { navigation.allItemsQuery.todoStatus = todo }
             if let routine { navigation.allItemsQuery.routineStatus = routine }
-        case .streak, .select, .selectAll:
+        case .calendarMode(let span):
+            applyCalendarMode(span)
+        case .streak, .select, .selectAll, .ganttSelect, .transfer:
             break
         }
         // 取消类执行后已无可读的草稿／驻留，回执用预期状态；其余重读页面状态，证明确实写到了页面那一份。
@@ -80,6 +85,7 @@ import SwiftData
 
     /// 沿 N-M1：页面实际挂载并登记了当前投影（inspectorTargetIDs）之后才选择；不在投影里的目标拒绝，不换成别的行。
     func applySelection(_ preview: WorkspacePagePreview) throws -> WorkspacePageReceipt {
+        if case .ganttSelect = preview.action { return try applyGanttSelection(preview) }
         guard try requirePage(for: preview.action) == preview.page else { throw CommandPageIssue.stale }
         let visible = navigation.inspectorTargetIDs
         let ids: Set<UUID>
@@ -108,10 +114,11 @@ import SwiftData
     // MARK: - 页面与状态
 
     /// 返回指令绑定的页面；不需要页面的（取消、连击）为 nil，但仍要求宿主可用。
-    private func requirePage(for action: CommandPageAction) throws -> WorkspaceTab? {
+    func requirePage(for action: CommandPageAction) throws -> WorkspaceTab? {
         do { try hostAvailable() } catch { throw CommandPageIssue.pageUnavailable }
         let allowed: [WorkspaceTab]
         switch action {
+        case .calendarMode, .ganttSelect, .transfer: return try boardPage(for: action)
         case .cancelTitle, .cancelCompletion, .streak: return nil
         case .filter, .clearFilter: allowed = [.today, .pending, .allItems]
         case .kind, .status: allowed = [.allItems]
@@ -142,6 +149,9 @@ import SwiftData
             let query = navigation.allItemsQuery
             return .listing(kind: query.kind, todo: query.todoStatus, routine: query.routineStatus)
         case .streak(let id, _, let day): return try streak(id, day: day)
+        case .calendarMode, .ganttSelect, .transfer:
+            guard let snapshot = boardSnapshot(action) else { throw CommandPageIssue.stale }
+            return snapshot
         }
     }
 
@@ -152,6 +162,7 @@ import SwiftData
         case (.clearSelection, _): return .selection([])
         case (.select(let objects), _): return .selection(Set(objects.map(\.id)))
         case (.selectAll, _), (.streak, _): return nil
+        case (.calendarMode, _), (.ganttSelect, _), (.transfer, _): return boardExpected(action)
         case (.sections(let section, let expanded), .sections(var sections)):
             if section == .yesterday { sections.yesterday = expanded } else { sections.upcoming = expanded }
             return .sections(sections)
@@ -215,6 +226,9 @@ enum WorkspacePageSnapshot: Equatable {
     case titleDraft(Bool)
     case pending(Bool)
     case streak(current: Int, best: Int)
+    /// 合并批 M-2：日历月／周（CalendarSpan 的 rawValue）与看板修改转交的目标指令。
+    case calendarSpan(String)
+    case transfer(CommandBoardTransfer)
 }
 
 struct WorkspacePagePreview: Equatable {
@@ -226,7 +240,7 @@ struct WorkspacePagePreview: Equatable {
     let after: WorkspacePageSnapshot?
     var revealsPage: Bool {
         switch action {
-        case .select, .selectAll: return true
+        case .select, .selectAll, .ganttSelect: return true
         default: return false
         }
     }

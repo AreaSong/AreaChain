@@ -55785,6 +55785,142 @@
           }
         }
       }
+    },
+    "unified.board.done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done. The page now shows the result."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已完成，页面已显示结果。"
+          }
+        }
+      }
+    },
+    "unified.board.wrongPage.calendar": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open the Calendar page first; commands don't switch pages for you."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先打开「日历」页；指令不会替你切换页面。"
+          }
+        }
+      }
+    },
+    "unified.board.wrongPage.quadrant": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open the Quadrants page first; commands don't switch pages for you."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先打开「四象限」页；指令不会替你切换页面。"
+          }
+        }
+      }
+    },
+    "unified.board.wrongPage.gantt": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open the Schedule page first; commands don't switch pages for you."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先打开「安排」页；指令不会替你切换页面。"
+          }
+        }
+      }
+    },
+    "unified.board.transfer": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continues as “%@”: the same values move to that command, which previews and saves them itself."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "转到「%@」继续：同样的内容交给那条指令，由它自己预览并保存。"
+          }
+        }
+      }
+    },
+    "unified.page.notesUnsupported": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add notes in New task itself; they can't be carried over from here."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "备注请在“新建待办”里填写，这里不能带过去。"
+          }
+        }
+      }
+    },
+    "unified.simple.gantt.shift.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moves the selected tasks together by the same number of days, keeping the gaps between them, within this month."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "把所选待办一起平移同样的天数，保留彼此间隔，限本月内。"
+          }
+        }
+      }
+    },
+    "unified.simple.gantt.shift.saved": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tasks moved."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已平移。"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

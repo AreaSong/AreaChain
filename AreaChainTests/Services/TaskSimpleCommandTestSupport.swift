@@ -22,7 +22,8 @@ import Testing
     var context: ModelContext { io.context }
     var attachments: TaskNotesService.Attachments { .init(store: AttachmentStore(root: root), root: root) }
 
-    init(capability: SimpleCommandAdapter.Capability = .open, longText: Bool = false) throws {
+    /// 合并批 M-2：board 为真时另装配看板规格（gantt.shift）。
+    init(capability: SimpleCommandAdapter.Capability = .open, longText: Bool = false, board: Bool = false) throws {
         io = try TaskCaptureFixture()
         handoff = try HandoffFixture()
         root = FileManager.default.temporaryDirectory
@@ -39,7 +40,8 @@ import Testing
             registerLocalModification: { [unowned self] in io.trace.append("fact") },
             refresh: { [unowned self] includeCalendar in refreshes.append(includeCalendar) }))
         adapter = .init(coordinator: handoff.coordinator, environment: environment,
-                        specs: TaskCommandSpecs.all(dependencies) + (longText ? TaskCommandSpecs.longText(dependencies) : []),
+                        specs: TaskCommandSpecs.all(dependencies) + (longText ? TaskCommandSpecs.longText(dependencies) : [])
+                            + (board ? BoardCommandSpecs.all(dependencies) : []),
                         capability: capability)
     }
 

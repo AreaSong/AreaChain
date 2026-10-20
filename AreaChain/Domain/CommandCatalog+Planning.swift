@@ -5,8 +5,9 @@ extension CommandCatalogBuilder {
         [
             entry("calendar.mode", "/calendar/mode", .interaction, "B1:mode",
                   [choice(.mode, "month week")]),
+            // 合并批 M-2：导航路径只接一个尾段参数；月／周跟随日历页当前视图，与页面的上一／下一按钮一致。
             entry("calendar.step", "/calendar/step", .navigation, "B1:previous B1:next",
-                  [choice(.period, "month week"), choice(.offset, "previous next")]),
+                  [choice(.offset, "previous next")]),
             entry("calendar.today", "/calendar/today", .navigation, "B1:today"),
             entry("calendar.day", "/calendar/day", .navigation, "B1:selectDay",
                   [day]),
@@ -26,7 +27,8 @@ extension CommandCatalogBuilder {
                   [priority, day])
                 .targets([.todo, .routine]).ordinary(),
             entry("quadrant.complete", "/quadrant/complete", .modification, "B2:complete")
-                .targets([.todo, .routineOccurrence]).unresolved("routineCompletion"),
+                // 合并批 M-2：1A 等的是习惯 skip 语义（R-M3 D1 已定），转交 todo.completion／occurrence.complete 执行。
+                .targets([.todo, .routineOccurrence]).ordinary(),
             entry("quadrant.inspect", "/quadrant/inspect", .navigation, "B2:inspect")
                 .targets([.todo, .routineOccurrence]),
             entry("quadrant.copy", "/quadrant/copy", .systemAction, "B2:copy")

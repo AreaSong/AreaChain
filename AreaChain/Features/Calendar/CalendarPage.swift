@@ -46,7 +46,12 @@ struct CalendarPage: View {
         get { hostContext == nil ? localDraft : navigation.calendarDraft }
         nonmutating set { if hostContext == nil { localDraft = newValue } else { navigation.calendarDraft = newValue } }
     }
-    @State private var span: CalendarSpan = .month
+    @State private var localSpan: CalendarSpan = .month
+    /// 合并批 M-2：显式宿主里月／周归宿主（calendar.mode 写同一份）；默认入口仍用页面自己的状态。
+    private var span: CalendarSpan {
+        get { hostContext == nil ? localSpan : navigation.boardPages.calendarSpan }
+        nonmutating set { if hostContext == nil { localSpan = newValue } else { navigation.boardPages.calendarSpan = newValue } }
+    }
     @State private var keyboardFocus = CalendarKeyboardFocus.grid
     @State private var listFocusID: UUID?
 
@@ -81,6 +86,10 @@ struct CalendarPage: View {
         // 范围切换会卸载旧分段；焦点协调必须留在页面，且不结束仍有效的原生编辑会话。
         .onChange(of: span) { _, _ in
             keyboardFocus = .grid
+        }
+        // calendar.dayList 的请求只在显式宿主里出现；与 Return 键同一入口。
+        .onChange(of: navigation.boardPages.calendarListRequest) { _, _ in
+            if hostContext != nil { enterDayList() }
         }
         .workspaceHeader(actions: headerActions)
         .workspaceInspectorTargets(inspectorIDs)
@@ -221,7 +230,7 @@ struct CalendarPage: View {
     }
 
     private var spanPicker: some View {
-        DaybookSegmentedControl(selection: $span, options: CalendarSpan.allCases.map { item in
+        DaybookSegmentedControl(selection: Binding(get: { span }, set: { span = $0 }), options: CalendarSpan.allCases.map { item in
             DaybookSegmentOption(item, String.LocalizationValue(item.titleKey))
         })
         .frame(maxWidth: 220)

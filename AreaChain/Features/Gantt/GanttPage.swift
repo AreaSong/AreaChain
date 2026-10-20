@@ -5,6 +5,7 @@ import SwiftUI
 struct GanttPage: View {
     @WorkspaceNavigationContext private var navigation
     @WorkspaceBoardContext private var boardSelection
+    @Environment(\.workspaceHostContext) private var hostContext
     @Environment(\.workspaceEmbedded) private var embedded
     @Environment(\.modelContext) private var modelContext
     @Environment(\.locale) private var locale
@@ -19,7 +20,7 @@ struct GanttPage: View {
     }
 
     var todayKey: String
-    @State private var monthKey: String
+    @State private var localMonthKey: String
     @State private var filter = BoardFilter()
     @State private var sortMode: GanttSortMode = .stable
     @State private var isSortExpanded = false
@@ -28,7 +29,7 @@ struct GanttPage: View {
     @State private var spanDaysMap: [UUID: Int] = GanttSpanStore.load()
     @State private var reorderState: (id: UUID, offset: Int)?
     @State private var dropTarget: GanttDropTarget?
-    @State private var selection = TaskSelection()
+    @State private var localSelection = TaskSelection()
     @State private var drag: GanttDragState?
     @State private var hoveredRowID: UUID?
     @State private var hoveredTitleRowID: UUID?
@@ -36,7 +37,18 @@ struct GanttPage: View {
 
     init(todayKey: String) {
         self.todayKey = todayKey
-        _monthKey = State(initialValue: todayKey)
+        _localMonthKey = State(initialValue: todayKey)
+    }
+
+    /// 合并批 M-2：显式宿主里月份与选择归宿主（gantt.step／currentMonth／select 写同一份）；默认入口不变。
+    private var monthKey: String {
+        get { hostContext == nil ? localMonthKey : navigation.boardPages.ganttMonth ?? todayKey }
+        nonmutating set { if hostContext == nil { localMonthKey = newValue } else { navigation.boardPages.ganttMonth = newValue } }
+    }
+
+    private var selection: TaskSelection {
+        get { hostContext == nil ? localSelection : navigation.boardPages.ganttSelection }
+        nonmutating set { if hostContext == nil { localSelection = newValue } else { navigation.boardPages.ganttSelection = newValue } }
     }
 
     var body: some View {
@@ -62,6 +74,9 @@ struct GanttPage: View {
         }
         .workspaceInspectorTargets(bars.map(\.id) + routineIDs)
         .onChange(of: monthKey) { _, _ in resetInteraction() }
+        .onChange(of: bars.map(\.id), initial: true) { _, ids in
+            if hostContext != nil { navigation.boardPages.ganttOrder = ids }
+        }
         .onChange(of: bars) { _, current in
             selection.reconcile(with: current.map(\.id))
             if let drag, !drag.matches(current) { self.drag = nil }
@@ -165,7 +180,7 @@ struct GanttPage: View {
         let isToday = key == todayKey
         let isWeekend = !DayKey.isWeekday(key, calendar: calendar)
         return VStack(spacing: 1) {
-            Text(weekdaySymbol(for: key))
+            Text(GanttRowText.weekdaySymbol(for: key, calendar: calendar))
                 .font(DaybookType.micro.weight(isToday ? .semibold : .regular))
                 .foregroundStyle(isToday ? DaybookPalette.accent.base : DaybookPalette.text.tertiary)
             Text(DayKey.dayNumber(key, calendar: calendar))
@@ -187,7 +202,7 @@ struct GanttPage: View {
         let isRowHovered = hoveredRowID == bar.id
         let slot = quadrantSlot(for: bar.id)
         let showBubble = drag == nil && reorderState == nil && hoveredTitleRowID == bar.id
-            && isTitleTruncated(bar.title, titleWidth: metrics.titleWidth, hasPriority: slot != .rest)
+            && GanttRowText.isTitleTruncated(bar.title, titleWidth: metrics.titleWidth, hasPriority: slot != .rest)
         return HStack(spacing: 0) {
             todoTitleCell(bar, slot: slot, isSelected: isSelected, isRowHovered: isRowHovered, showBubble: showBubble, metrics: metrics)
             ForEach(days, id: \.self) { key in dayCell(key, rowID: bar.id, metrics: metrics) }
@@ -375,24 +390,9 @@ struct GanttPage: View {
         return Color.clear
     }
 
-    private func weekdaySymbol(for key: String) -> String {
-        guard let date = DayKey.date(from: key, calendar: calendar) else { return "" }
-        let weekday = calendar.component(.weekday, from: date)
-        let symbols = calendar.veryShortStandaloneWeekdaySymbols
-        guard (1...symbols.count).contains(weekday) else { return "" }
-        return symbols[weekday - 1]
-    }
-
     private func quadrantSlot(for id: UUID) -> QuadrantSlot {
         guard let todo = todos.first(where: { $0.id == id }) else { return .rest }
         return QuadrantSlot.of(important: todo.isImportant, urgent: todo.isUrgent)
-    }
-
-    private func isTitleTruncated(_ title: String, titleWidth: CGFloat, hasPriority: Bool) -> Bool {
-        let font = NSFont.systemFont(ofSize: DaybookType.captionSize, weight: .medium)
-        let textWidth = ceil((title as NSString).size(withAttributes: [.font: font]).width)
-        let reservedWidth: CGFloat = GanttRowMetrics.checkboxWidth + (hasPriority ? 26 : 0) + 14
-        return textWidth > max(40, titleWidth - reservedWidth)
     }
 
     private func copyTitle(_ title: String) {

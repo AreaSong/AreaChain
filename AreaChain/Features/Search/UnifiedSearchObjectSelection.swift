@@ -205,11 +205,7 @@ extension UnifiedSearchController {
                 : (picker.objects.count == 1 ? .single : .selected)
             let objects = picker.appending ? draft.targets.objects + picker.objects : picker.objects
             event = .selectTargets(draft.stamp, .init(picker.appending ? .selected : selection, objects: objects),
-                                   baseline: command.id.rawValue == "todo.title" || routesBatch(command.id)
-                                    || (routesSubtask(command.id) || routesRoutine(command.id) || routesTrash(command.id)
-                                        || routesTaskCopy(command.id) || routesConvert(command.id) || routesSimple(command.id)
-                                        || routesPage(command.id))
-                                    ? nil : syntheticBaselines[command.id])
+                                   baseline: targetBaseline(for: command.id))
         } else {
             guard let argument = objectArgument(picker.location, objects: picker.objects, command: command) else { return false }
             event = .edit(draft.stamp, argument)
@@ -289,5 +285,12 @@ extension UnifiedSearchController {
         }
         guard sendOperation(event, source: source) != nil else { return }
         refreshObjectPresentation()
+    }
+
+    /// 固定目标写入时的基线：已装配适配器的指令不带合成基线（看板转交也用这一处）。
+    func targetBaseline(for id: CommandID) -> CommandDraftBaseline? {
+        id.rawValue == "todo.title" || routesBatch(id) || routesSubtask(id) || routesRoutine(id) || routesTrash(id)
+            || routesTaskCopy(id) || routesConvert(id) || routesSimple(id) || routesPage(id)
+            ? nil : syntheticBaselines[id]
     }
 }

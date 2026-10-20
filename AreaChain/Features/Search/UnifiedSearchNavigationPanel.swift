@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct UnifiedSearchNavigationPanel: View {
+    /// 合并批 M-2：带日期参数的看板导航与 inspector.day 共用同一个日期选择。
+    static let boardDayCommands: Set<String> = ["calendar.day", "calendar.dayList", "quadrant.day"]
     @Bindable var controller: UnifiedSearchController
     @Environment(\.calendar) private var calendar
     @State private var showsDate = false
@@ -8,7 +10,8 @@ struct UnifiedSearchNavigationPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
             Text("unified.navigation.hint").font(DaybookType.body)
-            if controller.browsedCommand?.id.rawValue == "inspector.day" {
+            if let command = controller.browsedCommand,
+               command.id.rawValue == "inspector.day" || UnifiedSearchNavigationPanel.boardDayCommands.contains(command.id.rawValue) {
                 Button("unified.navigation.chooseDay") { showsDate = true }
                     .buttonStyle(DaybookButtonStyle(.subtle))
                     .popover(isPresented: $showsDate) {
@@ -17,7 +20,7 @@ struct UnifiedSearchNavigationPanel: View {
                             if case .day(let day)? = result.arguments.first?.value { return day }
                             return DayKey.today(calendar: calendar)
                         }, set: { key in
-                            _ = controller.navigationInput("/inspector/day/" + key)
+                            _ = controller.navigationInput(command.path + "/" + key)
                             showsDate = false
                         }))
                         .padding(DaybookSpacing.md)

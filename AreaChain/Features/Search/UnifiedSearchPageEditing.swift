@@ -48,6 +48,11 @@ extension UnifiedSearchController {
         pageAction(source) { pages, draft in
             pageReceipt = nil
             guard let preview = currentPagePreview else { throw CommandPageIssue.stale }
+            if case .transfer(let transfer) = preview.action {
+                try pages.validate(preview, draft: draft)
+                try transferOperation(transfer, from: draft, source: source)
+                return
+            }
             guard preview.revealsPage else {
                 pageReceipt = try pages.apply(preview, draft: draft)
                 return
@@ -85,6 +90,7 @@ extension UnifiedSearchController {
         case .missing: "unified.page.missing"
         case .stale: "unified.page.stale"
         case .todaySectionFixed: "unified.page.todaySectionFixed"
+        case .notesUnsupported: "unified.page.notesUnsupported"
         }
     }
 
@@ -112,6 +118,10 @@ extension UnifiedSearchController {
         case .streak(let current, let best):
             return [L10n.format("unified.page.streak.current", locale: locale, current),
                     L10n.format("unified.page.streak.best", locale: locale, best)]
+        case .calendarSpan(let raw): return [L10n.string(.init(stringLiteral: "calendar.span." + raw), locale: locale)]
+        case .transfer(let transfer):
+            let name = L10n.string(.init(stringLiteral: "command." + transfer.command.rawValue + ".name"), locale: locale)
+            return [L10n.format("unified.board.transfer", locale: locale, name)]
         }
     }
 
