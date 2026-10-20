@@ -173,7 +173,6 @@ import SwiftData
     }
 }
 
-/// tag.order → reorderTags(orderedIDs:)：与原界面拖动一致，固定集合必须是全部活标签的新顺序。
 /// tag.order → reorderTags(orderedIDs:)：全部活标签（同标签页拖动的口径）中把目标移到 position 指定的位置。
 /// 合并批 M-1 D 起与 subtask／routine／tasks.order 一致用 position，不再把选择器登记顺序当新顺序。
 @MainActor struct TagOrderSpec: SimpleCommandSpec {

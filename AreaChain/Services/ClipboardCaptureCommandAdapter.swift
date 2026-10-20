@@ -87,6 +87,15 @@ import SwiftData
         let capture = ClipboardCapture.Capture(payload: payload, image: contents.image, todoID: preview.todoID,
                                                attachmentID: preview.attachmentID, dayKey: preview.dayKey,
                                                sourceBundleID: environment.capture.sourceBundleID())
+        // L7：与其他指令同一判定（TaskDerivedRows.protectedTagNotices → InputTagResolver.protection），命中即整条不写；
+        // 内容只在提交时读取，因此在写入前拦截，不能在预览阶段提前告知。
+        let notices = (try? TaskDerivedRows.protectedTagNotices(TagSyntax.names(in: payload.title, includesDiaryTags: false),
+                                                               in: environment.context)) ?? []
+        guard notices.isEmpty else {
+            facts.state = .protectedTag
+            facts.protectedTags = notices
+            return facts
+        }
         var commit: ModelChanges.CommitFacts?
         var boundary = environment.transaction
         boundary.publish = {

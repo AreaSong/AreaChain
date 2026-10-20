@@ -7961,7 +7961,7 @@ L-M1b 必须的反例（合成内存库、fake 系统依赖）：借用签发后
 
 - **唯一规则**：[InputTagResolver](../AreaChain/Services/Repositories/InputTagResolver.swift) 的 `protection`（手记预置名，或按同一匹配落到的私密标签，活的或墓碑）；`resolveForTask`／`mergingForTask` 返回关联的 ID 与被跳过的名字，跳过的不关联、不新建、不恢复；保存成功后经 `ModelChanges.afterPublication` 调 `MutationFeedback.reportSkippedTags` 弹一次说明（`tags.skipped.*`，中英文），失败不提示。指令侧 `TaskDerivedRows.protectedTagNotices` 改为调用同一 `protection`。
 - **调用方**（只限任务、子任务、习惯）：`TaskMutationService.createCaptured`、`editTitle(rawInput:)`、`TaskNotesService.apply` 两个重载、`RoutineCaptureService.apply`、`RoutineMutationService` 的旧标题路径、`DayBoardMutations.addRecurringItem`、`SwiftDataTaskRepository.addSubtask(to:title:)`／`editSubtask`、`ClipboardCapture.apply`。手记（DiaryQuickComposerView、SwiftDataDiaryRepository）与标签管理（SwiftDataCatalogRepository）不变。已关联的私密／预设标签不自动移除。
-- **两侧差异**：指令遇到这些标签整条不可执行（L7）；原界面照常保存文字、跳过标签并提示。三条锁定旧行为的测试（TaskMutationServiceTests、TaskTitleMutationTests、LongTextCommandTests 各一）按本决定改为新期望。
+- **两侧差异**：指令遇到这些标签整条不可执行（L7）；原界面照常保存文字、跳过标签并提示。capture.clipboard 与菜单栏共用 `ClipboardCapture.apply`，复核后补上：指令在提交读到剪贴板后、写入前用同一判定拦截，整条不写并逐个说明（`protectedTag` 状态；内容提交时才读，预览无法提前告知），菜单栏入口仍跳过并提示。三条锁定旧行为的测试（TaskMutationServiceTests、TaskTitleMutationTests、LongTextCommandTests 各一）按本决定改为新期望。
 
 #### B 无备注证明迁移与门槛放宽（决策 2，L8）
 

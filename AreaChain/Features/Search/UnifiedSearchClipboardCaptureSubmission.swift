@@ -3,6 +3,7 @@ import SwiftUI
 /// 剪贴板加今天：预览明确提示“将读取当前剪贴板”，不显示剪贴板内容；提交后才读取并给出结果。
 struct UnifiedSearchClipboardCaptureSubmission: View {
     @Bindable var controller: UnifiedSearchController
+    @Environment(\.locale) private var locale
 
     var body: some View {
         let source = controller.buffer
@@ -49,6 +50,10 @@ struct UnifiedSearchClipboardCaptureSubmission: View {
         VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
             Text(LocalizedStringKey("unified.clipboardCapture.state." + facts.state.rawValue)).font(DaybookType.body)
                 .accessibilityIdentifier("unified.clipboardCapture.status")
+            ForEach(Array(facts.protectedTags.enumerated()), id: \.offset) { _, notice in
+                Text(verbatim: L10n.format(notice.key, locale: locale, notice.title)).font(DaybookType.caption)
+                    .fixedSize(horizontal: false, vertical: true).accessibilityIdentifier("unified.clipboardCapture.protectedTag")
+            }
             if facts.state == .saved, let kind = facts.kind {
                 Text(LocalizedStringKey("unified.clipboardCapture.kind." + kind.rawValue)).font(DaybookType.caption)
                     .accessibilityIdentifier("unified.clipboardCapture.kind")

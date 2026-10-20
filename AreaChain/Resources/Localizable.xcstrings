@@ -38399,6 +38399,23 @@
         }
       }
     },
+    "unified.clipboardCapture.state.protectedTag": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The clipboard text has a private or built-in journal tag, so nothing was added. Adding from the menu bar keeps the text and skips those tags."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剪贴板文字里有私密或手记预置标签，指令没有新增。从菜单栏加今天会保存文字并跳过这些标签。"
+          }
+        }
+      }
+    },
     "unified.composition.accept": {
       "extractionState": "manual",
       "localizations": {
