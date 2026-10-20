@@ -32,3 +32,30 @@ enum CommandTagQuery: Equatable {
         }
     }
 }
+
+/// 合并批 M-2 C：图片的只读浏览与原图查阅。浏览沿 2E 的图片口径（已挂在对象上、附件中心可见），
+/// 查阅沿 N-M2 的普通图片打开；受保护的不浏览、不打开。不写库、不建 Run。
+enum CommandImageAction: Equatable {
+    case browse(AttachmentOwner?), preview(CommandObjectReference)
+
+    static let commands: Set<String> = ["image.browse", "image.preview"]
+
+    init(_ command: String, arguments: [CommandParameterID: CommandArgument], objects: [CommandObjectReference]) throws {
+        switch command {
+        case "image.browse":
+            // 目录给 kind 默认值 all；草稿里没写时按默认处理。
+            let kind: String
+            switch arguments[.kind]?.value {
+            case .choice(let value)?: kind = value
+            case nil: kind = "all"
+            default: throw CommandPageIssue.invalidArguments
+            }
+            guard kind == "all" || AttachmentOwner(rawValue: kind) != nil else { throw CommandPageIssue.invalidArguments }
+            self = .browse(AttachmentOwner(rawValue: kind))
+        case "image.preview":
+            guard objects.count == 1, objects[0].type == .image, objects[0].dayKey == nil else { throw CommandPageIssue.invalidTarget }
+            self = .preview(objects[0])
+        default: throw CommandPageIssue.unsupported
+        }
+    }
+}

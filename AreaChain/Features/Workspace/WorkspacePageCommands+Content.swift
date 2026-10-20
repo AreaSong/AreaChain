@@ -25,8 +25,41 @@ extension WorkspacePageCommands {
             guard !navigation.tagDrafts.isEmpty else { throw CommandPageIssue.nothingToCancel }
             return .tagDraft(true)
         case .tagQuery(let query): return try tagResults(query)
+        case .image(.browse(let owner)): return try imageResults(owner)
+        case .image(.preview(let image)):
+            let id = image.id
+            let rows = try context.fetch(FetchDescriptor<AttachmentItem>(predicate: #Predicate { $0.id == id }))
+            guard rows.count == 1 else { throw CommandPageIssue.missing }
+            // 同 N-M2 与附件中心：只打开普通图片；加密、敏感手记或拥有者已删的都不打开。
+            guard try AttachmentTrashService.eligibility(rows[0], in: context) == .eligible else {
+                throw CommandPageIssue.protectedContent
+            }
+            return .results([rows[0].filename], total: 1)
         default: throw CommandPageIssue.stale
         }
+    }
+
+    /// 图片的拥有者引用（同结果行的 parent），查阅时随打开请求一起给出。
+    func imageOwner(_ image: CommandObjectReference) throws -> CommandObjectReference {
+        let id = image.id
+        let rows = try context.fetch(FetchDescriptor<AttachmentItem>(predicate: #Predicate { $0.id == id }))
+        guard rows.count == 1, let owner = rows[0].ownerKey else { throw CommandPageIssue.missing }
+        let types: [AttachmentOwner: CommandObjectType] = [.todo: .todo, .routine: .routine, .diary: .diary]
+        guard let type = types[owner.kind] else { throw CommandPageIssue.missing }
+        return .init(type: type, id: owner.id)
+    }
+
+    /// 2E 的图片口径：已挂在对象上、附件中心可见（AttachmentAccess.canBrowse）的图片，按所属类型分组，新的在前。
+    private func imageResults(_ owner: AttachmentOwner?) throws -> WorkspacePageSnapshot {
+        let rows = try context.fetch(FetchDescriptor<AttachmentItem>(predicate: #Predicate { $0.deletedAt == nil }))
+        let owners = AttachmentAccess.ownerIndex(todos: try context.fetch(FetchDescriptor<TodoItem>()),
+                                                 routines: try context.fetch(FetchDescriptor<DailyRoutine>()),
+                                                 diaries: try context.fetch(FetchDescriptor<DiaryEntry>()))
+        let tags = try context.fetch(FetchDescriptor<TagItem>())
+        let visible = rows.filter { row in
+            AttachmentAccess.canBrowse(row, owners: owners, tags: tags) && (owner == nil || row.ownerKey?.kind == owner)
+        }.sorted { ($0.createdAt, $0.filename) > ($1.createdAt, $1.filename) }
+        return .results(visible.prefix(Self.resultSample).map(\.filename), total: visible.count)
     }
 
     func contentExpected(_ action: CommandPageAction) -> WorkspacePageSnapshot? {

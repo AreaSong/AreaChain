@@ -53,6 +53,11 @@ extension UnifiedSearchController {
                 try transferOperation(transfer, from: draft, source: source)
                 return
             }
+            if case .image(.preview(let image)) = preview.action {
+                try pages.validate(preview, draft: draft)
+                try openImageCommand(image, source: source)
+                return
+            }
             guard preview.revealsPage else {
                 pageReceipt = try pages.apply(preview, draft: draft)
                 return
@@ -91,6 +96,7 @@ extension UnifiedSearchController {
         case .stale: "unified.page.stale"
         case .todaySectionFixed: "unified.page.todaySectionFixed"
         case .notesUnsupported: "unified.page.notesUnsupported"
+        case .protectedContent: "unified.page.protectedContent"
         }
     }
 

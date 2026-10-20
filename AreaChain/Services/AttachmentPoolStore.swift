@@ -281,7 +281,7 @@ enum AttachmentPoolStore {
             didMutate = ModelChanges.perform(in: context) {
                 let all = try OwnedAttachments.all(in: context)
                 for row in all where targetRowIDs.contains(row.id) && row.deletedAt == nil {
-                    row.deletedAt = stamp
+                    AttachmentTrashService.stamp(row, at: stamp)
                 }
             }
         }

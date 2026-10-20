@@ -56312,6 +56312,125 @@
           }
         }
       }
+    },
+    "unified.simple.image.trash.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moves this image to Trash. The file stays and you can restore it later."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "把这张图片移到回收站；文件保留，以后还能恢复。"
+          }
+        }
+      }
+    },
+    "unified.simple.image.trash.saved": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Image moved to Trash."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已移到回收站。"
+          }
+        }
+      }
+    },
+    "unified.simple.image.owner.todo": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” belongs to a task; the task itself stays."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」属于一条待办；待办本身不受影响。"
+          }
+        }
+      }
+    },
+    "unified.simple.image.owner.routine": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” belongs to a routine; the routine itself stays."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」属于一条重复事项；重复事项本身不受影响。"
+          }
+        }
+      }
+    },
+    "unified.simple.image.owner.diary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” belongs to a diary entry; the entry itself stays."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」属于一篇手记；手记本身不受影响。"
+          }
+        }
+      }
+    },
+    "unified.simple.image.owner.none": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” has no owner."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」没有所属对象。"
+          }
+        }
+      }
+    },
+    "unified.page.protectedContent": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protected content isn't opened or read here. Unlock it on its own page."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "受保护的内容不在这里打开或读取，请到它所在的页面解锁后查看。"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

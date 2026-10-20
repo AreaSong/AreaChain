@@ -81,6 +81,8 @@ final class UnifiedSearchController {
     var pagePreview: WorkspacePagePreview?
     var pageReceipt: WorkspacePageReceipt?
     var pageFailure: CommandPageIssue?
+    /// 合并批 M-2：image.preview 先按当前查询重读结果再沿 N-M2 打开；这一步的任务。
+    @ObservationIgnored var contentCommandTask: Task<Void, Never>?
     var clipboardCapture = UnifiedSearchClipboardCaptureState()
     var chainCreationPreparation: CommandTaskCreatePreparation?
     var chainFailure: String?
@@ -131,12 +133,6 @@ final class UnifiedSearchController {
     var fileSettingFailure: UnifiedSearchFileSettingFailure?
     var fileSettingConfirmation: UnifiedSearchFileSettingConfirmation?
 
-    var localSettings: LocalSettingCommandAdapter? {
-        if case .legacy(let adapter) = settingBackend { return adapter }; return nil
-    }
-    var fileSettings: FileLocalSettingCommandAdapter? {
-        if case .file(let adapter) = settingBackend { return adapter }; return nil
-    }
     @ObservationIgnored private let read: () async throws -> ContentQueryReadEffect
     @ObservationIgnored private let recordOpen: (ContentQueryBrowseOpen) -> Void
     @ObservationIgnored private var observer: UUID?
@@ -348,6 +344,8 @@ final class UnifiedSearchController {
         revokeTaskTitle()
         revokeTaskComposition()
         cancelObjectSelection(returnFocus: false)
+        contentCommandTask?.cancel()
+        contentCommandTask = nil
         task?.cancel()
         if let observer { session.displayUpdates.remove(observer) }
         observer = nil
@@ -485,5 +483,14 @@ final class UnifiedSearchController {
             }
             messageKey = session.isMasked ? "unified.results.masked" : "unified.results.awaiting"
         }
+    }
+}
+
+extension UnifiedSearchController {
+    var localSettings: LocalSettingCommandAdapter? {
+        if case .legacy(let adapter) = settingBackend { return adapter }; return nil
+    }
+    var fileSettings: FileLocalSettingCommandAdapter? {
+        if case .file(let adapter) = settingBackend { return adapter }; return nil
     }
 }

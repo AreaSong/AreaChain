@@ -50,7 +50,7 @@ enum DayBoardMutations {
 
     @discardableResult
     static func trashAttachment(_ item: AttachmentItem) -> Bool {
-        persist(context: item.modelContext) { item.deletedAt = SoftDelete.stamp() }
+        persist(context: item.modelContext) { AttachmentTrashService.stamp(item) }
     }
 
     @discardableResult
