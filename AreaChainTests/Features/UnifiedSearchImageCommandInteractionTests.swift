@@ -25,8 +25,14 @@ import Testing
         try await f.base.press("unified.page.prepare")
         #expect(try f.base.label("unified.page.before").contains("合成山景.png"))
         try await f.base.press("unified.page.apply")
-        await f.controller.contentCommandTask?.value
-        await f.controller.navigationTask?.value
+        // 查阅先重读结果再沿 N-M2 打开，两段都是异步任务：等到两者都结束且内容会话不再加载（有上限，不靠运气）。
+        for _ in 0..<150 {
+            await f.controller.contentCommandTask?.value
+            await f.controller.navigationTask?.value
+            if f.controller.contentCommandTask == nil, f.controller.navigationTask == nil, !f.content.loading,
+               f.content.content != nil || f.controller.pageFailure != nil { break }
+            try await Task.sleep(for: .milliseconds(20))
+        }
         try await f.base.settle()
         guard case .image(_, let filename, let owner, _)? = f.content.content else {
             Issue.record("应沿 N-M2 打开图片：\(String(describing: f.content.failure)) page=\(String(describing: f.controller.pageFailure))"); return

@@ -68,7 +68,9 @@ extension WorkspacePageCommands {
     }
 
     func applyContent(_ action: CommandPageAction) {
-        if case .tagCancel = action { navigation.tagDrafts = WorkspaceTagPageDrafts() }
+        if case .tagCancel = action {
+            navigation.tagDrafts = WorkspaceTagPageDrafts(cancelRevision: navigation.tagDrafts.cancelRevision &+ 1)
+        }
     }
 
     /// 与标签页同一输入：按 sortOrder 排的全部标签，以及待办、习惯、手记（含已删除，TagUsage 自己只计未删除）。

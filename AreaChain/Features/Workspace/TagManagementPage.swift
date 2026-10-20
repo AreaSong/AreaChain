@@ -52,8 +52,8 @@ struct TagManagementPage: View {
     var body: some View {
         tagPage
             // 宿主取消了草稿（tag.cancel）时，一并收起页面自己的提示，同 cancelCreate／cancelRename。
-            .onChange(of: pageDrafts.isEmpty) { _, empty in
-                if empty, hostContext != nil { createError = nil; renameError = nil; createAsPrivate = false }
+            .onChange(of: pageDrafts.cancelRevision) { _, _ in
+                if hostContext != nil { createError = nil; renameError = nil; createAsPrivate = false }
             }
             .confirmationDialog("tags.delete.confirm.title", isPresented: $confirmDelete, titleVisibility: .visible) {
             Button("tags.batch.delete", role: .destructive, action: commitBatchDelete)

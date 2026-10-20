@@ -58,7 +58,7 @@ import Testing
         try await f.press("unified.page.prepare")
         #expect(f.controller.currentPagePreview?.before == .tagDraft(true))
         try await f.press("unified.page.apply")
-        #expect(f.navigation.tagDrafts == WorkspaceTagPageDrafts() && f.navigation.selectedTab == .tags && f.saves == 0)
+        #expect(f.navigation.tagDrafts.isEmpty && f.navigation.selectedTab == .tags && f.saves == 0)
         try await f.snapshot("m2-tag-cancel-\(style)")
     }
 

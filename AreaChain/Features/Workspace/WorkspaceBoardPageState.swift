@@ -19,6 +19,8 @@ struct WorkspaceTagPageDrafts: Equatable {
     var createName = ""
     var renamingID: UUID?
     var renameName = ""
+    /// tag.cancel 每执行一次递增；页面只在它变化时收起自己的提示，用户手动删空名字不触发。
+    var cancelRevision = 0
 
     var isEmpty: Bool { createName.isEmpty && renamingID == nil }
 }

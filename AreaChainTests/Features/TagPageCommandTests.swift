@@ -22,7 +22,8 @@ import Testing
         let preview = try f.pages.prepare(draft)
         #expect(preview.page == .tags && preview.before == .tagDraft(true) && preview.after == .tagDraft(false))
         #expect(try f.pages.apply(preview, draft: draft).after == .tagDraft(false))
-        #expect(f.navigation.tagDrafts == WorkspaceTagPageDrafts() && f.tag.name == "页面标签" && !f.context.hasChanges)
+        #expect(f.navigation.tagDrafts.isEmpty && f.navigation.tagDrafts.cancelRevision == 1)
+        #expect(f.tag.name == "页面标签" && !f.context.hasChanges)
         let wrong = try Fixture(page: .today)
         wrong.navigation.tagDrafts.createName = "临时标签"
         #expect(throws: CommandPageIssue.wrongPage("tags")) { try wrong.pages.prepare(wrong.draft("tag.cancel")) }
