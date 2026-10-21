@@ -99,7 +99,7 @@ struct AttachmentThumbnails: View {
     }
 
     private func handleThumbnailTap(_ item: AttachmentRef) {
-        if (NSApp.currentEvent?.clickCount ?? 1) >= 2 || (pendingTapID == item.id && pendingTapWork != nil) {
+        if PointerClickCount.current() >= 2 || (pendingTapID == item.id && pendingTapWork != nil) {
             cancelAndClose()
             openImageViewer(for: item)
             return
@@ -227,7 +227,7 @@ struct DiaryAttachmentPill: View {
         let borderColor = isPending ? DaybookPalette.accent.border : DaybookPalette.border.default
         return ZStack(alignment: .topTrailing) {
             Button {
-                if (NSApp.currentEvent?.clickCount ?? 1) >= 2 || (pendingTapID == item.id && pendingTapWork != nil) {
+                if PointerClickCount.current() >= 2 || (pendingTapID == item.id && pendingTapWork != nil) {
                     openImageViewer(for: item)
                 } else {
                     pendingTapWork?.cancel(); pendingTapID = item.id

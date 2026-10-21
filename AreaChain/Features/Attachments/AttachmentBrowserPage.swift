@@ -215,7 +215,7 @@ struct AttachmentBrowserPage: View {
     }
 
     private func handlePreviewTap(_ target: AttachmentRef, displayed: [AttachmentLibraryItem]) {
-        if (NSApp.currentEvent?.clickCount ?? 1) >= 2 || (pendingTapID == target.id && pendingTapWork != nil) {
+        if PointerClickCount.current() >= 2 || (pendingTapID == target.id && pendingTapWork != nil) {
             openImageViewer(for: target, displayed: displayed)
         } else {
             pendingTapWork?.cancel(); pendingTapID = target.id

@@ -116,6 +116,8 @@
 
 工程验证复用 [build.sh](../scripts/build.sh) 及 [原锁竞争测试](../scripts/tests/test_build.py)；后续任务的等待策略与源码身份核对统一见[并发构建与测试](quality-gates.md#并发构建与测试)，不另建锁或验证执行器。
 
+按钮动作里判断单击／双击统一用 [PointerClickCount](../AreaChain/Theme/PointerClickCount.swift)`.current()`：只对鼠标事件读 `clickCount`，键盘、辅助功能或系统事件按单击处理（直接读会抛异常崩溃）；消费者为附件浏览页、附件缩略图、剪贴板浏览器与剪贴板页，回归见 [PointerClickCountTests](../AreaChainTests/Theme/PointerClickCountTests.swift)。不要再直接写 `NSApp.currentEvent?.clickCount`。
+
 Swift 定向测试范围只由 [swift_test_scope.py](../scripts/swift_test_scope.py) 推导（同名 → 直接引用，扩展文件按成员名；找不到只编译并提示），[quality_gate.py](../scripts/quality_gate.py) 是唯一调用方；规则与限制见[质量门禁](quality-gates.md)，夹具反例见 [test_swift_test_scope.py](../scripts/tests/test_swift_test_scope.py)。全量只由 `--profile full`／`release` 触发。
 
 后台窗口测试：[NativeSyntaxUI](../AreaChainTests/Features/NativeSyntaxUI.swift) 的 `prepareBackground` 只排窗不激活，`Tag.backgroundWindow` 标记整套件纯程序化；[SystemPageHost](../AreaChainTests/Features/SystemPageHost.swift)、[UnifiedSearchNavigationFixture](../AreaChainTests/Features/UnifiedSearchNavigationTestSupport.swift) 与 [UnifiedSearchTestHost](../AreaChainTests/Theme/UnifiedSearchTestHost.swift) 按 `NativeSyntaxUI.inBackgroundSuite` 读标签决定是否后台开窗。分轮由 `swift_test_scope.split_rounds` 决定；QA 测试的空闲切回守护是 [keep_front.py](../scripts/keep_front.py)（`build.sh qa` 默认开启，`swift_test_scope.only_background` 判定纯后台时关闭），反例见 [test_keep_front.py](../scripts/tests/test_keep_front.py)。规则见[质量门禁](quality-gates.md)。

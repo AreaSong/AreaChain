@@ -292,7 +292,7 @@ private struct ClipboardHistoryRowView: View {
     }
 
     private func handleRowClick() {
-        let clickCount = NSApp.currentEvent?.clickCount ?? 1
+        let clickCount = PointerClickCount.current()
         if session.selectedID != item.id { session.selectedID = item.id }
         if clickCount >= 2 {
             onCommit(item.id, session.plainByDefault, false)
