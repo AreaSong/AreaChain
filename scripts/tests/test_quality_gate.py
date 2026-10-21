@@ -307,32 +307,6 @@ class QualityGateTests(unittest.TestCase):
         self.assertEqual(quality.overall_status([{"status": "warning"}], strict=True), "failed")
         self.assertEqual(quality.overall_status([{"status": "blocked"}, {"status": "warning"}]), "blocked")
 
-    def test_infer_swift_test_filters_from_test_file(self):
-        self.write("AreaChainTests/Domain/DayKeyTests.swift", "// test\n")
-        paths = ["AreaChainTests/Domain/DayKeyTests.swift"]
-        filters = quality.infer_swift_test_filters(self.root, paths)
-        self.assertEqual(filters, ["AreaChainTests/DayKeyTests"])
-
-    def test_infer_swift_test_filters_from_source_file(self):
-        self.write("AreaChain/Domain/DayKey.swift", "struct DayKey {}\n")
-        self.write("AreaChainTests/Domain/DayKeyTests.swift", "// test\n")
-        paths = ["AreaChain/Domain/DayKey.swift"]
-        filters = quality.infer_swift_test_filters(self.root, paths)
-        self.assertEqual(filters, ["AreaChainTests/DayKeyTests"])
-
-    def test_infer_swift_test_filters_returns_none_when_unmatched(self):
-        self.write("AreaChain/Domain/Unknown.swift", "struct Unknown {}\n")
-        paths = ["AreaChain/Domain/Unknown.swift"]
-        self.assertIsNone(quality.infer_swift_test_filters(self.root, paths))
-
-    def test_infer_swift_test_filters_returns_none_for_large_changes(self):
-        paths = []
-        for index in range(6):
-            self.write(f"AreaChain/File{index}.swift", "struct F {}\n")
-            self.write(f"AreaChainTests/File{index}Tests.swift", "// t\n")
-            paths.append(f"AreaChain/File{index}.swift")
-        self.assertIsNone(quality.infer_swift_test_filters(self.root, paths))
-
     def test_run_swift_tests_forwards_filter_arguments(self):
         with patch.object(quality, "run_command", return_value=(0, "ok", "", 0.1)) as run:
             result = quality.run_swift_tests(["AreaChainTests/FooTests"])

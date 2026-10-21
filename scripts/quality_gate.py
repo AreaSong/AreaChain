@@ -11,6 +11,10 @@ import subprocess
 import sys
 import time
 
+# 测试经 importlib 按路径加载本脚本，sys.path 不含 scripts/，需显式加入才能导入同目录模块。
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import swift_test_scope
+
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_SUFFIXES = {".swift", ".py", ".sh", ".yml", ".yaml", ".xcconfig"}
@@ -411,38 +415,7 @@ def run_swiftlint(root, paths, strict=False):
     return gate("swiftlint", status, output or "SwiftLint 没有输出问题。", command, duration=duration)
 
 
-def infer_swift_test_filters(root, paths):
-    """根据变动的 Swift 文件智能推导定向测试类；无法全覆盖时返回 None。"""
-    swift_paths = [p for p in paths if p.endswith(".swift")]
-    if not swift_paths or len(swift_paths) > 5:
-        return None
-    test_dir = root / "AreaChainTests"
-    if not test_dir.is_dir():
-        return None
-    filters = set()
-    for path in swift_paths:
-        p = Path(path)
-        if path.startswith("AreaChainTests/"):
-            if p.stem.endswith("Tests"):
-                filters.add(f"AreaChainTests/{p.stem}")
-            else:
-                return None
-        elif path.startswith("AreaChain/"):
-            stem = p.stem
-            matches = sorted(test_dir.rglob(f"{stem}Tests.swift"))
-            if not matches:
-                matches = sorted(test_dir.rglob(f"{stem}*Tests.swift"))
-            if matches:
-                for match in matches:
-                    filters.add(f"AreaChainTests/{match.stem}")
-            else:
-                return None
-        else:
-            return None
-    return sorted(filters) if filters else None
-
-
-def run_swift_tests(filters=None):
+def run_swift_tests(filters=None, notes=()):
     command = ["./scripts/build.sh", "test"]
     if filters:
         for item in filters:
@@ -451,9 +424,34 @@ def run_swift_tests(filters=None):
     status = "passed" if code == 0 else ("blocked" if code in (126, 127) else "failed")
     detail = summarize_output(stdout, stderr)
     if filters:
-        desc = f"运行定向 Swift 测试 ({len(filters)} 项: {', '.join(filters)})"
+        shown = ", ".join(filters[:12]) + (f" 等 {len(filters)} 项" if len(filters) > 12 else "")
+        desc = "\n".join([f"运行定向 Swift 测试 ({len(filters)} 项: {shown})", *notes])
         detail = f"{desc}\n{detail}".strip() if detail else desc
+    else:
+        detail = f"运行全量 Swift 测试\n{detail}".strip()
     return gate("swift-tests", status, detail, command, duration=duration)
+
+
+def swift_test_checks(root, paths, selected, only_testing):
+    """按 profile 选测试：显式范围优先；full/release 才跑全量；其余按变更推导并说明兜底。"""
+    if only_testing:
+        return [run_swift_tests(list(only_testing))]
+    if selected in ("full", "release"):
+        return [run_swift_tests()]
+    is_ui = selected == "ui"
+    plan = swift_test_scope.plan_swift_tests(root, paths, layer_fallback=not is_ui)
+    checks = []
+    if plan["unresolved"] and not is_ui:
+        checks.append(gate("swift-test-scope", "warning",
+                           "以下变更无法推导定向测试，本次未覆盖；需要时用 --only-testing 指定或 --profile full：",
+                           issues=plan["notes"]))
+    if plan["filters"]:
+        checks.append(run_swift_tests(plan["filters"], plan["notes"]))
+    elif is_ui:
+        checks.append(gate("swift-tests", "passed", "纯 UI 变更已通过编译验证，没有同名或引用测试，豁免后台测试。"))
+    elif not plan["unresolved"]:
+        checks.append(gate("swift-tests", "passed", "本次变更没有需要运行的 Swift 测试。"))
+    return checks
 
 
 def run_swift_build():
@@ -530,20 +528,12 @@ def run_profile(root, profile, strict=False, base_ref=None, only_testing=None, b
         checks.append(run_swiftlint(root, paths, strict=strict))
         if build_only:
             checks.append(run_swift_build())
-        elif selected == "ui":
-            checks.append(run_swift_build())
-            filters = list(only_testing) if only_testing else None
-            if filters is None:
-                filters = infer_swift_test_filters(root, paths)
-            if filters:
-                checks.append(run_swift_tests(filters=filters))
-            else:
-                checks.append(gate("swift-tests", "passed", "纯 UI 变更已通过编译验证，豁免全局后台测试。"))
         else:
-            filters = list(only_testing) if only_testing else None
-            if filters is None and selected not in ("full", "release"):
-                filters = infer_swift_test_filters(root, paths)
-            checks.append(run_swift_tests(filters=filters))
+            tests = swift_test_checks(root, paths, selected, only_testing)
+            # 没有运行任何测试时仍要编译验签，不能让“无测试”变成未编译。
+            if selected == "ui" or not any(check["name"] == "swift-tests" and check["command"] for check in tests):
+                checks.append(run_swift_build())
+            checks.extend(tests)
     if selected == "release":
         checks.append(run_release_build())
     if selected == "performance":

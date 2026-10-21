@@ -5,13 +5,34 @@ import Testing
 
 /// 合并批 M-3 A：对照表每一项“预览说明正确、回车只导航、没有写入、没有系统调用”；返回票据可回到搜索。
 @Suite(.serialized) @MainActor struct UnifiedSearchOriginalPageTests {
-    @Test func everyPageRouteOnlyNavigatesAndReturns() async throws {
+    /// 每条页面路由都由 executeNavigation 落到 executeOriginalPage 的 `.page` 分支；该分支只读 tab、focusesTrash、finishesOnPage，
+    /// 预览另读 sectionKey、noteKey。逐条核对路径能解析回本指令、不被更早的导航分支截走，原生挂载只需每种组合一条。
+    @Test func everyPageRouteReachesTheOriginalPageBranch() throws {
+        let routes = Self.pageRoutes
+        #expect(routes.count >= 70)
+        for route in routes {
+            let id = route.command.rawValue
+            let command = try #require(CommandCatalog.standard.command(id: route.command), "\(id) 不在目录里")
+            guard case .page(let raw, _) = route.destination else { continue }
+            #expect(WorkspaceTab(rawValue: raw) != nil, "\(id) → \(raw)")
+            #expect(UnifiedSearchController.routesAsNavigation(command), "\(id) 应走导航面板")
+            #expect(CommandPathParser().parse(.init(text: command.path)).command?.id == route.command, "\(id) 路径")
+            #expect(WorkspaceNavigationDestination.page(command: route.command) == nil, "\(id) 被普通导航截走")
+            #expect(!["inspector.day", "inspector.open", "go.tagList"].contains(id))
+            #expect(!CommandBoardNavigation.commands.contains(id) && CommandClipboardWindow(rawValue: id) == nil, "\(id)")
+            #expect(!CommandSystemAction.commands.contains(id), "\(id) 被系统动作截走")
+        }
+        #expect(Self.representativeRoutes.count < routes.count, "代表路由只取每种组合的第一条")
+    }
+
+    @Test func representativePageRoutesOnlyNavigateAndReturn() async throws {
         let fixture = try UnifiedSearchNavigationFixture()
         defer { fixture.stop() }
         try await fixture.start()
         let original = try fixture.handoff.state().query
-        let routes = CommandOriginalPage.all.filter { if case .page = $0.destination { true } else { false } }
-        #expect(routes.count >= 70)
+        let routes = Self.representativeRoutes
+        // 目标页全集都要真实挂载过一次，避免抽样漏掉某个页面。
+        #expect(Set(routes.map(\.destination.pageName)) == Set(Self.pageRoutes.map(\.destination.pageName)))
         for route in routes {
             let command = try #require(CommandCatalog.standard.command(id: route.command))
             guard case .page(let raw, _) = route.destination, let tab = WorkspaceTab(rawValue: raw) else {
@@ -140,6 +161,20 @@ import Testing
         #expect(fixture.controller.returnSearch == nil && fixture.saves == 0)
     }
 
+    private static let pageRoutes = CommandOriginalPage.all.filter { $0.destination.pageName != nil }
+
+    /// 原页面分支（tab、focusesTrash、finishesOnPage）与预览（再加 sectionKey、noteKey）实际读取的字段组合；同组合的路由只差指令 ID，已由纯数据用例逐条覆盖。
+    private static func shape(_ route: CommandOriginalPage) -> String {
+        guard case .page(let raw, let focusesTrash) = route.destination else { return "" }
+        return [raw, String(focusesTrash), String(route.finishesOnPage), route.sectionKey ?? "-", route.noteKey]
+            .joined(separator: "|")
+    }
+
+    private static let representativeRoutes: [CommandOriginalPage] = {
+        var seen = Set<String>()
+        return pageRoutes.filter { seen.insert(shape($0)).inserted }
+    }()
+
     /// 返回搜索后原结果可能按版本重读；等它发布完再继续下一条，避免拿旧许可。
     private func ready(_ fixture: UnifiedSearchNavigationFixture) async throws {
         for _ in 0..<100 {
@@ -181,4 +216,8 @@ import Testing
         #expect(texts.contains { $0.contains(note) }, "\(route.command.rawValue) 说明文案：\(texts)")
         if route.sectionKey != nil { #expect(ids.contains("unified.originalPage.section")) }
     }
+}
+
+private extension CommandOriginalPage.Destination {
+    var pageName: String? { if case .page(let raw, _) = self { raw } else { nil } }
 }

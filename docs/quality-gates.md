@@ -18,13 +18,13 @@ python3 -B scripts/quality_gate.py
 # 只做文档、规则和本地静态门禁
 python3 -B scripts/quality_gate.py --profile static
 
-# 纯 UI / 视图微调：加 SwiftLint 和 Xcode 编译验签，自动豁免全局后台测试
+# 纯 UI / 视图微调：加 SwiftLint 和 Xcode 编译验签，只跑同名或引用测试，没有则豁免
 python3 -B scripts/quality_gate.py --profile ui
 
 # 任意场景仅验证编译通过，跳过运行测试套件
 python3 -B scripts/quality_gate.py --profile swift --build-only
 
-# Swift 业务逻辑变更：加 SwiftLint 和定向 Swift 测试（支持自动推导或显式指定目标）
+# Swift 业务逻辑变更：加 SwiftLint 和定向 Swift 测试（按变更推导，或显式指定目标）
 python3 -B scripts/quality_gate.py --profile swift --only-testing AreaChainTests/DayBoardLogicTests
 
 # 性能相关变更：核对基线并运行登记的性能测试
@@ -37,7 +37,11 @@ python3 -B scripts/quality_gate.py --profile full
 python3 -B scripts/quality_gate.py --profile release
 ```
 
-`auto`（默认）根据当前差异选择最小适用范围。需要机器读取时加 `--format json`。对于仅涉及 `AreaChain/Features/` 或 `AreaChain/Theme/` 的纯 UI 视图变更，门禁会自动推断为 `ui` 模式，在完成静态规范检查与 Xcode 编译验证后，若无关联单测将自动豁免全局后台测试，彻底消除改动界面属性被迫等待漫长数据库/模型单测的痛点。对于包含 Swift 业务代码变动的轻量微调（≤ 5个文件），门禁会自动推导对应的定向测试（例如改动 `FooTests.swift` 测自身，改动 `Foo.swift` 自动匹配 `FooTests`），避免无谓的全局测试；当改动广泛、无法映射对应测试或显式指定 `--profile full` 时，则回退执行全量测试。也可以通过 `--only-testing` 显式限定测试目标，或通过 `--build-only` 仅编译而不跑任何测试。脚本中的 `security-static` 和 `comment-contract` 分别守住可机械判断的安全与注释契约。SwiftLint、Xcode 编译和测试只属于 `swift`/`ui`/`performance`/`full`/`release` profile，静态 profile 不依赖 macOS 工具链，便于 Ubuntu CI 执行。非严格模式只扫描 `AreaChain` 与 `AreaChainTests`，不把 `.build` 生成文件混入历史债务；严格模式只阻断本次变更涉及的 SwiftLint 文件。警告默认不会伪装成失败，也不会阻断低风险文档任务；合并或发布前可使用 `--strict` 将警告升级为失败。
+`auto`（默认）根据当前差异选择最小适用范围。需要机器读取时加 `--format json`。定向测试由 [swift_test_scope.py](../scripts/swift_test_scope.py) 按变更文件逐个推导，不限文件数，三层取并集：① 同名测试（`Foo.swift` → `FooTests.swift` 里声明或扩展的套件）；② 引用测试——变更文件声明的类型及其扩展的应用内类型，被哪些测试套件直接引用，夹具文件再展开一跳；③ 层目录兜底——没有同名或引用时，改跑所在层（Domain／Services／Features／Theme／E2E）的全部套件；单个文件引用超过 60 个测试类时，在引用之外另加跑所在层，兜住间接使用。夹具无论单独成文件还是写在套件文件里（非 private 顶层类型）都会展开。改动测试文件时跑它声明或扩展的套件，加上经其共享夹具受影响的套件；删除的测试文件不需要运行。`AreaChain/` 下的非 Swift 资源按文件名找读取它的测试（如 `Localizable.xcstrings`），找不到算无法推导。兜底原因写进 `swift-tests` 的说明。
+
+全量只由 `--profile full` 或 `release` 触发。无法推导的变更（如 `AreaChain/App` 里没有引用测试的文件、工程配置）不会静默退回全量，而是报 `swift-test-scope` 警告并列出文件，同时仍编译验签；需要时用 `--only-testing` 指定或改跑 `--profile full`。纯 UI 变更（只涉及 `AreaChain/Features/`、`AreaChain/Theme/`）推断为 `ui`：编译验签后只跑同名和引用测试，不扩大到层目录（单个文件引用超过 60 个时只跑同名）；都没有时豁免测试，ui 下无法推导的文件只写进说明，不报警告。
+
+推导只看源码文本：经协议、泛型或运行时间接使用的测试可能漏选，批次收尾或合并前仍应按需跑一次 `--profile full`。也可以通过 `--only-testing` 显式限定测试目标，或通过 `--build-only` 仅编译而不跑任何测试。脚本中的 `security-static` 和 `comment-contract` 分别守住可机械判断的安全与注释契约。SwiftLint、Xcode 编译和测试只属于 `swift`/`ui`/`performance`/`full`/`release` profile，静态 profile 不依赖 macOS 工具链，便于 Ubuntu CI 执行。非严格模式只扫描 `AreaChain` 与 `AreaChainTests`，不把 `.build` 生成文件混入历史债务；严格模式只阻断本次变更涉及的 SwiftLint 文件。警告默认不会伪装成失败，也不会阻断低风险文档任务；合并或发布前可使用 `--strict` 将警告升级为失败。
 
 ## 并发构建与测试
 
@@ -80,7 +84,7 @@ python3 -B scripts/quality_gate.py --profile release
 
 ## CI 与本地证据
 
-`.github/workflows/quality.yml` 在 push 和 pull request 上运行不依赖 Swift 工具链的无凭据静态门禁，以及 macOS Debug 构建加全库 SwiftLint。macOS job 使用 `macos-15` 和 Xcode 16+ 能打开的工程格式；GitHub `macos-14` 会因 objectVersion 77 打不开本仓库。完整 Swift 测试仍只在 `workflow_dispatch` 中运行。托管 runner 上该套件可能因无交互桌面而把 `build.sh test` 拖到 1800s 超时，不能把那次失败写成代码回归；全量 Swift 以本机质量门禁和隔离 PrivacyQA 为准。push 与手动 `workflow_dispatch` 使用不同的 concurrency 组，避免互相取消。`ci-contract` 只是关键标记守卫，不能替代 YAML 语义和远端执行验证。分支保护目前仍只要求静态检查。工作流文件存在不等于 runner 已通过。
+`.github/workflows/quality.yml` 在 push 和 pull request 上运行不依赖 Swift 工具链的无凭据静态门禁，以及 macOS Debug 构建加全库 SwiftLint。macOS job 使用 `macos-15` 和 Xcode 16+ 能打开的工程格式；GitHub `macos-14` 会因 objectVersion 77 打不开本仓库。Swift 测试只在 `workflow_dispatch` 中运行，范围是 `HEAD^` 到 `HEAD` 差异推导出的定向测试，不再因推导失败退回全量；该作业带 `--strict`，出现 `swift-test-scope` 警告会直接判失败，需要改用 `--profile full` 手动重跑。托管 runner 上该套件可能因无交互桌面而把 `build.sh test` 拖到 1800s 超时，不能把那次失败写成代码回归；全量 Swift 以本机质量门禁和隔离 PrivacyQA 为准。push 与手动 `workflow_dispatch` 使用不同的 concurrency 组，避免互相取消。`ci-contract` 只是关键标记守卫，不能替代 YAML 语义和远端执行验证。分支保护目前仍只要求静态检查。工作流文件存在不等于 runner 已通过。
 
 CI 与本地统一调用 `scripts/quality_gate.py`，不维护第二套检查逻辑。第三方 action 使用不可变 revision；修改 action、runner 或触发条件时要重新核对来源、权限和成本。
 

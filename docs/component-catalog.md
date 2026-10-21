@@ -107,6 +107,8 @@
 
 工程验证复用 [build.sh](../scripts/build.sh) 及 [原锁竞争测试](../scripts/tests/test_build.py)；后续任务的等待策略与源码身份核对统一见[并发构建与测试](quality-gates.md#并发构建与测试)，不另建锁或验证执行器。
 
+Swift 定向测试范围只由 [swift_test_scope.py](../scripts/swift_test_scope.py) 推导（同名 → 引用 → 层目录兜底），[quality_gate.py](../scripts/quality_gate.py) 是唯一调用方；规则与限制见[质量门禁](quality-gates.md)，夹具反例见 [test_swift_test_scope.py](../scripts/tests/test_swift_test_scope.py)。全量只由 `--profile full`／`release` 触发。
+
 ## 设置控件预览
 
 - 生产入口是 [GeneralSettingsSection](../AreaChain/Features/Settings/SettingsSections.swift) 的 `settings.controlsPreview`，经 [AppWindows.openControlsPreview](../AreaChain/Services/AppWindows.swift) 调用 [ControlsPreviewWindowController](../AreaChain/Services/ControlsPreviewWindowController.swift)。控制器独占单窗、复用与关闭释放，纳入合法窗口集合；不复用固定工作台 provider 的 PanelWindowController，不增加应用进程或全局快捷键。

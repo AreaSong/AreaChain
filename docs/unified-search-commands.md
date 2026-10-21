@@ -8135,6 +8135,12 @@ L-M1b 必须的反例（合成内存库、fake 系统依赖）：借用签发后
 - 三条低级意见已整改：锁定用例去掉未断言的托管构造，改为证明锁定事件发到托管订阅的同一隔离中心（撤销借用由 L-M1b 的 LongTextLoanTests 证明）；73 条路由循环每轮等上一次返回结束；DashboardProjectionTests 在上表点名为既有。重跑 2 类 8 方法全过，未再派发复核。
 - verifier 未重跑：基线复现（写入限制不允许解出副本）、Domain＋Services 全量、正常构建，以执行者证据为准。
 
+#### 2026-10-21 测试提速：原页面路由用例拆分
+
+- 原 `everyPageRouteOnlyNavigatesAndReturns` 对 73 条页面路由逐条原生挂载，单方法 99～127 秒（m3／m3v 结果包）。拆为 `everyPageRouteReachesTheOriginalPageBranch`（纯数据逐条核对：路径解析回本指令、走导航面板、不被 executeNavigation 更早的普通页／检查器／看板／剪贴板窗口／系统动作分支截走）与 `representativePageRoutesOnlyNavigateAndReturn`（按 tab、focusesTrash、finishesOnPage、sectionKey、noteKey 每种组合挂一条代表，并断言覆盖全部目标页），原断言（预览说明、只导航、零写入、返回原查询）不变。
+- 隔离 `--qa-batch tspeed`：CommandOriginalPageTests 3＋UnifiedSearchOriginalPageTests 6 共 9 方法全过；纯数据 0.2 秒、代表路由 34.2 秒，整类 48.7 秒（原 155 秒）。
+- 仍未覆盖：focusesTrash 按指令 targetTypes 定位回收站焦点的差异，原用例与新用例都未激活回收站对象。
+
 #### 缺口与生产接线所需授权
 
 - 生产接线须另行授权：页面宿主与 `system` 的真实依赖（AppWindows／StatusItemController／DiaryWindows.shared／NSApp.terminate、真实保险箱）、trash.restore 规格装配。
