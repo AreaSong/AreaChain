@@ -17,7 +17,8 @@ enum ScrollOwnershipEvidence {
         window.isRestorable = false
         window.contentView = hosting
         NSApp.setActivationPolicy(.regular)
-        window.makeKeyAndOrderFront(nil)
+        // 后台轮只排窗不前置，避免盖住用户正在用的窗口。
+        if NativeSyntaxUI.inBackgroundSuite { window.orderBack(nil) } else { window.makeKeyAndOrderFront(nil) }
         return window
     }
 

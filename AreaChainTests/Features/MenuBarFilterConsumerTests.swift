@@ -4,7 +4,7 @@ import SwiftUI
 import Testing
 @testable import AreaChain
 
-@Suite(.serialized) @MainActor
+@Suite(.serialized, .tags(.backgroundWindow)) @MainActor
 struct MenuBarFilterConsumerTests {
     @Test(arguments: ["en", "zh-Hans"], [ColorScheme.light, .dark])
     func productionCardsPreserveGeometryAndCategories(locale: String, scheme: ColorScheme) async throws {
@@ -40,7 +40,10 @@ struct MenuBarFilterConsumerTests {
             }
         }
     }
+}
 
+/// 生产入口、遮罩与底栏走真实点击（前台 key window），与后台轮的 MenuBarFilterConsumerTests 分开，留在前台轮。
+@Suite(.serialized) @MainActor struct MenuBarFilterEntryInteractionTests {
     @Test(arguments: ["en", "zh-Hans"], [ColorScheme.light, .dark])
     func productionEntryScrimAndFooterPreserveDrafts(locale: String, scheme: ColorScheme) async throws {
         let support = try SettingsButtonTestSupport(isolatedPreferences: true)

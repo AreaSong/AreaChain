@@ -3,47 +3,10 @@ import SwiftUI
 import Testing
 @testable import AreaChain
 
-@Suite(.serialized) @MainActor
+@Suite(.serialized, .tags(.backgroundWindow)) @MainActor
 struct CalendarMonthGridTests {
     typealias Native = SettingsButtonTestSupport
     typealias Grid = MonthGridTestSupport
-
-    @Test(arguments: [false, true])
-    func clicksReselectExternalRejectBlankAndDisabled(compact: Bool) async throws {
-        let fixture = try Native()
-        defer { fixture.cleanup() }
-        let probe = MonthGridProbe()
-        probe.calendar.firstWeekday = 1
-        let window = fixture.window(MonthGridProbeView(probe: probe, compact: compact), size: NSSize(width: 360, height: 500))
-        defer { SystemPageHost.release(window) }
-        try await NativeSyntaxUI.prepareFocus(in: window)
-        try await SystemPageHost.settle(window)
-        for _ in 0..<2 { try await Native.click(Grid.day("2026-08-19", in: window), in: window) }
-        #expect(probe.selections == ["2026-08-19", "2026-08-19"])
-        let neighbor = try Native.frame(Grid.day("2026-08-20", in: window), in: window)
-        try await Grid.click(NSPoint(x: neighbor.minX + 1, y: neighbor.midY), in: window)
-        #expect(probe.selections.last == "2026-08-20")
-        probe.reject = true
-        try await Native.click(Grid.day("2026-08-18", in: window), in: window)
-        #expect(probe.dates.selectedKey == "2026-08-20")
-        #expect(try DatePickerTestSupport.selected("2026-08-20", in: window))
-        #expect(try !DatePickerTestSupport.selected("2026-08-18", in: window))
-        let before = probe.selections
-        let first = try Native.frame(Grid.day("2026-08-01", in: window), in: window)
-        let second = try Native.frame(Grid.day("2026-08-02", in: window), in: window)
-        try await Grid.click(NSPoint(x: second.midX, y: first.midY), in: window)
-        // 两格之间的 4pt 间隙不能命中邻格。
-        try await Grid.click(NSPoint(x: neighbor.maxX + 2, y: neighbor.midY), in: window)
-        probe.disabled = true
-        try await SystemPageHost.settle(window)
-        try await Native.click(Grid.day("2026-08-21", in: window), in: window)
-        #expect(probe.selections == before && probe.drops.isEmpty)
-        probe.dates = CalendarMonthGridDates(monthKey: "2028-02-29", todayKey: "2028-02-29", selectedKey: "2028-02-29")
-        try await SystemPageHost.settle(window)
-        #expect(try DatePickerTestSupport.selected("2028-02-29", in: window))
-        #expect(!NativeSyntaxUI.identifiers(in: window).contains("daybook.date.2028-03-01"))
-        #expect(probe.selections == before)
-    }
 
     @Test(arguments: ["en", "zh-Hans"], [ColorScheme.light, .dark])
     func monthMatrixAndAccessibility(locale: String, scheme: ColorScheme) async throws {
@@ -87,5 +50,48 @@ struct CalendarMonthGridTests {
             try Native.snapshot(window, name: "monthB-\(key)-\(locale)-\(scheme)")
         }
         #expect(probe.selections.isEmpty && probe.drops.isEmpty)
+    }
+}
+
+/// 点选、重选与拒绝走真实点击（前台 key window），与后台轮的 CalendarMonthGridTests 分开，留在前台轮。
+@Suite(.serialized) @MainActor struct CalendarMonthGridClickTests {
+    typealias Native = SettingsButtonTestSupport
+    typealias Grid = MonthGridTestSupport
+
+    @Test(arguments: [false, true])
+    func clicksReselectExternalRejectBlankAndDisabled(compact: Bool) async throws {
+        let fixture = try Native()
+        defer { fixture.cleanup() }
+        let probe = MonthGridProbe()
+        probe.calendar.firstWeekday = 1
+        let window = fixture.window(MonthGridProbeView(probe: probe, compact: compact), size: NSSize(width: 360, height: 500))
+        defer { SystemPageHost.release(window) }
+        try await NativeSyntaxUI.prepareFocus(in: window)
+        try await SystemPageHost.settle(window)
+        for _ in 0..<2 { try await Native.click(Grid.day("2026-08-19", in: window), in: window) }
+        #expect(probe.selections == ["2026-08-19", "2026-08-19"])
+        let neighbor = try Native.frame(Grid.day("2026-08-20", in: window), in: window)
+        try await Grid.click(NSPoint(x: neighbor.minX + 1, y: neighbor.midY), in: window)
+        #expect(probe.selections.last == "2026-08-20")
+        probe.reject = true
+        try await Native.click(Grid.day("2026-08-18", in: window), in: window)
+        #expect(probe.dates.selectedKey == "2026-08-20")
+        #expect(try DatePickerTestSupport.selected("2026-08-20", in: window))
+        #expect(try !DatePickerTestSupport.selected("2026-08-18", in: window))
+        let before = probe.selections
+        let first = try Native.frame(Grid.day("2026-08-01", in: window), in: window)
+        let second = try Native.frame(Grid.day("2026-08-02", in: window), in: window)
+        try await Grid.click(NSPoint(x: second.midX, y: first.midY), in: window)
+        // 两格之间的 4pt 间隙不能命中邻格。
+        try await Grid.click(NSPoint(x: neighbor.maxX + 2, y: neighbor.midY), in: window)
+        probe.disabled = true
+        try await SystemPageHost.settle(window)
+        try await Native.click(Grid.day("2026-08-21", in: window), in: window)
+        #expect(probe.selections == before && probe.drops.isEmpty)
+        probe.dates = CalendarMonthGridDates(monthKey: "2028-02-29", todayKey: "2028-02-29", selectedKey: "2028-02-29")
+        try await SystemPageHost.settle(window)
+        #expect(try DatePickerTestSupport.selected("2028-02-29", in: window))
+        #expect(!NativeSyntaxUI.identifiers(in: window).contains("daybook.date.2028-03-01"))
+        #expect(probe.selections == before)
     }
 }

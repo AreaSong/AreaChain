@@ -3,7 +3,7 @@ import SwiftUI
 import Testing
 @testable import AreaChain
 
-@Suite(.serialized) @MainActor
+@Suite(.serialized, .tags(.backgroundWindow)) @MainActor
 struct CalendarWeekBaselineTests {
     typealias Native = SettingsButtonTestSupport
     typealias Support = CalendarWeekTestSupport
@@ -29,6 +29,12 @@ struct CalendarWeekBaselineTests {
             }
         }
     }
+}
+
+/// 表头命中与焦点走真实点击和键盘（前台 key window），与后台轮的 CalendarWeekBaselineTests 分开，留在前台轮。
+@Suite(.serialized) @MainActor struct CalendarWeekHeaderInteractionTests {
+    typealias Native = SettingsButtonTestSupport
+    typealias Support = CalendarWeekTestSupport
 
     @Test func productionHeaderHitAndFocus() async throws {
         let f = try Support(populated: true)

@@ -4,7 +4,7 @@ import SwiftUI
 import Testing
 @testable import AreaChain
 
-@Suite(.serialized) @MainActor
+@Suite(.serialized, .tags(.backgroundWindow)) @MainActor
 struct DaybookScrollFeatherVisualTests {
     @Test(arguments: ["en", "zh-Hans"], [false, true])
     func actualGradientAndUnchangedCenter(locale: String, reduced: Bool) async throws {
@@ -38,32 +38,6 @@ struct DaybookScrollFeatherVisualTests {
         }
     }
 
-    @Test func directWheelAndWindowKnobAutomaticallyUpdate() async throws {
-        let fixture = try SettingsButtonTestSupport(isolatedPreferences: true)
-        defer { fixture.cleanup() }
-        let window = fixture.window(FeatherTestContent(state: FeatherTestState()),
-            size: .init(width: 300, height: 240))
-        defer { SystemPageHost.release(window) }
-        try await NativeSyntaxUI.prepareFocus(in: window)
-        try await SystemPageHost.settle(window)
-        let scroll = try #require(ScrollNativeEvidence.views(window).compactMap { $0 as? NSScrollView }.first)
-        let edge = try #require(ScrollNativeEvidence.views(window)
-            .compactMap { $0 as? DaybookScrollEdgeObserverNSView }.first)
-        let cg = try #require(CGEvent(scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 1,
-            wheel1: -80, wheel2: 0, wheel3: 0))
-        try #require(window.isKeyWindow && NSApp.isActive)
-        scroll.scrollWheel(with: try #require(NSEvent(cgEvent: cg)))
-        try await Task.sleep(for: .milliseconds(150))
-        #expect(scroll.contentView.bounds.minY > 10)
-        #expect(FeatherTestEvidence.state(edge) == [true, true])
-        print("FEATHER_DIRECT_WHEEL offset=\(scroll.contentView.bounds.origin)")
-        scroll.contentView.scroll(to: .zero)
-        try await Task.sleep(for: .milliseconds(100))
-        #expect(FeatherTestEvidence.state(edge) == [false, true])
-        try await ScrollOwnershipEvidence.drag(scroll, among: [scroll], in: window, label: "feather-10E")
-        #expect(FeatherTestEvidence.state(edge) == [true, true])
-    }
-
     // 沿原 DaybookSegmentedMotionTests：仅替换测试进程公开 getter，不写系统偏好。
     private func replaceMotionRead(_ reduced: Bool) throws -> () -> Void {
         let method = try #require(class_getInstanceMethod(NSWorkspace.self,
@@ -90,5 +64,34 @@ struct DaybookScrollFeatherVisualTests {
         try #require(bitmap.representation(using: .png, properties: [:])).write(to: directory.appending(path: name + ".png"))
         print("FEATHER_CAPTURE \(directory.path)/\(name).png")
         return bitmap
+    }
+}
+
+/// 滚轮与窗口滑块走真实事件（前台 key window），与后台轮的 DaybookScrollFeatherVisualTests 分开，留在前台轮。
+@Suite(.serialized) @MainActor struct DaybookScrollFeatherWheelTests {
+    @Test func directWheelAndWindowKnobAutomaticallyUpdate() async throws {
+        let fixture = try SettingsButtonTestSupport(isolatedPreferences: true)
+        defer { fixture.cleanup() }
+        let window = fixture.window(FeatherTestContent(state: FeatherTestState()),
+            size: .init(width: 300, height: 240))
+        defer { SystemPageHost.release(window) }
+        try await NativeSyntaxUI.prepareFocus(in: window)
+        try await SystemPageHost.settle(window)
+        let scroll = try #require(ScrollNativeEvidence.views(window).compactMap { $0 as? NSScrollView }.first)
+        let edge = try #require(ScrollNativeEvidence.views(window)
+            .compactMap { $0 as? DaybookScrollEdgeObserverNSView }.first)
+        let cg = try #require(CGEvent(scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 1,
+            wheel1: -80, wheel2: 0, wheel3: 0))
+        try #require(window.isKeyWindow && NSApp.isActive)
+        scroll.scrollWheel(with: try #require(NSEvent(cgEvent: cg)))
+        try await Task.sleep(for: .milliseconds(150))
+        #expect(scroll.contentView.bounds.minY > 10)
+        #expect(FeatherTestEvidence.state(edge) == [true, true])
+        print("FEATHER_DIRECT_WHEEL offset=\(scroll.contentView.bounds.origin)")
+        scroll.contentView.scroll(to: .zero)
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(FeatherTestEvidence.state(edge) == [false, true])
+        try await ScrollOwnershipEvidence.drag(scroll, among: [scroll], in: window, label: "feather-10E")
+        #expect(FeatherTestEvidence.state(edge) == [true, true])
     }
 }
