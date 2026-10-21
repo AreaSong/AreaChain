@@ -88,12 +88,12 @@ import Testing
         return try await session.publish(handle)
     }
 
-    /// `.background` 只供标了 `.backgroundWindow` 的纯程序化套件：不激活应用，测试期间用户可用电脑。
+    /// `.background` 只供标了 `.backgroundWindow` 的纯程序化套件：不激活应用，测试期间用户可用电脑。缺省按套件标签决定。
     /// macOS 14 起应用让出前台后无法再强行抢回，所以同一进程里不能“先后台、要发事件再切前台”。
     enum Focus { case foreground, background }
 
     func start(style: Int = 0, controller external: UnifiedSearchController? = nil, unified: Bool = true,
-               attachments: AttachmentStore? = nil, focus: Focus = .foreground) async throws {
+               attachments: AttachmentStore? = nil, focus: Focus? = nil) async throws {
         if let external {
             controller = external
             external.navigationRouter = router
@@ -119,7 +119,7 @@ import Testing
         window.appearance = NSAppearance(named: style % 2 == 1 ? .darkAqua : .aqua)
         NSApp.accessibilitySetValue(true, forAttribute: NSAccessibility.Attribute(rawValue: "AXEnhancedUserInterface"))
         self.window = window
-        background = focus == .background
+        background = (focus ?? (NativeSyntaxUI.inBackgroundSuite ? .background : .foreground)) == .background
         if background {
             try await NativeSyntaxUI.prepareBackground(in: window)
         } else {

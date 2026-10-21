@@ -58,8 +58,13 @@ enum SystemPageHost {
         else { window.contentView = hosting }
         window.setContentSize(size)
         NSApp.setActivationPolicy(.regular)
-        NSApp.activate(ignoringOtherApps: true)
-        window.makeKeyAndOrderFront(nil)
+        if NativeSyntaxUI.inBackgroundSuite {
+            // 后台轮：排到其他应用窗口之后、不激活，用户可以继续用电脑；要发键鼠的套件不能打这个标签。
+            window.orderBack(nil)
+        } else {
+            NSApp.activate(ignoringOtherApps: true)
+            window.makeKeyAndOrderFront(nil)
+        }
         return window
     }
 

@@ -1,7 +1,7 @@
 import Testing
 @testable import AreaChain
 
-@Suite(.serialized) @MainActor struct UnifiedSearchNavigationOwnershipTests {
+@Suite(.serialized, .tags(.backgroundWindow)) @MainActor struct UnifiedSearchNavigationOwnershipTests {
     @Test(arguments: [0, 1, 2, 3]) func navigationPreservesPlanRunUnknownAndRevisions(_ mode: Int) async throws {
         let fields = try TaskFieldCommandFixture()
         let support = UnifiedSearchPlanRevisionTests()

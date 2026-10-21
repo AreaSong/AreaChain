@@ -5,7 +5,7 @@ import Testing
 import UserNotifications
 @testable import AreaChain
 
-@Suite(.serialized) @MainActor
+@Suite(.serialized, .tags(.backgroundWindow)) @MainActor
 struct SettingsSectionPresentationTests {
     @Test func loginApprovalExplainsAndOffersSystemSettings() async throws {
         let fixture = try SettingsButtonTestSupport()

@@ -109,7 +109,7 @@
 
 Swift 定向测试范围只由 [swift_test_scope.py](../scripts/swift_test_scope.py) 推导（同名 → 引用 → 层目录兜底），[quality_gate.py](../scripts/quality_gate.py) 是唯一调用方；规则与限制见[质量门禁](quality-gates.md)，夹具反例见 [test_swift_test_scope.py](../scripts/tests/test_swift_test_scope.py)。全量只由 `--profile full`／`release` 触发。
 
-后台窗口测试：[NativeSyntaxUI](../AreaChainTests/Features/NativeSyntaxUI.swift) 的 `prepareBackground` 只排窗不激活，`Tag.backgroundWindow` 标记整套件纯程序化；[UnifiedSearchNavigationFixture](../AreaChainTests/Features/UnifiedSearchNavigationTestSupport.swift) 的 `focus: .background` 是首个接入的夹具。分轮由 `swift_test_scope.split_rounds` 决定，规则见[质量门禁](quality-gates.md)。
+后台窗口测试：[NativeSyntaxUI](../AreaChainTests/Features/NativeSyntaxUI.swift) 的 `prepareBackground` 只排窗不激活，`Tag.backgroundWindow` 标记整套件纯程序化；[SystemPageHost](../AreaChainTests/Features/SystemPageHost.swift) 与 [UnifiedSearchNavigationFixture](../AreaChainTests/Features/UnifiedSearchNavigationTestSupport.swift) 按 `NativeSyntaxUI.inBackgroundSuite` 读标签决定是否后台开窗。分轮由 `swift_test_scope.split_rounds` 决定，规则见[质量门禁](quality-gates.md)。
 
 ## 设置控件预览
 

@@ -4,7 +4,7 @@ import SwiftUI
 import Testing
 @testable import AreaChain
 
-@Suite(.serialized) @MainActor
+@Suite(.serialized, .tags(.backgroundWindow)) @MainActor
 struct DataBackupRenderingTests {
     private static var retained: [ModelContainer] = []
 

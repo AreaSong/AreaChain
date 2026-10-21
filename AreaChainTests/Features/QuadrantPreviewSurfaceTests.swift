@@ -3,7 +3,7 @@ import SwiftUI
 import Testing
 @testable import AreaChain
 
-@Suite(.serialized) @MainActor
+@Suite(.serialized, .tags(.backgroundWindow)) @MainActor
 struct QuadrantPreviewSurfaceTests {
     @Test(arguments: ["en", "zh-Hans"], [ColorScheme.light, .dark])
     func directProductionAppearance(locale: String, scheme: ColorScheme) async throws {

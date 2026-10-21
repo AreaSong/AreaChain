@@ -3,7 +3,7 @@ import SwiftUI
 import Testing
 @testable import AreaChain
 
-@Suite(.serialized) @MainActor
+@Suite(.serialized, .tags(.backgroundWindow)) @MainActor
 struct DaybookHabitDateCellTests {
     @Test(arguments: ["en", "zh-Hans"], [ColorScheme.light, .dark])
     func publicSamples(locale: String, scheme: ColorScheme) async throws {

@@ -33,6 +33,9 @@ enum NativeSyntaxUI {
 
     /// 只把窗口排到其他应用窗口之后并完成布局，不激活应用：纯程序化断言不需要前台，测试期间用户仍可操作电脑。
     /// 后台窗口不能再转前台发事件（macOS 14 起让出前台后抢不回来）；需要键鼠事件的套件整体走前台模式。
+    /// 当前用例所在套件标了 `.backgroundWindow`：开窗辅助据此只排窗不激活，标签是唯一开关。
+    static var inBackgroundSuite: Bool { Test.current?.tags.contains(.backgroundWindow) == true }
+
     static func prepareBackground(in window: NSWindow) async throws {
         if NSApp.activationPolicy() != .regular { NSApp.setActivationPolicy(.regular) }
         window.orderBack(nil)
