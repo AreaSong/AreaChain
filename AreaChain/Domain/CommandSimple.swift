@@ -52,6 +52,14 @@ enum CommandSimpleProblem: String, Equatable {
     case notTrashed
     /// 合并批 M-3：附件的拥有者也在回收站里（或已不存在），附件不能单独恢复。
     case ownerTrashed
+    /// 合并批 M-4：只有普通手记直接执行。目标受保护或保存后会变成受保护、要给手记加私密标签、已有正文超过长文上限，
+    /// 都改为打开原手记页完成（不读取或解密受保护正文）。
+    case protectedDiary, diaryPrivateTag, diaryTooLong
+    /// 合并批 M-4：手记没有可保存或可转换的正文。
+    case diaryEmpty
+
+    /// 这些原因在面板里提供“打开原手记页”。
+    static let diaryPageProblems: [CommandSimpleProblem] = [.protectedDiary, .diaryPrivateTag, .diaryTooLong]
 }
 
 /// 预览里的一个值：本地化键、原文（用户内容）或带一个整数参数的本地化键（如“N 字”）。

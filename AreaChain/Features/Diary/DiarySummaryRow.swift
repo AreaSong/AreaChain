@@ -80,17 +80,9 @@ struct DiarySummaryRow: View {
         if isSensitive {
             return NotePresentation(mainText: L10n.string("diary.private.title", locale: locale), note: nil)
         }
-        let raw = entry.text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let newlineIndex = raw.firstIndex(of: "\n") else {
-            return NotePresentation(mainText: raw, note: nil)
-        }
-        let firstLine = String(raw[..<newlineIndex]).trimmingCharacters(in: .whitespacesAndNewlines)
-        let rest = String(raw[raw.index(after: newlineIndex)...]).trimmingCharacters(in: .whitespacesAndNewlines)
-
-        if firstLine.isEmpty {
-            return NotePresentation(mainText: rest, note: nil)
-        }
-        return NotePresentation(mainText: firstLine, note: rest.isEmpty ? nil : rest)
+        // 与复制共用同一拆分（DiaryCopyContent），标题／备注气泡复制的就是这里显示的两段。
+        let parts = DiaryCopyContent.split(entry.text)
+        return NotePresentation(mainText: parts.mainText, note: parts.note)
     }
 
     private var assignedTags: [TagItem] {

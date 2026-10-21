@@ -320,3 +320,50 @@ extension RoutineCaptureService {
         }
     }
 }
+
+extension DiaryWriteService {
+    /// 新建手记的身份与位置：身份在准备时分配一次（重试不另建），日期与额外标签来自冻结参数。
+    struct LentCreation {
+        let id: UUID
+        let dayKey: String
+        let tagIDs: Set<UUID>
+    }
+
+    /// 合并批 M-4：新建普通手记的借用出口。正文按手记页快速新增的“自动分类”拆出正文与标签，再交原 `add`
+    /// （不允许锁定时插入）；要关联私密标签或保存后会变成受保护时，在写入前拒绝。事务由调用方提供。
+    @discardableResult
+    static func applyLent(_ loan: CommandLongTextLoan, creating creation: LentCreation,
+                          repository: SwiftDataDiaryRepository, in context: ModelContext) throws -> DiaryEntry {
+        try loan.consumeText(.body) { text, operation in
+            guard operation == .assign else { throw CommandSimpleIssue.invalidArguments }
+            let captured = capture(text.trimmingCharacters(in: .whitespacesAndNewlines))
+            guard !captured.text.isEmpty else { throw CommandSimpleIssue.invalidTarget(.diaryEmpty) }
+            guard CommandLongTextLimit.allows(captured.text) else { throw CommandSimpleIssue.invalidTarget(.diaryTooLong) }
+            let tags = try context.fetch(FetchDescriptor<TagItem>())
+            guard !containsPrivateTag(creation.tagIDs, tags: tags),
+                  !capturesPrivateTag(captured, tags: tags) else { throw CommandSimpleIssue.invalidTarget(.diaryPrivateTag) }
+            let ids = creation.tagIDs.union(try InputTagResolver.resolve(captured.tagNames, in: context))
+            guard !becomesProtected(text: captured.text, tagIDs: ids, tags: tags) else {
+                throw CommandSimpleIssue.invalidTarget(.protectedDiary)
+            }
+            return try repository.addDiary(text: captured.text, dayKey: creation.dayKey, tagIDs: ids,
+                                           allowLockedInsert: false, creationID: creation.id)
+        }
+    }
+
+    /// 合并批 M-4：普通手记正文改写（replace／append）的借用出口，交原 `editDiary`（#标签合并、@附件关联同原界面）。
+    /// 目标受保护时在取出正文前就拒绝（不读、不解密）；改写后会变成受保护时在写入前拒绝。
+    static func applyLent(_ loan: CommandLongTextLoan, editing entry: DiaryEntry,
+                          repository: SwiftDataDiaryRepository, in context: ModelContext) throws {
+        let tags = try context.fetch(FetchDescriptor<TagItem>())
+        guard isOrdinary(entry, tags: tags) else { throw CommandSimpleIssue.invalidTarget(.protectedDiary) }
+        try loan.consumeText(.body) { text, operation in
+            let final = try BodyEdit(operation, text: text).final(entry.text)
+            guard CommandLongTextLimit.allows(final) else { throw CommandSimpleIssue.invalidTarget(.diaryTooLong) }
+            guard !becomesProtected(text: final, tagIDs: Set(TagIDList.parse(entry.tagIDs)), tags: tags) else {
+                throw CommandSimpleIssue.invalidTarget(.diaryPrivateTag)
+            }
+            try repository.editDiary(id: entry.id, text: final)
+        }
+    }
+}

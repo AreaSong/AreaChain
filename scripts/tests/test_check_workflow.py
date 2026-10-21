@@ -1490,12 +1490,15 @@ class WorkflowCheckTests(unittest.TestCase):
         "    fileprivate func consumeText(_ body: (String) throws -> Void) throws { try body(lentText ?? \"\") }\n"
         "}\n"
         "extension TaskNotesService { static func applyLent(_ loan: CommandLongTextLoan) throws {} }\n"
+        "extension DiaryWriteService { static func applyLent(_ loan: CommandLongTextLoan) throws {} }\n"
     )
 
     def write_loan_fixture(self, escrow=None):
         self.write(workflow.LOAN_FILE, self.LOAN_ESCROW if escrow is None else escrow)
         self.write("AreaChain/Services/NotesCommandSpec.swift", "func run(_ loan: CommandLongTextLoan) throws { try TaskNotesService.applyLent(loan) }\n")
         self.write("AreaChain/Services/RoutineCaptureCommandSpec.swift", "// fixture\n")
+        self.write("AreaChain/Services/DiaryBodyCommandSpecs.swift",
+                   "func run(_ loan: CommandLongTextLoan) throws { try DiaryWriteService.applyLent(loan) }\n")
 
     def test_long_text_loan_guard_passes_for_allowed_symbols(self):
         self.write_loan_fixture()
@@ -1506,6 +1509,10 @@ class WorkflowCheckTests(unittest.TestCase):
         cases = [("AreaChain/Services/SimpleCommandAdapter.swift", "let text = loan.lentText\n"),
                  ("AreaChain/Services/CaptureCommandSpecs.swift", "try loan.consumeText { _ in }\n"),
                  ("AreaChain/Services/CaptureCommandSpecs.swift", "try TaskNotesService.applyLent(loan)\n"),
+                 # 合并批 M-4：手记出口只能由手记长文规格文件引用；原界面与组织类规格文件都不行。
+                 ("AreaChain/Services/DiaryWriteService.swift", "try DiaryWriteService.applyLent(loan)\n"),
+                 ("AreaChain/Services/DiaryCommandSpecs.swift", "try DiaryWriteService.applyLent(loan)\n"),
+                 ("AreaChain/Features/Diary/DiaryEditorSession.swift", "try DiaryWriteService.applyLent(loan)\n"),
                  ("AreaChainTests/Services/LoanTests.swift", "_ = loan.lentText\n")]
         for relative, text in cases:
             with self.subTest(relative=relative, text=text):
@@ -1521,6 +1528,7 @@ class WorkflowCheckTests(unittest.TestCase):
                   self.LOAN_ESCROW.replace("fileprivate init", "init"),
                   self.LOAN_ESCROW.replace("consumeText", "take"),
                   self.LOAN_ESCROW.replace("applyLent", "applyText"),
+                  self.LOAN_ESCROW.replace("extension DiaryWriteService", "extension DiaryNotes"),
                   self.LOAN_ESCROW + "func leak() { Task { } }\n",
                   self.LOAN_ESCROW + "func leak() async {}\n",
                   self.LOAN_ESCROW + "struct Copy: Codable {}\n"]

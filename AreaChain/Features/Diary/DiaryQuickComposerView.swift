@@ -427,26 +427,17 @@ struct DiaryComposerHostSection: View {
             let rawText = draftText.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !rawText.isEmpty else { return }
 
-            let parsed = NaturalLanguageParser.parseDiaryCapture(rawText)
-            let textToSave: String = {
-                if parsed.hasNoteSeparator && !parsed.cleanTitle.isEmpty {
-                    return parsed.cleanTitle + (parsed.body.isEmpty ? "" : "\n" + parsed.body)
-                } else if !parsed.body.isEmpty {
-                    return parsed.body
-                } else {
-                    return NaturalLanguageParser.unescapeSyntax(rawText)
-                }
-            }()
-            guard !textToSave.isEmpty else { return }
+            let capture = DiaryWriteService.capture(rawText)
+            guard !capture.text.isEmpty else { return }
 
             var effectiveTagIDs = composerSelectedTagIDs
-            if !parsed.tagNames.isEmpty {
-                let resolvedIDs = try InputTagResolver.resolve(parsed.tagNames, in: modelContext)
+            if !capture.tagNames.isEmpty {
+                let resolvedIDs = try InputTagResolver.resolve(capture.tagNames, in: modelContext)
                 effectiveTagIDs.formUnion(resolvedIDs)
             }
 
             guard DayBoardMutations.addDiary(
-                text: textToSave, dayKey: todayKey, selectedTagIDs: effectiveTagIDs,
+                text: capture.text, dayKey: todayKey, selectedTagIDs: effectiveTagIDs,
                 tags: allTags, context: modelContext
             ) else { composerStatus = "diary.window.save.failed"; return }
             draftBinding.wrappedValue = BoardComposerDraft()

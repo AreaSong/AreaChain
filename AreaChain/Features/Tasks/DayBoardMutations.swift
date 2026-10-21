@@ -388,13 +388,8 @@ enum DayBoardMutations {
         tags: [TagItem] = [], context: ModelContext
     ) -> Bool {
         ModelChanges.value(in: context) {
-            let repo = diaryRepo(for: context)
-            if let sdRepo = repo as? SwiftDataDiaryRepository {
-                return try sdRepo.addDiary(
-                    text: text, dayKey: dayKey, tagIDs: selectedTagIDs, allowLockedInsert: true
-                )
-            }
-            return try repo.addDiary(text: text, dayKey: dayKey, tagIDs: selectedTagIDs)
+            try DiaryWriteService.add(text: text, dayKey: dayKey, tagIDs: selectedTagIDs, allowLockedInsert: true,
+                                      repository: diaryRepo(for: context))
         } != nil
     }
 
@@ -450,29 +445,11 @@ enum DayBoardMutations {
     static func convertDiaryToTodo(_ entry: DiaryEntry, tags: [TagItem]?, context: ModelContext) -> Bool {
         // 待办不加密。受保护或敏感手记即使模型里仍有明文，也不能绕过解锁写成公开事项。
         guard let tags else { return false }
-        guard !entry.hasProtectedContent,
-              !DiaryPrivacy.isSensitive(entry.snapshot, tags: tags),
-              let raw = (try? DiaryContent.read(entry))?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !raw.isEmpty
+        guard DiaryWriteService.isOrdinary(entry, tags: tags),
+              let raw = try? DiaryContent.read(entry),
+              let text = DiaryWriteService.todoText(from: raw)
         else { return false }
-        return addTodo(
-            title: diaryTodoTitle(from: raw),
-            notes: diaryTodoNotes(from: raw),
-            dayKey: DayKey.today(),
-            context: context
-        )
-    }
-
-    private static func diaryTodoTitle(from raw: String) -> String {
-        guard let newlineIndex = raw.firstIndex(of: "\n") else { return raw }
-        let firstLine = String(raw[..<newlineIndex]).trimmingCharacters(in: .whitespacesAndNewlines)
-        let rest = String(raw[raw.index(after: newlineIndex)...]).trimmingCharacters(in: .whitespacesAndNewlines)
-        return firstLine.isEmpty ? rest : firstLine
-    }
-
-    private static func diaryTodoNotes(from raw: String) -> String {
-        guard let newlineIndex = raw.firstIndex(of: "\n") else { return "" }
-        return String(raw[raw.index(after: newlineIndex)...]).trimmingCharacters(in: .whitespacesAndNewlines)
+        return addTodo(title: text.title, notes: text.notes, dayKey: DayKey.today(), context: context)
     }
 
     @discardableResult

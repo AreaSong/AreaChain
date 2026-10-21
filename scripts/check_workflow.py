@@ -832,8 +832,10 @@ def required_skill_files(root, prefixes):
 
 
 LOAN_FILE = "AreaChain/Services/CommandLongTextEscrow.swift"
-LOAN_SPEC_FILES = {"AreaChain/Services/NotesCommandSpec.swift", "AreaChain/Services/RoutineCaptureCommandSpec.swift"}
-# L-M1b 长文借用：正文取值器只在托管文件里；两个保存出口只由托管文件与两份规格引用。按符号放行，不按整份文件放行。
+LOAN_SPEC_FILES = {"AreaChain/Services/NotesCommandSpec.swift", "AreaChain/Services/RoutineCaptureCommandSpec.swift",
+                   "AreaChain/Services/DiaryBodyCommandSpecs.swift"}
+# L-M1b 长文借用：正文取值器只在托管文件里；保存出口（任务备注、快速新增，合并批 M-4 起加手记正文）只由托管文件
+# 与三份长文规格文件引用。按符号放行，不按整份文件放行；手记出口必须与其他出口同在托管文件。
 LOAN_SYMBOLS = {
     "lentText": {LOAN_FILE},
     "consumeText": {LOAN_FILE},
@@ -844,6 +846,7 @@ LOAN_DECLARATIONS = (
     (re.compile(r"fileprivate\s+init\s*\("), "借用的构造器必须是 fileprivate"),
     (re.compile(r"fileprivate\s+(?:private\(set\)\s+)?var\s+lentText\b"), "正文取值器 lentText 必须是 fileprivate"),
     (re.compile(r"fileprivate\s+func\s+consumeText\b"), "借用 consumeText 必须是 fileprivate"),
+    (re.compile(r"extension\s+DiaryWriteService\b"), "手记保存出口 extension DiaryWriteService 必须在托管文件"),
 )
 LOAN_FORBIDDEN = re.compile(r"\bTask\s*(?:\{|\.detached|\.init)|\bDispatchQueue\b|\basync\b|\b(?:Codable|Encodable)\b")
 

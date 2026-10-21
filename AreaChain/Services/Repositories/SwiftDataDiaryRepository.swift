@@ -67,16 +67,21 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
         try addDiary(text: text, dayKey: dayKey, tagIDs: tagIDs, allowLockedInsert: false)
     }
 
+    /// creationID 只供指令（合并批 M-4）在准备时固定新手记身份：已存在即拒绝，重试不会另建；原界面不传。
     @discardableResult
-    func addDiary(text: String, dayKey: String, tagIDs: Set<UUID>, allowLockedInsert: Bool) throws -> DiaryEntry {
+    func addDiary(text: String, dayKey: String, tagIDs: Set<UUID>, allowLockedInsert: Bool,
+                  creationID: UUID? = nil) throws -> DiaryEntry {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             throw RepositoryError.invalidArgument("手记内容不能为空")
         }
+        if let creationID, try fetchDiary(id: creationID) != nil {
+            throw RepositoryError.invalidArgument("创建身份已存在")
+        }
         return try ModelChanges.transaction(in: context) {
             let names = TagSyntax.names(in: trimmed)
             let ids = try InputTagResolver.merging(names, into: TagIDList.encode(Array(tagIDs)), in: context)
-            let entry = DiaryEntry(text: "", dayKey: dayKey, tagIDs: ids)
+            let entry = DiaryEntry(id: creationID ?? UUID(), text: "", dayKey: dayKey, tagIDs: ids)
             try DiaryContent.write(
                 trimmed, to: entry,
                 protect: DiaryContent.requiresProtection(tagIDs: ids, tags: try protectionTags()),
