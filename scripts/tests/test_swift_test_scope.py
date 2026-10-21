@@ -217,6 +217,13 @@ class SwiftTestChecksTests(unittest.TestCase):
         self.assertEqual(self.commands(run), [["./scripts/build.sh", "test"]])
         self.assertIn("全量", checks[0]["detail"])
 
+    def test_only_full_and_release_get_the_long_round_timeout(self):
+        with patch.object(quality, "run_command", return_value=(0, "", "", 0.1)) as run:
+            quality.swift_test_checks(self.root, [], "full", [])
+            quality.swift_test_checks(self.root, [], "release", [])
+            quality.swift_test_checks(self.root, [], "swift", ["AreaChainTests/FooTests"])
+        self.assertEqual([call.kwargs["timeout"] for call in run.call_args_list], [10800, 10800, 1800])
+
     def test_explicit_only_testing_wins(self):
         with patch.object(quality, "run_command", return_value=(0, "", "", 0.1)) as run:
             quality.swift_test_checks(self.root, [], "swift", ["AreaChainTests/FooTests"])

@@ -415,7 +415,12 @@ def run_swiftlint(root, paths, strict=False):
     return gate("swiftlint", status, output or "SwiftLint 没有输出问题。", command, duration=duration)
 
 
-def run_swift_tests(filters=None, notes=(), root=ROOT):
+# 定向测试每轮 30 分钟足够；全量前台轮串行跑三千多个用例，历史上超过 100 分钟，放宽到 3 小时。
+SWIFT_ROUND_TIMEOUT = 1800
+FULL_SWIFT_ROUND_TIMEOUT = 3 * 3600
+
+
+def run_swift_tests(filters=None, notes=(), root=ROOT, timeout=SWIFT_ROUND_TIMEOUT):
     """前台轮与后台轮各跑一次 build.sh test；任一轮失败即失败，说明里分轮列出。"""
     commands, details, worst, total = [], [], 0, 0.0
     rounds = swift_test_scope.split_rounds(root, filters)
@@ -423,7 +428,7 @@ def run_swift_tests(filters=None, notes=(), root=ROOT):
         return gate("swift-tests", "passed", "没有需要运行的 Swift 测试。")
     for label, arguments in rounds:
         command = ["./scripts/build.sh", "test", *arguments]
-        code, stdout, stderr, duration = run_command(command, timeout=1800)
+        code, stdout, stderr, duration = run_command(command, timeout=timeout)
         commands.append(command)
         total += duration
         worst = code if worst == 0 else worst
@@ -444,7 +449,7 @@ def swift_test_checks(root, paths, selected, only_testing):
     if only_testing:
         return [run_swift_tests(list(only_testing), root=root)]
     if selected in ("full", "release"):
-        return [run_swift_tests(root=root)]
+        return [run_swift_tests(root=root, timeout=FULL_SWIFT_ROUND_TIMEOUT)]
     is_ui = selected == "ui"
     plan = swift_test_scope.plan_swift_tests(root, paths, layer_fallback=not is_ui)
     checks = []
