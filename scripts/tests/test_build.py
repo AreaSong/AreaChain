@@ -155,10 +155,16 @@ class BuildCommandTests(unittest.TestCase):
         self.assertIn("-only-testing:AreaChainTests/PrivacyVaultTests", self.xcode_call()["args"])
         self.assertIn("-only-testing:AreaChainTests/SystemVaultIntegrationTests", self.xcode_call()["args"])
 
+    def test_skip_testing_is_forwarded_for_split_runs(self):
+        result = self.invoke("test", "--skip-testing", "AreaChainTests/UnifiedSearchOriginalPageTests")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("-skip-testing:AreaChainTests/UnifiedSearchOriginalPageTests", self.xcode_call()["args"])
+
     def test_unsafe_or_ambiguous_commands_stop_before_tools(self):
         for arguments in (("install",), ("test", "--allow-provisioning"),
                           ("release", "--configuration", "Debug"), ("check-signing", "--configuration", "Other"),
-                          ("build", "--only-testing", "AreaChainTests"), ("build", "--unknown")):
+                          ("build", "--only-testing", "AreaChainTests"), ("build", "--skip-testing", "AreaChainTests"),
+                          ("build", "--unknown")):
             with self.subTest(arguments=arguments):
                 result = self.invoke(*arguments)
                 self.assertNotEqual(result.returncode, 0)

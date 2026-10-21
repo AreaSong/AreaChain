@@ -415,29 +415,36 @@ def run_swiftlint(root, paths, strict=False):
     return gate("swiftlint", status, output or "SwiftLint 没有输出问题。", command, duration=duration)
 
 
-def run_swift_tests(filters=None, notes=()):
-    command = ["./scripts/build.sh", "test"]
-    if filters:
-        for item in filters:
-            command.extend(["--only-testing", item])
-    code, stdout, stderr, duration = run_command(command, timeout=1800)
-    status = "passed" if code == 0 else ("blocked" if code in (126, 127) else "failed")
-    detail = summarize_output(stdout, stderr)
+def run_swift_tests(filters=None, notes=(), root=ROOT):
+    """前台轮与后台轮各跑一次 build.sh test；任一轮失败即失败，说明里分轮列出。"""
+    commands, details, worst, total = [], [], 0, 0.0
+    rounds = swift_test_scope.split_rounds(root, filters)
+    if not rounds:
+        return gate("swift-tests", "passed", "没有需要运行的 Swift 测试。")
+    for label, arguments in rounds:
+        command = ["./scripts/build.sh", "test", *arguments]
+        code, stdout, stderr, duration = run_command(command, timeout=1800)
+        commands.append(command)
+        total += duration
+        worst = code if worst == 0 else worst
+        details.append(f"{label}（{'需离开电脑' if label == '前台轮' else '可以用电脑'}）退出码 {code}，"
+                       f"{duration:.0f} 秒\n{summarize_output(stdout, stderr)}".strip())
+    status = "passed" if worst == 0 else ("blocked" if worst in (126, 127) else "failed")
     if filters:
         shown = ", ".join(filters[:12]) + (f" 等 {len(filters)} 项" if len(filters) > 12 else "")
-        desc = "\n".join([f"运行定向 Swift 测试 ({len(filters)} 项: {shown})", *notes])
-        detail = f"{desc}\n{detail}".strip() if detail else desc
+        head = [f"运行定向 Swift 测试 ({len(filters)} 项: {shown})", *notes]
     else:
-        detail = f"运行全量 Swift 测试\n{detail}".strip()
-    return gate("swift-tests", status, detail, command, duration=duration)
+        head = ["运行全量 Swift 测试"]
+    detail = "\n".join([*head, *details])
+    return gate("swift-tests", status, detail, commands[0] if len(commands) == 1 else commands, duration=total)
 
 
 def swift_test_checks(root, paths, selected, only_testing):
     """按 profile 选测试：显式范围优先；full/release 才跑全量；其余按变更推导并说明兜底。"""
     if only_testing:
-        return [run_swift_tests(list(only_testing))]
+        return [run_swift_tests(list(only_testing), root=root)]
     if selected in ("full", "release"):
-        return [run_swift_tests()]
+        return [run_swift_tests(root=root)]
     is_ui = selected == "ui"
     plan = swift_test_scope.plan_swift_tests(root, paths, layer_fallback=not is_ui)
     checks = []
@@ -446,7 +453,7 @@ def swift_test_checks(root, paths, selected, only_testing):
                            "以下变更无法推导定向测试，本次未覆盖；需要时用 --only-testing 指定或 --profile full：",
                            issues=plan["notes"]))
     if plan["filters"]:
-        checks.append(run_swift_tests(plan["filters"], plan["notes"]))
+        checks.append(run_swift_tests(plan["filters"], plan["notes"], root=root))
     elif is_ui:
         checks.append(gate("swift-tests", "passed", "纯 UI 变更已通过编译验证，没有同名或引用测试，豁免后台测试。"))
     elif not plan["unresolved"]:

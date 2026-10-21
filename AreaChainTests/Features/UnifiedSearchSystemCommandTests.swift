@@ -34,13 +34,13 @@ import Testing
     func closeAll() { for controller in windows.openControllers { controller.window.close() } }
 }
 
-@Suite(.serialized) @MainActor struct UnifiedSearchSystemCommandTests {
+@Suite(.serialized, .tags(.backgroundWindow)) @MainActor struct UnifiedSearchSystemCommandTests {
     @Test func windowAndPanelCommandsReuseExistingWindows() async throws {
         let fixture = try UnifiedSearchNavigationFixture()
         defer { fixture.stop() }
         let fakes = SystemCommandFakes()
         _ = fakes.install(fixture)
-        try await fixture.start()
+        try await fixture.start(focus: .background)
         // 只数可见的顶层窗口：今日页面板是原有的 sheet，收起后 AppKit 仍可能把 sheet 窗口留在 NSApp.windows 里。
         let topLevel = { NSApp.windows.filter { $0.isVisible && $0.sheetParent == nil }.count }
         let windows = topLevel()
@@ -94,7 +94,7 @@ import Testing
         fixture.context.insert(secret)
         try fixture.context.save()
         let saves = fixture.saves
-        try await fixture.start()
+        try await fixture.start(focus: .background)
         try pages.openDiaryWindow(.init(type: .diary, id: plain.id))
         try pages.openDiaryWindow(.init(type: .diary, id: plain.id))
         #expect(fakes.windows.openControllers.count == 1, "同一手记只有一个小窗")
@@ -138,7 +138,7 @@ import Testing
         fixture.context.insert(secret)
         fixture.context.insert(DiaryEntry(text: "m3 public", dayKey: fixture.day))
         try fixture.context.save()
-        try await fixture.start()
+        try await fixture.start(focus: .background)
         let snapshot = try pages.statsSnapshot(day: nil)
         let direct = DashboardStatsReader.snapshot(
             todos: try fixture.context.fetch(FetchDescriptor<TodoItem>()), routines: try fixture.context.fetch(FetchDescriptor<DailyRoutine>()),
@@ -177,7 +177,7 @@ import Testing
         defer { fixture.stop() }
         let fakes = SystemCommandFakes()
         _ = fakes.install(fixture)
-        try await fixture.start()
+        try await fixture.start(focus: .background)
         try await fixture.go("/quit")
         #expect(fakes.quitAlerts == [L10n.string("alert.quit.title", locale: Locale(identifier: "en"))])
         #expect(fakes.diaryConfirms == 0 && fakes.terminations == 0)

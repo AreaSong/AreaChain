@@ -25,6 +25,7 @@ import Testing
     var publications = 0
     private var observers: [NSObjectProtocol] = []
     var window: NSWindow?
+    private var background = false
     var context: ModelContext { data.context }
     let day = "2026-10-07"
 
@@ -87,8 +88,12 @@ import Testing
         return try await session.publish(handle)
     }
 
+    /// `.background` 只供标了 `.backgroundWindow` 的纯程序化套件：不激活应用，测试期间用户可用电脑。
+    /// macOS 14 起应用让出前台后无法再强行抢回，所以同一进程里不能“先后台、要发事件再切前台”。
+    enum Focus { case foreground, background }
+
     func start(style: Int = 0, controller external: UnifiedSearchController? = nil, unified: Bool = true,
-               attachments: AttachmentStore? = nil) async throws {
+               attachments: AttachmentStore? = nil, focus: Focus = .foreground) async throws {
         if let external {
             controller = external
             external.navigationRouter = router
@@ -114,11 +119,21 @@ import Testing
         window.appearance = NSAppearance(named: style % 2 == 1 ? .darkAqua : .aqua)
         NSApp.accessibilitySetValue(true, forAttribute: NSAccessibility.Attribute(rawValue: "AXEnhancedUserInterface"))
         self.window = window
-        NSApp.setActivationPolicy(.regular)
-        NSApp.activate(ignoringOtherApps: true)
-        window.makeKeyAndOrderFront(nil)
-        try await NativeSyntaxUI.prepareFocus(in: window)
+        background = focus == .background
+        if background {
+            try await NativeSyntaxUI.prepareBackground(in: window)
+        } else {
+            NSApp.setActivationPolicy(.regular)
+            NSApp.activate(ignoringOtherApps: true)
+            window.makeKeyAndOrderFront(nil)
+            try await NativeSyntaxUI.prepareFocus(in: window)
+        }
         try await settle()
+    }
+
+    /// 键鼠事件只送给前台 key window；后台套件误发时直接指出该移出后台轮，而不是在别处报焦点失败。
+    private func requireForeground() throws {
+        try #require(!background, "后台模式不能发键鼠事件：这个套件要去掉 .backgroundWindow，回到前台轮")
     }
 
     var field: NSTextField {
@@ -129,6 +144,7 @@ import Testing
     }
     var editor: NSTextView { get throws { try #require(try field.currentEditor() as? NSTextView) } }
     func typeNative(_ text: String) async throws {
+        try requireForeground()
         controller.inputFocused = true
         window?.makeFirstResponder(try field)
         try await settle()
@@ -137,6 +153,7 @@ import Testing
         try await settle()
     }
     func key(_ code: UInt16, _ text: String, flags: NSEvent.ModifierFlags = []) async throws {
+        try requireForeground()
         let window = try #require(window)
         try #require(window.isKeyWindow)
         let event = try #require(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: flags,
@@ -146,6 +163,7 @@ import Testing
         try await settle()
     }
     func click(_ id: String) async throws {
+        try requireForeground()
         let window = try #require(window)
         let node = try #require(SettingsButtonTestSupport.elements(window.contentView).first {
             SettingsButtonTestSupport.value($0, "accessibilityIdentifier") as? String == id

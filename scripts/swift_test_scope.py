@@ -42,6 +42,47 @@ def test_suites(text):
     return {name for name in declared_types(text) | extension_targets(text) if name.endswith("Tests")}
 
 
+# 标了 .backgroundWindow 的套件：@Suite 与类型声明同一行或相邻两行。
+_BACKGROUND_SUITE = re.compile(
+    r"^@Suite\b[^\n]*\.backgroundWindow\b[^\n]*?(?:\n[^\n]*?)?\b(?:struct|class|enum|actor)\s+(\w+Tests)\b", re.M)
+
+
+def background_suites(root):
+    """整套件只用程序化动作、窗口开在后台的套件；它们与需要前台的套件分两次 xcodebuild 运行。"""
+    test_root = Path(root) / TEST_TARGET
+    if not test_root.is_dir():
+        return set()
+    return {name for path in test_root.rglob("*.swift") for name in _BACKGROUND_SUITE.findall(_read(path))}
+
+
+def split_rounds(root, filters):
+    """返回 [(轮次, build.sh 参数)]；前台轮在前（需要离开电脑），后台轮在后（可以边用电脑边跑）。
+
+    filters 为 None 表示全量：前台轮排除后台套件，后台轮只跑后台套件。
+    macOS 14 起应用让出前台后不能强行抢回，所以两类不能混在同一个测试进程里。
+    """
+    background = background_suites(root)
+    # 只写测试目标名（如 AreaChainTests）等于全量，不能让后台套件混进前台进程。
+    if filters is not None and any("/" not in item for item in filters):
+        filters = None
+    if filters is None:
+        rounds = [("前台轮", [arg for name in sorted(background)
+                             for arg in ("--skip-testing", f"{TEST_TARGET}/{name}")])]
+        if background:
+            rounds.append(("后台轮", [arg for name in sorted(background)
+                                     for arg in ("--only-testing", f"{TEST_TARGET}/{name}")]))
+        return rounds
+    def is_background(item):
+        parts = item.split("/")
+        return len(parts) > 1 and parts[1] in background
+    rounds = []
+    for label, chosen in (("前台轮", [f for f in filters if not is_background(f)]),
+                          ("后台轮", [f for f in filters if is_background(f)])):
+        if chosen:
+            rounds.append((label, [arg for item in chosen for arg in ("--only-testing", item)]))
+    return rounds
+
+
 def _read(path):
     try:
         return path.read_text(encoding="utf-8", errors="replace")

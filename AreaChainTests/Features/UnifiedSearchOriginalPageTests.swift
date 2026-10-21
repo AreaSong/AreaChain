@@ -4,7 +4,7 @@ import Testing
 @testable import AreaChain
 
 /// 合并批 M-3 A：对照表每一项“预览说明正确、回车只导航、没有写入、没有系统调用”；返回票据可回到搜索。
-@Suite(.serialized) @MainActor struct UnifiedSearchOriginalPageTests {
+@Suite(.serialized, .tags(.backgroundWindow)) @MainActor struct UnifiedSearchOriginalPageTests {
     /// 每条页面路由都由 executeNavigation 落到 executeOriginalPage 的 `.page` 分支；该分支只读 tab、focusesTrash、finishesOnPage，
     /// 预览另读 sectionKey、noteKey。逐条核对路径能解析回本指令、不被更早的导航分支截走，原生挂载只需每种组合一条。
     @Test func everyPageRouteReachesTheOriginalPageBranch() throws {
@@ -28,7 +28,7 @@ import Testing
     @Test func representativePageRoutesOnlyNavigateAndReturn() async throws {
         let fixture = try UnifiedSearchNavigationFixture()
         defer { fixture.stop() }
-        try await fixture.start()
+        try await fixture.start(focus: .background)
         let original = try fixture.handoff.state().query
         let routes = Self.representativeRoutes
         // 目标页全集都要真实挂载过一次，避免抽样漏掉某个页面。
@@ -65,7 +65,7 @@ import Testing
     @Test func objectRoutesUseInspectorResolutionAndRefuseWithoutDay() async throws {
         let fixture = try UnifiedSearchNavigationFixture()
         defer { fixture.stop() }
-        try await fixture.start()
+        try await fixture.start(focus: .background)
         let todo = CommandObjectReference(type: .todo, id: fixture.todo.id)
         try await activate(fixture, todo)
         try await fixture.enter("/images/add")
@@ -102,7 +102,7 @@ import Testing
     @Test func trashRoutesLocateFocusedObject() async throws {
         let fixture = try UnifiedSearchNavigationFixture()
         defer { fixture.stop() }
-        try await fixture.start()
+        try await fixture.start(focus: .background)
         let todo = CommandObjectReference(type: .todo, id: fixture.todo.id)
         try await activate(fixture, todo)
         try await fixture.go("/trash/delete")
@@ -114,7 +114,7 @@ import Testing
     @Test func helpAndUseInsteadStayInPanel() async throws {
         let fixture = try UnifiedSearchNavigationFixture()
         defer { fixture.stop() }
-        try await fixture.start()
+        try await fixture.start(focus: .background)
         try await fixture.go("/help/page")
         #expect(fixture.controller.navigationMessage == "unified.help.page.none")
         #expect(fixture.controller.returnSearch == nil, "帮助不导航")
@@ -150,7 +150,7 @@ import Testing
         }
         let fixture = try UnifiedSearchNavigationFixture()
         defer { fixture.stop() }
-        try await fixture.start()
+        try await fixture.start(focus: .background)
         // 锁定撤销结果展示：焦点项不可用，只说明原因，不导航、不写入。
         fixture.vault.lock()
         try await fixture.settle()

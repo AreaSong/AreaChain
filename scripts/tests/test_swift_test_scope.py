@@ -141,6 +141,63 @@ class SwiftTestScopeTests(unittest.TestCase):
         self.assertEqual(len(self.plan(paths)["filters"]), 8)
 
 
+class BackgroundRoundTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory(prefix="areachain-test-rounds-")
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name)
+        tests = self.root / "AreaChainTests/Features"
+        tests.mkdir(parents=True)
+        (tests / "QuietTests.swift").write_text(
+            "@Suite(.serialized, .tags(.backgroundWindow)) @MainActor struct QuietTests {\n  @Test func a() {}\n}\n",
+            encoding="utf-8")
+        (tests / "SplitTests.swift").write_text(
+            "@Suite(.tags(.backgroundWindow))\n@MainActor struct SplitTests {\n  @Test func a() {}\n}\n",
+            encoding="utf-8")
+        (tests / "LoudTests.swift").write_text(
+            "@Suite(.serialized) @MainActor struct LoudTests {\n  @Test func a() {}\n}\n"
+            "// .backgroundWindow 只在注释里出现不算\n", encoding="utf-8")
+
+    def test_background_suites_need_the_tag_on_the_suite_declaration(self):
+        self.assertEqual(scope.background_suites(self.root), {"QuietTests", "SplitTests"})
+
+    def test_full_run_splits_into_foreground_then_background(self):
+        rounds = scope.split_rounds(self.root, None)
+        self.assertEqual([label for label, _ in rounds], ["前台轮", "后台轮"])
+        self.assertEqual(rounds[0][1], ["--skip-testing", "AreaChainTests/QuietTests",
+                                        "--skip-testing", "AreaChainTests/SplitTests"])
+        self.assertEqual(rounds[1][1], ["--only-testing", "AreaChainTests/QuietTests",
+                                        "--only-testing", "AreaChainTests/SplitTests"])
+
+    def test_filtered_run_keeps_only_needed_rounds(self):
+        rounds = scope.split_rounds(self.root, ["AreaChainTests/LoudTests", "AreaChainTests/QuietTests/a()"])
+        self.assertEqual(rounds, [("前台轮", ["--only-testing", "AreaChainTests/LoudTests"]),
+                                  ("后台轮", ["--only-testing", "AreaChainTests/QuietTests/a()"])])
+        self.assertEqual(scope.split_rounds(self.root, ["AreaChainTests/LoudTests"]),
+                         [("前台轮", ["--only-testing", "AreaChainTests/LoudTests"])])
+
+    def test_target_only_filter_is_treated_as_full_run(self):
+        self.assertEqual(scope.split_rounds(self.root, ["AreaChainTests"]), scope.split_rounds(self.root, None))
+
+    def test_empty_filters_run_nothing_and_say_so(self):
+        with patch.object(quality, "run_command") as run:
+            check = quality.run_swift_tests([], root=self.root)
+        run.assert_not_called()
+        self.assertEqual((check["status"], check["detail"]), ("passed", "没有需要运行的 Swift 测试。"))
+
+    def test_without_background_suites_full_run_is_one_unfiltered_round(self):
+        self.assertEqual(scope.split_rounds(self.root / "missing", None), [("前台轮", [])])
+
+    def test_run_swift_tests_runs_each_round_and_fails_if_any_fails(self):
+        results = iter([(0, "", "", 1.0), (65, "", "boom", 2.0)])
+        with patch.object(quality, "run_command", side_effect=lambda *a, **k: next(results)) as run:
+            check = quality.run_swift_tests(None, root=self.root)
+        self.assertEqual([call.args[0][2] for call in run.call_args_list], ["--skip-testing", "--only-testing"])
+        self.assertEqual(check["status"], "failed")
+        self.assertIn("前台轮（需离开电脑）退出码 0", check["detail"])
+        self.assertIn("后台轮（可以用电脑）退出码 65", check["detail"])
+
+
 class SwiftTestChecksTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory(prefix="areachain-test-checks-")

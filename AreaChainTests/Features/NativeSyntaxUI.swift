@@ -31,6 +31,18 @@ enum NativeSyntaxUI {
         )
     }
 
+    /// 只把窗口排到其他应用窗口之后并完成布局，不激活应用：纯程序化断言不需要前台，测试期间用户仍可操作电脑。
+    /// 后台窗口不能再转前台发事件（macOS 14 起让出前台后抢不回来）；需要键鼠事件的套件整体走前台模式。
+    static func prepareBackground(in window: NSWindow) async throws {
+        if NSApp.activationPolicy() != .regular { NSApp.setActivationPolicy(.regular) }
+        window.orderBack(nil)
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            DispatchQueue.main.async { continuation.resume() }
+        }
+        window.contentView?.layoutSubtreeIfNeeded()
+        try #require(window.isVisible, "后台窗口未上屏")
+    }
+
     private static func requestKeyWindow(_ window: NSWindow) {
         NSApp.activate()
         window.collectionBehavior.insert(.moveToActiveSpace)
@@ -96,4 +108,10 @@ enum NativeSyntaxUI {
         }
         return result
     }
+}
+
+extension Tag {
+    /// 整个套件只用程序化动作、窗口开在后台（不激活应用）：门禁把它放进可以边用电脑边跑的后台轮。
+    /// 套件里只要有一个用例发键鼠事件，就不能打这个标签。
+    @Tag static var backgroundWindow: Self
 }

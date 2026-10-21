@@ -20,6 +20,7 @@ usage() {
   --configuration Debug|Release  check-signing / verify 的构建配置
   --allow-provisioning           仅 build / release：显式允许 Xcode 联网管理签名资源和设备注册
   --only-testing 标识            test / qa：限制测试范围，可重复指定；缺省命令时自动推导为 test
+  --skip-testing 标识            test / qa：排除测试，可重复指定；用于把后台套件和前台套件分两轮跑
   --qa-batch 名称                qa / qa-compile：本批小写字母数字/连字符，隔离目录与应用标识
   --no-wait                      多会话竞争构建锁时不自动排队等待，直接退出
 
@@ -49,6 +50,9 @@ while [[ $# -gt 0 ]]; do
         --only-testing)
             [[ $# -ge 2 ]] || fail "--only-testing 缺少参数。"
             test_filters+=("-only-testing:$2"); shift 2 ;;
+        --skip-testing)
+            [[ $# -ge 2 ]] || fail "--skip-testing 缺少参数。"
+            test_filters+=("-skip-testing:$2"); shift 2 ;;
         --no-wait) wait_for_lock="NO"; shift ;;
         --qa-batch)
             [[ $# -ge 2 && "$2" =~ ^[a-z0-9][a-z0-9-]{0,39}$ ]] || fail "--qa-batch 必须是 1～40 位小写字母、数字或连字符。"
@@ -88,7 +92,7 @@ esac
 if [[ "$allow_provisioning" == "YES" && "$command_name" != "build" && "$command_name" != "release" ]]; then
     fail "只有 build / release 可以显式允许签名资源写入。"
 fi
-[[ "$command_name" == "test" || "$command_name" == "qa" || ${#test_filters[@]} -eq 0 ]] || fail "--only-testing 仅用于 test / qa。"
+[[ "$command_name" == "test" || "$command_name" == "qa" || ${#test_filters[@]} -eq 0 ]] || fail "--only-testing / --skip-testing 仅用于 test / qa。"
 [[ -z "$qa_batch" || "$command_name" == "qa" || "$command_name" == "qa-compile" ]] || fail "--qa-batch 仅用于 qa / qa-compile。"
 
 if [[ "$command_name" == "qa" || "$command_name" == "qa-compile" ]]; then
