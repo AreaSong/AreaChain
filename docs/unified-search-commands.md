@@ -7920,6 +7920,8 @@ L-M1b 必须的反例（合成内存库、fake 系统依赖）：借用签发后
 - L8：无备注证明改为适配器自己读备注、取带键摘要比对。本批只建好这套证明机制并用于新接通的三条指令；
   已有 11 个适配器改用新证明、以及放宽字段类指令的"普通无备注"门槛，都留给后续批次，本批不迁移、不放宽。
 
+手记出口已在 M-4 新增（同一托管文件，见 [§9.99](#999-合并批-m-4普通手记写入)）。
+
 ### 9.95 里程碑 L-M1b：长文受控借用实现
 
 2026-10-20（Asia/Shanghai）。按 §9.94 与其“用户确认（2026-10-20）”实现并接通 todo.notes／routine.notes／routine.capture。隔离环境、能力默认关闭、生产代码无新构造点；未提交、未推送。入口与守卫见[组件目录 L-M1b](component-catalog.md#l-m1b-长文受控借用)。
@@ -7952,6 +7954,8 @@ L-M1b 必须的反例（合成内存库、fake 系统依赖）：借用签发后
 - 原界面备注私密标签缺口待单独批次；11 个适配器迁移与字段类门槛放宽留后续批次。
 - 进程内 String 不零化；同文件代码仍能复制正文，靠单文件审查与守卫。
 - 人工与平台验收（真人输入法、VoiceOver、最低系统）未做；正常开发描述文件 2026-10-22 到期。
+
+手记出口已在 M-4 新增（`DiaryWriteService.applyLent`，同一托管文件，守卫放行 DiaryBodyCommandSpecs.swift，见 [§9.99](#999-合并批-m-4普通手记写入)）。
 
 ### 9.96 合并批 M-1：任务域收尾
 
@@ -8145,3 +8149,39 @@ L-M1b 必须的反例（合成内存库、fake 系统依赖）：借用签发后
 
 - 生产接线须另行授权：页面宿主与 `system` 的真实依赖（AppWindows／StatusItemController／DiaryWindows.shared／NSApp.terminate、真实保险箱）、trash.restore 规格装配。
 - 偏离与限制：openLocal 改为打开分节；C5 指向剪贴板页；分节不自动滚动；overlay.mode 只说明；diaryWindow.save 留给 M-4。人工与平台验收、工作台操作面板真实鼠标点击（原生用例用 AXPress）等既有缺口不变。
+
+### 9.99 合并批 M-4：普通手记写入
+
+2026-10-21（Asia/Shanghai）。提速方案的第四个合并批，检查点 A～D 逐个本地提交（bfb50bb、97bfc8b、aba4a34、55c760d）、文档为检查点 E，均不推送；开工前决策都由用户 2026-10-21 确认。全部在隔离环境：手记规格、页面宿主的 `system` 与骨架 `simple` 都默认 nil，生产没有新的构造点。入口见[组件目录 M-4](component-catalog.md#合并批-m-4-普通手记写入)。
+
+#### 用户决策的落实
+
+- **决策 1 只做普通手记**：判定只用 `DiaryWriteService.isOrdinary`（DiaryEntry 保护字段＋DiaryPrivacy 的私密标签，含已删除的私密标签），只看记录字段与标签关联，先于任何正文读取；受保护目标抛 `protectedDiary`，面板给“打开原手记页”（沿 M-3 手记目的地）。保存后会变成受保护（正文里或要关联的标签命中私密标签）同样拒绝。
+- **决策 2**：给手记加私密标签（diary.tags 的 add／replaceAll、diary.create 选中的标签）与正文里解析出私密标签都拒绝（`diaryPrivateTag`）并引导到原手记页；目录 diary.tags 的 `unresolved("privateTagTransition")` 改为已声明、可入普通计划，仍要求认证（认证只为受保护手记，规格 `refusesProtectedContent`）。
+- **决策 3**：diary.privateMark／reveal／mask 加进 CommandOriginalPage（手记页），骨架不装配。
+- **决策 4**：diary.copy 沿卡片的 PrivateClipboard；受保护手记改为打开原手记页，不读不复制。
+- **决策 5、6**：正文只经 L-M1b 借用，64KiB 上限；签名按原约定，到期即记阻塞。
+
+#### A 共享入口与出口
+
+[DiaryWriteService](../AreaChain/Services/DiaryWriteService.swift) 收拢手记页快速新增的“自动分类”拆分、新建写入、正文 replace／append、转任务规则与保护判定；DiaryQuickComposerView.submitNote、DayBoardMutations.addDiary（菜单栏、今日页、快速新增）与 convertDiaryToTodo 转调，卡片行标题／备注拆分抽为 Domain DiaryCopyContent。DayBoardMutations 的 diaryRepo 仍保留原 Persistence 回退（原界面入口），共享入口本身只接调用方给的仓储与 context。手记出口 `extension DiaryWriteService { applyLent(_:creating:) / applyLent(_:editing:) }` 写在 CommandLongTextEscrow.swift；check_workflow long-text-loan 放行文件加 DiaryBodyCommandSpecs.swift（仍按符号），并要求 `extension DiaryWriteService` 在托管文件，反例覆盖出口出现在 DiaryWriteService.swift、组织规格与编辑会话文件。仓储 `addDiary(… creationID:)` 只供指令固定新手记身份。
+
+#### B～D 指令
+
+- J1：diary.create（快速新增口径，新手记身份准备时固定、回执打开新手记）、diary.body（replace／append；clear 因目录 body 不允许空值在静态校验就被拒；基线为正文带键 HMAC 与标签；共用独立确认、只能单项；已有正文超过 64KiB 改开原页）。长文两条的行标题只用归属日，正文不进预览、接受与回执。
+- J1／N4 会话：diary.save／reload／discard、diaryWindow.save 经 CommandSystemAction 只作用于已打开的小窗会话，复用 DiaryEditorSession 的 save／reloadLatest 与小窗关闭确认；有未保存内容的重载只前置小窗由用户确认；保存失败草稿留在会话、不报成功；受保护会话只前置小窗。
+- J2：diary.pinned、diary.move（原仓储 setPinned／moveDiary）、diary.tags（逐个沿原菜单 toggleTag，只接已有活标签）。
+- J3：diary.toTodo（原规则、共用独立确认、只能单项、creationID 防重复、只读核对未知结果、回执打开新待办）、diary.trash（软删、共用确认列出随之回收的图片数）、diary.copy（整篇／标题／备注，写入失败不报成功）。
+
+#### 偏离与限制
+
+- 手记页卡片里的编辑会话是页面私有状态（DiaryCardDrafts），宿主没有入口；会话类指令只作用于小窗。
+- diary.create 以手记页快速新增为准（菜单栏与今日页“记一条”不做标题／正文拆分，二者写入仍同一 `add`）。
+- 预览列出派生标签与 @附件；TaskDerivedRows 的附件拥有者类型补认手记。
+- 检查点 B 的提交整份带上共享文件（CommandSystemAction、UnifiedSearchSystemCommands、WorkspaceDiaryCommands、WorkspaceSystemCommands、文案库），其中含检查点 D 的复制解析与宿主代码；测试夹具按检查点分版本暂存，中间提交未单独编译验证。
+
+#### 检查点内验证（隔离入口 `--qa-batch m4`，证据在被忽略的 build/M4/）
+
+- A：DiaryWriteServiceTests 3 方法（含 12 个样例与旧实现逐字对照）＋长文回归，20 次执行全过；check_workflow、`scripts/tests` 中 checker 130 项通过。
+- B～D 服务层 12 类 73 次执行：首轮 12 失败（单目标输入未滤掉 target 参数致 invalidArguments；两条测试期望写错：`canEnterOrdinaryQueue` 恒为假、原页面对照表未补 J2），整改后 72/73，余 1 条测试期望（种子正文标签未关联）改正后该类 9/9 全过。原生 4 类 18 次全过。
+- 过程记录：开跑时另一会话的全量 `build.sh test` 持原锁约 2 小时（16:01 起），本批按规则排队，8 次 900 秒等待超时后于 18:12 取得锁；未删锁、未干预该进程。

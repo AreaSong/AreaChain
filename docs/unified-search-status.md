@@ -2,7 +2,7 @@
 
 本文是统一搜索与指令体系的**现状总览**：只记当前状态、覆盖、缺口和每批必读入口。设计、规则与历史证据仍以[权威设计](unified-search-commands.md)为准，本文不复制。每批怎样更新本文见[技能路由的路由维护](../skill-routing.md#路由维护)。
 
-最后更新：2026-10-21，合并批 M-3（[§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口)）。
+最后更新：2026-10-21，合并批 M-4（[§9.99](unified-search-commands.md#999-合并批-m-4普通手记写入)）。
 
 ## 目标与阶段
 
@@ -11,7 +11,7 @@
 - 阶段划分见 [§9.1](unified-search-commands.md#91-建议的分阶段边界)，当前状态一句话一行：
   - **阶段 1 领域协议**：1A～1D 已实现（目录、解析、查询会话、草稿、计划、转交），仅 1A～1D 自身证据，见 [§9.6](unified-search-commands.md#96-阶段-1a-目录决策与证据)～§9.13。
   - **阶段 2 只读数据**：2A～2J 注入快照提供者与 2K-1～2K-8 SwiftData／文件只读适配已在隔离环境实现；真实宿主的异步调度与生产接线未做，见 [§9.14](unified-search-commands.md#914-阶段-2atodo-只读快照提供者与类型化结果)～[§9.44](unified-search-commands.md#944-阶段-2k-8全来源标签使用统计的只读存储适配与受门禁发布)。
-  - **阶段 3 业务动作适配**：进行中；普通设置（3A）、任务／子任务／习惯／批量／转换／标签等指令已在隔离环境逐批实现；系统类、永久删除类与附件系统动作自 M-3 起“打开原页面”。覆盖见下表，未开始只剩手记写入 J1～J3（M-4）。
+  - **阶段 3 业务动作适配**：进行中；普通设置（3A）、任务／子任务／习惯／批量／转换／标签等指令已在隔离环境逐批实现；系统类、永久删除类与附件系统动作自 M-3 起“打开原页面”。覆盖见下表；手记写入 J1～J3 自 M-4 起只对普通手记直接执行，受保护目标打开原页面，未开始为 0。
   - **阶段 4 共享界面**：4A 公共输入、结果列表、参数、对象、计划与长文编辑只在隔离宿主装配；正式版没有构造 `UnifiedSearchController`，生产入口未接线。
   - 阶段 5～7（队列执行与撤销、独立系统流程、模板与全目录收口）：未开始。
 
@@ -34,9 +34,9 @@
 | [B1](unified-search-commands.md#B1) | 日历导航与改期 | 隔离实现 | 已：calendar.mode／step／today／day／dayList（页面指令，月周与选中日写页面那一份）、calendar.create（转交 todo.create）；拖拽改期沿 todo.move（T-M1）。核实：原组合只覆盖导航与改期，页面动作在 M-2 补齐；calendar.step 只留 offset，月周跟随当前视图 | N-M1、M-2 | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板) |
 | [B2](unified-search-commands.md#B2) | 四象限 | 隔离实现 | 已：quadrant.day／step／inspect（页面指令）、create／priority／complete／copy（转交 todo.create／todo.priority 或 routine.priority／todo.completion 或 occurrence.complete／todo.copy 标题段）；quadrant.complete 的 1A 未决（习惯 skip 语义）已由 R-M3 D1 定，M-2 解决；copy 不接习惯 | N-M1、M-2 | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板) |
 | [B3](unified-search-commands.md#B3) | 安排页平移与完成 | 隔离实现 | 已：gantt.step／currentMonth／select／inspect（页面指令）、gantt.shift（X-1 骨架，GanttRescheduleService，一次事务、保留间隔、越出当月拒绝）、gantt.complete（转交 batch.completion） | N-M1、M-2 | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板) |
-| [J1](unified-search-commands.md#J1) | 手记新建与正文 | 未开始 | 长文编辑底座（C-M1～C-M3）已在隔离宿主，正文保存 handler 未做 | C-M1～C-M3 | [§9.88](unified-search-commands.md#988-里程碑-c-m3长文上限与超限引导) |
-| [J2](unified-search-commands.md#J2) | 手记组织 | 未开始 | — | — | — |
-| [J3](unified-search-commands.md#J3) | 手记复制、转任务、回收 | 未开始 | — | — | — |
+| [J1](unified-search-commands.md#J1) | 手记新建与正文 | 隔离实现＋打开原页面 | 已：diary.create（快速新增的自动分类）、diary.body replace／append（L-M1b 借用，手记出口；clear 按目录静态拒绝）、diary.save／reload／discard（只作用于已打开的小窗会话）、diary.tags（见 J2）；打开原页面：受保护或保存后会变成受保护、加私密标签、超过 64KiB 的已有正文 → 手记页（M-4） | C-M1～C-M3、M-4 | [§9.99](unified-search-commands.md#999-合并批-m-4普通手记写入) |
+| [J2](unified-search-commands.md#J2) | 手记组织 | 隔离实现＋打开原页面 | 已：diary.pinned、diary.move、diary.tags（普通标签加减／替换／清空；加私密标签拒绝，privateTagTransition 已解决）；打开原页面：diary.privateMark／reveal／mask 与受保护手记 → 手记页（M-4） | M-4 | [§9.99](unified-search-commands.md#999-合并批-m-4普通手记写入) |
+| [J3](unified-search-commands.md#J3) | 手记复制、转任务、回收 | 隔离实现＋打开原页面 | 已：diary.copy（整篇／标题／备注，PrivateClipboard）、diary.toTodo、diary.trash（共用独立确认、只能单项）；打开原页面：受保护手记 → 手记页（M-4） | M-4 | [§9.99](unified-search-commands.md#999-合并批-m-4普通手记写入) |
 | [G1](unified-search-commands.md#G1) | 标签新建、改名、颜色、排序、搜索与视图 | 隔离实现（部分） | 已：tag.create／rename／color（X-1）、tag.order（M-1）、tag.cancel、tag.search／view／deleted（M-2，取法即标签页的 TagListQuery）、go.tagList（N-M2）；未：新建时设为私密（需解锁） | X-1、2F、N-M2、T-M6、M-1、M-2 | [§9.92](unified-search-commands.md#992-提速基建-x-1)、[§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板) |
 | [G2](unified-search-commands.md#G2) | 标签合并、解绑、软删／恢复、清理 | 隔离实现＋打开原页面 | 已：tag.merge（决策 3：涉及私密标签整条拒绝）、tag.unlinkObject（受保护手记拒绝）、tag.trash／tag.restore（共用独立确认、只能单项）；打开原页面：tag.delete、tag.cleanup → 标签页（M-3）；tag.unlinkGlobal 目录 unavailable（原界面没有该功能，不算缺口） | M-2、M-3 | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板)、[§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
 | [A1](unified-search-commands.md#A1) | 图片附件 | 隔离实现＋打开原页面 | 已：图片元数据只读查询（2E、2K-6）、普通图片查阅（N-M2）、image.browse／image.preview／image.trash（M-2）；打开原页面：image.pick／paste／capture → 焦点对象的详情（手记打开手记页，习惯定义须先选执行日）（M-3） | 2K-6、N-M2、M-2、M-3 | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板)、[§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
@@ -64,13 +64,13 @@
 | [N1](unified-search-commands.md#N1) | 全页面与标签清单导航 | 隔离实现 | 已：16 个 go 入口（N-M1）、go.tagList（N-M2）；未复核 | N-M1、N-M2 | [§9.84](unified-search-commands.md#984-里程碑-n-m1导航与返回搜索) |
 | [N2](unified-search-commands.md#N2) | 工作台、浮层与面板 | 隔离实现（部分） | 已：workspace.open／reveal／close、overlay.toggle、routine.addPanel／managePanel（沿 AppWindows 与今日页原面板，不新建窗口，M-3）；未：overlay.mode（浮层的任务／手记页没有外部切换入口，只说明） | M-3 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
 | [N3](unified-search-commands.md#N3) | 检查器与选择 | 隔离实现 | 已：inspector.open／inspector.day（N-M1）、selection.all／clear（M-1，沿页面投影） | N-M1、M-1 | [§9.84](unified-search-commands.md#984-里程碑-n-m1导航与返回搜索)、[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾) |
-| [N4](unified-search-commands.md#N4) | 手记小窗 | 隔离实现（部分） | 已：diaryWindow.open（受保护手记拒绝）／draft（不写入，受保护草稿留给原页面）／pinned／close（沿小窗原有确认）（M-3）；未：diaryWindow.save（写正文，归 M-4） | M-3 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
+| [N4](unified-search-commands.md#N4) | 手记小窗 | 隔离实现 | 已：diaryWindow.open（受保护手记拒绝）／draft（不写入，受保护草稿留给原页面）／pinned／close（沿小窗原有确认）（M-3）；diaryWindow.save（复用小窗会话保存，受保护会话只前置小窗，M-4） | M-3、M-4 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口)、[§9.99](unified-search-commands.md#999-合并批-m-4普通手记写入) |
 | [N5](unified-search-commands.md#N5) | 总览统计 | 隔离实现 | 已：stats.* 八项只读（DashboardStatsReader，与总览页同一投影，私密手记口径不变）、stats.openDay、活动行打开（沿总览路由；搜索里没有活动对象，stats.openActivity 指向 stats.activity 的列表）（M-3） | M-3 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
 | [N6](unified-search-commands.md#N6) | 帮助与示例 | 打开原页面 | help.syntax（语法帮助卡）、help.page（来时页面的说明）、help.example（只预填示例到搜索框，不执行）（M-3） | M-3 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
 | [N7](unified-search-commands.md#N7) | 版本、反馈与链接 | 打开原页面 | support.* 七条 → 设置“版本／支持／关于”分节；不在指令里打开外部网址（M-3） | M-3 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
 | [N8](unified-search-commands.md#N8) | 退出与未保存确认 | 隔离实现 | 已：app.quit 走 AppDelegate.applicationShouldTerminate 的原有确认（含未保存手记），同意后才调注入的 terminate；QA 中为 fake（M-3） | M-3 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
 
-合计 48 项：隔离实现 19（T1～T8、S1、N1、N3、N5、N8、B1～B3、C1、C2、C6）；隔离实现且已复核 1（T10）；隔离实现（部分）4（T9、G1、N2、N4）；隔离实现＋打开原页面 6（G2、A1、C3、S4、P2、D1）；打开原页面 15（C4、C5、S2、S3、S5、S6、S7、P1、P3、P4、D2、D3、D4、N6、N7）；待核实 0；未开始 3（J1～J3，留给 M-4）；已接正式版 0（M-1 A 的原界面私密标签修复属正式版行为修复，不计入指令接线）。
+合计 48 项：隔离实现 20（T1～T8、S1、N1、N3、N4、N5、N8、B1～B3、C1、C2、C6）；隔离实现且已复核 1（T10）；隔离实现（部分）3（T9、G1、N2）；隔离实现＋打开原页面 9（G2、A1、C3、S4、P2、D1、J1～J3）；打开原页面 15（C4、C5、S2、S3、S5、S6、S7、P1、P3、P4、D2、D3、D4、N6、N7）；待核实 0；未开始 0；已接正式版 0（M-1 A 的原界面私密标签修复属正式版行为修复，不计入指令接线）。
 
 ## 未闭合缺口
 
@@ -83,16 +83,17 @@
 - **生产接线授权**：所有适配器默认未装配，正式版没有统一搜索构造点；接入前需逐项授权装配、用生产刷新替换 fake，并确认提醒、日历、小组件的真实副作用。来源：[§9.90](unified-search-commands.md#990-里程碑-t-m4复制与回收)、[§9.91](unified-search-commands.md#991-里程碑-t-m5待办与重复事项互转)。
 - **长文受控借用**：已实现（隔离）。L-M1b 按 §9.94 与 2026-10-20 用户确认实现托管、一次性借用与带键摘要，接通 todo.notes／routine.notes／routine.capture；守卫改按目录类型判定，clear 漏口已复现并堵上。只开放普通长文（受保护、required、unknown 仍拒）；默认未装配；托管只听隔离环境私有事件中心，接正式版须转接隐私锁事件。来源：[§9.95](unified-search-commands.md#995-里程碑-l-m1b长文受控借用实现)。
 - **原界面备注私密标签缺口**：已修复（合并批 M-1 检查点 A）。任务、子任务、习惯一侧从文字解析标签时照常保存文字，跳过私密与预设标签并提示；判定与指令侧 L7 共用 `InputTagResolver.protection`，差别只在结果（指令整条拒绝）；手记一侧不变。来源：[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾)。
-- **正文与受保护内容**：手记正文保存 handler 未做；受保护内容查阅与敏感执行／转交不开放。来源：[§9.85](unified-search-commands.md#985-里程碑-n-m2标签导航普通手记全文与普通图片查阅)、[§9.88](unified-search-commands.md#988-里程碑-c-m3长文上限与超限引导)。
+- **正文与受保护内容**：普通手记正文保存已在隔离环境实现（M-4，[§9.99](unified-search-commands.md#999-合并批-m-4普通手记写入)）；受保护手记的写入、复制与转换只打开原页面；受保护内容查阅与敏感执行／转交不开放。来源：[§9.85](unified-search-commands.md#985-里程碑-n-m2标签导航普通手记全文与普通图片查阅)、[§9.88](unified-search-commands.md#988-里程碑-c-m3长文上限与超限引导)。
 - **有备注对象资格**：M-1 B 已把 11 处适配改为自读备注取带键摘要，并放宽字段类、回收、转换、复制；仍未放宽：todo.title／subtask.title（`//` 派生备注另行定界）、完成、建标签、子任务与习惯字段类、删子任务时的父待办。来源：[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾)。
 - **已知历史问题**：T-M1 标题多目标面板消失的根因未判定；DetailSubtaskCompletionTests 两项 Expected Failure 保留；原生日期格按钮在统一搜索测试宿主里找不到标识（`nativeBooleanWeekdaysDayAndTime` 等）；`SubtaskModelTests.addTagSkipsDiaryPresetNames` 在未改动 HEAD 上同样失败。来源：[§9.73](unified-search-commands.md#973-里程碑-t-m1普通任务修改与受限依赖执行)、[§9.89](unified-search-commands.md#989-补复核-g-1at-系列)。
 - **工作台操作面板鼠标点击**：M-1 原生用例中，合成鼠标事件到不了工作台窗口操作面板里的按钮（缓冲版本与输入焦点均不变，原因未判定），改用 AXPress 验证同一按钮；真实鼠标点击未验证。来源：[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾)。
 - **G-1a 低级整改清单 9 条**：待单独批准的修复批次。来源：[§9.89](unified-search-commands.md#989-补复核-g-1at-系列)。
-- **目录未决项**：tag.cleanup（预置标签范围）、backup.export（无锁可达性）、diary.tags（保护转换）等仍未定稿；习惯 skip 语义已由 R-M3 的 D1 处理；tag.merge 已按决策 3、quadrant.complete 已按 R-M3 语义在 M-2 解决。来源：[§9.6](unified-search-commands.md#96-阶段-1a-目录决策与证据)、[§9.78](unified-search-commands.md#978-里程碑-r-m3兼容跳过习惯启停与指定执行日状态)、[§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板)。
+- **目录未决项**：tag.cleanup（预置标签范围）、backup.export（无锁可达性）等仍未定稿；diary.tags 已按 M-4 决策 2 解决；习惯 skip 语义已由 R-M3 的 D1 处理；tag.merge 已按决策 3、quadrant.complete 已按 R-M3 语义在 M-2 解决。来源：[§9.6](unified-search-commands.md#96-阶段-1a-目录决策与证据)、[§9.78](unified-search-commands.md#978-里程碑-r-m3兼容跳过习惯启停与指定执行日状态)、[§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板)。
 - **留给 M-3 打开原页面**：已关闭（合并批 M-3 A）。tag.delete／cleanup、clipboard.delete／prune／empty、C4、C5、image.pick／paste／capture 与 S2、S3、S5～S7、P1～P4（除 privacy.lock）、D1 永久删除、D2～D4、N6、N7 都只导航到原页面，对照唯一在 CommandOriginalPage。来源：[§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口)。
-- **M-3 偏离与限制**：calendarSync.openLocal 改为打开设置“系统日历”分节（搜索里没有冲突对象来源）；C5 指向剪贴板页的“剪贴板选项”（设置页没有剪贴板分节）；分节只在说明里指明，页面不自动滚动；overlay.mode 只说明（浮层切页没有外部入口）；stats.openActivity 没有活动对象来源，改在 stats.activity 的列表里打开；diaryWindow.save 归 M-4。来源：[§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口)。
+- **M-3 偏离与限制**：calendarSync.openLocal 改为打开设置“系统日历”分节（搜索里没有冲突对象来源）；C5 指向剪贴板页的“剪贴板选项”（设置页没有剪贴板分节）；分节只在说明里指明，页面不自动滚动；overlay.mode 只说明（浮层切页没有外部入口）；stats.openActivity 没有活动对象来源，改在 stats.activity 的列表里打开；diaryWindow.save 已在 M-4 接通。来源：[§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口)。
 - **M-3 生产接线前置**：WorkspaceSystemCommands 的工作台显示／关闭、浮层开关、手记小窗管理、退出确认与 terminate、保险箱，以及 trash.restore 规格装配都只在隔离夹具里注入；接正式版需逐项授权（真实 AppWindows／StatusItemController／DiaryWindows.shared／NSApp.terminate）。来源：[§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口)。
 - **M-2 生产接线前置**：剪贴板粘贴的真实辅助功能权限与 ⌘V、小窗真实窗口适配（读共享会话）、手记解绑标签的保险箱、附件存储根均只在隔离夹具里注入；image.preview 只能打开当前结果里可见的普通图片。来源：[§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板)。
+- **M-4 限制与生产接线前置**：diary.save／reload／discard 只作用于已打开的小窗会话（手记页卡片的编辑会话是页面私有状态，宿主没有入口）；有未保存内容的重载只前置小窗由用户确认；手记规格、页面宿主的手记会话与剪贴板依赖只在隔离夹具里注入，接正式版需逐项授权。来源：[§9.99](unified-search-commands.md#999-合并批-m-4普通手记写入)。
 - **现状差距**：备份未配置锁的可达性、剪贴板历史读取失败返回空、重置吞掉删除错误。来源：[§9.4](unified-search-commands.md#94-未决问题与单独授权边界)。
 - **性能基线**：新查询延迟、长文编辑、最大候选规模与内存均未建立基线。来源：[§9.3](unified-search-commands.md#93-后续回归入口与证据缺口)。
 
