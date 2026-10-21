@@ -89,9 +89,14 @@ final class UnifiedSearchTestHost {
 
     func start() async throws {
         NSApp.setActivationPolicy(.regular)
-        NSApp.activate(ignoringOtherApps: true)
-        window.makeKeyAndOrderFront(nil)
-        try await NativeSyntaxUI.prepareFocus(in: window)
+        if NativeSyntaxUI.inBackgroundSuite {
+            // 后台轮：不激活应用；窗口内第一响应者照常设置，只是窗口不是 key window。
+            try await NativeSyntaxUI.prepareBackground(in: window)
+        } else {
+            NSApp.activate(ignoringOtherApps: true)
+            window.makeKeyAndOrderFront(nil)
+            try await NativeSyntaxUI.prepareFocus(in: window)
+        }
         try await settle()
         window.makeFirstResponder(try field)
         try await settle()
@@ -128,6 +133,7 @@ final class UnifiedSearchTestHost {
     }
 
     func key(_ code: UInt16, _ character: String, flags: NSEvent.ModifierFlags = []) async throws {
+        try #require(!NativeSyntaxUI.inBackgroundSuite, "后台模式不能发键鼠事件：这个套件要去掉 .backgroundWindow，回到前台轮")
         try #require(window.isKeyWindow)
         let event = try #require(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: flags,
             timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber, context: nil,
@@ -137,6 +143,7 @@ final class UnifiedSearchTestHost {
     }
 
     func click(_ point: NSPoint) async throws {
+        try #require(!NativeSyntaxUI.inBackgroundSuite, "后台模式不能发键鼠事件：这个套件要去掉 .backgroundWindow，回到前台轮")
         for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
             let event = try #require(NSEvent.mouseEvent(with: type, location: point, modifierFlags: [],
                 timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber,

@@ -3,7 +3,7 @@ import SwiftUI
 import Testing
 @testable import AreaChain
 
-@Suite(.serialized) @MainActor
+@Suite(.serialized, .tags(.backgroundWindow)) @MainActor
 struct UnifiedSearchResultsPresentationTests {
     @Test func bilingualNativeMatrixAndTwoLineFragments() async throws {
         for layout in UnifiedSearchInputLayout.allCases {
@@ -71,6 +71,19 @@ struct UnifiedSearchResultsPresentationTests {
         }
     }
 
+    @Test func invalidHighlightDoesNotSplitGraphemes() {
+        let text = "👨‍👩‍👧‍👦 中文 e\u{301}"
+        let invalid = ContentQueryHighlight(range: NSRange(location: 1, length: 2), originalRange: .init(location: 1, length: 2),
+            sources: [], contributions: [])
+        let value = ContentQueryDisplayText(text: text, field: .notes, mapping: nil, highlights: [invalid], omittedPublicContent: false)
+        let rendered = DaybookSearchResultText.attributed(value)
+        #expect(String(rendered.characters) == text)
+        #expect(rendered.runs.count == 1)
+    }
+}
+
+/// 可能要按 Esc 收起候选（前台 key window），与后台轮的 UnifiedSearchResultsPresentationTests 分开，留在前台轮。
+@Suite(.serialized) @MainActor struct UnifiedSearchResultsPresentationKeyTests {
     @Test func emptyUnknownProtectedAndUnreadCopyDiffer() async throws {
         var failed = QueryBatchFixture.empty("/tasks")
         failed.snapshots.todos = .failed
@@ -100,15 +113,5 @@ struct UnifiedSearchResultsPresentationTests {
             if try host.state.suggestions.isActive { try await host.key(53, "\u{1b}") }
             try host.snapshot("results-state-" + name)
         }
-    }
-
-    @Test func invalidHighlightDoesNotSplitGraphemes() {
-        let text = "👨‍👩‍👧‍👦 中文 e\u{301}"
-        let invalid = ContentQueryHighlight(range: NSRange(location: 1, length: 2), originalRange: .init(location: 1, length: 2),
-            sources: [], contributions: [])
-        let value = ContentQueryDisplayText(text: text, field: .notes, mapping: nil, highlights: [invalid], omittedPublicContent: false)
-        let rendered = DaybookSearchResultText.attributed(value)
-        #expect(String(rendered.characters) == text)
-        #expect(rendered.runs.count == 1)
     }
 }

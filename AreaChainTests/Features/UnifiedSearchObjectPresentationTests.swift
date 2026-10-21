@@ -2,7 +2,7 @@ import AppKit
 import Testing
 @testable import AreaChain
 
-@Suite(.serialized) @MainActor
+@Suite(.serialized, .tags(.backgroundWindow)) @MainActor
 struct UnifiedSearchObjectPresentationTests {
     @Test func mixedBaselineAndSubtaskParentUseSafePreview() async throws {
         let fixture = try UnifiedSearchResultsFixture(.objectBatch())
@@ -31,6 +31,36 @@ struct UnifiedSearchObjectPresentationTests {
         try childHost.snapshot("objects-subtask-parent")
     }
 
+    @Test func occurrenceDatesStayDistinctAndSubtaskShowsParent() async throws {
+        var batch = QueryBatchFixture.occurrences("date:2026-10-01..2026-10-02")
+        batch.snapshots.diaries = .complete([])
+        let fixture = try UnifiedSearchResultsFixture(batch, pageSize: 30)
+        defer { fixture.stop() }
+        try fixture.startOperation("occurrence.reopen")
+        let picker = try await fixture.chooseObjects()
+        let days = picker.browse.snapshot.units.flatMap(\.hits).filter { $0.type == .routineOccurrence }
+        try #require(days.count == 2)
+        #expect(Set(days.map(\.id)).count == 1)
+        #expect(Set(days.compactMap(\.dayKey)) == ["2026-10-01", "2026-10-02"])
+        for day in days { fixture.controller.toggleObject(day, stamp: picker.stamp) }
+        try #require(fixture.controller.acceptObjects(picker.stamp))
+        await fixture.controller.objectSelectionTask?.value
+        #expect(try fixture.draft.targets.objects == days)
+        let host = UnifiedSearchTestHost(layout: .compact, width: 304, locale: "en", dark: true,
+                                         results: fixture.controller, operations: true)
+        defer { host.close() }
+        try await host.start()
+        for day in days {
+            let row = try #require(fixture.controller.objectPreview(day))
+            #expect(row.id.dayKey == day.dayKey)
+            #expect(row.relations.first?.object.type == .routine)
+        }
+        try host.snapshot("objects-occurrence-dates")
+    }
+}
+
+/// 逐宿主点选结果需要真实点击（前台 key window），与后台轮的 UnifiedSearchObjectPresentationTests 分开，留在前台轮。
+@Suite(.serialized) @MainActor struct UnifiedSearchObjectPresentationClickTests {
     @Test func hostsLanguagesThemesAndWidthsKeepNativeAnchor() async throws {
         for layout in UnifiedSearchInputLayout.allCases {
             for locale in ["en", "zh-Hans"] {
@@ -71,32 +101,5 @@ struct UnifiedSearchObjectPresentationTests {
                 }
             }
         }
-    }
-
-    @Test func occurrenceDatesStayDistinctAndSubtaskShowsParent() async throws {
-        var batch = QueryBatchFixture.occurrences("date:2026-10-01..2026-10-02")
-        batch.snapshots.diaries = .complete([])
-        let fixture = try UnifiedSearchResultsFixture(batch, pageSize: 30)
-        defer { fixture.stop() }
-        try fixture.startOperation("occurrence.reopen")
-        let picker = try await fixture.chooseObjects()
-        let days = picker.browse.snapshot.units.flatMap(\.hits).filter { $0.type == .routineOccurrence }
-        try #require(days.count == 2)
-        #expect(Set(days.map(\.id)).count == 1)
-        #expect(Set(days.compactMap(\.dayKey)) == ["2026-10-01", "2026-10-02"])
-        for day in days { fixture.controller.toggleObject(day, stamp: picker.stamp) }
-        try #require(fixture.controller.acceptObjects(picker.stamp))
-        await fixture.controller.objectSelectionTask?.value
-        #expect(try fixture.draft.targets.objects == days)
-        let host = UnifiedSearchTestHost(layout: .compact, width: 304, locale: "en", dark: true,
-                                         results: fixture.controller, operations: true)
-        defer { host.close() }
-        try await host.start()
-        for day in days {
-            let row = try #require(fixture.controller.objectPreview(day))
-            #expect(row.id.dayKey == day.dayKey)
-            #expect(row.relations.first?.object.type == .routine)
-        }
-        try host.snapshot("objects-occurrence-dates")
     }
 }

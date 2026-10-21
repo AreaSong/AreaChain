@@ -3,7 +3,7 @@ import SwiftUI
 import Testing
 @testable import AreaChain
 
-@Suite(.serialized) @MainActor
+@Suite(.serialized, .tags(.backgroundWindow)) @MainActor
 struct DaybookWeekdayPickerLayoutTests {
     typealias Native = SettingsButtonTestSupport
     typealias Support = WeekdayPickerTestSupport
@@ -41,6 +41,25 @@ struct DaybookWeekdayPickerLayoutTests {
         }
     }
 
+    @Test(arguments: ["en", "zh-Hans"], [ColorScheme.light, .dark])
+    func isolatedSamples(locale: String, scheme: ColorScheme) async throws {
+        let f = try Native()
+        defer { f.cleanup() }
+        let window = f.window(DaybookWeekdaySamples().padding(16).background(DaybookPalette.fill.page), locale: locale, scheme: scheme,
+                              size: NSSize(width: 320, height: 300))
+        defer { SystemPageHost.release(window) }
+        try await SystemPageHost.settle(window)
+        #expect(Native.buttons(in: window).count == 28)
+        try Native.assertBounds(Native.buttons(in: window), in: window)
+        try Native.snapshot(window, name: "weekdayD-samples-\(locale)-\(scheme)")
+    }
+}
+
+/// 原键盘路径需要真实按键（前台 key window），与后台轮的 DaybookWeekdayPickerLayoutTests 分开，留在前台轮。
+@Suite(.serialized) @MainActor struct DaybookWeekdayPickerKeyboardTests {
+    typealias Native = SettingsButtonTestSupport
+    typealias Support = WeekdayPickerTestSupport
+
     @Test func originalKeyboardPath() async throws {
         let f = try Native()
         defer { f.cleanup() }
@@ -64,18 +83,5 @@ struct DaybookWeekdayPickerLayoutTests {
         }
         #expect(traces[0] == traces[1])
         print("WeekdayD keyboard old/new callbacks=\(traces); system keyboard preference unchanged")
-    }
-
-    @Test(arguments: ["en", "zh-Hans"], [ColorScheme.light, .dark])
-    func isolatedSamples(locale: String, scheme: ColorScheme) async throws {
-        let f = try Native()
-        defer { f.cleanup() }
-        let window = f.window(DaybookWeekdaySamples().padding(16).background(DaybookPalette.fill.page), locale: locale, scheme: scheme,
-                              size: NSSize(width: 320, height: 300))
-        defer { SystemPageHost.release(window) }
-        try await SystemPageHost.settle(window)
-        #expect(Native.buttons(in: window).count == 28)
-        try Native.assertBounds(Native.buttons(in: window), in: window)
-        try Native.snapshot(window, name: "weekdayD-samples-\(locale)-\(scheme)")
     }
 }
