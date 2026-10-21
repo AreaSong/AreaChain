@@ -70,7 +70,7 @@ struct DaybookPage<Trailing: View, Content: View>: View {
         )
         .padding(.horizontal, DaybookSpacing.page)
         .padding(.top, embedded ? 0 : DaybookSpacing.page)
-        .padding(.bottom, embedded ? 9 : DaybookSpacing.page)
+        .padding(.bottom, embedded ? WorkspaceLayout.embeddedPageBottomInset : DaybookSpacing.page)
         // 独立页面的最小尺寸不能反向撑大工作台；嵌入时由三栏布局分配空间。
         .frame(
             minWidth: embedded ? 0 : minWidth,

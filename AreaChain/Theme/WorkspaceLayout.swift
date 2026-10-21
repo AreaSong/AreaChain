@@ -14,6 +14,8 @@ enum WorkspaceLayout {
     static let inspectorMaxWidth: CGFloat = 400
     static let inspectorReopenMargin: CGFloat = 16
     static let maxContentWidth: CGFloat = 880
+    /// 嵌入工作台时页面底部留白（4c233f7 外壳重做起）；顶部由工作台页头接管为 0。独立窗口仍用 DaybookSpacing.page。
+    static let embeddedPageBottomInset: CGFloat = 9
     static let sidebarWidth: CGFloat = 220
     static let sidebarRowHeight: CGFloat = 28
     static let sidebarRowVerticalPadding: CGFloat = 4.5

@@ -182,7 +182,8 @@ struct QuadrantLayoutTests {
         let content = try #require(host.window.contentView)
         let bounds = content.convert(content.bounds, to: nil)
         let period = try host.periodFrame()
-        let bottom = bounds.minY + DaybookSpacing.page
+        // 宿主嵌在工作台里（workspaceEmbedded），底部留白按工作台布局取值，而不是独立页的 DaybookSpacing.page。
+        let bottom = bounds.minY + WorkspaceLayout.embeddedPageBottomInset
         let top = period.minY - DaybookSpacing.md
         let width = (bounds.width - 2 * DaybookSpacing.page - DaybookSpacing.sm) / 2
         let height = (top - bottom - DaybookSpacing.sm) / 2
