@@ -68,6 +68,8 @@ struct CommandOriginalPage: Equatable, Sendable {
             privacy.systemUnlock privacy.setPassword privacy.changePassword privacy.removePassword privacy.idle \
             privacy.tags privacy.unprotect privacy.retryImages privacy.retryKeys privacy.quitForCleanup
             """, .page("privacy"), note: "privacy")
+        // J2（合并批 M-4 决策 3）：手记“私密”标记、显示与遮罩要在原手记页完成（认证、隐私转换与显示状态都属于那一页）
+        add("diary.privateMark diary.reveal diary.mask", .page("diary"), note: "diaryPrivacy")
         // D1～D4：回收站永久删除、数据交换、加密备份、降级恢复（降级提示就在数据与备份页）
         add("trash.delete trash.empty", .page("trash", focusesTrash: true), note: "permanentDeletion")
         add("data.export data.selectImport data.validateImport data.previewImport data.applyImport",

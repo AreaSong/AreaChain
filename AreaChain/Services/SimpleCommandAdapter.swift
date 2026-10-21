@@ -28,7 +28,11 @@ import SwiftData
         // 目录未决或不可用的指令即使提供了规格也不装配；只接可入普通计划的修改。需要确认的只接“独立确认、无破坏性风险”的；
         // 目录要求的认证只为受保护内容，规格须对受保护目标一律拒绝（指令里从不认证）。
         guard descriptor.category == .modification, descriptor.queue == .eligibleAfterWiring else { return false }
-        guard spec.confirms else { return descriptor.interactions.isEmpty }
+        // 合并批 M-4：不需要确认、只要求认证的（diary.tags）同样要求规格对受保护目标一律拒绝。
+        guard spec.confirms else {
+            return descriptor.interactions.isEmpty
+                || (spec.refusesProtectedContent && descriptor.interactions == [.authentication] && descriptor.hazards.isEmpty)
+        }
         let allowed: Set<CommandInteractionRequirement> = spec.refusesProtectedContent
             ? [.independentConfirmation, .authentication] : [.independentConfirmation]
         return descriptor.interactions.contains(.independentConfirmation) && descriptor.interactions.isSubset(of: allowed)

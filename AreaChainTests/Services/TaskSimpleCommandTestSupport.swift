@@ -46,7 +46,7 @@ import Testing
         adapter = .init(coordinator: handoff.coordinator, environment: environment,
                         specs: TaskCommandSpecs.all(dependencies) + (longText ? TaskCommandSpecs.longText(dependencies) : [])
                             + (board ? BoardCommandSpecs.all(dependencies) : [])
-                            + (diary ? DiaryCommandSpecs.longText(diaries) : []),
+                            + (diary ? DiaryCommandSpecs.longText(diaries) + DiaryCommandSpecs.organize(diaries) : []),
                         capability: capability)
     }
 

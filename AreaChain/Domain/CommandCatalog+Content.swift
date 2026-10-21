@@ -17,7 +17,8 @@ extension CommandCatalogBuilder {
                 .targets([.diary]).requiring([.unsavedChangesConfirmation]),
             entry("diary.tags", "/diaries/tags", .modification, "J1:tags J2:tags",
                   [tags])
-                .targets([.diary], batch: .explicitMultiple).requiring([.authentication]).unresolved("privateTagTransition"),
+                // 合并批 M-4 决策 2：普通标签直接执行，加私密标签（隐私转换）拒绝并引导到原手记页；认证只为受保护手记。
+                .targets([.diary], batch: .explicitMultiple).ordinary().requiring([.authentication]),
             entry("diary.pinned", "/diaries/pinned", .modification, "J2:pin J2:unpin",
                   [p(.enabled, .boolean)])
                 .targets([.diary], batch: .explicitMultiple).ordinary(),

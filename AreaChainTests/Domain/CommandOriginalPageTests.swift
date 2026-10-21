@@ -21,6 +21,8 @@ import Testing
         "S6": ["setting.icloud"],
         "S7": ["shortcut.record", "shortcut.reset", "shortcut.resetAll", "shortcut.cancel"],
         "D1": ["trash.delete", "trash.empty"],
+        // 合并批 M-4 决策 3：手记“私密”标记、显示与遮罩。
+        "J2": ["diary.privateMark", "diary.reveal", "diary.mask"],
         "D4": ["recovery.status", "recovery.resetQuit"],
         "N6": ["help.syntax", "help.page", "help.example"],
         "N7": ["support.version", "support.about", "support.discussion", "support.suggestion", "support.issue",
