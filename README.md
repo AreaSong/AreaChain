@@ -66,8 +66,11 @@ AreaChain 是专为 macOS 打造的个人任务看板与习惯打卡助手：菜
 # 只预览已有 Debug 的安装检查，不安装、不启动
 ./scripts/install.sh --dry-run
 
-# 执行全量单元测试
-./scripts/build.sh test
+# 按改动跑定向 Swift 测试（默认）；分前台／后台两轮走隔离 QA
+python3 -B scripts/quality_gate.py --profile swift
+
+# 批次收尾或明确需要时才跑全量；前台轮期间需离开电脑
+python3 -B scripts/quality_gate.py --profile full
 
 # 只读检查工作流引用、Domain 导入与项目技能共享边界；不构建/启动应用
 python3 -B scripts/check_workflow.py

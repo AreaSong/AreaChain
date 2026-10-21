@@ -33,13 +33,13 @@
 | 字号、颜色与工作台外观 | [Theme 测试](../../../../AreaChainTests/Theme) 中的 `DaybookTokenTests`、`WorkspaceLayoutTests`、`DaybookContrastTests` |
 | 捕获、输入、窗口与渲染 | [Features 测试](../../../../AreaChainTests/Features) 中的 `CaptureOverlayLayoutTests`、`InputSyntaxInteractionTests`、`WorkspaceRenderingTests` 及相关窗口测试 |
 
-定向测试示例，按实际目标替换或增加测试标识：
+默认改什么测什么：`python3 -B scripts/quality_gate.py --profile swift` 按改动推导定向测试，并分前台轮（需离开电脑）／后台轮（可用电脑）走隔离 QA。需要手动指定时，按实际目标替换或增加测试标识：
 
 ```bash
-./scripts/build.sh test --only-testing AreaChainTests/DayBoardLogicTests
+python3 -B scripts/quality_gate.py --profile swift --only-testing AreaChainTests/DayBoardLogicTests
 ```
 
-普通测试由脚本清除真实钥匙串授权并串行执行；不能为让默认跳过的系统钥匙串入口运行而恢复这些授权变量。需要全量回归时使用 `./scripts/build.sh test`，并说明扩大范围的依据。
+普通测试由脚本清除真实钥匙串授权并串行执行；不能为让默认跳过的系统钥匙串入口运行而恢复这些授权变量。全量回归用 `--profile full`，只在批次收尾或用户明确要求时运行并说明依据；直接 `./scripts/build.sh test` 走与日用应用同一标识的开发宿主，不能作为原生测试的验收结果。
 
 需要编译验证时使用 `./scripts/build.sh`，它只构建并验签 Debug，不安装、不启动。构建成功不能替代测试、语言检查或实际界面操作。
 

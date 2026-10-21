@@ -100,7 +100,7 @@ class SwiftTestScopeTests(unittest.TestCase):
         self.assertEqual(plan["filters"], ["AreaChainTests/ATests"])
         self.assertIn("改跑 Domain 层", plan["notes"][0])
 
-    def test_too_many_references_fall_back_to_layer(self):
+    def test_too_many_references_run_only_direct_references(self):
         self.write("AreaChain/Services/Store.swift", "final class Store {}\n")
         self.suite("AreaChainTests/Services/OneTests.swift", "OneTests", "_ = Store()")
         self.suite("AreaChainTests/Services/TwoTests.swift", "TwoTests", "_ = Store()")
@@ -108,10 +108,10 @@ class SwiftTestScopeTests(unittest.TestCase):
         self.suite("AreaChainTests/Domain/DomainTests.swift", "DomainTests", "_ = Store()")
         with patch.object(scope, "REFERENCE_SUITE_LIMIT", 2):
             plan = self.plan(["AreaChain/Services/Store.swift"])
-        # 层目录兜住间接使用，跨层的直接引用（DomainTests）也保留。
+        # 只跑直接引用（含跨层的 DomainTests）；同层但未引用的 ThreeTests 不再被整层带上。
         self.assertEqual(plan["filters"], ["AreaChainTests/DomainTests", "AreaChainTests/OneTests",
-                                           "AreaChainTests/ThreeTests", "AreaChainTests/TwoTests"])
-        self.assertIn("被 3 个测试类引用，另加跑 Services 层", plan["notes"][0])
+                                           "AreaChainTests/TwoTests"])
+        self.assertIn("被 3 个测试类引用，只跑直接引用", plan["notes"][0])
 
     def test_ui_mode_never_widens_to_layer(self):
         self.write("AreaChain/Features/Row.swift", "struct Row {}\n")
@@ -214,7 +214,7 @@ class SwiftTestChecksTests(unittest.TestCase):
     def test_full_profile_is_the_only_unfiltered_run(self):
         with patch.object(quality, "run_command", return_value=(0, "", "", 0.1)) as run:
             checks = quality.swift_test_checks(self.root, ["AreaChain/App/Delegate.swift"], "full", [])
-        self.assertEqual(self.commands(run), [["./scripts/build.sh", "test"]])
+        self.assertEqual(self.commands(run), [["./scripts/build.sh", "qa"]])
         self.assertIn("全量", checks[0]["detail"])
 
     def test_only_full_and_release_get_the_long_round_timeout(self):
@@ -227,7 +227,7 @@ class SwiftTestChecksTests(unittest.TestCase):
     def test_explicit_only_testing_wins(self):
         with patch.object(quality, "run_command", return_value=(0, "", "", 0.1)) as run:
             quality.swift_test_checks(self.root, [], "swift", ["AreaChainTests/FooTests"])
-        self.assertEqual(self.commands(run), [["./scripts/build.sh", "test", "--only-testing", "AreaChainTests/FooTests"]])
+        self.assertEqual(self.commands(run), [["./scripts/build.sh", "qa", "--only-testing", "AreaChainTests/FooTests"]])
 
     def test_unresolved_swift_change_warns_and_runs_no_tests(self):
         with patch.object(quality, "run_command", return_value=(0, "", "", 0.1)) as run:
@@ -242,6 +242,20 @@ class SwiftTestChecksTests(unittest.TestCase):
         self.assertEqual(self.commands(run), [])
         self.assertEqual([(c["name"], c["status"]) for c in checks], [("swift-tests", "passed")])
 
+    def test_run_profile_always_compiles_the_daily_configuration(self):
+        (self.root / "AreaChainTests/Domain").mkdir(parents=True)
+        (self.root / "AreaChainTests/Domain/DelegateTests.swift").write_text(
+            "@Suite struct DelegateTests {\n  @Test func a() { _ = Delegate() }\n}\n", encoding="utf-8")
+        with patch.object(quality, "changed_files", return_value=["AreaChain/App/Delegate.swift"]), \
+             patch.object(quality, "run_command", return_value=(0, "", "", 0.1)) as run, \
+             patch.object(quality, "run_swiftlint", return_value=quality.gate("swiftlint", "passed")), \
+             patch.object(quality, "run_workflow_check", return_value=quality.gate("workflow", "passed")), \
+             patch.object(quality, "run_python_tests", return_value=quality.gate("python-tests", "passed")):
+            quality.run_profile(self.root, "swift")
+        # 测试在 QA 配置运行；日用配置仍单独编译一次。
+        build_steps = [c[1] for c in self.commands(run) if c[0] == "./scripts/build.sh"]
+        self.assertEqual(build_steps, ["build", "qa"])
+
     def test_run_profile_builds_when_no_tests_run(self):
         with patch.object(quality, "changed_files", return_value=["AreaChain/App/Delegate.swift"]), \
              patch.object(quality, "run_command", return_value=(0, "", "", 0.1)) as run, \
@@ -250,7 +264,7 @@ class SwiftTestChecksTests(unittest.TestCase):
              patch.object(quality, "run_python_tests", return_value=quality.gate("python-tests", "passed")):
             report = quality.run_profile(self.root, "swift")
         self.assertIn(["./scripts/build.sh", "build"], self.commands(run))
-        self.assertNotIn(["./scripts/build.sh", "test"], self.commands(run))
+        self.assertFalse(any(c[1] in ("test", "qa") for c in self.commands(run)))
         # 临时目录缺少性能清单等，整体状态不在此断言；只核对测试范围告警被如实带出。
         scope_checks = [c for c in report["checks"] if c["name"].startswith("swift-test")]
         self.assertEqual([(c["name"], c["status"]) for c in scope_checks], [("swift-test-scope", "warning")])

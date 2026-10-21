@@ -1,6 +1,7 @@
 """按变更推导 Swift 定向测试范围；只读源码文本，不调用 Xcode。
 
-推导分三层：同名测试 → 测试里引用了变更文件声明的类型 → 所在层目录兜底。
+推导分三层：同名测试 → 测试里引用了变更文件声明的类型 → 没有任何相关测试时才按所在层目录兜底。
+被大量测试引用的核心文件只跑直接引用的测试，不再加整层；间接使用留给批次收尾的全量回归。
 无法推导的文件单独列出，由调用方明确报告；全量只由显式 profile 触发，不在这里静默回退。
 """
 
@@ -11,7 +12,7 @@ import re
 TEST_TARGET = "AreaChainTests"
 SOURCE_ROOT = "AreaChain"
 LAYERS = ("Domain", "Services", "Features", "Theme", "E2E")
-# 一个文件的引用命中超过此数时，按层目录跑，避免列表比层还散。
+# 一个文件的引用命中超过此数时在说明里提示“影响面大”，范围仍只是直接引用。
 REFERENCE_SUITE_LIMIT = 60
 # 测试支持文件（夹具）只再展开一跳：测试 → 夹具 → 被测类型。
 SUPPORT_HOPS = 2
@@ -169,9 +170,9 @@ def _plan_file(index, path, layer_fallback):
     refs = index.referencing(names) if names else set()
     layer = _layer(path)
     if len(refs) > REFERENCE_SUITE_LIMIT:
-        if layer_fallback and layer:
-            # 层目录兜住间接使用，直接引用的跨层套件仍保留，不因数量多而丢掉。
-            return same | refs | index.layer_suites(layer), f"{path}：被 {len(refs)} 个测试类引用，另加跑 {layer} 层"
+        if layer_fallback:
+            # 改什么测什么：只跑直接引用的套件，不再追加整层；间接使用由批次收尾的 --profile full 兜住。
+            return same | refs, f"{path}：被 {len(refs)} 个测试类引用，只跑直接引用；间接影响留给收尾全量"
         return same, f"{path}：被 {len(refs)} 个测试类引用，UI 模式只跑同名测试"
     if same or refs:
         return same | refs, None

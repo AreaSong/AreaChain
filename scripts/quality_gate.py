@@ -415,19 +415,22 @@ def run_swiftlint(root, paths, strict=False):
     return gate("swiftlint", status, output or "SwiftLint 没有输出问题。", command, duration=duration)
 
 
+# 门禁的 Swift 测试统一走标准隔离 QA 宿主（com.areachain.privacy-qa，build/PrivacyQA）：不带批次，
+# 因为隐私／钥匙串测试的宿主守卫要求标识精确等于 com.areachain.privacy-qa。目录首次全编译后增量复用。
+# 性能测试仍走 build.sh test，以保持已登记基线的测量环境（关闭沙盒、Phase1 日志目录）。
 # 定向测试每轮 30 分钟足够；全量前台轮串行跑三千多个用例，历史上超过 100 分钟，放宽到 3 小时。
 SWIFT_ROUND_TIMEOUT = 1800
 FULL_SWIFT_ROUND_TIMEOUT = 3 * 3600
 
 
 def run_swift_tests(filters=None, notes=(), root=ROOT, timeout=SWIFT_ROUND_TIMEOUT):
-    """前台轮与后台轮各跑一次 build.sh test；任一轮失败即失败，说明里分轮列出。"""
+    """前台轮与后台轮各跑一次隔离 QA 测试；任一轮失败即失败，说明里分轮列出。"""
     commands, details, worst, total = [], [], 0, 0.0
     rounds = swift_test_scope.split_rounds(root, filters)
     if not rounds:
         return gate("swift-tests", "passed", "没有需要运行的 Swift 测试。")
     for label, arguments in rounds:
-        command = ["./scripts/build.sh", "test", *arguments]
+        command = ["./scripts/build.sh", "qa", *arguments]
         code, stdout, stderr, duration = run_command(command, timeout=timeout)
         commands.append(command)
         total += duration
@@ -541,11 +544,9 @@ def run_profile(root, profile, strict=False, base_ref=None, only_testing=None, b
         if build_only:
             checks.append(run_swift_build())
         else:
-            tests = swift_test_checks(root, paths, selected, only_testing)
-            # 没有运行任何测试时仍要编译验签，不能让“无测试”变成未编译。
-            if selected == "ui" or not any(check["name"] == "swift-tests" and check["command"] for check in tests):
-                checks.append(run_swift_build())
-            checks.extend(tests)
+            # 测试只在 QA 配置（AREACHAIN_QA）下编译运行；日用配置的 #else 分支另需编译验签证据。
+            checks.append(run_swift_build())
+            checks.extend(swift_test_checks(root, paths, selected, only_testing))
     if selected == "release":
         checks.append(run_release_build())
     if selected == "performance":

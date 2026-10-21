@@ -311,7 +311,7 @@ class QualityGateTests(unittest.TestCase):
         with patch.object(quality, "run_command", return_value=(0, "ok", "", 0.1)) as run:
             result = quality.run_swift_tests(["AreaChainTests/FooTests"])
         self.assertEqual(result["status"], "passed")
-        self.assertEqual(run.call_args.args[0], ["./scripts/build.sh", "test", "--only-testing", "AreaChainTests/FooTests"])
+        self.assertEqual(run.call_args.args[0], ["./scripts/build.sh", "qa", "--only-testing", "AreaChainTests/FooTests"])
         self.assertIn("定向 Swift 测试", result["detail"])
 
     def test_infer_profile_detects_pure_ui_changes(self):
