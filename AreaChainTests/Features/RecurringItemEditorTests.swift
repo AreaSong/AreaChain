@@ -7,6 +7,10 @@ import Testing
 @Suite(.serialized, .tags(.backgroundWindow))
 @MainActor
 struct RecurringItemEditorTests {
+    /// SwiftUI 视图图异步拆除，其 ModelContext 可能比函数内的容器活得久；容器先释放会让同进程后续
+    /// 使用 SwiftData 的测试碰到悬空上下文而 trap（例如紧随其后的 TrashViewModeTests）。与其他宿主一样保活到进程结束。
+    private static var retainedContainers: [ModelContainer] = []
+
     @Test func createCopyExistsInBothLanguages() {
         let zh = Locale(identifier: "zh-Hans")
         let en = Locale(identifier: "en")
@@ -52,6 +56,7 @@ struct RecurringItemEditorTests {
             for: Schema(AreaChainSchema.models),
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
+        Self.retainedContainers.append(container)
         let host = NSHostingView(rootView: content
             .modelContainer(container)
             .environment(\.locale, Locale(identifier: locale))

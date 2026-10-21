@@ -5,6 +5,9 @@ import Testing
 
 @Suite(.serialized, .tags(.backgroundWindow)) @MainActor
 struct CalendarMonthNavigationTests {
+    /// 同 RecurringItemEditorTests：视图图异步拆除晚于函数返回，容器保活到进程结束，避免后续 SwiftData 测试碰到悬空上下文。
+    private static var retainedContainers: [ModelContainer] = []
+
     @Test(arguments: [
         NSSize(width: 1100, height: 720),
         NSSize(width: 480, height: 640)
@@ -14,6 +17,7 @@ struct CalendarMonthNavigationTests {
             for: Schema(AreaChainSchema.models),
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
+        Self.retainedContainers.append(container)
         let restore = CalendarSpanTestSupport.preserveState()
         defer { restore() }
         BoardSelection.shared.inspectingDayKey = "2026-09-15"
