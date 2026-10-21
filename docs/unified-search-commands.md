@@ -8079,7 +8079,7 @@ L-M1b 必须的反例（合成内存库、fake 系统依赖）：借用签发后
 
 #### A “打开原页面”唯一对照（[CommandOriginalPage](../AreaChain/Domain/CommandOriginalPage.swift)）
 
-目录标记 `completesOnOriginalPage` 只来自本表，不另起可用性规则；`routesAsNavigation` 让这些指令走导航面板，候选接受与 `beginOperation` 同一判定，永不建草稿。分节只在说明里指明，页面不自动滚动；遮罩时说明需先解锁。
+目录标记 `completesOnOriginalPage` 只来自本表，不另起可用性规则；`routesAsNavigation` 让这些指令走导航面板，界面上的回车与候选接受只导航、不建草稿（程序化 `beginOperation` 保持原判定，见集中验证整改）。分节只在说明里指明，页面不自动滚动；遮罩时说明需先解锁。
 
 | 指令 | 目标 |
 |---|---|

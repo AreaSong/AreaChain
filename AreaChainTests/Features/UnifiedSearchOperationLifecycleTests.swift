@@ -4,12 +4,13 @@ import Testing
 
 @Suite(.serialized) @MainActor
 struct UnifiedSearchOperationLifecycleTests {
+    /// 合并批 M-3：clipboard.limit 改为“打开原页面”，数字参数样例换成同为整数的 tag.order 位置。
     @Test func nativeSwitchKeepRestoreCancelAndOldConfirmation() async throws {
         let fixture = try UnifiedSearchResultsFixture()
         defer { fixture.stop() }
         _ = try await fixture.publish()
-        try fixture.startOperation("clipboard.limit")
-        try fixture.typeParameter(.value, text: "-")
+        try fixture.startOperation("tag.order")
+        try fixture.typeParameter(.position, text: "-")
         let original = try fixture.draft
         let host = UnifiedSearchTestHost(results: fixture.controller, operations: true)
         defer { host.close() }
@@ -25,9 +26,9 @@ struct UnifiedSearchOperationLifecycleTests {
         let oldSource = fixture.controller.buffer
         try await host.clickResult("unified.operation.retain")
         #expect(fixture.controller.operations?.retained.first?.id == original.id)
-        try await host.clickResult("unified.operation.restore.clipboard.limit")
+        try await host.clickResult("unified.operation.restore.tag.order")
         #expect(try fixture.draft.id == original.id && fixture.draft.version > original.version)
-        let field = try host.parameterField(.value)
+        let field = try host.parameterField(.position)
         #expect(field.stringValue == "-")
         fixture.controller.resolveOperation(oldDecision, choice: .discard, source: oldSource)
         #expect(try fixture.draft.id == original.id)
@@ -40,15 +41,15 @@ struct UnifiedSearchOperationLifecycleTests {
         let fixture = try UnifiedSearchResultsFixture()
         defer { fixture.stop() }
         _ = try await fixture.publish()
-        try fixture.startOperation("clipboard.limit")
+        try fixture.startOperation("tag.order")
         let host = UnifiedSearchTestHost(results: fixture.controller, operations: true)
         defer { host.close() }
         try await host.start()
-        let editor = try await host.focusParameter(.value)
+        let editor = try await host.focusParameter(.position)
         editor.insertText("42", replacementRange: editor.selectedRange())
         try await host.settle()
         let before = try fixture.draft
-        let field = try host.parameterField(.value)
+        let field = try host.parameterField(.position)
         let state = try #require((field.delegate as? DaybookTextField.Coordinator)?.parent.unifiedSearch)
         let old = state.buffer
         let boundary = try #require(SettingsButtonTestSupport.elements(host.window.contentView).first { $0 is UnifiedSearchOperationBoundary })
@@ -63,7 +64,7 @@ struct UnifiedSearchOperationLifecycleTests {
         fixture.controller.refreshOperationPresentation()
         try await host.settle()
         #expect((boundary as? NSView)?.subviews.isEmpty == false)
-        #expect((try host.parameterField(.value)).stringValue == "42")
+        #expect((try host.parameterField(.position)).stringValue == "42")
         NotificationCenter.default.post(name: .privacyWillLock, object: fixture.vault)
         #expect((boundary as? NSView)?.subviews.isEmpty == true)
         #expect(try fixture.draft == before)

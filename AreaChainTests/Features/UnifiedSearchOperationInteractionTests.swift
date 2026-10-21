@@ -53,12 +53,13 @@ struct UnifiedSearchOperationInteractionTests {
         let fixture = try UnifiedSearchResultsFixture()
         defer { fixture.stop() }
         _ = try await fixture.publish()
-        try fixture.startOperation("clipboard.limit")
-        try fixture.typeParameter(.value, text: "25")
+        // 合并批 M-3：clipboard.limit 改为“打开原页面”，数字参数样例换成同为整数的 tag.order 位置。
+        try fixture.startOperation("tag.order")
+        try fixture.typeParameter(.position, text: "25")
         let host = UnifiedSearchTestHost(results: fixture.controller, operations: true)
         defer { host.close() }
         try await host.start()
-        let editor = try await host.focusParameter(.value)
+        let editor = try await host.focusParameter(.position)
         #expect(editor.string == "25")
         #expect(try fixture.draft.arguments.first?.value == .number(25))
         editor.breakUndoCoalescing()
@@ -89,12 +90,13 @@ struct UnifiedSearchOperationInteractionTests {
         let fixture = try UnifiedSearchResultsFixture()
         defer { fixture.stop() }
         _ = try await fixture.publish()
-        try fixture.startOperation("clipboard.ignoreApp")
+        // 合并批 M-3：clipboard.ignoreApp 改为“打开原页面”，短文本样例换成 tag.create 的名称。
+        try fixture.startOperation("tag.create")
         let host = UnifiedSearchTestHost(results: fixture.controller, operations: true)
         defer { host.close() }
         try await host.start()
-        let editor = try await host.focusParameter(.bundleID)
-        let field = try host.parameterField(.bundleID)
+        let editor = try await host.focusParameter(.name)
+        let field = try host.parameterField(.name)
         let state = try #require((field.delegate as? DaybookTextField.Coordinator)?.parent.unifiedSearch)
         let before = try fixture.draft
         editor.setMarkedText("合成", selectedRange: NSRange(location: 2, length: 0), replacementRange: editor.selectedRange())

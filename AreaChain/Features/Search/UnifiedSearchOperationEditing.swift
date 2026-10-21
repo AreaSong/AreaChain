@@ -77,7 +77,7 @@ extension UnifiedSearchController {
     @discardableResult
     func beginOperation(_ id: CommandID, source: UnifiedSearchBuffer, text: String? = nil,
                         argument: CommandArgument? = nil) -> UnifiedSearchBuffer? {
-        if validates(source), let command = CommandCatalog.standard.command(id: id), Self.routesAsNavigation(command) {
+        if validates(source), CommandCatalog.standard.command(id: id)?.category == .navigation {
             return navigationInput(text ?? CommandCatalog.standard.command(id: id)!.path)
         }
         guard validates(source), operationVisible, let state = operations,
