@@ -6,6 +6,10 @@ import Testing
 
 @MainActor
 enum SystemPageHost {
+    /// 挂进测试窗口的容器统一保活到进程结束：视图图在窗口拆除后异步释放，其 ModelContext 比调用方的
+    /// 容器活得久；容器先释放会让同进程后续用 SwiftData 的测试碰到悬空上下文而 trap。
+    private static var retainedContainers: [ModelContainer] = []
+
     static func window<Content: View>(
         _ content: Content,
         container: ModelContainer,
@@ -16,6 +20,7 @@ enum SystemPageHost {
         prefs: AppPreferences? = nil,
         suppliedWindow: NSWindow? = nil
     ) -> NSWindow {
+        retainedContainers.append(container)
         let root = content
             .modelContainer(container)
             .environment(\.locale, Locale(identifier: locale))
@@ -32,6 +37,7 @@ enum SystemPageHost {
     static func preferenceWindow<Content: View>(
         _ content: Content, container: ModelContainer, prefs: AppPreferences, size: NSSize
     ) -> NSWindow {
+        retainedContainers.append(container)
         let root = content
             .modelContainer(container)
             .environment(\.workspaceEmbedded, true)

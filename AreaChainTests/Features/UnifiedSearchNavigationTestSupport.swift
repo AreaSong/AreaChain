@@ -5,6 +5,9 @@ import Testing
 @testable import AreaChain
 
 @MainActor final class UnifiedSearchNavigationFixture {
+    /// 工作台视图图在窗口拆除后异步释放，其 ModelContext 会比夹具活得久；容器先释放会让同进程后续
+    /// 使用 SwiftData 的测试碰到悬空上下文而 trap。与其他宿主一样把容器保活到进程结束。
+    private static var retainedContainers: [ModelContainer] = []
     let data: TaskContentQueryFixture
     let handoff: HandoffFixture
     let navigation = WorkspaceNavigation(boardSelection: BoardSelection())
@@ -32,6 +35,7 @@ import Testing
     /// 合并批 M-2：可注入隔离剪贴板会话（私有命名剪贴板与 fake 门），工作台剪贴板页与剪贴板指令读同一份。
     init(handoff provided: HandoffFixture? = nil, clipboard injected: ClipboardHistorySession? = nil) throws {
         data = try TaskContentQueryFixture()
+        Self.retainedContainers.append(data.container)
         todo = data.todo("needle parent")
         todo.dayKey = day
         child = data.child(todo, title: "needle child")
