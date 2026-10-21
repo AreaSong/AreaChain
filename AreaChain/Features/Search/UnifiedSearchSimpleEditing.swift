@@ -159,6 +159,10 @@ enum UnifiedSearchSimpleCopy {
         }
     }
 
+    static func opensDiaryPage(_ failure: String) -> Bool {
+        CommandSimpleProblem.diaryPageProblems.contains { failure == "unified.simple.problem." + $0.rawValue }
+    }
+
     static func result(_ facts: CommandSimpleFacts) -> String {
         "unified.simple.state." + facts.state.rawValue
     }

@@ -22,8 +22,12 @@ import Testing
     var context: ModelContext { io.context }
     var attachments: TaskNotesService.Attachments { .init(store: AttachmentStore(root: root), root: root) }
 
-    /// 合并批 M-2：board 为真时另装配看板规格（gantt.shift）。
-    init(capability: SimpleCommandAdapter.Capability = .open, longText: Bool = false, board: Bool = false) throws {
+    /// 合并批 M-4：手记仓储用隔离保险箱（未配置即锁定）与临时附件目录；转任务的来源戳固定。
+    let vault = PrivacyVault(store: MemoryVaultConfigurationStore(), systemKeys: FakeSystemVaultKeys())
+
+    /// 合并批 M-2：board 为真时另装配看板规格（gantt.shift）；合并批 M-4：diary 为真时另装配手记规格（含两条长文）。
+    init(capability: SimpleCommandAdapter.Capability = .open, longText: Bool = false, board: Bool = false,
+         diary: Bool = false) throws {
         io = try TaskCaptureFixture()
         handoff = try HandoffFixture()
         root = FileManager.default.temporaryDirectory
@@ -41,7 +45,8 @@ import Testing
             refresh: { [unowned self] includeCalendar in refreshes.append(includeCalendar) }))
         adapter = .init(coordinator: handoff.coordinator, environment: environment,
                         specs: TaskCommandSpecs.all(dependencies) + (longText ? TaskCommandSpecs.longText(dependencies) : [])
-                            + (board ? BoardCommandSpecs.all(dependencies) : []),
+                            + (board ? BoardCommandSpecs.all(dependencies) : [])
+                            + (diary ? DiaryCommandSpecs.longText(diaries) : []),
                         capability: capability)
     }
 
@@ -55,6 +60,14 @@ import Testing
               attachments: attachments, today: { Self.today },
               requestReminderAccess: { [unowned self] minutes in authorizations.append(minutes) },
               calendar: Self.calendar, digest: handoff.coordinator.textDigest)
+    }
+
+    var diaries: DiaryCommandDependencies {
+        .init(diaries: { [unowned self] in
+                  SwiftDataDiaryRepository(context: $0, vault: vault, attachmentStore: AttachmentStore(root: root), attachmentRoot: root)
+              },
+              tasks: { [unowned self] in tasks($0) }, attachments: attachments, today: { Self.today },
+              sourceBundleID: { "com.areachain.m4.test" }, digest: handoff.coordinator.textDigest)
     }
 
     static let calendar: Calendar = {

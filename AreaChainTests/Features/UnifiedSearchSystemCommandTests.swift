@@ -124,7 +124,7 @@ import Testing
         #expect(fixture.controller.navigationMessage == "unified.system.diary.draftProtected")
         #expect(fixture.saves == saves)
         #expect(try fixture.context.fetchCount(FetchDescriptor<DiaryEntry>()) == 2)
-        #expect(!CommandSystemAction.commands.contains("diaryWindow.save"), "diaryWindow.save 归 M-4")
+        #expect(CommandSystemAction.commands.contains("diaryWindow.save"), "合并批 M-4 已接小窗会话保存")
     }
 
     @Test func statsMatchDashboardAndHidePrivateDiaries() async throws {

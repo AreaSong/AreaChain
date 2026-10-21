@@ -16,6 +16,8 @@ import SwiftData
     var terminate: () -> Void
     var vault: PrivacyVault
     var today: () -> String = { DayClock.shared.todayKey }
+    /// 合并批 M-4 diary.copy：原卡片经 PrivateClipboard 写通用剪贴板；隔离环境注入私有剪贴板。
+    var pasteboard: NSPasteboard = .general
 }
 
 extension WorkspacePageCommands {

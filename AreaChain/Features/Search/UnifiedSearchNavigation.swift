@@ -214,6 +214,13 @@ extension UnifiedSearchController {
         catch { simpleFailure = navigationFailure(error as? WorkspaceOpenFailure ?? .invalidTarget) }
     }
 
+    /// 合并批 M-4：受保护手记、加私密标签与超长正文改在原手记页完成；沿 M-3 打开原页面里手记的目的地（手记页）。
+    func openDiaryOriginalPage(_ source: UnifiedSearchBuffer) {
+        guard validates(source) else { return }
+        guard navigationRouter != nil else { simpleFailure = "unified.navigation.unassembled"; return }
+        navigate(.page(.diary), source: source) { [weak self] _ in self?.navigationMessage = "unified.originalPage.displayed" }
+    }
+
     func validReturn(_ ticket: UnifiedSearchReturnContext) -> Bool {
         ticket.id == returnSearch?.id && ticket.queryRevision == navigationQueryRevision
             && ticket.privacyRevision == buffer.privacyRevision && ticket.ownership == buffer.lease.ownership

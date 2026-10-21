@@ -13,6 +13,12 @@ struct UnifiedSearchSimpleSubmission: View {
             if let failure = controller.simpleFailure {
                 Text(LocalizedStringKey(failure)).font(DaybookType.caption).fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("unified.simple.issue")
+                // 合并批 M-4：受保护手记、加私密标签与超长正文都在原手记页完成（沿 M-3 打开原页面的手记目的地）。
+                if UnifiedSearchSimpleCopy.opensDiaryPage(failure) {
+                    UnifiedSearchPlanButton(title: "unified.simple.open.diaryPage", identifier: "unified.simple.openDiaryPage") {
+                        controller.openDiaryOriginalPage(source)
+                    }
+                }
             }
         }.frame(maxWidth: .infinity, alignment: .leading).fixedSize(horizontal: false, vertical: true)
             .accessibilityElement(children: .contain).accessibilityIdentifier("unified.simple.submission")
@@ -74,8 +80,9 @@ struct UnifiedSearchSimpleSubmission: View {
                     .font(DaybookType.caption)
                 if facts.registrationFailed { Text("unified.field.registrationIssue").font(DaybookType.caption) }
             }
-            if facts.state == .saved, controller.simple?.openTarget(facts) != nil {
-                UnifiedSearchPlanButton(title: "unified.simple.open.routine", identifier: "unified.simple.open", variant: .prominent) {
+            if facts.state == .saved, controller.simple?.openTarget(facts) != nil, let creation = facts.creation {
+                UnifiedSearchPlanButton(title: LocalizedStringKey("unified.simple.open." + creation.type.rawValue),
+                                        identifier: "unified.simple.open", variant: .prominent) {
                     controller.openSimpleCreated(facts, source: source)
                 }
             }

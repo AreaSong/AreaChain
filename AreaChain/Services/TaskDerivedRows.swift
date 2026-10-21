@@ -79,7 +79,8 @@ import SwiftData
     /// 保存后：已关联的保持，`matches` 给出的新关联加入。
     static func expectedAttachments(_ text: String, owner: CommandObjectReference, before: CommandSimpleState,
                                     attachments: TaskNotesService.Attachments, in context: ModelContext) -> [CommandSimpleRow] {
-        let kind: AttachmentOwner = owner.type == .todo ? .todo : .routine
+        // 合并批 M-4：手记正文同样经 InputAttachmentResolver 关联 @附件，拥有者类型按对象类型给出。
+        let kind: AttachmentOwner = owner.type == .todo ? .todo : owner.type == .diary ? .diary : .routine
         let matches = InputAttachmentResolver.matches(in: text, ownerKind: kind, ownerID: owner.id, context: context,
                                                       store: attachments.store, root: attachments.root)
         return attachmentKeys(text, owner: owner).compactMap { key in

@@ -61,6 +61,8 @@ extension UnifiedSearchController {
                 let window = try pages.diaryWindow(for: try? session.presentation().pagination.browse.active)
                 window.window.performClose(nil)
                 navigationMessage = "unified.system.diary.closeRequested"
+            case .diarySave, .diaryReload, .diaryDiscard, .diaryCopy:
+                try executeDiaryAction(action, pages: pages, source: source)
             case .stats:
                 navigationMessage = "unified.stats.shown"
             case .statsOpenDay(let day):
@@ -79,6 +81,37 @@ extension UnifiedSearchController {
         } catch {
             let issue = error as? CommandPageIssue ?? .stale
             navigationMessage = Self.systemMessage(issue, command: command)
+        }
+    }
+
+    /// 合并批 M-4：手记会话的保存／重载／舍弃（只作用于已打开的小窗）与普通手记复制。
+    private func executeDiaryAction(_ action: CommandSystemAction, pages: WorkspacePageCommands,
+                                    source: UnifiedSearchBuffer) throws {
+        switch action {
+        case .diarySave(let isWindow):
+            let active = try? session.presentation().pagination.browse.active
+            let window = isWindow ? try pages.diaryWindow(for: active) : try pages.diaryWindow(entry: active)
+            navigationMessage = Self.diaryMessage(pages.saveDiarySession(window))
+        case .diaryReload:
+            let window = try pages.diaryWindow(entry: try? session.presentation().pagination.browse.active)
+            navigationMessage = Self.diaryMessage(pages.reloadDiarySession(window))
+        case .diaryDiscard:
+            let window = try pages.diaryWindow(entry: try? session.presentation().pagination.browse.active)
+            navigationMessage = Self.diaryMessage(pages.discardDiarySession(window))
+        case .diaryCopy(let section):
+            guard let active = try? session.presentation().pagination.browse.active else {
+                navigationMessage = "unified.navigation.chooseObject"; return
+            }
+            do {
+                try pages.copyDiary(active, section: section)
+                navigationMessage = "unified.system.diary.copied." + section.rawValue
+            } catch CommandPageIssue.protectedContent {
+                // 决策 4：受保护手记不在指令里读取或复制，改为打开原手记页（沿 M-3 打开原页面的手记目的地）。
+                navigate(.page(.diary), source: source) { [weak self] _ in
+                    self?.navigationMessage = "unified.system.diary.copyProtected"
+                }
+            }
+        default: navigationMessage = "unified.navigation.unsupported"
         }
     }
 
@@ -119,8 +152,24 @@ extension UnifiedSearchController {
         }
     }
 
+    static func diaryMessage(_ outcome: WorkspacePageCommands.DiarySessionOutcome) -> String {
+        switch outcome {
+        case .saved: "unified.system.diary.saved"
+        case .nothingToSave: "unified.system.diary.nothingToSave"
+        case .failed: "unified.system.diary.saveFailed"
+        case .reloaded: "unified.system.diary.reloaded"
+        case .needsConfirmation: "unified.system.diary.reloadConfirm"
+        case .closeRequested: "unified.system.diary.closeRequested"
+        case .protected: "unified.system.diary.protectedWindow"
+        }
+    }
+
     static func systemMessage(_ issue: CommandPageIssue, command: CommandDescriptor?) -> String {
         switch (issue, command?.id.rawValue) {
+        case (.nothingToCancel, "diary.copy"): "unified.system.diary.nothingToCopy"
+        case (.copyFailed, "diary.copy"): "unified.system.diary.copyFailed"
+        case (.invalidTarget, "diary.save"), (.invalidTarget, "diary.reload"), (.invalidTarget, "diary.discard"),
+             (.invalidTarget, "diaryWindow.save"): "unified.system.diary.chooseWindow"
         case (.stale, "workspace.close"): "unified.system.workspace.closeBlocked"
         case (.protectedContent, "diaryWindow.draft"): "unified.system.diary.draftProtected"
         case (.protectedContent, _): "unified.system.diary.protected"

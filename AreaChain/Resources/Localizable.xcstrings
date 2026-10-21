@@ -58148,6 +58148,771 @@
           }
         }
       }
+    },
+    "unified.simple.field.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Body"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正文"
+          }
+        }
+      }
+    },
+    "unified.simple.field.pinned": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pinned"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "置顶"
+          }
+        }
+      }
+    },
+    "unified.simple.value.pinned": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pinned"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已置顶"
+          }
+        }
+      }
+    },
+    "unified.simple.value.unpinned": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not pinned"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未置顶"
+          }
+        }
+      }
+    },
+    "unified.simple.problem.protectedDiary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This note is protected, or would become protected when saved. Finish it on the Notes page after unlocking."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这篇手记受保护，或保存后会变成受保护，请在原手记页解锁后完成。"
+          }
+        }
+      }
+    },
+    "unified.simple.problem.diaryPrivateTag": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adding a private tag encrypts the note. Do it on the Notes page."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "给手记加私密标签等于加密转换，请在原手记页完成。"
+          }
+        }
+      }
+    },
+    "unified.simple.problem.diaryTooLong": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The note body is over 64 KB. Edit it on the Notes page."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手记正文超过 64 KB，请在原手记页编辑。"
+          }
+        }
+      }
+    },
+    "unified.simple.problem.diaryEmpty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The note has no content to save or convert."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手记没有可保存或可转换的内容。"
+          }
+        }
+      }
+    },
+    "unified.simple.open.diaryPage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Notes page"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开原手记页"
+          }
+        }
+      }
+    },
+    "unified.simple.open.todo": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open new task"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开新待办"
+          }
+        }
+      }
+    },
+    "unified.simple.open.diary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open new note"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开新手记"
+          }
+        }
+      }
+    },
+    "unified.simple.diary.create.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a note; the title line, #tags and note categories are read as in the Notes composer"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新建一条手记；标题行、#标签与手记分类按手记页快速新增的规则识别"
+          }
+        }
+      }
+    },
+    "unified.simple.diary.create.saved": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note added"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已新建手记"
+          }
+        }
+      }
+    },
+    "unified.simple.diary.body.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change the note body; #tags and images in it apply as in the note editor"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "修改手记正文；正文里的标签与图片按手记编辑的规则生效"
+          }
+        }
+      }
+    },
+    "unified.simple.diary.body.saved": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note body saved"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已保存手记正文"
+          }
+        }
+      }
+    },
+    "unified.simple.diary.pinned.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pin or unpin the note in the list (not the window)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在列表里置顶或取消置顶手记（不是小窗置顶）"
+          }
+        }
+      }
+    },
+    "unified.simple.diary.pinned.saved": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pinning updated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已更新置顶"
+          }
+        }
+      }
+    },
+    "unified.simple.diary.move.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move the note to another day"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "把手记改到另一天"
+          }
+        }
+      }
+    },
+    "unified.simple.diary.move.saved": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note moved"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已改日期"
+          }
+        }
+      }
+    },
+    "unified.simple.diary.tags.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change the note's ordinary tags; private tags are added on the Notes page"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "修改手记的普通标签；私密标签要在原手记页添加"
+          }
+        }
+      }
+    },
+    "unified.simple.diary.tags.saved": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tags updated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已更新标签"
+          }
+        }
+      }
+    },
+    "unified.simple.diary.toTodo.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a task for today: the first line becomes the title and the rest the notes. The note stays; tags and images are not copied."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新建今天的待办：首行做标题、其余做备注；原手记保留，不带标签与图片。"
+          }
+        }
+      }
+    },
+    "unified.simple.diary.toTodo.saved": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Task added"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已转为待办"
+          }
+        }
+      }
+    },
+    "unified.simple.diary.trash.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move this note to the Trash, as the note's Delete does"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "把这条手记移到回收站，与手记的“删除”相同"
+          }
+        }
+      }
+    },
+    "unified.simple.diary.trash.saved": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moved to Trash"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已移到回收站"
+          }
+        }
+      }
+    },
+    "unified.simple.diary.trash.attachments": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Images moved to the Trash with it: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "随之回收的图片：%@ 张"
+          }
+        }
+      }
+    },
+    "unified.system.diary.saved": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diary window saved."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已保存手记小窗。"
+          }
+        }
+      }
+    },
+    "unified.system.diary.nothingToSave": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing to save in the diary window."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手记小窗没有未保存的内容。"
+          }
+        }
+      }
+    },
+    "unified.system.diary.saveFailed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saving failed. The draft stays in the window."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存失败，草稿仍在小窗里。"
+          }
+        }
+      }
+    },
+    "unified.system.diary.reloaded": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reloaded the latest version."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已重载最新版本。"
+          }
+        }
+      }
+    },
+    "unified.system.diary.reloadConfirm": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The window has unsaved changes. Confirm discarding them in the window."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "小窗有未保存的内容，请在小窗里确认是否舍弃。"
+          }
+        }
+      }
+    },
+    "unified.system.diary.protectedWindow": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This note is protected. Unlock and continue in its window."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这篇手记受保护，请在小窗里解锁后操作。"
+          }
+        }
+      }
+    },
+    "unified.system.diary.copied.record": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note copied."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已复制整篇手记。"
+          }
+        }
+      }
+    },
+    "unified.system.diary.copied.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Title copied."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已复制标题。"
+          }
+        }
+      }
+    },
+    "unified.system.diary.copied.notes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes copied."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已复制备注。"
+          }
+        }
+      }
+    },
+    "unified.system.diary.copyProtected": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protected notes are copied on the Notes page after unlocking."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "受保护的手记要在原手记页解锁后复制。"
+          }
+        }
+      }
+    },
+    "unified.system.diary.nothingToCopy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This note has no notes to copy."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这条手记没有可复制的备注。"
+          }
+        }
+      }
+    },
+    "unified.system.diary.copyFailed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copying failed; nothing was copied."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "复制失败，没有写入剪贴板。"
+          }
+        }
+      }
+    },
+    "command.originalPage.note.diaryPrivacy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marking a note private, revealing and masking depend on unlocking. Finish them on the Notes page."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手记的“私密”标记、显示与遮罩都依赖解锁，请在手记页完成。"
+          }
+        }
+      }
+    },
+    "unified.system.diary.save.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save the open diary window, as its Save button does. Protected notes are saved in the window after unlocking."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存已打开的手记小窗，与小窗的“保存”相同；受保护手记要在小窗里解锁后保存。"
+          }
+        }
+      }
+    },
+    "unified.system.diary.reload.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reload the latest version into the open diary window. With unsaved changes, confirm in the window."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "把最新版本重载到已打开的手记小窗；有未保存内容时在小窗里确认。"
+          }
+        }
+      }
+    },
+    "unified.system.diary.discard.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close the open diary window without keeping changes; with unsaved changes the window asks first."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭已打开的手记小窗、不保留修改；有未保存内容时由小窗先确认。"
+          }
+        }
+      }
+    },
+    "unified.system.diary.copy.record.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy the whole note, as the note's Copy does. Protected notes open the Notes page instead."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "复制整篇手记，与手记的“复制”相同；受保护手记改为打开原手记页。"
+          }
+        }
+      }
+    },
+    "unified.system.diary.copy.title.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy the note's title line. Protected notes open the Notes page instead."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "复制手记标题行；受保护手记改为打开原手记页。"
+          }
+        }
+      }
+    },
+    "unified.system.diary.copy.notes.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy the note's text after the title line. Protected notes open the Notes page instead."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "复制手记标题行之后的内容；受保护手记改为打开原手记页。"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
