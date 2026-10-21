@@ -8207,3 +8207,4 @@ L-M1b 必须的反例（合成内存库、fake 系统依赖）：借用签发后
 
 - 正常 Debug 构建阻塞（见上表）；人工与平台验收（真人输入法、VoiceOver、最低系统、面板“打开原手记页”的真实点击）未做。
 - 生产接线须另行授权：手记规格装配（`DiaryCommandDependencies` 的仓储、保险箱与附件根）、页面宿主 `system` 的真实 DiaryWindows 与通用剪贴板、托管转接真实隐私锁事件。
+- **补记（2026-10-21，架构对话）**：用户续签后，小组件产物里的描述文件与增量构建的签名不一致，导致上述阻塞。只删除可重建的 `build/development-DerivedData/Build/Products/Debug/AreaChain.app` 与 `AreaChainWidget.appex` 后重跑 `./scripts/build.sh`：exit 0，静态验签与 hardened runtime 为 true，描述文件到期 2026-10-28T12:50:11Z。正常 Debug 构建阻塞解除。
