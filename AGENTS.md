@@ -82,7 +82,7 @@
 - 定向测试默认走门禁推导；需要手动指定时用 `python3 -B scripts/quality_gate.py --profile swift --only-testing AreaChainTests/DayBoardLogicTests`（自动分前台／后台轮、走隔离 QA）。全量回归用 `--profile full`，只在批次收尾或用户明确要求时运行，前台轮期间需离开电脑。直接 `./scripts/build.sh test` 使用与日用应用同一标识的开发宿主，不作为原生测试的验收结果。普通测试不得启用真实钥匙串授权。
 - 构建、签名或应用管理脚本变更：运行 `python3 -B -m unittest discover -s scripts/tests -v`，Shell 脚本另做语法检查。这些隔离测试不代替真实安装、系统认证或恢复验收。
 - 样式与交互分别选择 [AreaChainTests/Theme](AreaChainTests/Theme) 和 [AreaChainTests/Features](AreaChainTests/Features) 的相关测试，例如 `DaybookTokenTests`、`WorkspaceLayoutTests`、`WorkspaceRenderingTests`、`InputSyntaxInteractionTests`；不能只做编译就宣布界面通过。
-- 原生窗口验证先读 [架构文档的隔离验收说明](docs/architecture.md#隔离验收与真实启用门禁)，采用独立 QA 标识、隔离构建目录和内存/临时数据，保持测试串行。焦点敏感测试期间不要同时操纵其他窗口；截图查看与交互执行分开，不能用跳过焦点断言消除失败。
+- 原生窗口验证先读 [架构文档的隔离验收说明](docs/architecture.md#隔离验收与真实启用门禁)，采用独立 QA 标识、隔离构建目录和内存/临时数据，保持测试串行。手动跑需要焦点的 QA 测试时加 `--keep-front`（用户空闲时把 QA 应用切回前台，门禁前台轮已自动加），不用于后台套件。焦点敏感测试期间不要同时操纵其他窗口；截图查看与交互执行分开，不能用跳过焦点断言消除失败。
 - 最终列出实际运行的检查和未覆盖项；相关编辑后重跑受影响检查，不把旧结果作为新改动的通过证据。
 
 ## 系统集成与交付边界

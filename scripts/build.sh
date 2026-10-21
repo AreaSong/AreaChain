@@ -22,6 +22,7 @@ usage() {
   --only-testing 标识            test / qa：限制测试范围，可重复指定；缺省命令时自动推导为 test
   --skip-testing 标识            test / qa：排除测试，可重复指定；用于把后台套件和前台套件分两轮跑
   --qa-batch 名称                qa / qa-compile：本批小写字母数字/连字符，隔离目录与应用标识
+  --keep-front                   仅 qa：测试期间用户空闲 5 秒以上时把 QA 应用切回前台（需要焦点的前台轮用）
   --no-wait                      多会话竞争构建锁时不自动排队等待，直接退出
 
 安装请使用 ./scripts/install.sh（开发中默认增量安装 Debug；--release 才安装优化包）。状态、启动与卸载见 ./scripts/app.sh --help。
@@ -38,6 +39,7 @@ configuration="Debug"
 configuration_set="NO"
 allow_provisioning="NO"
 wait_for_lock="YES"
+keep_front="NO"
 test_filters=()
 qa_batch=""
 
@@ -54,6 +56,7 @@ while [[ $# -gt 0 ]]; do
             [[ $# -ge 2 ]] || fail "--skip-testing 缺少参数。"
             test_filters+=("-skip-testing:$2"); shift 2 ;;
         --no-wait) wait_for_lock="NO"; shift ;;
+        --keep-front) keep_front="YES"; shift ;;
         --qa-batch)
             [[ $# -ge 2 && "$2" =~ ^[a-z0-9][a-z0-9-]{0,39}$ ]] || fail "--qa-batch 必须是 1～40 位小写字母、数字或连字符。"
             qa_batch="$2"; shift 2 ;;
@@ -94,6 +97,8 @@ if [[ "$allow_provisioning" == "YES" && "$command_name" != "build" && "$command_
 fi
 [[ "$command_name" == "test" || "$command_name" == "qa" || ${#test_filters[@]} -eq 0 ]] || fail "--only-testing / --skip-testing 仅用于 test / qa。"
 [[ -z "$qa_batch" || "$command_name" == "qa" || "$command_name" == "qa-compile" ]] || fail "--qa-batch 仅用于 qa / qa-compile。"
+# 只对 QA 独立标识切前台；开发宿主与日用应用同一标识，绝不能被守护激活。
+[[ "$keep_front" == "NO" || "$command_name" == "qa" ]] || fail "--keep-front 仅用于 qa。"
 
 if [[ "$command_name" == "qa" || "$command_name" == "qa-compile" ]]; then
     settings='{"mode":"local"}'
@@ -203,14 +208,23 @@ if [[ "$command_name" == "qa" || "$command_name" == "qa-compile" ]]; then
         -u TEST_RUNNER_AREACHAIN_SYSTEM_KEYCHAIN_RUN_ID -u TEST_RUNNER_AREACHAIN_SYSTEM_KEYCHAIN_PHASE \
         bash -c '
             set -euo pipefail
-            action="$1"; app="$2"; identifier="$3"; shift 3
+            action="$1"; app="$2"; identifier="$3"; keep="$4"; shift 4
             xcodebuild "$@" -parallel-testing-enabled NO build-for-testing
             python3 -B scripts/qa_identity.py "$app" --expected-identifier "$identifier"
             if [[ "$action" == "qa" ]]; then
-                xcodebuild "$@" -parallel-testing-enabled NO test-without-building
+                keeper=""
+                if [[ "$keep" == "YES" ]]; then
+                    python3 -B scripts/keep_front.py "$identifier" & keeper=$!
+                    # 测试被中断或超时也要结束守护；被 SIGKILL 时由守护自己发现父进程消失后退出。
+                    trap '\''[[ -z "$keeper" ]] || kill "$keeper" 2>/dev/null || true'\'' EXIT INT TERM
+                fi
+                status=0
+                xcodebuild "$@" -parallel-testing-enabled NO test-without-building || status=$?
+                if [[ -n "$keeper" ]]; then kill "$keeper" 2>/dev/null || true; wait "$keeper" 2>/dev/null || true; fi
+                [[ "$status" -eq 0 ]] || exit "$status"
                 python3 -B scripts/qa_identity.py "$app" --expected-identifier "$identifier"
             fi
-        ' qa "$command_name" "$candidate_app" "$qa_identifier" "${build_arguments[@]}"
+        ' qa "$command_name" "$candidate_app" "$qa_identifier" "$keep_front" "${build_arguments[@]}"
 elif [[ "$command_name" == "test" ]]; then
     if [[ ${#test_filters[@]} -gt 0 ]]; then build_arguments+=("${test_filters[@]}"); fi
     mkdir -p "$derived_data/phase1-logs"

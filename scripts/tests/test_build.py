@@ -155,6 +155,14 @@ class BuildCommandTests(unittest.TestCase):
         self.assertIn("-only-testing:AreaChainTests/PrivacyVaultTests", self.xcode_call()["args"])
         self.assertIn("-only-testing:AreaChainTests/SystemVaultIntegrationTests", self.xcode_call()["args"])
 
+    def test_keep_front_is_only_accepted_for_qa(self):
+        for arguments in (("test", "--keep-front"), ("build", "--keep-front"), ("qa-compile", "--keep-front")):
+            with self.subTest(arguments=arguments):
+                result = self.invoke(*arguments)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("--keep-front 仅用于 qa", result.stderr)
+                self.assertEqual(self.records(), [])
+
     def test_skip_testing_is_forwarded_for_split_runs(self):
         result = self.invoke("test", "--skip-testing", "AreaChainTests/UnifiedSearchOriginalPageTests")
         self.assertEqual(result.returncode, 0, result.stderr)

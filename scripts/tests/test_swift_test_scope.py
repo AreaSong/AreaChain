@@ -222,7 +222,9 @@ class BackgroundRoundTests(unittest.TestCase):
         results = iter([(0, "", "", 1.0), (65, "", "boom", 2.0)])
         with patch.object(quality, "run_command", side_effect=lambda *a, **k: next(results)) as run:
             check = quality.run_swift_tests(None, root=self.root)
-        self.assertEqual([call.args[0][2] for call in run.call_args_list], ["--skip-testing", "--only-testing"])
+        # 只有前台轮带 --keep-front；后台轮不切前台。
+        self.assertEqual([call.args[0][2:4] for call in run.call_args_list],
+                         [["--keep-front", "--skip-testing"], ["--only-testing", "AreaChainTests/QuietTests"]])
         self.assertEqual(check["status"], "failed")
         self.assertIn("前台轮（需离开电脑）退出码 0", check["detail"])
         self.assertIn("后台轮（可以用电脑）退出码 65", check["detail"])
@@ -242,7 +244,7 @@ class SwiftTestChecksTests(unittest.TestCase):
     def test_full_profile_is_the_only_unfiltered_run(self):
         with patch.object(quality, "run_command", return_value=(0, "", "", 0.1)) as run:
             checks = quality.swift_test_checks(self.root, ["AreaChain/App/Delegate.swift"], "full", [])
-        self.assertEqual(self.commands(run), [["./scripts/build.sh", "qa"]])
+        self.assertEqual(self.commands(run), [["./scripts/build.sh", "qa", "--keep-front"]])
         self.assertIn("全量", checks[0]["detail"])
 
     def test_only_full_and_release_get_the_long_round_timeout(self):
@@ -255,7 +257,7 @@ class SwiftTestChecksTests(unittest.TestCase):
     def test_explicit_only_testing_wins(self):
         with patch.object(quality, "run_command", return_value=(0, "", "", 0.1)) as run:
             quality.swift_test_checks(self.root, [], "swift", ["AreaChainTests/FooTests"])
-        self.assertEqual(self.commands(run), [["./scripts/build.sh", "qa", "--only-testing", "AreaChainTests/FooTests"]])
+        self.assertEqual(self.commands(run), [["./scripts/build.sh", "qa", "--keep-front", "--only-testing", "AreaChainTests/FooTests"]])
 
     def test_unresolved_swift_change_warns_and_runs_no_tests(self):
         with patch.object(quality, "run_command", return_value=(0, "", "", 0.1)) as run:
