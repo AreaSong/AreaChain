@@ -2689,3 +2689,30 @@ composedWindowAndScrollStates(scheme:) 在浅/深色、默认/原最小尺寸检
 当前可调用工具目录无指定 Cursor verifier，**未执行指定只读复核**，未安装、认证、更换模型/权限或用其他代理替代。待审材料仍为本节、原实际差异/源码清单、原失败和本轮命令证据；检查范围保持字体回退比较的敏感性、测量标记隔离、隐藏焦点、草稿唯一所有者、失败重试与记录去重、选择/检查日与手动重开规则、ScrollScope 所有权/清理。材料可供复核不等于复核通过。
 
 **交接条件**：先协调源码稳定窗口，再进行准确九项与同源码正常 Debug/验签；人工入口、单窗合成图和指定复核分别补证。当前未修复生产代码，未提交、推送、安装、发布或启动正常应用，未给其他线程发送指令或终止其工作；整体继续 partial，不新增产品阶段。
+
+## 测试提速与原生测试隔离（2026-10-21）
+
+**目标**（用户提出）：改什么测什么，不再动不动跑全量；能放后台的测试放后台，跑测试时不占用电脑；需要焦点的测试不再要用户手动点窗口才继续。规则的唯一来源是[质量门禁](quality-gates.md)，入口登记在[组件目录](component-catalog.md)，本节只记录改动、证据与缺口。
+
+**改动**
+- 定向推导：[swift_test_scope.py](../scripts/swift_test_scope.py) 按变更逐文件推导（同名 → 直接引用，扩展文件按成员名，常见名跳过并列出），找不到相关测试时只编译并报 `swift-test-scope`；取消“超过 5 个文件即全量”与按层兜底，全量只由 `--profile full`／`release` 触发，全量每轮超时 3 小时。
+- 两轮执行：`.tags(.backgroundWindow)` 套件进后台轮（窗口排在其他应用之后、不激活），其余进前台轮，两轮各起一次 `build.sh qa`；当前后台套件 35 个。混合套件把键鼠用例原样移到同文件前台套件（如 `…ClickTests`）或把程序化用例移到 `…BackgroundTests`。
+- 隔离宿主：门禁 Swift 测试统一走标准 QA（`com.areachain.privacy-qa`），另跑一次 `build.sh build` 给日用配置编译证据；性能测试仍走 `build.sh test`。
+- 前台守护：[keep_front.py](../scripts/keep_front.py)，`build.sh qa` 默认开启（纯后台套件自动关闭），只在用户空闲 5 秒以上时把 QA 应用切回前台；macOS 14 起应用不能自己抢回前台，这是“要人点一下才继续”的原因。
+- 慢用例：UnifiedSearchOriginalPageTests 的 73 条路由改为纯数据逐条核对 + 每种组合一条原生代表。
+- 规则同步：AGENTS.md、areachain-verify 技能与 checks、README、signing 均改为默认按改动测试、全量只在批次收尾或用户要求时运行。
+
+**顺带修复的缺陷**
+- 同进程崩溃（3 处）：测试容器在视图图拆除前被释放；RecurringItemEditor／CalendarMonthNavigation 自建宿主、UnifiedSearchNavigationFixture 与 SystemPageHost 统一保活（规则见组件目录）。
+- QuadrantLayoutTests 单独运行即崩：宿主未注入 `AppPreferences`（QuadrantChip 自 5a83284 起读取）；两项几何断言为测试过时（4c233f7 起嵌入底部留白 9pt），已改用 `WorkspaceLayout.embeddedPageBottomInset`。
+- 生产缺陷：附件浏览页、附件缩略图、剪贴板浏览器与剪贴板页在非鼠标事件下读 `clickCount` 会抛异常崩溃（键盘、VoiceOver 激活同样可能触发），改用 [PointerClickCount](../AreaChain/Theme/PointerClickCount.swift)，verifier 复核通过。
+
+**实测证据**（隔离 QA，合成数据）
+- UnifiedSearchOriginalPageTests：155 秒 → 48.7 秒，9 项全过。
+- 推导回放（测试类数，改前 → 改后）：d737443 239 → 17，18cfe9d 98 → 40，efe2ebb 594 → 172；共享测试宿主改动（如 249edbb）仍约 241，属合理。
+- 后台轮 17 套件同进程 49/49，期间测试应用从未占前台（每 0.5 秒采样前台应用）；前台守护在 Claude 停在前台、无人操作时切回 QA 应用，测试自行跑完。
+- 开发宿主（`build.sh test`）全量前台轮 129.7 分钟、3,623 项中 92 失败，主要因宿主与日用应用同标识、非 QA 编译条件，不作为验收结果；这也是门禁改走 QA 的依据。
+
+**既有失败（未修，改动前同样失败或已在 M-3 记录）**：WorkspaceRendering.diaryComposerKeepsNewlinesAndSavesOnce、SearchMultilineDiagnosticTests.productionImports、PrivacyAutolockPickerTests 两项（焦点与几何，未做基线对照）、DiaryButtonConsumerTests 允许把“密码”建为普通标签（M-4 业务问题）。
+
+**缺口**：没有在真实开发场景量过一次日常门禁的总耗时；前台轮仍需离开电脑（macOS 限制），全量前台轮约 2 小时；约 30 个混合套件因私有辅助或存储属性尚未拆分；推导只看源码文本，经协议、夹具链或运行时的间接影响留给批次收尾的全量。
