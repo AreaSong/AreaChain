@@ -8185,3 +8185,25 @@ L-M1b 必须的反例（合成内存库、fake 系统依赖）：借用签发后
 - A：DiaryWriteServiceTests 3 方法（含 12 个样例与旧实现逐字对照）＋长文回归，20 次执行全过；check_workflow、`scripts/tests` 中 checker 130 项通过。
 - B～D 服务层 12 类 73 次执行：首轮 12 失败（单目标输入未滤掉 target 参数致 invalidArguments；两条测试期望写错：`canEnterOrdinaryQueue` 恒为假、原页面对照表未补 J2），整改后 72/73，余 1 条测试期望（种子正文标签未关联）改正后该类 9/9 全过。原生 4 类 18 次全过。
 - 过程记录：开跑时另一会话的全量 `build.sh test` 持原锁约 2 小时（16:01 起），本批按规则排队，8 次 900 秒等待超时后于 18:12 取得锁；未删锁、未干预该进程。
+
+#### 集中验证（批次 m4，证据在被忽略的 build/M4/）
+
+| 项目 | 结果 |
+|---|---|
+| `qa-compile` | 通过 |
+| 本批新增与改动 16 类 | 91 次执行全过 |
+| 服务层回归 27 类（手记查询与仓储、备注／快速新增、骨架、标签整理、回收与恢复、转换、复制） | 181 次全过 |
+| 原生回归 32 类（手记页、手记小窗、菜单栏、隐私与解锁、统一搜索） | 202 次，17 失败：UnifiedSearchPrivacyRestore 一次崩溃单类重跑 2/2 通过；其余 9 类 16 项单类重跑仍失败，在 `git archive ffceba8` 基线副本持原锁以相同断言复现，判为既有（7 项为测试写死默认 QA 标识 `com.areachain.privacy-qa` 而批次为 `.m4`；另有 DiaryWindowLifecycle、MenuBarPopoverRendering 两项、MenuBarHelpSurface、DiaryPageListModel、DiaryTitleHover 两项、DiaryButtonConsumer 标签面板、PrivacyButtonConsumer 布局） |
+| 正常 `./scripts/build.sh` | **阻塞**：编译通过，签名核验两次失败——Widget appex 的 embedded.provisionprofile 在签名后被替换（新描述文件到期 2026-10-28）；本批未改签名、工程或配置文件，未续签、未改个人签名配置 |
+| `check_workflow.py`、`scripts/tests` 311 项、`quality_gate.py --profile static --strict`（敏感日志候选 0）、全库 `swiftlint lint --strict`（0）、`git diff --check` | 全部通过 |
+
+#### 指定只读复核
+
+- Claude Code `verifier`：结论**通过**，七条验收逐条符合；它亲自在 `--qa-batch m4v` 重跑 8 类 31 次全过，并重跑 check_workflow、checker 130 项、全库 SwiftLint、`git diff --check`，核对新增 45 个文案键双语齐全、无新增日志调用、未推送。
+- 三条低级意见不改代码、记录在此：① 检查点 B 带上共享文件，中间提交不保证单独编译；② 守卫只要求托管文件出现 `extension DiaryWriteService`，没有把 `applyLent` 与它绑定（`consumeText`／`lentText` 仍为 fileprivate，别处声明的出口取不到正文）；③“保存后会变成受保护”在新建报 `protectedDiary`、在改写报 `diaryPrivateTag`，两者都引导到原手记页，只是原因文案不同。
+- verifier 未重跑：服务层与原生全量回归、基线复现、static 质量门禁（工作区有其他会话改动）、正常构建、中间提交编译，以执行者证据为准。
+
+#### 缺口与生产接线所需授权
+
+- 正常 Debug 构建阻塞（见上表）；人工与平台验收（真人输入法、VoiceOver、最低系统、面板“打开原手记页”的真实点击）未做。
+- 生产接线须另行授权：手记规格装配（`DiaryCommandDependencies` 的仓储、保险箱与附件根）、页面宿主 `system` 的真实 DiaryWindows 与通用剪贴板、托管转接真实隐私锁事件。
