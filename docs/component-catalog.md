@@ -116,7 +116,7 @@
 
 工程验证复用 [build.sh](../scripts/build.sh) 及 [原锁竞争测试](../scripts/tests/test_build.py)；后续任务的等待策略与源码身份核对统一见[并发构建与测试](quality-gates.md#并发构建与测试)，不另建锁或验证执行器。
 
-按钮动作里判断单击／双击统一用 [PointerClickCount](../AreaChain/Theme/PointerClickCount.swift)`.current()`：只对鼠标事件读 `clickCount`，键盘、辅助功能或系统事件按单击处理（直接读会抛异常崩溃）；消费者为附件浏览页、附件缩略图、剪贴板浏览器与剪贴板页，回归见 [PointerClickCountTests](../AreaChainTests/Theme/PointerClickCountTests.swift)。不要再直接写 `NSApp.currentEvent?.clickCount`。
+按钮动作里判断单击／双击统一用 [PointerClickCount](../AreaChain/Theme/PointerClickCount.swift)`.current()`：只对鼠标按下、抬起与拖拽事件读 `clickCount`（与 NSEvent.h 约定一致，主线程使用），键盘、辅助功能或系统事件按单击处理（直接读会抛异常崩溃）；消费者为附件浏览页、附件缩略图、剪贴板浏览器与剪贴板页，回归见 [PointerClickCountTests](../AreaChainTests/Theme/PointerClickCountTests.swift)。不要再直接写 `NSApp.currentEvent?.clickCount`。
 
 Swift 定向测试范围只由 [swift_test_scope.py](../scripts/swift_test_scope.py) 推导（同名 → 直接引用，扩展文件按成员名；找不到只编译并提示），[quality_gate.py](../scripts/quality_gate.py) 是唯一调用方；规则与限制见[质量门禁](quality-gates.md)，夹具反例见 [test_swift_test_scope.py](../scripts/tests/test_swift_test_scope.py)。全量只由 `--profile full`／`release` 触发。
 

@@ -8,6 +8,9 @@ import Testing
         let double = try #require(NSEvent.mouseEvent(with: .leftMouseUp, location: .zero, modifierFlags: [],
             timestamp: 0, windowNumber: 0, context: nil, eventNumber: 0, clickCount: 2, pressure: 1))
         #expect(PointerClickCount.current(double) == 2)
+        let dragged = try #require(NSEvent.mouseEvent(with: .leftMouseDragged, location: .zero, modifierFlags: [],
+            timestamp: 0, windowNumber: 0, context: nil, eventNumber: 0, clickCount: 2, pressure: 1))
+        #expect(PointerClickCount.current(dragged) == 2)
     }
 
     @Test func nonMouseEventsCountAsSingleClick() throws {
