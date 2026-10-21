@@ -56,24 +56,6 @@ struct UnifiedSearchLayoutTests {
         #expect(field.convert(field.bounds, to: nil) == initial)
     }
 
-    @Test func aliasesDiagnosticsAndUnavailableParameters() async throws {
-        let host = UnifiedSearchTestHost(locale: "zh-Hans")
-        defer { host.close() }
-        try await host.start()
-        for text in ["普通文字", "/", "/set", "/setting", "/setting/", "/settings", "/设置", "/语言", "/setting/language/chinese", "/setting/unknown"] {
-            host.model.replace(text)
-            try await host.settle()
-            let state = try host.state
-            let result = try #require(state.completion?.result)
-            #expect(result.input == text)
-            if text == "/setting/unknown" { #expect(result.state == .invalid) }
-            if text == "/setting/language/chinese" {
-                #expect(result.arguments.count == 1)
-                #expect(result.command?.isExecutable == false)
-            }
-            if text == "普通文字" { #expect(result.state == .ordinaryText && result.candidates.isEmpty) }
-        }
-    }
     @Test func longDescriptionsNoCandidatesAndOutsideClick() async throws {
         let host = UnifiedSearchTestHost(layout: .compact, width: 304, locale: "zh-Hans", dark: true,
                                          text: "/", reduceMotion: true)
@@ -93,5 +75,26 @@ struct UnifiedSearchLayoutTests {
         #expect(state.suggestions.candidates.isEmpty)
         try host.snapshot("compact-unknown-no-candidates")
     }
+}
 
+/// 别名、诊断与不可用参数只看渲染，放进后台轮；布局矩阵、鼠标与外部点击用例留在原套件。
+@Suite(.serialized, .tags(.backgroundWindow)) @MainActor struct UnifiedSearchLayoutBackgroundTests {
+    @Test func aliasesDiagnosticsAndUnavailableParameters() async throws {
+        let host = UnifiedSearchTestHost(locale: "zh-Hans")
+        defer { host.close() }
+        try await host.start()
+        for text in ["普通文字", "/", "/set", "/setting", "/setting/", "/settings", "/设置", "/语言", "/setting/language/chinese", "/setting/unknown"] {
+            host.model.replace(text)
+            try await host.settle()
+            let state = try host.state
+            let result = try #require(state.completion?.result)
+            #expect(result.input == text)
+            if text == "/setting/unknown" { #expect(result.state == .invalid) }
+            if text == "/setting/language/chinese" {
+                #expect(result.arguments.count == 1)
+                #expect(result.command?.isExecutable == false)
+            }
+            if text == "普通文字" { #expect(result.state == .ordinaryText && result.candidates.isEmpty) }
+        }
+    }
 }

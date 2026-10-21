@@ -63,6 +63,12 @@ struct DaybookDatePickerTests {
         window.makeFirstResponder(nil)
         #expect(probe.writes == writes)
     }
+}
+
+/// 月份布局与今日语义只看渲染，放进后台轮；鼠标与方向键用例留在原套件。
+@Suite(.serialized, .tags(.backgroundWindow)) @MainActor struct DaybookDatePickerBackgroundTests {
+    typealias Native = SettingsButtonTestSupport
+    typealias DateUI = DatePickerTestSupport
 
     @Test(arguments: ["en", "zh-Hans"], [ColorScheme.light, .dark])
     func monthLayoutsAndLocalization(locale: String, scheme: ColorScheme) async throws {
@@ -100,6 +106,7 @@ struct DaybookDatePickerTests {
         }
         #expect(probe.writes.isEmpty)
     }
+
     @Test func todaySemanticsAndInvalidValueDoNotWriteOnMount() async throws {
         let fixture = try Native()
         defer { fixture.cleanup() }
@@ -115,5 +122,4 @@ struct DaybookDatePickerTests {
         #expect(probe.selection == "invalid" && probe.writes.isEmpty)
         #expect(try !DateUI.selected("2026-12-31", in: window))
     }
-
 }

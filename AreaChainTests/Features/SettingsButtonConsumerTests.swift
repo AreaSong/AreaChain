@@ -49,20 +49,6 @@ struct SettingsButtonConsumerTests {
     }
 
     @Test(arguments: ["en", "zh-Hans"], [ColorScheme.light, .dark])
-    func supportLinksHaveContainedLabels(locale: String, scheme: ColorScheme) async throws {
-        let f = try SettingsButtonTestSupport()
-        defer { f.cleanup() }
-        let window = f.window(Form { ProjectSupportSections() }.formStyle(.grouped), locale: locale, scheme: scheme)
-        defer { SystemPageHost.release(window) }
-        try await SystemPageHost.settle(window)
-        let keys = ["project.support.usage", "project.support.issue", "project.support.idea",
-                    "project.about.repository", "project.about.license"]
-        let buttons = try keys.map { try SettingsButtonTestSupport.button($0, locale: locale, in: window) }
-        try SettingsButtonTestSupport.assertBounds(buttons, in: window)
-        try SettingsButtonTestSupport.snapshot(window, name: "support-\(locale)-\(scheme)")
-    }
-
-    @Test(arguments: ["en", "zh-Hans"], [ColorScheme.light, .dark])
     func calendarConflictClickKeepsOriginalComparison(locale: String, scheme: ColorScheme) async throws {
         let f = try SettingsButtonTestSupport()
         defer { f.cleanup() }
@@ -81,6 +67,23 @@ struct SettingsButtonConsumerTests {
         try await SettingsButtonTestSupport.click(button, in: window)
         #expect(opened == [comparison.taskID])
         try SettingsButtonTestSupport.snapshot(window, name: "conflict-\(locale)-\(scheme)")
+    }
+}
+
+/// 标签容纳与条件展示只看布局，放进后台轮；需要真实点击的用例留在原套件。
+@Suite(.serialized, .tags(.backgroundWindow)) @MainActor struct SettingsButtonConsumerBackgroundTests {
+    @Test(arguments: ["en", "zh-Hans"], [ColorScheme.light, .dark])
+    func supportLinksHaveContainedLabels(locale: String, scheme: ColorScheme) async throws {
+        let f = try SettingsButtonTestSupport()
+        defer { f.cleanup() }
+        let window = f.window(Form { ProjectSupportSections() }.formStyle(.grouped), locale: locale, scheme: scheme)
+        defer { SystemPageHost.release(window) }
+        try await SystemPageHost.settle(window)
+        let keys = ["project.support.usage", "project.support.issue", "project.support.idea",
+                    "project.about.repository", "project.about.license"]
+        let buttons = try keys.map { try SettingsButtonTestSupport.button($0, locale: locale, in: window) }
+        try SettingsButtonTestSupport.assertBounds(buttons, in: window)
+        try SettingsButtonTestSupport.snapshot(window, name: "support-\(locale)-\(scheme)")
     }
 
     @Test(arguments: ["en", "zh-Hans"], [ColorScheme.light, .dark])

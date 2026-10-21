@@ -64,7 +64,10 @@ struct UnifiedSearchTaskCreateRecoveryTests {
         #expect(!fixture.controller.operationVisible)
         try host.snapshot("task-create-locked")
     }
+}
 
+/// 原租约与历史未知只用程序化动作，放进后台轮；真实反馈与焦点拒绝的键鼠用例留在原套件。
+@Suite(.serialized, .tags(.backgroundWindow)) @MainActor struct UnifiedSearchTaskCreateRecoveryBackgroundTests {
     @Test func originalLeaseAndOtherCommandStayBlocked() throws {
         let fixture = try UnifiedSearchTaskCreateFixture()
         defer { fixture.stop() }

@@ -46,7 +46,10 @@ import Testing
         #expect(UnifiedSearchCommandDriver.has("unified.simple.issue", host: host) && f.service.count("save") == 0)
         try host.snapshot("m2-tag-merge-private-\(style)")
     }
+}
 
+/// 取消与查看只用程序化动作，放进后台轮；确认面板与拒绝原因的真实键鼠用例留在原套件。
+@Suite(.serialized, .tags(.backgroundWindow)) @MainActor struct UnifiedSearchTagOrganizeBackgroundTests {
     /// tag.cancel：只去掉标签页那一份新建草稿；页面不切换，挂载后的新建框为空，不写库。
     @Test(arguments: [0, 3]) func cancelClearsTheTagPageDraft(style: Int) async throws {
         let f = try UnifiedSearchNavigationFixture()

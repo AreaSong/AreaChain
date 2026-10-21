@@ -3,7 +3,7 @@ import SwiftUI
 import Testing
 @testable import AreaChain
 
-@Suite(.serialized) @MainActor
+@Suite(.serialized, .tags(.backgroundWindow)) @MainActor
 struct ControlsPlatformLifecycleTests {
     @Test func repeatedStartAndCloseReleaseOnce() throws {
         let session = ControlsPlatformAcceptance()
@@ -28,41 +28,6 @@ struct ControlsPlatformLifecycleTests {
         let rows = try ControlsPlatformTestSupport.rows(session)
         #expect(rows.filter { $0["kind"] as? String == "closed" }.count == 1)
         #expect(rows.filter { $0["kind"] as? String == "scene-closed" }.count == 1)
-    }
-
-    @Test func sceneSwitchAndManualClosesRejectOldIdentity() throws {
-        let session = ControlsPlatformAcceptance()
-        defer { session.close() }
-        let gallery = ControlsPlatformTestSupport.gallery()
-        session.start(gallery: gallery)
-        session.openSelected()
-        let old = try #require(session.auxiliary)
-        let stamp = try #require(session.activeStamp)
-        let late = try #require(session.input?.draft.didSubmit)
-        session.selection = .search
-        session.openSelected()
-        #expect(old.contentView == nil && session.generation == 2)
-        let current = try #require(session.auxiliary)
-        let count = session.evidence.sequence
-        let queued = try #require(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [],
-            timestamp: stamp.openedUptime, windowNumber: current.windowNumber, context: nil,
-            characters: "\r", charactersIgnoringModifiers: "\r", isARepeat: false, keyCode: 36))
-        session.observe(queued)
-        session.windowClosed(old, stamp: stamp)
-        // 即使将旧代次用于当前系统窗口号，仍须同时核对对象及唯一 stamp。
-        let reused = ControlsPlatformEvents.WindowStamp(generation: stamp.generation,
-                                                        scene: stamp.scene, number: current.windowNumber)
-        session.windowClosed(current, stamp: reused)
-        late(.init(kind: "todo", before: 0, after: 1, uptime: 1, wallTime: 1))
-        #expect(session.auxiliary === current && session.evidence.sequence == count)
-        current.performClose(nil)
-        #expect(session.auxiliary == nil && current.contentView == nil)
-        session.openSelected()
-        gallery.performClose(nil)
-        #expect(session.state == .ended && session.listenersReleased && session.auxiliary == nil)
-        let endCount = session.evidence.sequence
-        late(.init(kind: "todo", before: 1, after: 2, uptime: 2, wallTime: 2))
-        #expect(session.evidence.sequence == endCount)
     }
 
     @Test func deadlineWindDownAndCancellation() async throws {
@@ -183,6 +148,44 @@ struct ControlsPlatformLifecycleTests {
     }
 }
 
+/// 场景切换与手动关闭需要真实 key window，与后台轮的 ControlsPlatformLifecycleTests 分开，留在前台轮。
+@Suite(.serialized) @MainActor struct ControlsPlatformSceneSwitchTests {
+    @Test func sceneSwitchAndManualClosesRejectOldIdentity() throws {
+        let session = ControlsPlatformAcceptance()
+        defer { session.close() }
+        let gallery = ControlsPlatformTestSupport.gallery()
+        session.start(gallery: gallery)
+        session.openSelected()
+        let old = try #require(session.auxiliary)
+        let stamp = try #require(session.activeStamp)
+        let late = try #require(session.input?.draft.didSubmit)
+        session.selection = .search
+        session.openSelected()
+        #expect(old.contentView == nil && session.generation == 2)
+        let current = try #require(session.auxiliary)
+        let count = session.evidence.sequence
+        let queued = try #require(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [],
+            timestamp: stamp.openedUptime, windowNumber: current.windowNumber, context: nil,
+            characters: "\r", charactersIgnoringModifiers: "\r", isARepeat: false, keyCode: 36))
+        session.observe(queued)
+        session.windowClosed(old, stamp: stamp)
+        // 即使将旧代次用于当前系统窗口号，仍须同时核对对象及唯一 stamp。
+        let reused = ControlsPlatformEvents.WindowStamp(generation: stamp.generation,
+                                                        scene: stamp.scene, number: current.windowNumber)
+        session.windowClosed(current, stamp: reused)
+        late(.init(kind: "todo", before: 0, after: 1, uptime: 1, wallTime: 1))
+        #expect(session.auxiliary === current && session.evidence.sequence == count)
+        current.performClose(nil)
+        #expect(session.auxiliary == nil && current.contentView == nil)
+        session.openSelected()
+        gallery.performClose(nil)
+        #expect(session.state == .ended && session.listenersReleased && session.auxiliary == nil)
+        let endCount = session.evidence.sequence
+        late(.init(kind: "todo", before: 1, after: 2, uptime: 2, wallTime: 2))
+        #expect(session.evidence.sequence == endCount)
+    }
+}
+
 @MainActor
 enum ControlsPlatformTestSupport {
     enum Failure: Error { case synthetic }
@@ -193,8 +196,13 @@ enum ControlsPlatformTestSupport {
         window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(rootView: Text("P synthetic QA"))
         NSApp.setActivationPolicy(.regular)
-        NSApp.activate(ignoringOtherApps: true)
-        window.makeKeyAndOrderFront(nil)
+        // 后台套件只排窗不激活，避免打扰用户；场景切换等需要 key window 的用例留在前台套件。
+        if NativeSyntaxUI.inBackgroundSuite {
+            window.orderBack(nil)
+        } else {
+            NSApp.activate(ignoringOtherApps: true)
+            window.makeKeyAndOrderFront(nil)
+        }
         return window
     }
     static func rows(_ session: ControlsPlatformAcceptance) throws -> [[String: Any]] {
