@@ -5,35 +5,7 @@ import Testing
 
 /// 合并批 M-3 C：两个直接执行的安全小动作。trash.restore 经共用独立确认面板、只能单项；
 /// privacy.lock 沿“立即锁定”，锁定事件撤销结果展示、返回票据与托管借用。
-@Suite(.serialized) @MainActor struct UnifiedSearchPrivacyRestoreTests {
-    @Test(arguments: [0, 3]) func trashRestoreGoesThroughTheSharedConfirmationPanel(style: Int) async throws {
-        let f = try UnifiedSearchSimpleFixture(restore: true)
-        defer { f.results.stop() }
-        let host = try await f.host(style)
-        defer { host.close() }
-        try await f.begin("/trash/restore", host: host)
-        let stamp = try #require(f.controller.operations?.active?.stamp)
-        let id = CommandID(rawValue: "trash.restore")
-        try #require(f.controller.sendOperation(.selectTargets(stamp, .init(.single, objects: [f.service.target(f.service.deleted)]),
-                                                               baseline: f.controller.targetBaseline(for: id)),
-                                                source: f.controller.buffer) != nil)
-        try await host.settle()
-        _ = try await f.prepareAndAccept(host, name: "m3-trash-restore-\(style)")
-        try await host.clickCompositionControl("unified.simple.save")
-        #expect(f.controller.simpleConfirmation != nil && f.service.count("save") == 0)
-        #expect(UnifiedSearchCommandDriver.has("unified.simple.confirmation", host: host))
-        try host.snapshot("m3-trash-restore-confirm-\(style)")
-        // Esc 只撤销确认：草稿与接受都还在，不写库。
-        try await host.key(53, "\u{1b}")
-        #expect(f.controller.simpleConfirmation == nil && f.controller.currentSimpleAcceptance != nil)
-        #expect(f.service.deleted.deletedAt != nil && f.service.count("save") == 0)
-        try await host.clickCompositionControl("unified.simple.save")
-        try await host.clickCompositionControl("unified.simple.confirm")
-        let facts = try #require(f.controller.simpleUnit?.simple, "未执行：\(f.controller.simpleFailure ?? "none")")
-        #expect(facts.state == .saved && f.service.count("save") == 1 && f.service.deleted.deletedAt == nil)
-        try host.snapshot("m3-trash-restore-saved-\(style)")
-    }
-
+@Suite(.serialized, .tags(.backgroundWindow)) @MainActor struct UnifiedSearchPrivacyRestoreTests {
     @Test func lockRevokesPresentationTicketAndPostsLockEvent() async throws {
         let fixture = try UnifiedSearchNavigationFixture()
         defer { fixture.stop() }
@@ -81,5 +53,36 @@ import Testing
         try await fixture.go("/privacy/lock")
         #expect(fixture.controller.navigationMessage == "unified.privacy.lock.unconfigured")
         #expect(!fixture.vault.isConfigured && fixture.saves == 0)
+    }
+}
+
+/// 确认面板走真实点击与 Esc（前台 key window），与后台轮的 UnifiedSearchPrivacyRestoreTests 分开，留在前台轮。
+@Suite(.serialized) @MainActor struct UnifiedSearchTrashRestoreConfirmationTests {
+    @Test(arguments: [0, 3]) func trashRestoreGoesThroughTheSharedConfirmationPanel(style: Int) async throws {
+        let f = try UnifiedSearchSimpleFixture(restore: true)
+        defer { f.results.stop() }
+        let host = try await f.host(style)
+        defer { host.close() }
+        try await f.begin("/trash/restore", host: host)
+        let stamp = try #require(f.controller.operations?.active?.stamp)
+        let id = CommandID(rawValue: "trash.restore")
+        try #require(f.controller.sendOperation(.selectTargets(stamp, .init(.single, objects: [f.service.target(f.service.deleted)]),
+                                                               baseline: f.controller.targetBaseline(for: id)),
+                                                source: f.controller.buffer) != nil)
+        try await host.settle()
+        _ = try await f.prepareAndAccept(host, name: "m3-trash-restore-\(style)")
+        try await host.clickCompositionControl("unified.simple.save")
+        #expect(f.controller.simpleConfirmation != nil && f.service.count("save") == 0)
+        #expect(UnifiedSearchCommandDriver.has("unified.simple.confirmation", host: host))
+        try host.snapshot("m3-trash-restore-confirm-\(style)")
+        // Esc 只撤销确认：草稿与接受都还在，不写库。
+        try await host.key(53, "\u{1b}")
+        #expect(f.controller.simpleConfirmation == nil && f.controller.currentSimpleAcceptance != nil)
+        #expect(f.service.deleted.deletedAt != nil && f.service.count("save") == 0)
+        try await host.clickCompositionControl("unified.simple.save")
+        try await host.clickCompositionControl("unified.simple.confirm")
+        let facts = try #require(f.controller.simpleUnit?.simple, "未执行：\(f.controller.simpleFailure ?? "none")")
+        #expect(facts.state == .saved && f.service.count("save") == 1 && f.service.deleted.deletedAt == nil)
+        try host.snapshot("m3-trash-restore-saved-\(style)")
     }
 }

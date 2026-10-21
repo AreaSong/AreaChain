@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-@Suite(.serialized) @MainActor struct UnifiedSearchNavigationTests {
+@Suite(.serialized, .tags(.backgroundWindow)) @MainActor struct UnifiedSearchNavigationTests {
     @Test func allSixteenMappingsAndUnassembledRejection() throws {
         let ids = ["dashboard", "today", "pending", "allItems", "calendar", "quadrant", "gantt", "diaries",
                    "images", "clipboard", "tags", "privacy", "backup", "trash", "settings", "shortcuts"]
@@ -20,38 +20,6 @@ import Testing
             #expect(try fixture.handoff.state().operations.active == nil)
         }
         #expect(WorkspaceNavigationDestination.page(command: .init(rawValue: "go.tagList")) == nil)
-    }
-
-    @Test(arguments: [0, 1, 2, 3]) func settingsDateAndReturnUseRealWorkspace(_ style: Int) async throws {
-        let fixture = try UnifiedSearchNavigationFixture()
-        defer { fixture.stop() }
-        try await fixture.start(style: style)
-        let original = try fixture.handoff.state().query
-        let version = try fixture.session.presentation().pagination.snapshot.version
-        let reads = fixture.reads
-        try await fixture.go("/go/settings")
-        #expect(fixture.router.outcome == .displayed)
-        #expect(fixture.router.mounted("page.settings"))
-        #expect(!fixture.navigation.isSearching)
-        #expect(try fixture.handoff.state().query == original)
-        #expect(SettingsButtonTestSupport.elements(fixture.window?.contentView).contains {
-            SettingsButtonTestSupport.value($0, "accessibilityIdentifier") as? String == "settings.preferences"
-        })
-        try await fixture.snapshot("settings-\(style)")
-        try await fixture.click("unified.navigation.return")
-        #expect(fixture.navigation.isSearching)
-        #expect(fixture.controller.buffer.text == "needle")
-        #expect(try fixture.session.presentation().pagination.snapshot.version == version)
-        #expect(fixture.reads == reads)
-        try await fixture.go("/inspector/day/2026-10-07")
-        #expect(fixture.router.outcome == .displayed)
-        #expect(fixture.router.mounted("page.calendar"))
-        #expect(fixture.navigation.inspectingDayKey == fixture.day)
-        try await fixture.snapshot("date-\(style)")
-        try await fixture.back()
-        #expect(try fixture.handoff.state().query == original)
-        #expect(!fixture.context.hasChanges)
-        #expect(try fixture.context.fetchCount(FetchDescriptor<RoutineCheck>()) == 0)
     }
 
     @Test func realTaskAndChildIdentityAndStaleReturn() async throws {
@@ -142,5 +110,40 @@ import Testing
         #expect(try fixture.context.fetchCount(FetchDescriptor<RoutineCheck>()) == 0)
         #expect(try fixture.handoff.state().plan.items.isEmpty)
         #expect(try fixture.handoff.state().execution == nil)
+    }
+}
+
+/// 需要真实点击（前台 key window），与后台轮的 UnifiedSearchNavigationTests 分开，留在前台轮。
+@Suite(.serialized) @MainActor struct UnifiedSearchNavigationClickTests {
+    @Test(arguments: [0, 1, 2, 3]) func settingsDateAndReturnUseRealWorkspace(_ style: Int) async throws {
+        let fixture = try UnifiedSearchNavigationFixture()
+        defer { fixture.stop() }
+        try await fixture.start(style: style)
+        let original = try fixture.handoff.state().query
+        let version = try fixture.session.presentation().pagination.snapshot.version
+        let reads = fixture.reads
+        try await fixture.go("/go/settings")
+        #expect(fixture.router.outcome == .displayed)
+        #expect(fixture.router.mounted("page.settings"))
+        #expect(!fixture.navigation.isSearching)
+        #expect(try fixture.handoff.state().query == original)
+        #expect(SettingsButtonTestSupport.elements(fixture.window?.contentView).contains {
+            SettingsButtonTestSupport.value($0, "accessibilityIdentifier") as? String == "settings.preferences"
+        })
+        try await fixture.snapshot("settings-\(style)")
+        try await fixture.click("unified.navigation.return")
+        #expect(fixture.navigation.isSearching)
+        #expect(fixture.controller.buffer.text == "needle")
+        #expect(try fixture.session.presentation().pagination.snapshot.version == version)
+        #expect(fixture.reads == reads)
+        try await fixture.go("/inspector/day/2026-10-07")
+        #expect(fixture.router.outcome == .displayed)
+        #expect(fixture.router.mounted("page.calendar"))
+        #expect(fixture.navigation.inspectingDayKey == fixture.day)
+        try await fixture.snapshot("date-\(style)")
+        try await fixture.back()
+        #expect(try fixture.handoff.state().query == original)
+        #expect(!fixture.context.hasChanges)
+        #expect(try fixture.context.fetchCount(FetchDescriptor<RoutineCheck>()) == 0)
     }
 }

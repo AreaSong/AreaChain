@@ -3,7 +3,7 @@ import SwiftUI
 import Testing
 @testable import AreaChain
 
-@Suite(.serialized) @MainActor
+@Suite(.serialized, .tags(.backgroundWindow)) @MainActor
 struct RowBubbleSurfaceTests {
     @Test func policiesKeepCopiedPriorityAndOriginalGeometry() {
         for hovered in [false, true] {
@@ -85,7 +85,10 @@ struct RowBubbleSurfaceTests {
             }
         }
     }
+}
 
+/// 需要真实点击穿透描边（前台 key window），与后台轮的 RowBubbleSurfaceTests 分开，留在前台轮。
+@Suite(.serialized) @MainActor struct RowBubbleSurfaceClickTests {
     @Test(arguments: [false, true], [false, true])
     func dynamicBorderDoesNotInterceptContent(hovered: Bool, copied: Bool) async throws {
         let support = try SettingsButtonTestSupport(isolatedPreferences: true)

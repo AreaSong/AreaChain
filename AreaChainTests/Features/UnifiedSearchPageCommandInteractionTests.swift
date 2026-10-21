@@ -6,7 +6,7 @@ import Testing
 
 /// 合并批 M-1 检查点 C（原生）：真实工作台宿主里的页面指令面板。筛选双向同步、选择沿 N-M1 显示当前页后按页面投影、
 /// 页面不对时说明且不切页、取消与连击查询。0 标准英文浅色、1 标准英文深色、2 最小中文浅色、3 最小中文深色。
-@Suite(.serialized) @MainActor struct UnifiedSearchPageCommandInteractionTests {
+@Suite(.serialized, .tags(.backgroundWindow)) @MainActor struct UnifiedSearchPageCommandInteractionTests {
     private func fixture(_ page: WorkspaceTab) throws -> UnifiedSearchNavigationFixture {
         let f = try UnifiedSearchNavigationFixture()
         f.navigation.selectedTab = page
