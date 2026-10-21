@@ -215,6 +215,15 @@ class BackgroundRoundTests(unittest.TestCase):
         run.assert_not_called()
         self.assertEqual((check["status"], check["detail"]), ("passed", "没有需要运行的 Swift 测试。"))
 
+    def test_only_background_detects_xcodebuild_filters(self):
+        self.assertTrue(scope.only_background(self.root, ["-only-testing:AreaChainTests/QuietTests"]))
+        self.assertTrue(scope.only_background(self.root, ["-only-testing:AreaChainTests/StackedTests/a()"]))
+        for filters in ([], ["-only-testing:AreaChainTests/LoudTests"], ["-skip-testing:AreaChainTests/QuietTests"],
+                        ["-only-testing:AreaChainTests/QuietTests", "-only-testing:AreaChainTests/LoudTests"],
+                        ["-only-testing:AreaChainTests"]):
+            with self.subTest(filters=filters):
+                self.assertFalse(scope.only_background(self.root, filters))
+
     def test_without_background_suites_full_run_is_one_unfiltered_round(self):
         self.assertEqual(scope.split_rounds(self.root / "missing", None), [("前台轮", [])])
 
@@ -222,9 +231,9 @@ class BackgroundRoundTests(unittest.TestCase):
         results = iter([(0, "", "", 1.0), (65, "", "boom", 2.0)])
         with patch.object(quality, "run_command", side_effect=lambda *a, **k: next(results)) as run:
             check = quality.run_swift_tests(None, root=self.root)
-        # 只有前台轮带 --keep-front；后台轮不切前台。
+        # 前台轮显式开守护，后台轮显式关，不依赖 build.sh 的自动判断。
         self.assertEqual([call.args[0][2:4] for call in run.call_args_list],
-                         [["--keep-front", "--skip-testing"], ["--only-testing", "AreaChainTests/QuietTests"]])
+                         [["--keep-front", "--skip-testing"], ["--no-keep-front", "--only-testing"]])
         self.assertEqual(check["status"], "failed")
         self.assertIn("前台轮（需离开电脑）退出码 0", check["detail"])
         self.assertIn("后台轮（可以用电脑）退出码 65", check["detail"])

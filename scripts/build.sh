@@ -22,7 +22,8 @@ usage() {
   --only-testing 标识            test / qa：限制测试范围，可重复指定；缺省命令时自动推导为 test
   --skip-testing 标识            test / qa：排除测试，可重复指定；用于把后台套件和前台套件分两轮跑
   --qa-batch 名称                qa / qa-compile：本批小写字母数字/连字符，隔离目录与应用标识
-  --keep-front                   仅 qa：测试期间用户空闲 5 秒以上时把 QA 应用切回前台（需要焦点的前台轮用）
+  --keep-front / --no-keep-front 仅 qa：测试期间用户空闲 5 秒以上时把 QA 应用切回前台。默认开启；
+                                 只选中后台套件（.backgroundWindow）时自动关闭，不打扰用户
   --no-wait                      多会话竞争构建锁时不自动排队等待，直接退出
 
 安装请使用 ./scripts/install.sh（开发中默认增量安装 Debug；--release 才安装优化包）。状态、启动与卸载见 ./scripts/app.sh --help。
@@ -39,7 +40,7 @@ configuration="Debug"
 configuration_set="NO"
 allow_provisioning="NO"
 wait_for_lock="YES"
-keep_front="NO"
+keep_front="AUTO"
 test_filters=()
 qa_batch=""
 
@@ -57,6 +58,7 @@ while [[ $# -gt 0 ]]; do
             test_filters+=("-skip-testing:$2"); shift 2 ;;
         --no-wait) wait_for_lock="NO"; shift ;;
         --keep-front) keep_front="YES"; shift ;;
+        --no-keep-front) keep_front="NO"; shift ;;
         --qa-batch)
             [[ $# -ge 2 && "$2" =~ ^[a-z0-9][a-z0-9-]{0,39}$ ]] || fail "--qa-batch 必须是 1～40 位小写字母、数字或连字符。"
             qa_batch="$2"; shift 2 ;;
@@ -98,7 +100,18 @@ fi
 [[ "$command_name" == "test" || "$command_name" == "qa" || ${#test_filters[@]} -eq 0 ]] || fail "--only-testing / --skip-testing 仅用于 test / qa。"
 [[ -z "$qa_batch" || "$command_name" == "qa" || "$command_name" == "qa-compile" ]] || fail "--qa-batch 仅用于 qa / qa-compile。"
 # 只对 QA 独立标识切前台；开发宿主与日用应用同一标识，绝不能被守护激活。
-[[ "$keep_front" == "NO" || "$command_name" == "qa" ]] || fail "--keep-front 仅用于 qa。"
+[[ "$keep_front" == "AUTO" || "$command_name" == "qa" ]] || fail "--keep-front / --no-keep-front 仅用于 qa。"
+if [[ "$command_name" == "qa" && "$keep_front" == "AUTO" ]]; then
+    # 默认开启：执行会话直接调用 build.sh qa 时也不用等人去点测试窗口。
+    # 只选中后台套件时关闭；判断失败（脚本缺失等）按需要前台处理，宁可开启也不让测试卡住。
+    keep_front="YES"
+    if [[ ${#test_filters[@]} -gt 0 ]] && python3 -B scripts/swift_test_scope.py --background-only "${test_filters[@]}" 2>/dev/null; then
+        keep_front="NO"
+    fi
+fi
+if [[ "$command_name" == "qa" ]]; then
+    printf '前台守护：%s\n' "$([[ "$keep_front" == "YES" ]] && echo "开启（空闲 5 秒以上时把 QA 应用切回前台）" || echo "关闭")" >&2
+fi
 
 if [[ "$command_name" == "qa" || "$command_name" == "qa-compile" ]]; then
     settings='{"mode":"local"}'

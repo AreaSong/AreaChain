@@ -19,6 +19,9 @@ class BuildCommandTests(unittest.TestCase):
         (self.root / "scripts").mkdir()
         (self.root / "bin").mkdir()
         shutil.copy2(BUILD_SCRIPT, self.root / "scripts/build.sh")
+        # 默认前台守护要用到这两个脚本；守护只认 QA 标识且只激活已运行的应用，夹具里不会切换真实前台。
+        for helper in ("swift_test_scope.py", "keep_front.py"):
+            shutil.copy2(BUILD_SCRIPT.parent / helper, self.root / "scripts" / helper)
         self.trace = self.root / "trace.jsonl"
         common = (
             "import json, os, sys\nfrom pathlib import Path\n"
@@ -156,12 +159,29 @@ class BuildCommandTests(unittest.TestCase):
         self.assertIn("-only-testing:AreaChainTests/SystemVaultIntegrationTests", self.xcode_call()["args"])
 
     def test_keep_front_is_only_accepted_for_qa(self):
-        for arguments in (("test", "--keep-front"), ("build", "--keep-front"), ("qa-compile", "--keep-front")):
+        for arguments in (("test", "--keep-front"), ("build", "--keep-front"), ("qa-compile", "--keep-front"),
+                          ("test", "--no-keep-front")):
             with self.subTest(arguments=arguments):
                 result = self.invoke(*arguments)
                 self.assertNotEqual(result.returncode, 0)
-                self.assertIn("--keep-front 仅用于 qa", result.stderr)
+                self.assertIn("仅用于 qa", result.stderr)
                 self.assertEqual(self.records(), [])
+
+    def test_qa_turns_keep_front_on_by_default_and_off_for_background_suites(self):
+        suites = self.root / "AreaChainTests/Features"
+        suites.mkdir(parents=True)
+        (suites / "QuietTests.swift").write_text(
+            "@Suite(.serialized, .tags(.backgroundWindow)) @MainActor struct QuietTests {\n  @Test func a() {}\n}\n",
+            encoding="utf-8")
+        cases = [((), "开启"), (("--only-testing", "AreaChainTests/LoudTests"), "开启"),
+                 (("--only-testing", "AreaChainTests/QuietTests"), "关闭"),
+                 (("--no-keep-front", "--only-testing", "AreaChainTests/LoudTests"), "关闭"),
+                 (("--keep-front", "--only-testing", "AreaChainTests/QuietTests"), "开启")]
+        for arguments, state in cases:
+            with self.subTest(arguments=arguments):
+                result = self.invoke("qa", *arguments)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn(f"前台守护：{state}", result.stderr)
 
     def test_skip_testing_is_forwarded_for_split_runs(self):
         result = self.invoke("test", "--skip-testing", "AreaChainTests/UnifiedSearchOriginalPageTests")

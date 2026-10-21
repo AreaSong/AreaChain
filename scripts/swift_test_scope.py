@@ -233,3 +233,21 @@ def plan_swift_tests(root, paths, ui_mode=False):
             suites |= found
     return {"filters": [f"{TEST_TARGET}/{name}" for name in sorted(suites)],
             "notes": notes, "unresolved": unresolved}
+
+
+def only_background(root, filters):
+    """xcodebuild 过滤参数（-only-testing:/-skip-testing:）是否只选中后台套件；用于 build.sh 自动决定是否开前台守护。"""
+    selected = [item.split(":", 1)[1] for item in filters if item.startswith("-only-testing:")]
+    if not selected or len(selected) != len(filters):
+        return False
+    background = background_suites(root)
+    return all(len(item.split("/")) > 1 and item.split("/")[1] in background for item in selected)
+
+
+if __name__ == "__main__":
+    import sys
+    # 用法：swift_test_scope.py --background-only <xcodebuild 过滤参数…>；只选中后台套件时退出码 0。
+    arguments = sys.argv[1:]
+    if arguments[:1] != ["--background-only"]:
+        sys.exit(2)
+    sys.exit(0 if only_background(Path(__file__).resolve().parents[1], arguments[1:]) else 1)

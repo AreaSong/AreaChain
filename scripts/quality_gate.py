@@ -431,7 +431,7 @@ def run_swift_tests(filters=None, notes=(), root=ROOT, timeout=SWIFT_ROUND_TIMEO
         return gate("swift-tests", "passed", "没有需要运行的 Swift 测试。")
     for label, arguments in rounds:
         # 前台轮需要 key window：用户空闲时由 build.sh 的守护把 QA 应用切回前台；后台轮不打扰用户。
-        keep = ["--keep-front"] if label == "前台轮" else []
+        keep = ["--keep-front"] if label == "前台轮" else ["--no-keep-front"]
         command = ["./scripts/build.sh", "qa", *keep, *arguments]
         code, stdout, stderr, duration = run_command(command, timeout=timeout)
         commands.append(command)
