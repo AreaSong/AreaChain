@@ -8112,10 +8112,28 @@ L-M1b 必须的反例（合成内存库、fake 系统依赖）：借用签发后
 - privacy.lock：沿页头与隐私设置的“立即锁定”（`vault.lock`）；锁定事件按 C-M1、L-M1b 规则撤销结果展示、返回票据、查阅内容与长文托管；未启用或已锁定只说明。
 - trash.restore：写入抽为 [TrashRestoreService](../AreaChain/Services/TrashRestoreService.swift)（回收站页 DayBoardMutations.restore* 转调），规格 [TrashRestoreSpec](../AreaChain/Services/TrashRestoreCommandSpecs.swift) 走骨架的共用独立确认；目录由 systemAction 改为可入普通计划的修改（同 M-2 tag.restore），多项计划按独立确认拒绝。确认面板列出随之恢复的子任务与图片；受保护手记及其图片、加密图片拒绝；拥有者也在回收站的图片拒绝（新原因 `ownerTrashed`）。
 
-#### 检查点内验证（隔离入口 `--qa-batch m3`，证据在被忽略的 build/M3/）
+#### 检查点内验证（隔离入口 `--qa-batch m3`）
 
 - A：CommandOriginalPageTests 3、UnifiedSearchOriginalPageTests 5（73 条页面路由逐条预览／导航／零写入／返回）全过；首轮 2 处测试时序与 1 处读取方式失败，整改后通过。B：CommandSystemActionTests 1、UnifiedSearchSystemCommandTests 4 全过。C：TrashRestoreCommandTests 4、UnifiedSearchPrivacyRestoreTests 3 全过。
 - 受影响回归：A 4 类 28 方法、B 11 类 60 方法、C 17 类 122 方法；失败中 DashboardProjectionTests、DashboardScrollTests、DiaryWindowLifecycleTests、UnifiedSearchNavigationBoundaryTests（崩溃）在 `git archive cc7b530` 基线持原锁同断言复现，SubtaskModelTests.addTagSkipsDiaryPresetNames 即总览所列既有失败。
+
+#### 集中验证（批次 m3，证据在被忽略的 build/M3/；2026-10-21 用户决定只测本批改动相关的类，不跑全局原生回归）
+
+| 项目 | 结果 |
+|---|---|
+| `qa-compile`、正常 `./scripts/build.sh` | 通过；严格验签，Debug staticSignatureVerified 为 true，描述文件 2026-10-22 11:20 UTC 到期 |
+| 本批新增 6 类＋改动相关 18 类 | 126 方法通过、8 失败：DiaryWindowLifecycle、SubtaskModelTests.addTagSkipsDiaryPresetNames、nativeBooleanWeekdaysDayAndTime、WorkspaceRendering.diaryComposerKeepsNewlinesAndSavesOnce 在 `git archive cc7b530` 基线持原锁同断言复现（既有）；4 个参数编辑用例由本批引起（见整改） |
+| 整改 18cfe9d | B 把 `beginOperation` 也扩成“走导航面板”超出需求，恢复原判定；4 个用例的样例从 clipboard.limit／ignoreApp 换成 tag.order／tag.create，断言不变；重跑通过，nativeCompletionDraftPicker…一次候选未出现、单独重跑通过 |
+| Domain＋Services 360 类 | 2382 方法／3338 次通过，7 失败 1 跳过（真实钥匙串默认关闭）；7 个（含 DashboardProjectionTests.diarySourceBlanksSensitive…，即统计私密口径的原测试，本批未改投影）在基线同断言复现 |
+| `check_workflow.py`、`scripts/tests` 290 项、`quality_gate.py --profile static --strict --base-ref cc7b530`、全库 `swiftlint lint --strict`（0）、`git diff --check` | 全部通过 |
+
+- 过程记录：第一次 137 类原生回归在夜间锁屏与磁盘写满（剩 121MB）下卡住约 9 小时，结果作废并已终止；只清理了本会话 /tmp 下的自建产物。
+
+#### 指定只读复核
+
+- Claude Code `verifier`：结论**通过**，六条验收逐条符合；它亲自重跑 workflow、全库 SwiftLint、static 质量门禁、`git diff --check`、双语比对（新增 89 键齐全）与 11 类隔离测试（失败均为既有或单独重跑通过的时序）。
+- 三条低级意见已整改：锁定用例去掉未断言的托管构造，改为证明锁定事件发到托管订阅的同一隔离中心（撤销借用由 L-M1b 的 LongTextLoanTests 证明）；73 条路由循环每轮等上一次返回结束；DashboardProjectionTests 在上表点名为既有。重跑 2 类 8 方法全过，未再派发复核。
+- verifier 未重跑：基线复现（写入限制不允许解出副本）、Domain＋Services 全量、正常构建，以执行者证据为准。
 
 #### 缺口与生产接线所需授权
 

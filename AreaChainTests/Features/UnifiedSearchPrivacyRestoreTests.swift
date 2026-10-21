@@ -34,7 +34,7 @@ import Testing
         try host.snapshot("m3-trash-restore-saved-\(style)")
     }
 
-    @Test func lockRevokesPresentationTicketAndLoans() async throws {
+    @Test func lockRevokesPresentationTicketAndPostsLockEvent() async throws {
         let fixture = try UnifiedSearchNavigationFixture()
         defer { fixture.stop() }
         let fakes = SystemCommandFakes()
@@ -48,9 +48,6 @@ import Testing
             MainActor.assumeIsolated { locks += 1 }
         }
         defer { fixture.privacy.removeObserver(observer) }
-        // 长文托管与统一搜索订阅同一个隔离隐私中心（L-M1b）：锁定事件同样会撤销它的签发资格。
-        let escrow = CommandLongTextEscrow(coordinator: fixture.handoff.coordinator, privacy: fixture.privacy)
-        _ = escrow
         try await fixture.start()
         // 预览在搜索面板里：说明会做什么，此时还没有锁定。
         try await fixture.enter("/privacy/lock")
@@ -63,6 +60,8 @@ import Testing
         try await fixture.enter("/privacy/lock")
         fixture.controller.intent(.open, source: fixture.controller.buffer)
         try await fixture.settle()
+        // 长文托管（CommandLongTextEscrow）只订阅这个隔离隐私中心的 privacyWillLock；该事件撤销借用由 L-M1b 的
+        // LongTextLoanTests 证明，这里证明 privacy.lock 确实把锁定事件发到了同一个中心，且只发一次。
         #expect(!fixture.vault.isUnlocked && locks == 1)
         #expect(fixture.controller.returnSearch == nil, "锁定撤返回票据")
         #expect(!fixture.session.hasRetainedPresentation && fixture.controller.buffer.text.isEmpty)

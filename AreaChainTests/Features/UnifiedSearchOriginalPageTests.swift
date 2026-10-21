@@ -143,9 +143,11 @@ import Testing
     /// 返回搜索后原结果可能按版本重读；等它发布完再继续下一条，避免拿旧许可。
     private func ready(_ fixture: UnifiedSearchNavigationFixture) async throws {
         for _ in 0..<100 {
-            if fixture.controller.navigationTask == nil, (try? fixture.session.presentation()) != nil { break }
+            if fixture.controller.navigationTask == nil, fixture.controller.returnSearch == nil,
+               (try? fixture.session.presentation()) != nil { break }
             try await Task.sleep(for: .milliseconds(20))
         }
+        try await fixture.settle()
         try await fixture.settle()
     }
 
