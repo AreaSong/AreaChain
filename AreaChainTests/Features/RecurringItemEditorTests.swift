@@ -4,7 +4,7 @@ import SwiftUI
 import Testing
 @testable import AreaChain
 
-@Suite(.serialized)
+@Suite(.serialized, .tags(.backgroundWindow))
 @MainActor
 struct RecurringItemEditorTests {
     @Test func createCopyExistsInBothLanguages() {
@@ -64,7 +64,8 @@ struct RecurringItemEditorTests {
         )
         window.isReleasedWhenClosed = false
         window.contentView = host
-        window.makeKeyAndOrderFront(nil)
+        // 后台轮只排窗不前置，避免盖住用户正在用的窗口。
+        if NativeSyntaxUI.inBackgroundSuite { window.orderBack(nil) } else { window.makeKeyAndOrderFront(nil) }
         defer {
             window.orderOut(nil)
             window.contentView = nil

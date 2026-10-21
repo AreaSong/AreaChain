@@ -3,7 +3,7 @@ import SwiftUI
 import Testing
 @testable import AreaChain
 
-@Suite(.serialized) @MainActor
+@Suite(.serialized, .tags(.backgroundWindow)) @MainActor
 struct CalendarMonthNavigationTests {
     @Test(arguments: [
         NSSize(width: 1100, height: 720),

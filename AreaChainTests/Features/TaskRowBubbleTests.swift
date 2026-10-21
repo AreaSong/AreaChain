@@ -4,7 +4,7 @@ import SwiftUI
 import Testing
 @testable import AreaChain
 
-@Suite(.serialized)
+@Suite(.serialized, .tags(.backgroundWindow))
 @MainActor
 struct TaskRowBubbleTests {
     @Test func titleTruncationDetectsLengthCorrectly() {

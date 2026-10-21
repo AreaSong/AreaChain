@@ -154,20 +154,22 @@ class BackgroundRoundTests(unittest.TestCase):
         (tests / "SplitTests.swift").write_text(
             "@Suite(.tags(.backgroundWindow))\n@MainActor struct SplitTests {\n  @Test func a() {}\n}\n",
             encoding="utf-8")
+        (tests / "StackedTests.swift").write_text(
+            "@Suite(.serialized, .tags(.backgroundWindow))\n@MainActor\n@available(macOS 14, *)\nstruct StackedTests {\n"
+            "  @Test func a() {}\n}\n", encoding="utf-8")
         (tests / "LoudTests.swift").write_text(
             "@Suite(.serialized) @MainActor struct LoudTests {\n  @Test func a() {}\n}\n"
             "// .backgroundWindow 只在注释里出现不算\n", encoding="utf-8")
 
     def test_background_suites_need_the_tag_on_the_suite_declaration(self):
-        self.assertEqual(scope.background_suites(self.root), {"QuietTests", "SplitTests"})
+        self.assertEqual(scope.background_suites(self.root), {"QuietTests", "SplitTests", "StackedTests"})
 
     def test_full_run_splits_into_foreground_then_background(self):
         rounds = scope.split_rounds(self.root, None)
         self.assertEqual([label for label, _ in rounds], ["前台轮", "后台轮"])
-        self.assertEqual(rounds[0][1], ["--skip-testing", "AreaChainTests/QuietTests",
-                                        "--skip-testing", "AreaChainTests/SplitTests"])
-        self.assertEqual(rounds[1][1], ["--only-testing", "AreaChainTests/QuietTests",
-                                        "--only-testing", "AreaChainTests/SplitTests"])
+        names = ["QuietTests", "SplitTests", "StackedTests"]
+        self.assertEqual(rounds[0][1], [a for n in names for a in ("--skip-testing", f"AreaChainTests/{n}")])
+        self.assertEqual(rounds[1][1], [a for n in names for a in ("--only-testing", f"AreaChainTests/{n}")])
 
     def test_filtered_run_keeps_only_needed_rounds(self):
         rounds = scope.split_rounds(self.root, ["AreaChainTests/LoudTests", "AreaChainTests/QuietTests/a()"])

@@ -42,9 +42,10 @@ def test_suites(text):
     return {name for name in declared_types(text) | extension_targets(text) if name.endswith("Tests")}
 
 
-# 标了 .backgroundWindow 的套件：@Suite 与类型声明同一行或相邻两行。
+# 标了 .backgroundWindow 的套件：类型声明可与 @Suite 同行，也可隔着若干行 @MainActor 等属性。
 _BACKGROUND_SUITE = re.compile(
-    r"^@Suite\b[^\n]*\.backgroundWindow\b[^\n]*?(?:\n[^\n]*?)?\b(?:struct|class|enum|actor)\s+(\w+Tests)\b", re.M)
+    r"^@Suite\b[^\n]*\.backgroundWindow\b(?:[^\n]*\n(?:@[^\n]*\n)*)?[^\n]*?\b(?:struct|class|enum|actor)\s+(\w+Tests)\b",
+    re.M)
 
 
 def background_suites(root):
