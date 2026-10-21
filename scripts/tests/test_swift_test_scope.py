@@ -64,12 +64,17 @@ class SwiftTestScopeTests(unittest.TestCase):
         self.assertEqual(self.plan(["AreaChainTests/Features/RouterFixture.swift"])["filters"],
                          ["AreaChainTests/PageTests"])
 
-    def test_extension_file_maps_to_the_extended_app_type(self):
+    def test_extension_file_uses_its_member_names_not_the_whole_type(self):
         self.write("AreaChain/Features/Controller.swift", "final class Controller {}\n")
         self.write("AreaChain/Features/Controller+Paging.swift",
-                   "extension Controller {\n    func page() {}\n}\nextension String {}\n")
-        self.suite("AreaChainTests/Features/PagingTests.swift", "PagingTests", "_ = Controller()")
-        self.suite("AreaChainTests/Features/TextTests.swift", "TextTests", "_ = String()")
+                   "extension Controller {\n    func pageForward() {\n        let local = 1\n    }\n"
+                   "    private func hiddenStep() {}\n    var body: Int { 0 }\n}\nstruct Holder {\n    let mood = 0\n}\n")
+        self.suite("AreaChainTests/Features/PagingTests.swift", "PagingTests", "Controller().pageForward()")
+        self.suite("AreaChainTests/Features/OtherTests.swift", "OtherTests", "_ = Controller(); _ = local; _ = mood")
+        self.suite("AreaChainTests/Features/HiddenTests.swift", "HiddenTests", "_ = hiddenStep; _ = body")
+        # 只按扩展里非私有、非通用的成员找；被扩展类型 Controller 的其他使用者不再整体带上。
+        self.assertEqual(scope.extension_members(self.root.joinpath("AreaChain/Features/Controller+Paging.swift")
+                                                 .read_text()), {"pageForward"})
         plan = self.plan(["AreaChain/Features/Controller+Paging.swift"])
         self.assertEqual(plan["filters"], ["AreaChainTests/PagingTests"])
 
@@ -92,13 +97,36 @@ class SwiftTestScopeTests(unittest.TestCase):
         self.assertEqual(plan["filters"], ["AreaChainTests/CopyTests"])
         self.assertEqual(plan["unresolved"], ["AreaChain/App/AreaChain.entitlements"])
 
-    def test_unmatched_file_falls_back_to_its_layer_with_a_note(self):
+    def test_extension_block_boundaries_and_member_kinds(self):
+        text = ("extension Format: Codable {}\nenum Update {\n    case setRemind\n}\n"
+                "private extension Hidden {\n    func secretStep() {}\n}\n"
+                "extension Store {\n    private(set) var lastSnapshot: Int { 0 }\n    enum StoreEvent {}\n"
+                "    typealias Loader = Int\n    static func loadEverything() {}\n    private var cacheSlot = 0\n}\n")
+        self.assertEqual(scope.extension_members(text), {"lastSnapshot", "StoreEvent", "Loader", "loadEverything"})
+
+    def test_common_member_names_are_skipped_and_reported(self):
+        self.write("AreaChain/Features/Panel+Accept.swift",
+                   "extension Panel {\n    func accept() {}\n    func acceptDraftRevision() {}\n}\n")
+        for index in range(3):
+            self.suite(f"AreaChainTests/Features/Noise{index}Tests.swift", f"Noise{index}Tests", "x.accept()")
+        self.suite("AreaChainTests/Features/DraftTests.swift", "DraftTests", "x.acceptDraftRevision()")
+        with patch.object(scope, "MEMBER_FILE_LIMIT", 2):
+            plan = self.plan(["AreaChain/Features/Panel+Accept.swift"])
+        self.assertEqual(plan["filters"], ["AreaChainTests/DraftTests"])
+        self.assertIn("常见成员名未用于匹配：accept", plan["notes"][0])
+        # 通用名（如 body）同样写进说明，而不是悄悄丢弃。
+        self.write("AreaChain/Features/Panel+Body.swift", "extension Panel {\n    var body: Int { 0 }\n}\n")
+        plan = self.plan(["AreaChain/Features/Panel+Body.swift"])
+        self.assertEqual(plan["unresolved"], ["AreaChain/Features/Panel+Body.swift"])
+        self.assertIn("body", plan["notes"][0])
+
+    def test_unmatched_file_only_compiles_and_is_reported(self):
         self.write("AreaChain/Domain/Lonely.swift", "struct Lonely {}\n")
         self.suite("AreaChainTests/Domain/ATests.swift", "ATests")
-        self.suite("AreaChainTests/Services/BTests.swift", "BTests")
         plan = self.plan(["AreaChain/Domain/Lonely.swift"])
-        self.assertEqual(plan["filters"], ["AreaChainTests/ATests"])
-        self.assertIn("改跑 Domain 层", plan["notes"][0])
+        # 不再按层兜底跑整层，列为无法推导，由门禁只编译并给出提示。
+        self.assertEqual((plan["filters"], plan["unresolved"]), ([], ["AreaChain/Domain/Lonely.swift"]))
+        self.assertIn("只编译", plan["notes"][0])
 
     def test_too_many_references_run_only_direct_references(self):
         self.write("AreaChain/Services/Store.swift", "final class Store {}\n")
@@ -119,7 +147,7 @@ class SwiftTestScopeTests(unittest.TestCase):
         self.suite("AreaChainTests/Features/RowTests.swift", "RowTests", "_ = Row()")
         self.suite("AreaChainTests/Features/UseTests.swift", "UseTests", "_ = Row()")
         with patch.object(scope, "REFERENCE_SUITE_LIMIT", 1):
-            plan = self.plan(["AreaChain/Features/Row.swift", "AreaChain/Features/Card.swift"], layer_fallback=False)
+            plan = self.plan(["AreaChain/Features/Row.swift", "AreaChain/Features/Card.swift"], ui_mode=True)
         self.assertEqual(plan["filters"], ["AreaChainTests/RowTests"])
         self.assertEqual(plan["unresolved"], ["AreaChain/Features/Card.swift"])
 

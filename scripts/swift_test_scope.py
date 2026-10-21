@@ -1,8 +1,8 @@
 """按变更推导 Swift 定向测试范围；只读源码文本，不调用 Xcode。
 
-推导分三层：同名测试 → 测试里引用了变更文件声明的类型 → 没有任何相关测试时才按所在层目录兜底。
-被大量测试引用的核心文件只跑直接引用的测试，不再加整层；间接使用留给批次收尾的全量回归。
-无法推导的文件单独列出，由调用方明确报告；全量只由显式 profile 触发，不在这里静默回退。
+改什么测什么：同名测试 → 测试里直接引用了变更文件声明的类型；只含扩展的文件按扩展里声明的成员名找，
+不把整个被扩展类型的引用都带上。找不到任何相关测试的文件列为无法推导，由调用方只编译并提示，
+不再按层目录兜底；间接影响留给批次收尾的全量回归，全量只由显式 profile 触发。
 """
 
 from pathlib import Path
@@ -11,9 +11,10 @@ import re
 
 TEST_TARGET = "AreaChainTests"
 SOURCE_ROOT = "AreaChain"
-LAYERS = ("Domain", "Services", "Features", "Theme", "E2E")
 # 一个文件的引用命中超过此数时在说明里提示“影响面大”，范围仍只是直接引用。
 REFERENCE_SUITE_LIMIT = 60
+# 扩展成员名出现在超过这么多测试文件里就算常见名（如 accept、operations），按名字匹配没有区分度，跳过并提示。
+MEMBER_FILE_LIMIT = 30
 # 测试支持文件（夹具）只再展开一跳：测试 → 夹具 → 被测类型。
 SUPPORT_HOPS = 2
 
@@ -92,11 +93,6 @@ def _read(path):
         return ""
 
 
-def _layer(path):
-    parts = Path(path).parts
-    return parts[1] if len(parts) > 2 and parts[1] in LAYERS else None
-
-
 class TestIndex:
     """一次性读入测试与源码文本，供多文件推导复用。"""
 
@@ -105,11 +101,6 @@ class TestIndex:
         test_root = self.root / TEST_TARGET
         self.tests = {path.relative_to(self.root).as_posix(): _read(path)
                       for path in sorted(test_root.rglob("*.swift"))} if test_root.is_dir() else {}
-        source_root = self.root / SOURCE_ROOT
-        self.app_types = set()
-        if source_root.is_dir():
-            for path in source_root.rglob("*.swift"):
-                self.app_types |= declared_types(_read(path))
 
     def mentioning(self, file_name):
         """直接按文件名读取该资源的套件，例如读取 Localizable.xcstrings 的文案测试。"""
@@ -120,9 +111,17 @@ class TestIndex:
         return set().union(*(test_suites(text) for path, text in self.tests.items()
                              if Path(path).name == wanted))
 
-    def layer_suites(self, layer):
-        prefix = f"{TEST_TARGET}/{layer}/"
-        return set().union(*(test_suites(text) for path, text in self.tests.items() if path.startswith(prefix)))
+    def member_mentions(self, names):
+        """按扩展成员名直接匹配的套件（不展开夹具），以及因过于常见而跳过的名字。"""
+        rare, common = set(), set()
+        for name in names:
+            pattern = re.compile(r"\b%s\b" % re.escape(name))
+            files = [text for text in self.tests.values() if pattern.search(text)]
+            (common if len(files) > MEMBER_FILE_LIMIT else rare).add(name)
+        if not rare:
+            return set(), common
+        pattern = re.compile(r"\b(?:%s)\b" % "|".join(map(re.escape, sorted(rare))))
+        return set().union(*(test_suites(text) for text in self.tests.values() if pattern.search(text))), common
 
     def referencing(self, names):
         """引用这些类型的套件；夹具文件没有套件时，用它声明的类型再找一跳。"""
@@ -144,14 +143,37 @@ class TestIndex:
         return found
 
 
-def _changed_names(index, path, text):
-    """变更文件声明的类型，加上它扩展的应用内类型；删除的文件只能按文件名猜。"""
+# 扩展成员里这些名字太通用（协议要求或 SwiftUI/AppKit 惯用名），按名字找会误命中大量测试。
+_GENERIC_MEMBERS = {"body", "init", "description", "debugDescription", "hash", "encode", "makeNSView",
+                    "updateNSView", "makeCoordinator", "sizeThatFits", "layout", "draw", "value", "state",
+                    "title", "count", "items", "isEmpty", "id", "rawValue", "allCases"}
+# 缩进一级的成员声明（含嵌套类型与 typealias）；private/fileprivate 成员测试引用不到，不作为搜索词，
+# 但 private(set) 只限制写入，测试仍能读取。
+_MEMBER = re.compile(
+    r"^ {4}(?=\S)(?![^\n]*\b(?:private|fileprivate)\b(?!\(set\)))[^\n/]*?"
+    r"\b(?:func|var|let|case|struct|class|enum|actor|typealias)\s+([A-Za-z_]\w*)", re.M)
+# 表头以 "{" 结尾的顶格 extension 到下一个顶格 "}" 为一个扩展块；单行 `extension X: P {}` 没有成员，不成块。
+# private/fileprivate extension 的成员测试引用不到，不收。已知限制：多行字符串里出现顶格 "}" 会提前截断扩展块。
+_EXTENSION_BLOCK = re.compile(r"^(?:(?:public|internal)\s+)?extension\b[^\n]*\{[ \t]*\n(.*?)^\}", re.M | re.S)
+
+
+def _member_candidates(text):
+    return {name for block in _EXTENSION_BLOCK.findall(text) for name in _MEMBER.findall(block)}
+
+
+def extension_members(text):
+    """扩展块里缩进一级、非私有、有区分度的成员名；同文件自有类型的字段不算。"""
+    return {name for name in _member_candidates(text) if name not in _GENERIC_MEMBERS and len(name) > 3}
+
+
+def _changed_names(path, text):
+    """变更文件声明的类型；删除的文件只能按文件名猜。扩展成员另由 extension_members 处理。"""
     if not text:
         return {Path(path).stem.split("+")[0]}
-    return declared_types(text) | (extension_targets(text) & index.app_types)
+    return declared_types(text)
 
 
-def _plan_file(index, path, layer_fallback):
+def _plan_file(index, path, ui_mode):
     """返回 (套件集合或 None, 说明或 None)；None 表示该文件无法推导。"""
     text = _read(index.root / path)
     is_test = path.startswith(TEST_TARGET + "/")
@@ -164,24 +186,27 @@ def _plan_file(index, path, layer_fallback):
         return own | (index.referencing(shared) if shared else set()), None
     if not path.startswith(SOURCE_ROOT + "/"):
         return None, f"{path}：不在源码或测试目录"
-    names = _changed_names(index, path, text)
+    names = _changed_names(path, text)
     stem = Path(path).stem.split("+")[0]
     same = set() if is_test else index.same_name(stem)
     refs = index.referencing(names) if names else set()
-    layer = _layer(path)
+    # 扩展文件按成员名直接匹配，不把被扩展类型的全部使用者带上，也不经夹具再展开。
+    members, common = index.member_mentions(extension_members(text)) if extension_targets(text) else (set(), set())
+    # 通用名、过短名与过于常见的名字一样没有用于匹配，一并写进说明，不悄悄丢弃。
+    common |= _member_candidates(text) - extension_members(text)
+    refs |= members
+    skipped = f"；常见成员名未用于匹配：{', '.join(sorted(common))}" if common else ""
     if len(refs) > REFERENCE_SUITE_LIMIT:
-        if layer_fallback:
+        if not ui_mode:
             # 改什么测什么：只跑直接引用的套件，不再追加整层；间接使用由批次收尾的 --profile full 兜住。
-            return same | refs, f"{path}：被 {len(refs)} 个测试类引用，只跑直接引用；间接影响留给收尾全量"
-        return same, f"{path}：被 {len(refs)} 个测试类引用，UI 模式只跑同名测试"
+            return same | refs, f"{path}：被 {len(refs)} 个测试类引用，只跑直接引用；间接影响留给收尾全量{skipped}"
+        return same, f"{path}：被 {len(refs)} 个测试类引用，UI 模式只跑同名测试{skipped}"
     if same or refs:
-        return same | refs, None
-    if layer_fallback and layer:
-        return index.layer_suites(layer), f"{path}：没有同名或引用测试，改跑 {layer} 层"
-    return None, f"{path}：没有同名、引用或所在层测试"
+        return same | refs, (f"{path}：{skipped[1:]}" if skipped else None)
+    return None, f"{path}：没有同名或直接引用的测试，只编译{skipped}"
 
 
-def plan_swift_tests(root, paths, layer_fallback=True):
+def plan_swift_tests(root, paths, ui_mode=False):
     """返回 {"filters": [...], "notes": [...], "unresolved": [...]}；filters 为空表示无需运行测试。"""
     swift_paths = sorted(p for p in paths if p.endswith(".swift"))
     resources = sorted(p for p in paths if p.startswith(SOURCE_ROOT + "/") and not p.endswith(".swift"))
@@ -199,7 +224,7 @@ def plan_swift_tests(root, paths, layer_fallback=True):
             unresolved.append(path)
             notes.append(f"{path}：资源变更没有按文件名读取它的测试")
     for path in swift_paths:
-        found, note = _plan_file(index, path, layer_fallback)
+        found, note = _plan_file(index, path, ui_mode)
         if note:
             notes.append(note)
         if found is None:

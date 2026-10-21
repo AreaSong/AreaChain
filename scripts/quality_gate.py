@@ -454,7 +454,7 @@ def swift_test_checks(root, paths, selected, only_testing):
     if selected in ("full", "release"):
         return [run_swift_tests(root=root, timeout=FULL_SWIFT_ROUND_TIMEOUT)]
     is_ui = selected == "ui"
-    plan = swift_test_scope.plan_swift_tests(root, paths, layer_fallback=not is_ui)
+    plan = swift_test_scope.plan_swift_tests(root, paths, ui_mode=is_ui)
     checks = []
     if plan["unresolved"] and not is_ui:
         checks.append(gate("swift-test-scope", "warning",
