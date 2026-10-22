@@ -8296,3 +8296,58 @@ L-M1b 必须的反例（合成内存库、fake 系统依赖）：借用签发后
 - 正常 Debug 构建阻塞（见上表）；人工与平台验收（真人输入法、VoiceOver、最低系统、面板“打开原手记页”的真实点击）未做。
 - 生产接线须另行授权：手记规格装配（`DiaryCommandDependencies` 的仓储、保险箱与附件根）、页面宿主 `system` 的真实 DiaryWindows 与通用剪贴板、托管转接真实隐私锁事件。
 - **补记（2026-10-21，架构对话）**：用户续签后，小组件产物里的描述文件与增量构建的签名不一致，导致上述阻塞。只删除可重建的 `build/development-DerivedData/Build/Products/Debug/AreaChain.app` 与 `AreaChainWidget.appex` 后重跑 `./scripts/build.sh`：exit 0，静态验签与 hardened runtime 为 true，描述文件到期 2026-10-28T12:50:11Z。正常 Debug 构建阻塞解除。
+
+### 9.100 合并批 M-5：补复核 R、B、P、N、C 系列
+
+2026-10-22（Asia/Shanghai）。原 G-1b～G-1e 合成一批：R-M1～C-M2 十二个 Codex 时期里程碑当年因指定 Cursor verifier 不可用停在 partial，本批按[指定只读复核入口](../skill-routing.md#指定只读复核入口)分四组串行派发 Claude Code `verifier`，每组一次。只复核、记录，**未改 Swift、测试、脚本或规则**；各里程碑结论见其交接节末尾的“补复核（M-5，2026-10-22）”段。本节是本批唯一汇总入口。
+
+#### 源码状态与测试证据
+
+- 复核对象为当前代码（`9daf97e`，四组文档提交 `2e9d988`、`4a628e7`、`8d9b0ef`、`0e186ca` 只改文档），工作区每组开始时干净。`build/M5/digest.py`（AreaChain、AreaChainTests、AreaChainWidget、scripts、Config、工程与 SwiftLint 配置，含未跟踪未忽略文件）1682 文件摘要 `14ef3fc4740bd59dc27b074692d6f98e7cae96fd67e62f8d3423bd9817846535` 在每次运行前后及各 verifier 复核后一致。复核包、计数、门禁 JSON 与 verifier 摘要在忽略目录 `build/M5/`。
+- 测试入口：`python3 -B scripts/quality_gate.py --profile swift --only-testing AreaChainTests/<类>`（标准隔离 QA `com.areachain.privacy-qa`，沿原 `build/.build.lock`，分前台／后台轮），只用合成数据。各组门禁的 workflow、SwiftLint、security-static、脚本回归、日用配置编译验签均通过。
+
+| 组 | 测试类 | 方法／执行 | 失败 | 跳过 | Expected Failure |
+|---|---:|---:|---:|---:|---:|
+| R | 26 | 133／363 | 0 | 0 | 0 |
+| B+P1 | 27 | 119／224 | 0 | 0 | 0 |
+| P+N1 | 21 | 88／152 | 首轮 32 次，重跑 0 | 0 | 0 |
+| N2+C | 24 | 108／174 | 0 | 4 | 0 |
+
+- P+N1 首轮前台轮 32 次失败全部是 `NativeSyntaxUI.swift:24` 的焦点前置（active=false、key=false，前台为 `com.apple.loginwindow`，前台守护切回 124 次），业务断言未执行；失败的 7 类在同源码单独重跑 20 方法／32 次全部通过，verifier 同意判为环境原因。两次结果都记录在 `build/M5/PN1-*`。
+- N2+C 的 4 个跳过是 `AREACHAIN_CM2_FRAGMENT_PROBE`／`SPACING_PROBE`／`ENGINE` 环境变量门控的探针与性能用例；人工交互专用的 CommandTextInteractiveTests 未纳入。
+- verifier 补跑（同一入口与锁）：RoutineTitleTransaction 9／9；P+N1 五类前台 19／19、后台 6／6；N2+C 五类门禁通过。
+
+#### 十二份结论
+
+| 组 | 通过 | 不通过 |
+|---|---|---|
+| R | R-M1、R-M2、R-M3 | — |
+| B+P1 | B-M1、B-M2、P-M1 | — |
+| P+N1 | P-M2、P-M3、N-M1 | — |
+| N2+C | C-M1 | N-M2、C-M2 |
+
+十个“通过”的指定复核缺口在本批关闭，状态为已验证；N-M2、C-M2 不通过，指定复核缺口保留到整改后再复核。后续批次有意改变的行为（M-1 放宽备注门槛、T-M4／T-M6／L-M1b 开放回收、排序与长文借用、P-M2／P-M3 显式扩展输出与修订、N-M2／M-2／M-3 开放标签导航、image.preview、diaryWindow 与窗口入口、C-M3 64KiB 上限）均按“后续批次已明确改变”记录，不计为不符合。
+
+#### 合并整改清单（本批未修，交给单独批准的修复批次）
+
+按严重程度排序；“涉及”指数据／隐私／保存语义。
+
+1. **中｜隐私与隔离边界｜N-M2**：`AreaChain/Features/Attachments/AttachmentBrowserPage.swift:253-254` 与 `AreaChain/Features/Trash/TrashPage.swift:21-22` 的 `hostContext?.attachments ?? .shared` 在隔离宿主没有附件依赖时退回共享附件目录，可读写未关联池、选图与粘贴写入。契约：§9.85“无依赖时不回退共享目录”。由 f4ecfa4（2026-10-12）引入；可达性仅为代码推断，未运行。
+2. **中｜隔离边界（窗口服务），不写真实库｜C-M2**：`AreaChain/App/AreaChainApp.swift:85-105` 的 `application(_:open:)` 没有 application 分支判断，会调用快速输入浮窗、`AppWindows.revealWorkspace` 与 `WorkspaceNavigation.shared`；`Config/AppInfo.plist:16-19` 让 QA 包也注册 `areachain` scheme。契约：§9.87“Delegate 的窗口服务只在 application 分支执行”。由 c99c2e5（2026-10-16）引入；未实测 URL 路由。
+3. **低｜保存语义（附带）｜R-M1**：`AreaChain/Features/Tasks/DayBoardMutations+Capture.swift:99-103` 旧习惯标题编辑在事务后另开 `ModelChanges.perform` 关联 @附件，§9.76 未记；附件关联失败不反映到 Bool（f4ecfa4）。
+4. **低｜隐私边界（文档）｜R-M1**：§9.76“不读取 notes 猜资格”已被 M-1 B 改为自读带键摘要（`AreaChain/Services/RoutineCommandEnvironment.swift:54-58`），历史段未加注。
+5. **低｜测试缺口｜C-M2、N-M2**：AppStartupTests 未覆盖测试分支的 URL 打开；UnifiedSearchContent* 未覆盖隔离宿主无附件依赖打开附件页。这两处缺口使第 1、2 条未被测试发现。
+6. **低｜测试缺口，间接涉及保存语义｜P-M1**：默认装配下带 mergedOrigins／returnedAttempts 的计划项预检拒绝没有直接测试（`AreaChain/Domain/CommandPlanRevision.swift:34-37`、`AreaChain/Services/MultiPlanCommandAdapter.swift:93`）。
+7. **低｜测试缺口｜P-M3**：`supportsRevisions` 为 false 时合并／返回被拒绝没有直接测试（`AreaChain/Services/MultiPlanCommandMerge.swift:19,50`、`MultiPlanCommandAdapter.swift:93,325,337`）。
+8. **低｜测试缺口｜P-M3**：旧单项设置适配不能封存修订没有直接测试（`AreaChain/Services/LocalSettingCommandAdapter.swift:69`、`FileLocalSettingCommandAdapter.swift:372`）。
+9. **低｜测试精度｜R-M2**：`AreaChainTests/Services/RoutineCreateBoundaryTests.swift:22` 只断言抛错与零保存，未区分 sortChanged／dateChanged。
+
+主对话按要求抽查了每组最严重一条（第 1、2、3、6、7 条）的出处，均属实。
+
+#### 未覆盖项
+
+- 原生截图、真人输入法、VoiceOver、系统合成器、最低支持系统、真实多窗口、C2B：均保留原缺口，本批未核对。
+- 正常签名：门禁的日用配置编译验签通过（development），描述文件 2026-10-22 到期后的正常构建状态以总览为准。
+- 整改第 1、2 条的实际可达性未运行；文件设置 pending／commit 后端、B-M2 D3 内部（按 R-M3 结论）、多数测试类的断言充分性只核对存在性与断言对象。
+- 环境门控的性能／排版探针与人工交互测试未运行；C-M1-R 启动偏离事件的历史副作用、1MiB 单段性能、TK2 历史性能格仍未知或未闭合。
+- 生产搜索、真实用户库与系统服务：本批未接入、未访问。B+P1、P+N1 两次 verifier 明确报告除门禁产物外未写文件，R、N2+C 两次未逐字声明；主对话核对 `git status` 干净，`/tmp` 下本批时段没有新增文件（仅有无关的 PostgreSQL 套接字锁）；本批没有推送、安装或发布。
