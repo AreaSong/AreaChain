@@ -24,6 +24,9 @@ extension FirstLaunchSeeder {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     var terminationPolicy = AppStartup.requireAllowed()
+    /// 合并批 M-6：统一搜索 app.quit 经 confirmTerminationForCommand 走原确认；只在 application 分支设置。
+    static weak var current: AppDelegate?
+    private var terminationConfirmed = false
     var terminationLocale: () -> Locale = { AppPreferences.shared.resolvedLocale }
     private var isConfirmingTermination = false
     var presentQuitConfirmation: (NSAlert) -> NSApplication.ModalResponse = { alert in
@@ -39,6 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         AppPreferences.shared.applyAppAppearance()
         PrivacyVault.shared.startLifecycle()
         NSApp.setActivationPolicy(.accessory)
+        Self.current = self
 
         AppWindows.workspaceViewProvider = {
             AnyView(
@@ -69,6 +73,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NotificationScheduler.shared.start()
         CompletionUndo.shared.install()
         CalendarSync.start()
+        // 只装配、不读库、不申请权限；开关关闭时不构造任何统一搜索对象。
+        UnifiedSearchProduction.shared.start(preferences: .shared, makeServices: UnifiedSearchLiveServices.make)
         AppWindows.hideStrayWindows()
         if Persistence.session.isFallback {
             MutationFeedback.shared.reportMemoryFallback()
@@ -112,6 +118,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard terminationPolicy == .application else { return .terminateNow }
+        // 指令已经走过下面同一套确认并得到同意；紧随其后的 terminate 不再重复弹窗。
+        if terminationConfirmed { terminationConfirmed = false; return .terminateNow }
         // 模态框会运行嵌套事件循环，重复退出请求不能绕过确认或叠出新弹窗。
         guard !isConfirmingTermination else { return .terminateCancel }
         isConfirmingTermination = true
@@ -120,6 +128,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let alert = Self.quitAlert(locale: terminationLocale())
         guard presentQuitConfirmation(alert) == .alertFirstButtonReturn else { return .terminateCancel }
         return confirmDiaryTermination() ? .terminateNow : .terminateCancel
+    }
+
+    /// 统一搜索 app.quit：沿原退出确认（含未保存手记）；同意后记一次，供随后的 NSApp.terminate 直接放行。
+    func confirmTerminationForCommand() -> NSApplication.TerminateReply {
+        let reply = applicationShouldTerminate(NSApp)
+        terminationConfirmed = reply == .terminateNow
+        return reply
     }
 
     static func quitAlert(locale: Locale) -> NSAlert {

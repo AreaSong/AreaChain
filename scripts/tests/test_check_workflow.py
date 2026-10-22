@@ -146,6 +146,7 @@ class WorkflowCheckTests(unittest.TestCase):
                    "!.agents/skills/areachain-workflow/\n"
                    "!.agents/skills/areachain-ui/\n!.agents/skills/areachain-verify/\n")
         self.write_loan_fixture()
+        self.write_assembly_fixture()
         subprocess.run(["git", "init", "--quiet", str(self.root)], check=True,
                        capture_output=True, timeout=15)
 
@@ -255,7 +256,7 @@ class WorkflowCheckTests(unittest.TestCase):
                           {"project-identity", "project-links", "workflow-contract",
                           "component-catalog", "performance-baselines", "domain-imports",
                           "ci-contract", "skill-format", "skill-git-scope", "theme-tokens",
-                          "swift-file-size", "long-text-loan"})
+                          "swift-file-size", "long-text-loan", "unified-search-assembly"})
 
     def test_performance_manifest_rejects_non_object_root(self):
         self.make_project()
@@ -1542,6 +1543,46 @@ class WorkflowCheckTests(unittest.TestCase):
         result = workflow.check_long_text_loan(self.root)
         self.assertEqual(result["status"], "failed")
         self.assertIn("缺少长文托管", result["issues"][0]["message"])
+
+    def write_assembly_fixture(self):
+        self.write("AreaChain/Features/Search/UnifiedSearchProductionAssembly.swift",
+                   "let controller = UnifiedSearchController(session: s)\nlet c = CommandHandoffCoordinator(pages: [])\n")
+        self.write("AreaChain/Features/Search/UnifiedSearchProductionAssembly+Commands.swift",
+                   "let grant = CommandStoreGrant.production(context)\nlet a = TaskCreateCommandAdapter(coordinator: c)\n")
+
+    def test_unified_search_assembly_allows_assembly_files_and_tests(self):
+        self.write_assembly_fixture()
+        self.write("AreaChain/Services/Other.swift",
+                   "// UnifiedSearchController( 只在注释里\nlet text = \"TaskCreateCommandAdapter(\"\n"
+                   "func make() -> UnifiedSearchController? { nil }\n")
+        self.write("AreaChainTests/Features/Fixture.swift", "let c = UnifiedSearchController(session: s)\n")
+        self.assertEqual(workflow.check_unified_search_assembly(self.root)["status"], "passed")
+
+    def test_unified_search_assembly_rejects_construction_elsewhere(self):
+        cases = [("AreaChain/Features/Workspace/MainSplitWorkspaceView.swift", "let c = UnifiedSearchController(session: s)\n"),
+                 ("AreaChain/Services/TaskCreateCommandAdapter.swift", "let a = TaskCreateCommandAdapter (coordinator: c)\n"),
+                 ("AreaChain/Services/Other.swift", "let e = try SimpleCommandEnvironment(context: c)\n"),
+                 ("AreaChain/App/AreaChainApp.swift", "let g = CommandStoreGrant.production(context)\n"),
+                 ("AreaChain/Features/MenuBar/Host.swift", "let p = WorkspacePageCommands(router: r)\n"),
+                 ("AreaChain/Services/Reads.swift", "let r = try ContentQueryReadSession(vault: v)\n")]
+        for relative, text in cases:
+            with self.subTest(relative=relative):
+                self.write_assembly_fixture()
+                self.write(relative, text)
+                result = workflow.check_unified_search_assembly(self.root)
+                (self.root / relative).unlink()
+                self.assertEqual(result["status"], "failed")
+                self.assertTrue(result["issues"][0]["file"].endswith(relative), result["issues"])
+
+    def test_unified_search_assembly_requires_files_and_controller(self):
+        result = workflow.check_unified_search_assembly(self.root)
+        self.assertEqual(result["status"], "failed")
+        self.assertIn("缺少统一搜索唯一装配点", result["issues"][0]["message"])
+        self.write_assembly_fixture()
+        self.write("AreaChain/Features/Search/UnifiedSearchProductionAssembly.swift", "// 没有控制器\n")
+        result = workflow.check_unified_search_assembly(self.root)
+        self.assertEqual(result["status"], "failed")
+        self.assertIn("UnifiedSearchController(", result["issues"][0]["message"])
 
     def test_theme_rejects_services_diary_content_dependency(self):
         self.write("AreaChain/Theme/SampleView.swift",

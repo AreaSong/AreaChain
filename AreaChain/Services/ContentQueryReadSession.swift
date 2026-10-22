@@ -149,6 +149,12 @@ final class ContentQueryReadSession {
         try self.init(vault: vault, coordinator: coordinator, ownership: ownership, notifications: notifications)
         self.tagUsageReads = tagUsageReads
     }
+    /// 合并批 M-6 正式版：普通／图片、回收站、标签统计共用同一宿主与 owner，由 ContentQueryProductionReads 选路。
+    convenience init(vault: PrivacyVault, reads: ContentQueryProductionReads, coordinator: CommandHandoffCoordinator,
+                     ownership: CommandHostOwnership, notifications: ContentQueryReadNotifications) throws {
+        try self.init(vault: vault, coordinator: coordinator, ownership: ownership, notifications: notifications)
+        (imageReads, trashReads, tagUsageReads) = (reads.images, reads.trash, reads.tagUsage)
+    }
     /// 统计只在内部冻结；即使没有正文，也沿敏感来源的撤回和旧票据拒绝门禁。
     func prepareTagUsage(requestID: UUID = UUID(), observation: RoutineContentQueryObservation,
                          options: ContentQueryBatchOptions = .init(),
@@ -476,9 +482,7 @@ final class ContentQueryReadSession {
     }
 }
 
-struct ContentQueryReadHandle: Equatable {
-    fileprivate let id: UUID
-}
+struct ContentQueryReadHandle: Equatable { fileprivate let id: UUID }
 
 /// 仅本文件的当前读取/查阅校验路径生成，不可由调用方拼装。
 @MainActor

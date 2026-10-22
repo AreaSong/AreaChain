@@ -95,6 +95,7 @@ final class AppPreferences {
     static let expandSubtasksByDefaultKey = "areachain.prefs.expandSubtasksByDefault"
     static let boardFiltersKey = "areachain.prefs.boardFilters"
     static let calendarMonthLayoutModeKey = "areachain.prefs.calendarMonthLayoutMode"
+    static let unifiedSearchEnabledKey = "areachain.prefs.unifiedSearchEnabled"
 
     private let defaults: UserDefaults
     private var isLoading = true
@@ -175,6 +176,15 @@ final class AppPreferences {
         }
     }
 
+    /// 合并批 M-6：工作台与菜单栏用新版搜索与指令（默认开）；关闭立即回到旧搜索，旧搜索不删除。
+    var unifiedSearchEnabled: Bool {
+        didSet {
+            guard !isLoading else { return }
+            defaults.set(unifiedSearchEnabled, forKey: Self.unifiedSearchEnabledKey)
+            notifyChange()
+        }
+    }
+
     var calendarMonthLayoutMode: CalendarMonthLayoutMode {
         didSet {
             guard !isLoading else { return }
@@ -205,6 +215,7 @@ final class AppPreferences {
         syncCalendarEvents = defaults.bool(forKey: Self.syncCalendarEventsKey)
         isTagsExpanded = defaults.object(forKey: Self.isTagsExpandedKey) as? Bool ?? true
         expandSubtasksByDefault = defaults.object(forKey: Self.expandSubtasksByDefaultKey) as? Bool ?? false
+        unifiedSearchEnabled = defaults.object(forKey: Self.unifiedSearchEnabledKey) as? Bool ?? true
         if let raw = defaults.string(forKey: Self.calendarMonthLayoutModeKey),
            let mode = CalendarMonthLayoutMode(rawValue: raw) {
             calendarMonthLayoutMode = mode
@@ -231,6 +242,7 @@ final class AppPreferences {
         syncCalendarEvents = defaults.bool(forKey: Self.syncCalendarEventsKey)
         isTagsExpanded = defaults.object(forKey: Self.isTagsExpandedKey) as? Bool ?? true
         expandSubtasksByDefault = defaults.object(forKey: Self.expandSubtasksByDefaultKey) as? Bool ?? false
+        unifiedSearchEnabled = defaults.object(forKey: Self.unifiedSearchEnabledKey) as? Bool ?? true
         if let raw = defaults.string(forKey: Self.calendarMonthLayoutModeKey),
            let mode = CalendarMonthLayoutMode(rawValue: raw) {
             calendarMonthLayoutMode = mode

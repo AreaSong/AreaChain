@@ -71,6 +71,20 @@ struct GeneralSettingsSection: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
 
+        Section("settings.search") {
+            Toggle(isOn: $prefs.unifiedSearchEnabled) {
+                Text("settings.search.unified")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .toggleStyle(DaybookToggleStyle(.switchControl))
+            .accessibilityIdentifier("settings.search.unified")
+            .systemPageMarker("settings.search.unified")
+            Text("settings.search.unified.help")
+                .font(DaybookType.subtitle)
+                .foregroundStyle(DaybookPalette.text.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+
         Section("settings.launch") {
             Toggle(isOn: Binding(
                 get: { launchesAtLogin },

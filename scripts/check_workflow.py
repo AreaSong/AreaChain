@@ -33,6 +33,7 @@ LIMITATIONS = [
     "ci-contract 只核对工作流中的关键文本标记与 checkout revision；不替代 GitHub Actions YAML 语义或远端运行验证。",
     "swift-file-size 只数源码行数，不判断函数是否该拆，也不证明行为等价。",
     "long-text-loan 只核对借用符号出现的文件与声明形状；不证明同文件代码不复制正文，也不替代运行时测试。",
+    "unified-search-assembly 只匹配生产代码里“类型名(”与凭据签发的字面构造；不识别 .init 推断构造，也不证明运行时只装配一次。",
 ]
 
 WORKFLOW_CONTRACT = {
@@ -887,6 +888,47 @@ def check_long_text_loan(root):
     return result("long-text-loan", len(paths), issues)
 
 
+# 合并批 M-6：正式版统一搜索只有一个装配点（主文件＋指令扩展）。测试目录不受限，测试与正式版共用同一装配代码。
+ASSEMBLY_FILES = {
+    "AreaChain/Features/Search/UnifiedSearchProductionAssembly.swift",
+    "AreaChain/Features/Search/UnifiedSearchProductionAssembly+Commands.swift",
+}
+ASSEMBLY_CONSTRUCTION = re.compile(
+    r"\b(UnifiedSearchController|[A-Z][A-Za-z]*Command(?:Adapter|Environment)|WorkspacePageCommands"
+    r"|ContentQueryReadSession|CommandHandoffCoordinator)\s*\(|\bCommandStoreGrant\s*\.\s*production\s*\(")
+ASSEMBLY_REQUIRED = ("UnifiedSearchController(",)
+
+
+def check_unified_search_assembly(root):
+    """生产代码里统一搜索控制器、适配器／环境、页面宿主、读取会话、协调者与写入凭据只能在唯一装配点构造。"""
+    issues, paths = [], []
+    directory = root / "AreaChain"
+    if directory.is_dir():
+        paths = sorted(directory.rglob("*.swift"))
+    combined = ""
+    for path in paths:
+        relative = path.relative_to(root).as_posix()
+        try:
+            code = swift_code(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, RuntimeError) as error:
+            issues.append(issue(path, f"无法读取 Swift 文件：{type(error).__name__}"))
+            continue
+        if relative in ASSEMBLY_FILES:
+            combined += code
+            continue
+        for match in ASSEMBLY_CONSTRUCTION.finditer(code):
+            issues.append(issue(path, "统一搜索相关对象只能在唯一装配点构造：" + match.group(0).strip(),
+                                code.count("\n", 0, match.start()) + 1))
+    for relative in sorted(ASSEMBLY_FILES):
+        if not (root / relative).is_file():
+            issues.append(issue(root / relative, "缺少统一搜索唯一装配点文件。"))
+    compact = re.sub(r"\s+", "", combined)
+    for needle in ASSEMBLY_REQUIRED:
+        if combined and needle not in compact:
+            issues.append(issue(root / sorted(ASSEMBLY_FILES)[-1], f"唯一装配点缺少 {needle}。"))
+    return result("unified-search-assembly", len(paths), issues)
+
+
 def check_swift_file_size(root, limit=500):
     """拦住单文件重新超过结构上限；不评价函数长短。"""
     issues, checked = [], 0
@@ -1032,7 +1074,8 @@ def run_checks(root, personal_root=None):
                        check_component_catalog(root), check_performance_manifest(root),
                        check_ci_contract(root), check_skill_format(root),
                        check_skill_scope(root), check_theme_tokens(root),
-                       check_swift_file_size(root), check_long_text_loan(root)])
+                       check_swift_file_size(root), check_long_text_loan(root),
+                       check_unified_search_assembly(root)])
     if personal_root is not None:
         checks.append(check_links(personal_root, personal_docs(personal_root), "personal-links", restrict_targets=True))
     passed = all(check["status"] == "passed" for check in checks)
