@@ -8459,3 +8459,40 @@ Claude Code `verifier` 一轮：**通过**。四项都成立：生产取值不�
   - 设置页 `LocalStorageInspector.cleanReclaimableData` 只在设置页可达，不在工作台宿主树内。
 - 只由代码阅读确认、测试没有直接观察的：任务行菜单的禁用渲染（只测了 `canWrite`）、命令条与菜单栏手记行的禁用、编辑器贴图回调为 nil、页头“清空”的 `isEnabled`（位于溢出菜单内）、截屏写入，以及检查器和任务行在有存储时实际写入宿主目录（需要系统选图面板或通用剪贴板，测试中不触发）。`diaryCardSessionSavesIntoHostStore` 只验证 `begin` 把存储传到了会话，没有覆盖仓储 store 的改动，也没有断言共享目录未被写入。
 - 原生截图、中英文／浅深色／最小窗口人工验收、VoiceOver、真人交互均未做。
+
+### 9.103 合并批 M-6：接入正式版
+
+2026-10-22（Asia/Shanghai）。用户于当日确认全部决策并授权按检查点本地提交、不推送、不安装；只用合成数据与隔离 QA，不读写真实库、真实附件目录或真实钥匙串。证据在忽略目录 `build/M6/`。提交：A `d02e4c4`、B `5953fdf`、C `6ee0202`、D `e71b3c4`，E、F 与整改见下文。
+
+#### 决定与入口
+
+- **开关**：`AppPreferences.unifiedSearchEnabled`（旧键 UserDefaults，默认开）；设置“搜索”分节。关→两宿主回到旧搜索；`UnifiedSearchProduction.sync` 销毁装配并撤控制器、读取会话与托管，**保留协调者**，未提交草稿与计划在再开后仍在、不自动执行；编辑中的长文正文按隐私规则丢弃。
+- **唯一装配点**：`UnifiedSearchProductionAssembly`（＋Commands）；测试与正式版同一份代码，差别只在 `UnifiedSearchProductionServices`。正式版依赖在 App 层 `UnifiedSearchLiveServices`。守卫 `check_workflow.py` unified-search-assembly。
+- **写入凭据**：各环境原先硬性要求内存库、私有中心与关自动保存，正式版无法装配。新增 `CommandStoreGrant`：只放行签发时的同一 context（主容器 mainContext，与原界面写入同处），干净 context、无外层事务、保存成功才发布等检查不变；环境 init 在有凭据时不查脏（原界面可能有待自动保存的改动），准备／提交前照查。
+- **来源所有者**：统一搜索输入不是安全输入，目标与输入按普通内容声明；修订在保险箱锁定、隐私变化、遮罩后更新，使之前的接受全部作废。不随 boardDidChange 更新（会让多项计划后续步骤全部失效），字段级变化由各适配器的冻结目标复核拦截。
+- **设置类**：沿用 AppPreferences 旧键 + LocalSettingCommandAdapter，不切文件后端、不迁移（3A 决定）。
+- **系统服务**：刷新与原界面 `BoardEvents.Dependencies.production` 同一路径，异步处理，结果如实记 unknown；提醒授权只在设了提醒且保存成功后经 `DayBoardMutations.requestReminderAccessIfNeeded`；剪贴板写入 `SystemClipboardTextWriter`；粘贴经 `ClipboardHistoryActions`（辅助功能只在执行时询问）；窗口沿 AppWindows／StatusItemController／DiaryWindows；app.quit 经 `AppDelegate.confirmTerminationForCommand` 走原确认，同意后 terminate 不重复弹窗。
+- **读取**：`ContentQueryProductionReads` 按查询选路（剪贴板、回收站、标签统计、其余走图片＋普通手记正文，`ordinaryOnly`）；120ms 合并等待，等待／准备／求值之间合作式取消。仍在主线程同步读 SwiftData（没有后台 context），所以“不阻塞”只做到按键先返回、读取延后且可被新输入取消。
+- **宿主**：工作台 `UnifiedSearchWorkspaceRoot`（开时传装配的控制器与宿主，`presentsSearchOnAppear: false` 使打开工作台仍落原页面；⌘F 聚焦）；菜单栏底栏换成紧凑输入，中部有查询时显示结果与操作面板，焦点与“正在搜索”接到 `MenuBarToolbarState.unifiedActive`，原有快捷键、Esc、手记快捷键的判断不改。菜单栏控制器没有工作台路由与页面指令，打开结果经 `recordOpen` 交给工作台（显示工作台→同一查询→打开同一对象）。`WorkspaceHostContext.sharesProductionStorage` 让正式版宿主各页附件保持原取值。
+- **低级整改（A）**：§9.100 第 3 条定为既有行为（§9.76 加注理由），第 4 条加注，第 6～8 条补 MultiPlanRevisionGateTests，第 9 条细化断言。
+
+#### 性能（合成，隔离 QA Debug，macOS 26.6.2 arm64，12 核 24GB，含 120ms 等待）
+
+| 数据 | 冷 | 热 | 热（同词） |
+|---|---|---|---|
+| 2000 待办＋200 习惯×365 天＋500 手记 | 215.9s | 216.7s | 211.5s |
+| 仅 2000 待办 | 1.56s | 1.61s | 1.53s |
+| 仅 500 手记 | 30.6s | 30.3s | 30.4s |
+| 20 习惯×365 天／200 习惯×30 天 | 0.18s／0.29s | 0.19s／0.28s | 0.20s／0.28s |
+
+热点（`sample` 8 秒，主线程全部样本）：`ImageContentQueryReads.read → DiaryContentQueryReader.readBodies → ContentQueryBodyReads.readContent → ContentQueryBodyReadPermit.validate／validateFacts → ImageContentQueryCapture.retain`（每读一篇正文都重跑已登记的整表复查，约 O(n²)）。没有产品预算；按授权本批不改算法，登记为阻断级缺口。
+
+#### 验证与复核
+
+（集中验证与 verifier 结论见下方补记。）
+
+#### 缺口
+
+- 大库读取卡顿（上表）；菜单栏只做搜索与写入指令；标签使用统计在正式版不出现（读取选项沿默认，与隔离宿主相同）。
+- 开关开时工作台带显式宿主：日历／安排／标签页的页内状态改由 `WorkspaceNavigation` 持有（页面切走再回来仍保留），这是页面指令所需的既有宿主行为。
+- 真实库、真实附件、真实钥匙串、真实通知／日历／辅助功能授权、真人输入法、VoiceOver、真实多窗口均未验证，留给用户验收；旧搜索删除留到验收通过后的下一批。
