@@ -83,6 +83,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
+        // QA 包同样注册 areachain scheme；测试分支收到 URL 时不能触发浮窗、工作台或共享导航。
+        guard AppStartup.requireAllowed() == .application else { return }
         for url in urls {
             if url.scheme == "areachain" {
                 let target = url.host ?? url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))

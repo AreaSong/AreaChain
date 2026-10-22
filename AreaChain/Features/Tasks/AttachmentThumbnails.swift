@@ -440,12 +440,7 @@ struct AttachmentPreviewCarouselView: View {
 private enum AttachmentImageResolver {
     static func load(_ item: AttachmentRef, inMemoryData: [UUID: Data], hostContext: WorkspaceHostContext?) -> NSImage? {
         if let data = inMemoryData[item.id] { return NSImage(data: data) }
-        if let hostContext {
-            guard let store = hostContext.attachments,
-                  let data = try? store.readOrdinary(reference: item, root: store.directory()) else { return nil }
-            return NSImage(data: data)
-        }
-        return AttachmentStore.image(reference: item)
+        return WorkspaceAttachmentStorage.image(item, host: hostContext)
     }
 
     static func removeBadge(id: UUID, font: Font, action: @escaping () -> Void) -> some View {

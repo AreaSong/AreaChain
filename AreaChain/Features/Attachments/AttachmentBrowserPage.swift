@@ -88,12 +88,17 @@ struct AttachmentBrowserPage: View {
     }
 
     private var headerActions: [WorkspaceHeaderAction] {
-        [
-            WorkspaceHeaderAction(id: "attachments.upload", title: "attachments.upload", systemImage: "photo.badge.plus") {
-                AttachmentActions.pickUnlinkedImage(context: modelContext, store: activeStore, root: activeRoot)
+        let storage = storage
+        return [
+            WorkspaceHeaderAction(id: "attachments.upload", title: "attachments.upload", systemImage: "photo.badge.plus",
+                                  isEnabled: storage != nil) {
+                guard let storage else { return }
+                AttachmentActions.pickUnlinkedImage(context: modelContext, store: storage.store, root: storage.root)
             },
-            WorkspaceHeaderAction(id: "attachments.paste", title: "attachments.paste", systemImage: "doc.on.clipboard") {
-                _ = AttachmentActions.pasteUnlinkedImage(context: modelContext, store: activeStore, root: activeRoot)
+            WorkspaceHeaderAction(id: "attachments.paste", title: "attachments.paste", systemImage: "doc.on.clipboard",
+                                  isEnabled: storage != nil) {
+                guard let storage else { return }
+                _ = AttachmentActions.pasteUnlinkedImage(context: modelContext, store: storage.store, root: storage.root)
             }
         ]
     }
@@ -250,11 +255,11 @@ struct AttachmentBrowserPage: View {
         )
     }
 
-    private var activeStore: AttachmentStore { hostContext?.attachments ?? .shared }
-    private var activeRoot: URL? { hostContext?.attachments?.directory() }
+    private var storage: WorkspaceAttachmentStorage? { .resolve(hostContext) }
 
     private func resolvedLibraryItems() -> [AttachmentLibraryItem] {
-        let pool = AttachmentPoolStore.unlinkedItems(store: activeStore, root: activeRoot)
+        guard let storage else { return [] }
+        let pool = AttachmentPoolStore.unlinkedItems(store: storage.store, root: storage.root)
         let signature = "\(poolRevision)|\(locale.identifier)|\(attachments.count)|\(tags.count)|"
             + attachments.map { "\($0.id.uuidString):\($0.filename):\($0.storageID?.uuidString ?? "")" }.joined(separator: ",")
             + "|" + pool.map { "\($0.id.uuidString):\($0.filename)" }.joined(separator: ",")
@@ -263,7 +268,7 @@ struct AttachmentBrowserPage: View {
         }
         let owners = (try? AttachmentAccess.ownerIndex(context: modelContext, keys: attachments.compactMap(\.ownerKey))) ?? .empty
         let storageIDs = attachments.map { $0.storageID ?? $0.id } + pool.map(\.id)
-        let hashes = AttachmentPoolStore.contentHashes(for: storageIDs, store: activeStore, root: activeRoot)
+        let hashes = AttachmentPoolStore.contentHashes(for: storageIDs, store: storage.store, root: storage.root)
         let built = AttachmentLibraryProjection.build(
             attachments: attachments,
             unlinked: pool,
@@ -291,22 +296,24 @@ struct AttachmentBrowserPage: View {
     }
 
     private func loadedThumbnail(_ item: AttachmentRef) -> NSImage? {
-        AttachmentPoolStore.cachedImage(
+        guard let storage else { return nil }
+        return AttachmentPoolStore.cachedImage(
             for: item,
             maxPixelSize: 360,
-            store: activeStore,
-            root: activeRoot,
-            useOrdinaryRead: hostContext != nil
+            store: storage.store,
+            root: storage.root,
+            useOrdinaryRead: storage.ordinaryOnly
         )
     }
 
     private func loadedFullImage(_ item: AttachmentRef) -> NSImage? {
-        AttachmentPoolStore.cachedImage(
+        guard let storage else { return nil }
+        return AttachmentPoolStore.cachedImage(
             for: item,
             maxPixelSize: nil,
-            store: activeStore,
-            root: activeRoot,
-            useOrdinaryRead: hostContext != nil
+            store: storage.store,
+            root: storage.root,
+            useOrdinaryRead: storage.ordinaryOnly
         )
     }
 
@@ -345,12 +352,13 @@ struct AttachmentBrowserPage: View {
     }
 
     private func commitRename(_ item: AttachmentLibraryItem) {
+        guard let storage else { return cancelRename() }
         _ = AttachmentPoolStore.rename(
             item: item,
             newFilename: renameDraft,
             context: modelContext,
-            store: activeStore,
-            root: activeRoot
+            store: storage.store,
+            root: storage.root
         )
         poolRevision += 1
         cancelRename()
@@ -380,12 +388,13 @@ struct AttachmentBrowserPage: View {
     }
 
     private func confirmSingleTrash(_ item: AttachmentLibraryItem) {
+        guard let storage else { return }
         pendingTrash = PendingTrash(title: item.filename) {
             _ = AttachmentPoolStore.trashItems(
                 [item],
                 context: modelContext,
-                store: activeStore,
-                root: activeRoot
+                store: storage.store,
+                root: storage.root
             )
             selection.remove(item.storageID)
             poolRevision += 1
@@ -393,14 +402,14 @@ struct AttachmentBrowserPage: View {
     }
 
     private func confirmBatchTrash(_ targets: [AttachmentLibraryItem]) {
-        guard !targets.isEmpty else { return }
+        guard !targets.isEmpty, let storage else { return }
         let summaryTitle = targets.count == 1 ? targets[0].filename : "\(targets.count)"
         pendingTrash = PendingTrash(title: summaryTitle) {
             _ = AttachmentPoolStore.trashItems(
                 targets,
                 context: modelContext,
-                store: activeStore,
-                root: activeRoot
+                store: storage.store,
+                root: storage.root
             )
             selection.removeAll()
             poolRevision += 1

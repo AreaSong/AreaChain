@@ -10,6 +10,7 @@ struct TaskDetailDrawer: View {
     @Binding var taskID: UUID?
     @WorkspaceNavigationContext private var navigation
     @Environment(\.workspaceSearchRouter) private var router
+    @Environment(\.workspaceHostContext) private var hostContext
 
     @Query private var todos: [TodoItem]
     @Query private var routines: [DailyRoutine]
@@ -242,7 +243,7 @@ struct TaskDetailDrawer: View {
                 .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
             }
 
-            if let image = AttachmentStore.image(reference: item) {
+            if let image = WorkspaceAttachmentStorage.image(item, host: hostContext) {
                 Image(nsImage: image)
                     .resizable()
                     .scaledToFit()

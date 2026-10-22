@@ -222,6 +222,7 @@ struct TaskDetailAssetsSectionView: View {
     var attachments: [AttachmentItem]
     var modelContext: ModelContext
     var onPreview: (AttachmentRef) -> Void
+    @Environment(\.workspaceHostContext) private var hostContext
 
     var body: some View {
         DrawerSectionGroup(title: "drawer.section.assets") {
@@ -264,7 +265,7 @@ struct TaskDetailAssetsSectionView: View {
 
     private func attachmentThumbnail(_ att: AttachmentItem) -> some View {
         ZStack(alignment: .topTrailing) {
-            if let image = AttachmentStore.image(reference: att.reference) {
+            if let image = WorkspaceAttachmentStorage.image(att.reference, host: hostContext) {
                 Image(nsImage: image)
                     .resizable()
                     .scaledToFill()

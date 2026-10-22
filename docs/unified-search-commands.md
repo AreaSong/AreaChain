@@ -7215,6 +7215,13 @@ WorkspaceContentSource 只记录当前搜索读取的 PersistentIdentifier 和�
 - 整改（本批不修）：中，涉及隐私与隔离边界——`AttachmentBrowserPage.swift:253-254` 与 `TrashPage.swift:21-22` 的 `hostContext?.attachments ?? .shared` 在隔离宿主没有附件依赖时退回共享附件目录，可读写未关联池与选图／粘贴写入；由 f4ecfa4（2026-10-12 附件中心）引入，非点名批次。低：UnifiedSearchContent* 未覆盖该情形。
 - 指定复核缺口未关闭（不通过）；受保护内容查阅、C2B、人工与平台缺口仍保留。
 
+#### 整改复核（M-5F，2026-10-22）
+
+- 改动：按宿主决定附件存储收敛到 `WorkspaceAttachmentStorage.resolve`／`image(_:host:)`（`AreaChain/Features/Workspace/WorkspaceHostContext.swift:16-36`）；`AttachmentBrowserPage.swift:258`、`TrashPage.swift:21`、`AttachmentThumbnails.swift:443`、`TaskDetailSections.swift:268`、`TaskDetailDrawer.swift:246` 消费它。隔离宿主无存储时附件页／回收站按无附件呈现，上传／粘贴禁用（`AttachmentBrowserPage.swift:94,99`）；生产分支取值与原来相同。
+- 先红后绿：`UnifiedSearchContentAttachmentHostTests` 在修复前，无存储附件页（出现卡片、写入可用）、回收站附件行、抽屉缩略图（0 张）三例失败，修复后 5/5；详见 §9.101。
+- 结论：Claude Code `verifier` 第一轮**不通过**（抽屉缩略图／预览直读共享目录），按整改清单修复后第二轮**通过**；本里程碑的指定复核缺口关闭。
+- 仍保留：抽屉／目录菜单／手记的选图粘贴写入、回收站清除与清空在隔离宿主仍用共享目录（写入与删除，不在本契约的读取范围内，登记为后续批次）；受保护内容查阅、C2B、人工与平台缺口。
+
 ### 9.86 里程碑 C-M1：命令长文原生编辑与受控组合输入
 
 2026-10-10（Asia/Shanghai）。本节是 C-M1 的唯一交接。用户已批准 A～E 连续实施及应用控制范围内的组合输入保护；仅完整 PrivacyQA、合成内容、内存 vault 和假系统依赖，不接生产、业务保存、真实认证、敏感执行／转交、磁盘草稿、安装或发布。旧 §9.50～§9.52 的阶段停止和全部拒绝 marked text 限制由本批授权替代；历史失败和 mutable textStorage 反例保留。
@@ -7511,6 +7518,13 @@ C-M3 之后的上限、实现与验证见 [§9.88](#988-里程碑-c-m3长文上�
 - 结论：Claude Code `verifier` **不通过**。身份交叉判定、内存容器与退出 78、`--qa-batch` 入口、原型仅 QA 显式装配、正式默认仍为 legacy、1b7f843 三项修复均符合；第 1 条"Delegate 的窗口服务只在 application 分支执行"不符合。
 - 整改（本批不修）：中，涉及隔离边界（窗口服务），不写真实库——`AreaChainApp.swift:85-105` 的 `application(_:open:)` 没有 `requireAllowed() == .application` 判断，会调用快速输入浮窗、工作台显示与 `WorkspaceNavigation.shared`；`Config/AppInfo.plist:16-19` 让 QA 包同样注册 `areachain` scheme；由 c99c2e5（2026-10-16 小组件）引入。低：AppStartupTests 未覆盖测试分支的 URL 打开。
 - 指定复核缺口未关闭（不通过）；TK2 历史性能格、深色视觉、人工与平台缺口仍保留。
+
+#### 整改复核（M-5F，2026-10-22）
+
+- 改动：`AreaChain/App/AreaChainApp.swift:87` 在 `application(_:open:)` 开头加 `guard AppStartup.requireAllowed() == .application else { return }`，与 `applicationDidFinishLaunching`（`:38`）同一写法；application 分支四种 target 不变。AppDelegate 其余入口已核对，无需改（见 §9.101 核对表）。
+- 先红后绿：`AppStartupTests.testingBranchIgnoresURLOpens`（`AreaChainTests/Services/AppStartupTests.swift:90`）在修复前失败（激活与显示工作台各 4 次、新建并显示快速输入浮窗、共享导航变为 `.diary`），修复后通过；用现有的 `AppWindows.activateForOpening`／`showWorkspaceWindow` 测试钩子，没有新增钩子。
+- 结论：Claude Code `verifier` 两轮均**通过**；本里程碑的指定复核缺口关闭。
+- 仍保留：未改 `Config/AppInfo.plist`，QA 包仍注册 `areachain` scheme（可选后续）；真实 URL 路由未实测；TK2 历史性能格、深色视觉、人工与平台缺口。
 
 ### 9.88 里程碑 C-M3：长文上限与超限引导
 
@@ -8351,3 +8365,42 @@ L-M1b 必须的反例（合成内存库、fake 系统依赖）：借用签发后
 - 整改第 1、2 条的实际可达性未运行；文件设置 pending／commit 后端、B-M2 D3 内部（按 R-M3 结论）、多数测试类的断言充分性只核对存在性与断言对象。
 - 环境门控的性能／排版探针与人工交互测试未运行；C-M1-R 启动偏离事件的历史副作用、1MiB 单段性能、TK2 历史性能格仍未知或未闭合。
 - 生产搜索、真实用户库与系统服务：本批未接入、未访问。B+P1、P+N1 两次 verifier 明确报告除门禁产物外未写文件，R、N2+C 两次未逐字声明；主对话核对 `git status` 干净，`/tmp` 下本批时段没有新增文件（仅有无关的 PostgreSQL 套接字锁）；本批没有推送、安装或发布。
+
+### 9.101 修复批次 M-5F：N-M2 与 C-M2 中级整改
+
+2026-10-22（Asia/Shanghai）。修 §9.100 整改清单第 1、2、5 条；第 3、4、6～9 条（低级）不在本批，保持开放。基线 `3964057`，本地提交、不推送；未改签名、凭据、`Config/AppInfo.plist`、QA.xcconfig、build.sh。证据在忽略目录 `build/M5F/`（`results.md` 为汇总，xcresult 已复制保存）。
+
+#### 决定与入口
+
+- **N-M2**：按宿主决定附件存储的唯一入口为 `WorkspaceAttachmentStorage`（`AreaChain/Features/Workspace/WorkspaceHostContext.swift:16-36`）：无宿主时为 `(.shared, root nil, 非普通读取)`，与原生产取值相同；隔离宿主有存储时为 `(store, store.directory(), 只走 readOrdinary)`；没有存储时为 nil，调用方按无附件呈现，写入入口禁用，不新增文案。附件页、回收站走 `AttachmentPoolStore.cachedImage(useOrdinaryRead: ordinaryOnly)`，缩略图组件、检查器缩略图与预览走 `image(_:host:)`。第一轮 verifier 指出的检查器两处直读（N-M2 原提交 764c3c2 起就是直读，不是后来的回退）已在本批纳入。
+- **C-M2**：`application(_:open:)` 在测试分支直接返回（`AreaChain/App/AreaChainApp.swift:87`）。
+
+#### AppDelegate 入口核对（测试分支）
+
+| 入口 | 行为 | 处理 |
+|---|---|---|
+| 属性初始化 `terminationPolicy` 及三个闭包 | 只调用冻结的 `requireAllowed()`；闭包惰性求值，不会执行 | 已核对，无需改 |
+| `applicationDidFinishLaunching` | `:38` guard，直接返回 | 已核对，无需改 |
+| `application(_:open:)` | 原先会开浮窗、显示工作台、改共享导航 | **已修**（`:87`） |
+| `applicationShouldTerminateAfterLastWindowClosed` | 固定返回 false，没有副作用 | 已核对，无需改 |
+| `applicationShouldTerminate` | `terminationPolicy` 不是 application 时直接 `.terminateNow`，不弹确认、不保存手记 | 已核对，无需改 |
+| reopen／dock 菜单等 | 未实现 | 无 |
+| `AreaChainCommands` | 只在 application 分支构造（`:160`） | 已核对，无需改 |
+
+#### 测试（先红后绿）
+
+- 新增 `AreaChainTests/Features/UnifiedSearchContentAttachmentHostTests.swift`（后台轮，5 例：入口三种取值、无存储附件页、无存储回收站、有存储附件页、检查器缩略图）；`AppStartupTests.testingBranchIgnoresURLOpens`。均只用内存库和临时目录，不读真实目录。
+- 红：在 HEAD 源码上，URL 用例于 `:110-113` 失败；无存储附件页（出现卡片、上传／粘贴可用）与回收站（出现附件行）失败，有存储附件页通过；检查器缩略图在两个检查器文件为 HEAD 时 0 张（前置的"Choose image"可见）。入口取值用例在 HEAD 上无法编译，修复后才加入。红轮行号以当时的源码为准（摘要见 `results.md`）。早期两版夹具／观察点无效，已作废并记录。
+- 绿：新套件 5/5，AppStartupTests 4/4；verifier 重跑同两类均通过。
+- 最终定向 55 类（门禁推导加提示词列出的类，`build/M5F/final-classes.txt`，命令 `quality_gate.py --profile swift --only-testing …`）：前台轮 41 类 203 方法 341 次，200 通过、2 失败、1 Expected Failure（DetailTimePickerTests 历史项）；后台轮 14 类 48 方法 73 次，47 通过、1 失败（检查器缩略图用例的旧观察点，已由新观察点 5/5 取代）；跳过 0。两项前台失败 `UnifiedSearchContentLifecycleTests.actualSearchPositionAndSelectionSurviveDiaryRead`（`:72`）与 `WorkspaceRenderingTests.diaryComposerKeepsNewlinesAndSavesOnce`（`:179`）在 `3964057` 上以相同断言复现，判为既有问题；前者间歇出现（同源码重跑结果包 `rerun2-…12-18-12` 中通过），后者稳定失败。更早的两次 38 类运行中另有 `SettingsToggleConsumerTests` 焦点前置（`isKeyWindow` 为 false）失败，同源码重跑 6/6 通过，判为环境原因。
+- 门禁其余检查（workflow、SwiftLint、security-static、322 项脚本回归、日用 Debug 编译验签）通过。门禁把 `AttachmentBrowserPage.swift` 标为"无直接引用，只编译"，由新套件直接渲染覆盖，未跑 `--profile full`。
+
+#### 复核结论
+
+Claude Code `verifier` 第一轮：C-M2 通过；N-M2 不通过（检查器缩略图／预览直读共享目录）。修复后第二轮：N-M2、C-M2 都通过。两轮均声明除门禁产物外没有写文件。主对话抽查了 `TaskDetailSections.swift:268`、`TaskDetailDrawer.swift:246`、`AreaChainApp.swift:87`、`WorkspaceHostContext.swift:23-35`，均属实。
+
+#### 未覆盖与后续
+
+- **登记为后续批次**（隔离宿主仍写入或删除共享目录，不属于 §9.85 的"浏览／缩略图读取"契约）：检查器选图／粘贴（`TaskDetailSections.swift:248,252`）、`TaskCatalogChoices.swift:115,118`、`DiarySummaryRow.swift:393,401`、`DiaryCardComponents.swift:73,81` 走 AttachmentPicker 默认共享存储；回收站单项清除与清空（`TrashPage.swift:335,340`，经 AttachmentCleanup／LocalStorageInspector）；`DiaryEditorSession.swift:198` 读共享池文件名用于避免重名。这些都要用户点按钮才触发。
+- 页面测试只在界面层断言"按无附件呈现"，没有用读取探针直接证明共享目录未被访问；红轮在 HEAD 上会走原有的共享读取路径（只读，未点击写入）。
+- 可选后续：QA 包是否取消注册 `areachain` scheme（需改 `Config/AppInfo.plist`，另议）；真实 URL 路由、原生截图、VoiceOver、真人交互未做。

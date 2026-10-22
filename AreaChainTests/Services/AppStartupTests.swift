@@ -86,5 +86,33 @@ struct AppStartupTests {
                           named: "startup-runtime.json")
     }
 
+    /// M-5F（C-M2 整改）：QA 包同样注册 areachain scheme，测试分支收到 URL 时不能打开浮窗、工作台或改共享导航。
+    @Test func testingBranchIgnoresURLOpens() throws {
+        #expect(AppStartup.policy == .testing)
+        let activate = AppWindows.activateForOpening, show = AppWindows.showWorkspaceWindow
+        let quickEntry = QuickEntryPanelController.shared
+        let panelBefore = quickEntry.hostedWindow, visibleBefore = quickEntry.isVisible
+        let tabBefore = WorkspaceNavigation.shared.selectedTab
+        let policyBefore = NSApp.activationPolicy()
+        var opened: [String] = []
+        AppWindows.activateForOpening = { opened.append("activate") }
+        AppWindows.showWorkspaceWindow = { opened.append("show") }
+        defer {
+            AppWindows.activateForOpening = activate; AppWindows.showWorkspaceWindow = show
+            // 只在旧行为误开浮窗时收起，不走 resignIfIdle，避免波及其他测试窗口。
+            if quickEntry.isVisible != visibleBefore { quickEntry.hostedWindow?.orderOut(nil) }
+            WorkspaceNavigation.shared.selectedTab = tabBefore
+            NSApp.setActivationPolicy(policyBefore)
+        }
+        let urls = ["quick-task", "quick-diary", "quadrant", "today", "diary", "unknown"]
+            .compactMap { URL(string: "areachain://" + $0) }
+        AppDelegate().application(NSApp, open: urls)
+        #expect(opened.isEmpty)
+        #expect(quickEntry.hostedWindow === panelBefore)
+        #expect(quickEntry.isVisible == visibleBefore)
+        #expect(WorkspaceNavigation.shared.selectedTab == tabBefore)
+        #expect(NSApp.activationPolicy() == policyBefore)
+    }
+
     private final class RuntimeBundle: NSObject {}
 }

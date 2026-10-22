@@ -18,16 +18,22 @@ struct TrashPage: View {
     @State private var pendingPurge: PendingTrash?
     @State private var confirmEmpty = false
 
-    private var activeStore: AttachmentStore { hostContext?.attachments ?? .shared }
-    private var activeRoot: URL? { hostContext?.attachments?.directory() }
+    private var storage: WorkspaceAttachmentStorage? { .resolve(hostContext) }
 
     private var items: [TrashRow] {
         let standing = routines.compactMap { TrashRow.resident($0, attachments: attachments, tags: tags) }
         let tasks = todos.compactMap { TrashRow.todo($0, attachments: attachments, tags: tags) }
         let notes = diaries.compactMap { TrashRow.diary($0, attachments: attachments, tags: { tags }, locale: locale) }
+        let catalog = tags.compactMap { TrashRow.tag($0) }
+        return standing + tasks + notes + attachmentRows() + catalog
+    }
+
+    private func attachmentRows() -> [TrashRow] {
+        // 隔离宿主没有附件存储时按无附件呈现：附件行不出现，其缩略图与单行清除就不会碰到共享目录。
+        guard storage != nil else { return [] }
         let owners = (try? AttachmentAccess.ownerIndex(context: modelContext, keys: attachments.compactMap(\.ownerKey)))
             ?? .empty
-        let files = attachments.compactMap { item in
+        return attachments.compactMap { item in
             let live = item.ownerKey.map { owners.ownerIsLive($0) } ?? false
             let context = resolveAttachmentContext(for: item, owners: owners)
             return TrashRow.attachment(
@@ -40,8 +46,6 @@ struct TrashPage: View {
                 }
             )
         }
-        let catalog = tags.compactMap { TrashRow.tag($0) }
-        return standing + tasks + notes + files + catalog
     }
 
     private var allSectioned: [(TrashSection, [TrashRow])] {
@@ -291,24 +295,24 @@ struct TrashPage: View {
     }
 
     private func loadedThumbnail(_ item: AttachmentRef) -> NSImage? {
-        guard item.privacyVaultID == nil else { return nil }
+        guard item.privacyVaultID == nil, let storage else { return nil }
         return AttachmentPoolStore.cachedImage(
             for: item,
             maxPixelSize: 320,
-            store: activeStore,
-            root: activeRoot,
-            useOrdinaryRead: hostContext != nil
+            store: storage.store,
+            root: storage.root,
+            useOrdinaryRead: storage.ordinaryOnly
         )
     }
 
     private func loadedFullImage(_ item: AttachmentRef) -> NSImage? {
-        guard item.privacyVaultID == nil else { return nil }
+        guard item.privacyVaultID == nil, let storage else { return nil }
         return AttachmentPoolStore.cachedImage(
             for: item,
             maxPixelSize: nil,
-            store: activeStore,
-            root: activeRoot,
-            useOrdinaryRead: hostContext != nil
+            store: storage.store,
+            root: storage.root,
+            useOrdinaryRead: storage.ordinaryOnly
         )
     }
 
