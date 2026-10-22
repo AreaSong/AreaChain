@@ -25,8 +25,8 @@
 | [T2](unified-search-commands.md#T2) | 完成、改期、提醒、优先级、标签、截止 | 隔离实现 | 已：todo.move／priority／reminder（T-M1）、completion／tags／createTag／due（T-M2），均 G-1a 已复核；todo.cancelCompletion（M-1，复用 0.4 秒反悔窗口）；move／priority／reminder／tags／due 自 M-1 起允许带备注对象 | T-M1、T-M2、M-1 | [§9.74](unified-search-commands.md#974-里程碑-t-m2完成标签与截止时间的隔离闭环)、[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾) |
 | [T3](unified-search-commands.md#T3) | 复制、回收 | 隔离实现 | 已：todo.copy、todo.trash；M-1 起带备注对象可复制、可回收（确认面板说明备注随对象进回收站）；未复核 | T-M4、M-1 | [§9.90](unified-search-commands.md#990-里程碑-t-m4复制与回收)、[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾) |
 | [T4](unified-search-commands.md#T4) | 子任务 | 隔离实现 | 已：subtask.create／title／completion／tags（T-M3，G-1a 已复核）、subtask.delete（T-M4）、subtask.order（T-M6）、subtask.cancelTitle（M-1）；父待办带备注仍拒绝 | T-M3、T-M4、T-M6、M-1 | [§9.75](unified-search-commands.md#975-里程碑-t-m3普通子任务的隔离闭环)、[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾) |
-| [T5](unified-search-commands.md#T5) | 重复事项定义 | 隔离实现 | 已：routine.title／weekdays／reminder／priority／tags（R-M1）、routine.create（R-M2）、routine.enabled（R-M3）、routine.trash（T-M4）、routine.order（T-M6）、routine.capture／routine.notes（T-M6 规格，L-M1b 经长文受控借用执行）；R-M1～R-M3 待 G-1b 补复核 | R-M1～R-M3、T-M4、T-M6、L-M1b | [§9.76](unified-search-commands.md#976-里程碑-r-m1习惯定义五字段的隔离闭环)、[§9.78](unified-search-commands.md#978-里程碑-r-m3兼容跳过习惯启停与指定执行日状态)、[§9.95](unified-search-commands.md#995-里程碑-l-m1b长文受控借用实现) |
-| [T6](unified-search-commands.md#T6) | 指定日完成／撤回／跳过、检查日、连击 | 隔离实现 | 已：occurrence.complete／skip／reopen（R-M3）、inspector.day 定位（N-M1）、routine.streak（M-1，复用 HabitStreakLogic，只读） | R-M3、N-M1、M-1 | [§9.78](unified-search-commands.md#978-里程碑-r-m3兼容跳过习惯启停与指定执行日状态)、[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾) |
+| [T5](unified-search-commands.md#T5) | 重复事项定义 | 隔离实现 | 已：routine.title／weekdays／reminder／priority／tags（R-M1）、routine.create（R-M2）、routine.enabled（R-M3）、routine.trash（T-M4）、routine.order（T-M6）、routine.capture／routine.notes（T-M6 规格，L-M1b 经长文受控借用执行）；title／weekdays／reminder／priority／tags、create、enabled 已复核（M-5，R-M1～R-M3 通过） | R-M1～R-M3、T-M4、T-M6、L-M1b | [§9.76](unified-search-commands.md#976-里程碑-r-m1习惯定义五字段的隔离闭环)、[§9.78](unified-search-commands.md#978-里程碑-r-m3兼容跳过习惯启停与指定执行日状态)、[§9.95](unified-search-commands.md#995-里程碑-l-m1b长文受控借用实现) |
+| [T6](unified-search-commands.md#T6) | 指定日完成／撤回／跳过、检查日、连击 | 隔离实现 | 已：occurrence.complete／skip／reopen（R-M3，M-5 已复核）、inspector.day 定位（N-M1）、routine.streak（M-1，复用 HabitStreakLogic，只读） | R-M3、N-M1、M-1 | [§9.78](unified-search-commands.md#978-里程碑-r-m3兼容跳过习惯启停与指定执行日状态)、[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾) |
 | [T7](unified-search-commands.md#T7) | 批量任务／习惯 | 隔离实现 | 已：batch.move／tags（B-M1，M-1 起允许带备注）、batch.completion／enabled（B-M2）、batch.trash（T-M4，M-1 起允许带备注）、selection.clear（M-1） | B-M1、B-M2、T-M4、M-1 | [§9.79](unified-search-commands.md#979-里程碑-b-m1固定多目标改期与混合标签共同提交)、[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾) |
 | [T8](unified-search-commands.md#T8) | 待办↔重复事项转换 | 隔离实现 | 已：todo.toRoutine、routine.toTodo；M-1 起带备注对象可转换（损失清单列出“备注原样搬到新对象”）；未复核 | T-M5、M-1 | [§9.91](unified-search-commands.md#991-里程碑-t-m5待办与重复事项互转)、[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾) |
 | [T9](unified-search-commands.md#T9) | 页面筛选、全部事项、排序、延至今日 | 隔离实现（部分） | 已：tasks.order、tasks.postponeYesterday（T-M6）；tasks.filter／clearFilter（今日／待处理／全部事项，与页面双向同步）、tasks.kind／status、tasks.sections（昨天／即将）、tasks.select（待处理／全部事项）（M-1）；未：今日区收起（始终展开）、今日页与标签清单的多选指令 | 2A～2J、4A、T-M6、M-1 | [§9.93](unified-search-commands.md#993-里程碑-t-m6任务类修改收尾)、[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾) |
@@ -100,6 +100,11 @@
 ## 补复核待办
 
 - **G-1a**（T-M1～T-M3）：已完成，三份结论均“通过”，见 [§9.89](unified-search-commands.md#989-补复核-g-1at-系列)。
+- **合并批 M-5**（原 G-1b～G-1e，2026-10-22）：
+  - [x] R 组（R-M1～R-M3）：三份结论均“通过”，见 §9.76～§9.78 的 M-5 段。
+  - [ ] B+P1 组（B-M1、B-M2、P-M1）
+  - [ ] P+N1 组（P-M2、P-M3、N-M1）
+  - [ ] N2+C 组（N-M2、C-M1、C-M2）
 - **G-1b～G-1e**：挪到接入正式版之前执行。提示词原放在被忽略的 `build/prompts/`，该目录后被清理；2026-10-19 已按同一模板重新生成到被忽略的 `.agents/prompts/`：G-1b（R-M1～R-M3）、G-1c（B-M1、B-M2、P-M1）、G-1d（P-M2、P-M3、N-M1）、G-1e（N-M2、C-M1、C-M2）。
 - L-M1b：指定复核第二轮通过，见 [§9.95](unified-search-commands.md#995-里程碑-l-m1b长文受控借用实现)。
 - 合并批 M-1：指定复核第二轮通过，见 [§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾)。

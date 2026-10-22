@@ -6485,6 +6485,14 @@ R-M1 本地 A～E 与隔离原生闭环完成；完整签名/治理交付为 par
 
 后续习惯新增需另核初始定义、创建身份/排序与共同事务；启停需核对暂停期跳过桥接并显示实际记录影响；执行记录需绑定定义＋日期的实例身份及历史证据。当前五字段验收不能授权这些能力，notes/敏感、排序/删除/批量及新多步也未开放。
 
+#### 补复核（M-5，2026-10-22）
+
+- 源码：HEAD `9daf97e`，工作区干净；`build/M5/digest.py` 1682 文件摘要 `14ef3fc4…846535` 运行前后与 verifier 复核后一致。复核包与证据在忽略目录 `build/M5/`。
+- 测试：`quality_gate.py --profile swift` 定向 R 组 26 类并集（只有前台轮，380 秒），133 方法／363 次执行全部通过，0 失败、0 跳过、0 Expected Failure；本里程碑 11 类见 `build/M5/R-counts.txt`。verifier 另跑 RoutineTitleTransactionTests 9／9 通过。
+- 结论：Claude Code `verifier` **通过**。11 条契约符合；"默认不开放"范围已由 R-M2／R-M3、T-M4、T-M6、L-M1b、M-1 有意改变；资格改为自读备注带键摘要属 M-1 B（§9.96），习惯字段类仍拒绝有备注。
+- 整改（低，未修）：①旧 `editRoutineWithSyntax` 在标题事务后另开 `ModelChanges.perform` 关联 @附件（f4ecfa4，`DayBoardMutations+Capture.swift:99-103`），本节第 6393 行未记，附件关联失败不反映到 Bool；②第 6397 行"不读取 notes 猜资格"已被 M-1 B 取代。
+- 指定复核缺口关闭；正常签名、C2B、真人输入法／VoiceOver、最低系统、真实多窗口、真实磁盘失败与嵌套提醒时序差异仍保留。
+
 ### 9.77 里程碑 R-M2：普通习惯结构化新增与状态兼容核验
 
 2026-10-08（Asia/Shanghai）。本批 A～D 获准实现普通 `routine.create /routines/add` 的服务和隔离原生完整链；E 的启停／打卡仅只读取证、合成特征验证与方案，不改变生产写入或读取语义。正常签名到期、指定 Cursor verifier、C2B、人工／最低系统／多窗口及旧详情缺口继续独立保留。R-M1 旧标题 Bool 与嵌套提醒时序差异仍以 §9.76 专节为准。
@@ -6575,6 +6583,13 @@ NativeDelivery／LocalRegression／LegacyInput／FinalCompile 申请前、锁后
 正常开发签名到期未恢复，按授权未重复必然失败的普通构建、未续签／更改个人配置／申请Apple资源；QA签名不替代正常签名。C2B、真人输入法／VoiceOver、最低系统、真实多窗口、旧子任务详情与R-M1旧标题Bool／嵌套提醒时序差异仍独立保留。本批无生产接线、真实用户库／系统服务写入、提交、推送、安装、发布或权限变化。下一批只在确认上方三个产品选择后定界；启停handler、执行记录handler、历史迁移及通用恢复引擎均未实现。
 
 
+#### 补复核（M-5，2026-10-22）
+
+- 源码与测试同 §9.76 的 M-5 段（HEAD `9daf97e`，R 组 26 类 133 方法／363 次全部通过）；本里程碑 6 类：RoutineCreate、RoutineCreateBoundary、RoutineCreateTransaction、UnifiedSearchRoutineCreate、UnifiedSearchRoutineCreateBoundary、RoutineCreateLegacyNative。
+- 结论：Claude Code `verifier` **通过**。11 条契约符合；Run 输出仅在 `typedCreation` 下开放属 P-M2（§9.82）有意改变；`addCapturedRoutine` 转调 `RoutineCaptureService` 属 T-M6 有意改变，`addRecurringItem` 未变。
+- 整改：无本里程碑专属问题；测试覆盖备注：`RoutineCreateBoundaryTests.swift:22` 只断言抛错与零保存，未区分 sortChanged／dateChanged。
+- 指定复核缺口关闭；启停／打卡写入的历史方案已由 §9.78 承接，签名、C2B、人工与平台缺口仍保留。
+
 ### 9.78 里程碑 R-M3：兼容跳过、习惯启停与指定执行日状态
 
 2026-10-08（Asia/Shanghai）。用户明确授权 A～E 连续实施和隔离验收。本批只显式装配单个普通无备注活习惯定义的 `routine.enabled`，以及单个定义＋明确民事日期的 `occurrence.complete / skip / reopen`。不开放生产、批量、组合计划、新输出依赖、执行后撤销、跨重启恢复、notes 或敏感执行；不迁移、清洗或修改真实数据。
@@ -6643,6 +6658,13 @@ NativeFinal／ServiceRegression／FinalCompile 对应1313文件全集 SHA-256 `7
 正常开发签名到期、指定 Cursor verifier 无可调用入口、C2B 与既有人工作业缺口分别保留；未重复认证、续签、修改个人配置或冒充指定复核。只读探索子代理只提供定位线索。
 
 **门禁与下一批实际前置。** 本批45份 Swift 的严格 SwiftLint 通过；workflow、差异、严格 static 质量门禁及235项脚本回归通过。并行新增检查项而夹具尚未同步时出现4项失败，保留 `Handoff-quality.json`／`handoff-script-tests.log`；夹具同步后重跑通过，不拿初始234项或零命中选择器当最终证据。最终文档后再次检查，结果见 `handoff-quality-verified.json` 和 `final-source-audit.json`。指定复核待审材料为本节原需求／批准决定、`changed-files.json`、各批完整源码／选择器／实体和提交事实、unknown与回滚证据；当前工具目录无 Cursor verifier，未运行亦未认证。下一步补正常签名与指定复核；C2B、真人输入法／系统截图／VoiceOver、最低系统及真实多窗口等历史缺口保持独立。未开放生产、真实用户库／系统写入、批量／自动分批、任意多步、执行后撤销、跨重启恢复、notes或敏感执行；没有提交、推送、安装、发布、续签或权限变化。
+
+#### 补复核（M-5，2026-10-22）
+
+- 源码与测试同 §9.76 的 M-5 段（HEAD `9daf97e`，R 组 26 类 133 方法／363 次全部通过）；本里程碑 9 类：RoutineStateBoundary、RoutineStateCompatibility、RoutineEnabledCommand、RoutineOccurrenceCommand、UnifiedSearchRoutineState、UnifiedSearchRoutineStateBoundary、RoutineCheckReading、RoutineSkippedCompatibility、RecurringToggleConsumer。
+- 结论：Claude Code `verifier` **通过**。D1～D3、显式 StateOperations、精确写集、先登记后发布、写集后回滚均符合；batch.enabled／completion 由 B-M2、`quadrant.complete` 转交 `occurrence.complete` 由 M-2 有意开放。
+- 整改：无。正式版没有构造 `UnifiedSearchController`／`RoutineCommandEnvironment`／`RoutineCommandAdapter`。
+- 指定复核缺口关闭；4000 日真实库性能预算、签名、C2B、人工与平台缺口仍保留。
 
 ### 9.79 里程碑 B-M1：固定多目标改期与混合标签共同提交
 
