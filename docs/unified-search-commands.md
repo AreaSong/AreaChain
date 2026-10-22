@@ -7014,6 +7014,14 @@ Run.outputs 保留真实本地创建事实；creationOutput 仍要求原生产�
 - 运行后参数编辑、mergedOrigins／returnedAttempts执行仍未开放。下一批若接合并／返回编辑，须先定义真实基线与引用stamp迁移、原Run已保存事实的保留、失败／未执行部分重新接受及不可重放成功项的契约，再取得对应实际适配和隔离证据；纯协议合并或返回值不构成执行许可。
 - 任意输出集合、自动批量targets、日期实例派生、notes／敏感执行、删除、执行后撤销、自动拆批和跨重启恢复仍不支持。没有提交、推送、安装、发布、续签或权限变化。
 
+#### 补复核（M-5，2026-10-22）
+
+- 源码：HEAD `4a628e7`（代码同 `9daf97e`），工作区干净；1682 文件摘要 `14ef3fc4…846535` 各次运行前后一致。证据在忽略目录 `build/M5/`。
+- 测试：`quality_gate.py --profile swift` 定向 P+N1 组 21 类。首轮前台轮 18 类 77 方法／138 次：106 通过、32 失败，全部是 `NativeSyntaxUI.swift:24` 焦点前置（active=false、key=false，前台为 `com.apple.loginwindow`，守护切回 124 次），业务断言未执行；后台轮 3 类 11 方法／14 次通过。失败的 7 类同源码单独重跑 20 方法／32 次全部通过，判为环境原因（verifier 同意）。合计 88 方法／152 次最终通过，0 跳过、0 Expected Failure。
+- 结论：Claude Code `verifier` **通过**。10 条契约符合；目标带备注由 M-1 B 有意放宽，回收／转换在多项装配被拒绝（T-M4～T-M6）。
+- 整改：无新发现；组件目录与 §9.75 未注明子任务输出例外已由 §9.89 第 4 条记录。
+- 指定复核缺口关闭；人工与平台缺口仍保留。
+
 ### 9.83 里程碑 P-M3：合法赋值合并与运行内编辑修订
 
 2026-10-09（Asia/Shanghai）。用户授权 A～E 连续实施，承接 §9.81／§9.82。复用原 Plan／Run／Coordinator、各真实 Reader／Adapter 和业务事务；仅 `MultiPlanCommandAdapter(supportsRevisions: true)` 显式装配开放本批能力，默认旧单项、T-M1、P-M1／P-M2 保持原边界。本批本地实现与有限自动验收已收口；指定 Cursor verifier 不可调用、未执行，整体为 **partial**。
@@ -7081,6 +7089,13 @@ runner沿原build/.build.lock单次最多900秒、独立 `build/PrivacyQA-PM3`�
 仍不开放任意跨Run／窗口／存储结果导入、历史清洗、生产搜索、真实用户库或系统服务、notes／敏感执行、删除、执行后撤销、自动拆批及跨重启恢复。本批没有安装、发布、续签或权限变化。
 
 
+#### 补复核（M-5，2026-10-22）
+
+- 源码与测试同 §9.82 的 M-5 段；本里程碑 8 类：MultiPlanMergeExecution、MultiPlanRevision、MultiPlanRevisionFamily、MultiPlanRevisionBoundary、MultiPlanRevisionEditing、UnifiedSearchPlanRevision、UnifiedSearchPlanRevisionBoundary、CommandPlanMerge（原生两类首轮焦点失败、重跑通过）。
+- 结论：Claude Code `verifier` **通过**。合并白名单、返回票据一次性、unknown 与外部未完成拒绝返回、引用迁移前后检查、历史凭据仅限本宿主链均符合。
+- 整改（低，未修）：①默认装配（`supportsRevisions` 为 false）下 `proposeMerge`／返回被拒绝没有直接测试（守卫在 `MultiPlanCommandMerge.swift:19,50`、`MultiPlanCommandAdapter.swift:93,325,337`）；②旧单项设置适配不能封存修订没有直接测试（`LocalSettingCommandAdapter.swift:69`、`FileLocalSettingCommandAdapter.swift:372`）。
+- 指定复核缺口关闭；人工与平台缺口仍保留。
+
 ### 9.84 里程碑 N-M1：导航与返回搜索
 
 2026-10-09～10（Asia/Shanghai）。承接P-M1～P-M3，按用户明确确认的A～E连续实施；本节为唯一交接。本批A～E本地实施、有限验证与工程收口已完成；指定Cursor verifier无可调用入口、未执行，人工及历史缺口独立保留，完整交付状态仍为partial。
@@ -7135,6 +7150,13 @@ MainSplitWorkspaceView默认生产调用兼容，仅显式注入时使用新展�
 本批涉及 **62文件（54份Swift）**，清单和混合文件说明在 `changed-files.json`；`workspace.patch` 是完整工作区差异，含明确标记的并行部分，不代表全部由本任务编写。侧栏、WorkspaceLayout、CommandProtectedTextView、WorkspaceWindowLifecycleTests及AppWindows窗口材质改动的并行内容均保留；会话中索引由外部发生变化，本对话未执行git add或改写索引。初始主题守卫失败随并行侧栏修正消失，不认领该修复。编译既有SDK弃用／actor提示及原生QoS警告保留，未声称无警告。
 
 指定Cursor verifier仍为**材料就绪、复核未执行**：本节、实际差异、完整源码、选择器／方法明细、零保存证据及截图已就绪，未认证或由普通代理代替。C2B、真人IME／VoiceOver、系统合成器、最低macOS与真实多窗口等历史缺口保持；本批平台为macOS26.6.2 arm64。未启用日用生产搜索，未访问真实业务数据／系统剪贴板／真实认证，未提交、推送、安装、发布、续签或更改权限。
+
+#### 补复核（M-5，2026-10-22）
+
+- 源码与测试同 §9.82 的 M-5 段；本里程碑 7 类：UnifiedSearchNavigation、UnifiedSearchNavigationClick、UnifiedSearchNavigationBoundary、UnifiedSearchNavigationBoundaryInteraction、UnifiedSearchNavigationOwnership、WorkspaceLegacySearchRouting、AppWindowsRouting（三个前台类首轮焦点失败、重跑通过；verifier 另跑两类亦通过）。
+- 结论：Claude Code `verifier` **通过**。返回票据不存查询或正文、16 个 go 映射、对象核验不建打卡、挂载后才报告已显示、隔离宿主不查系统状态也不补建预设标签、AppWindows 默认 `.live` 均符合；go.tagList 与手记／附件查阅由 N-M2、窗口与退出由 M-3 有意开放。
+- 整改：无。
+- 指定复核缺口关闭；整窗缓存的系统材质、人工与平台缺口仍保留。
 
 ### 9.85 里程碑 N-M2：标签导航、普通手记全文与普通图片查阅
 
