@@ -6493,6 +6493,11 @@ R-M1 本地 A～E 与隔离原生闭环完成；完整签名/治理交付为 par
 - 整改（低，未修）：①旧 `editRoutineWithSyntax` 在标题事务后另开 `ModelChanges.perform` 关联 @附件（f4ecfa4，`DayBoardMutations+Capture.swift:99-103`），本节第 6393 行未记，附件关联失败不反映到 Bool；②第 6397 行"不读取 notes 猜资格"已被 M-1 B 取代。
 - 指定复核缺口关闭；正常签名、C2B、真人输入法／VoiceOver、最低系统、真实多窗口、真实磁盘失败与嵌套提醒时序差异仍保留。
 
+#### 加注（M-6，2026-10-22）
+
+- 本节“资格、接受与事实”段的“不读取 notes 猜资格”已被合并批 M-1 B 改为：环境自读目标备注，取协调者密钥的带键摘要作资格证明（`CommandNotesProofReader`，见 [§9.96](#996-合并批-m-1任务域收尾)）；习惯字段类仍拒绝有备注目标。原文保留作历史记录。
+- 旧 `editRoutineWithSyntax` 的 @附件 关联（`DayBoardMutations+Capture.swift:99-103`）定为**既有行为**，不改：返回值只表示标题事务成功，附件关联是标题保存成功后另开一次 `ModelChanges.perform` 的尽力补充，失败时只回滚关联本身、不影响已保存的标题，也不反映到返回值。理由：这是自 f4ecfa4 起原界面（ResidentsPage、TaskRowFactory）一直依赖的语义，改为同一事务会让关联失败连带撤销标题，属于改变原界面保存语义，不在 M-6 授权范围；指令侧 routine.title 走 `RoutineMutationService`，不经过这条路径。
+
 ### 9.77 里程碑 R-M2：普通习惯结构化新增与状态兼容核验
 
 2026-10-08（Asia/Shanghai）。本批 A～D 获准实现普通 `routine.create /routines/add` 的服务和隔离原生完整链；E 的启停／打卡仅只读取证、合成特征验证与方案，不改变生产写入或读取语义。正常签名到期、指定 Cursor verifier、C2B、人工／最低系统／多窗口及旧详情缺口继续独立保留。R-M1 旧标题 Bool 与嵌套提醒时序差异仍以 §9.76 专节为准。

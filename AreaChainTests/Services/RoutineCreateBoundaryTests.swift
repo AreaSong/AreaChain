@@ -19,7 +19,12 @@ import Testing
         default: fixture.base.base.todo.title = "唯一未保存输入"
         }
         if kind != 7 { try fixture.context.save() }
-        #expect(throws: (any Error).self) { try fixture.submit(accepted) }
+        // §9.100 第 9 条：日期越界与排序基线变化各有专属原因，界面据此给不同提示。
+        switch kind {
+        case 0: #expect(throws: RoutineCreateIssue.dateChanged) { try fixture.submit(accepted) }
+        case 1, 2, 3: #expect(throws: RoutineCreateIssue.sortChanged) { try fixture.submit(accepted) }
+        default: #expect(throws: (any Error).self) { try fixture.submit(accepted) }
+        }
         #expect(fixture.base.count("save") == 0 && fixture.base.count("preSave") == 0 && fixture.base.count("ui") == 0)
         if kind == 7 { #expect(fixture.context.hasChanges && fixture.base.base.todo.title == "唯一未保存输入") }
         #expect(try fixture.handoff.state().plan.items.first?.draft.arguments == accepted.preview.arguments)
