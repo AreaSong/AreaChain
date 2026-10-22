@@ -896,7 +896,7 @@ ASSEMBLY_FILES = {
 ASSEMBLY_CONSTRUCTION = re.compile(
     r"\b(UnifiedSearchController|[A-Z][A-Za-z]*Command(?:Adapter|Environment)|WorkspacePageCommands"
     r"|ContentQueryReadSession|CommandHandoffCoordinator)\s*\(|\bCommandStoreGrant\s*\.\s*production\s*\(")
-ASSEMBLY_REQUIRED = ("UnifiedSearchController(",)
+ASSEMBLY_REQUIRED = ("UnifiedSearchController(", "CommandStoreGrant.production(")
 
 
 def check_unified_search_assembly(root):

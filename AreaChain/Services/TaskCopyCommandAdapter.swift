@@ -1,26 +1,30 @@
 import Foundation
 import SwiftData
 
-/// 仅显式隔离装配；复制内容沿 TaskCopyContent，写入只经注入的剪贴板接口。
+/// 仅显式装配（隔离或 CommandStoreGrant 正式版）；复制内容沿 TaskCopyContent，写入只经注入的剪贴板接口。
 @MainActor final class TaskCopyCommandEnvironment {
     let id = UUID()
     let context: ModelContext
+    let grant: CommandStoreGrant?
     let source: (CommandObjectReference) throws -> CommandTaskTitleEligibility
     let writer: any ClipboardTextWriting
     /// 协调者的带键摘要（L6）；由装配它的适配器设置，用于自读备注的无备注证明（L8）。未设置即无证明、不可执行。
     var notesKey: CommandTextDigest?
 
     init(context: ModelContext, source: @escaping (CommandObjectReference) throws -> CommandTaskTitleEligibility,
-         writer: any ClipboardTextWriting) throws {
+         writer: any ClipboardTextWriting,
+         grant: CommandStoreGrant? = nil) throws {
+        self.grant = grant
         self.context = context
         self.source = source
         self.writer = writer
-        try validateClean()
+        // 正式版主 context 可能有原界面尚未自动保存的改动；凭据装配只在每次准备／提交前要求干净。
+        if grant == nil { try validateClean() }
+        else if !CommandStoreGrant.admits(context, center: nil, grant: grant) { throw TaskTitleCommandIssue.ineligibleEnvironment }
     }
 
     func validateClean() throws {
-        guard !context.autosaveEnabled, !context.container.configurations.isEmpty,
-              context.container.configurations.allSatisfy(\.isStoredInMemoryOnly) else {
+        guard CommandStoreGrant.admits(context, center: nil, grant: grant) else {
             throw TaskTitleCommandIssue.ineligibleEnvironment
         }
         // 未保存的编辑不是可复制的已核验内容。

@@ -13,6 +13,7 @@ import SwiftData
     }
     let id = UUID()
     let context: ModelContext
+    let grant: CommandStoreGrant?
     let center: NotificationCenter
     let dependencies: Dependencies
     let source: (CommandObjectReference) throws -> CommandTaskTitleEligibility
@@ -27,20 +28,22 @@ import SwiftData
     init(context: ModelContext, center: NotificationCenter, dependencies: Dependencies,
          source: @escaping (CommandObjectReference) throws -> CommandTaskTitleEligibility,
          refresh: @escaping (CommandObjectReference, Bool) throws -> TaskTitleCommandEnvironment.Refresh,
-         stateOperations: RoutineCommandEnvironment.StateOperations? = nil) throws {
+         stateOperations: RoutineCommandEnvironment.StateOperations? = nil,
+         grant: CommandStoreGrant? = nil) throws {
+        self.grant = grant
         self.context = context
         self.center = center
         self.dependencies = dependencies
         self.source = source
         self.refresh = refresh
         self.stateOperations = stateOperations
-        try validateClean()
+        // 正式版主 context 可能有原界面尚未自动保存的改动；凭据装配只在每次准备／提交前要求干净。
+        if grant == nil { try validateClean() }
+        else if !CommandStoreGrant.admits(context, center: center, grant: grant) { throw TaskTitleCommandIssue.ineligibleEnvironment }
     }
 
     func validateClean() throws {
-        guard center !== NotificationCenter.default, !context.autosaveEnabled,
-              !context.container.configurations.isEmpty,
-              context.container.configurations.allSatisfy(\.isStoredInMemoryOnly) else {
+        guard CommandStoreGrant.admits(context, center: center, grant: grant) else {
             throw TaskTitleCommandIssue.ineligibleEnvironment
         }
         guard dependencies.tasks.taskMutationContext === context,

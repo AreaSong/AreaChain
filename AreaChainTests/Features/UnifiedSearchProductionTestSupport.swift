@@ -10,12 +10,12 @@ import Testing
     var refreshes: [Bool] = []
     var reminderRequests: [Int?] = []
     var calendarRefreshes = 0
-    var clipboardActionRequests = 0
-    var systemRequests = 0
     var reveals = 0
     var copied: [String] = []
+    var clipboardActions: ClipboardHistoryActions?
+    var system: WorkspaceSystemCommands?
     var total: Int {
-        refreshes.count + reminderRequests.count + calendarRefreshes + clipboardActionRequests + systemRequests + reveals + copied.count
+        refreshes.count + reminderRequests.count + calendarRefreshes + reveals + copied.count
     }
 
     final class Writer: ClipboardTextWriting {
@@ -29,8 +29,8 @@ import Testing
         return .init(refresh: { [unowned self] in refreshes.append($0) }, calendarSyncEnabled: { false },
                      requestReminderAccess: { [unowned self] in reminderRequests.append($0) },
                      refreshCalendar: { [unowned self] in calendarRefreshes += 1 }, clipboardWriter: writer,
-                     clipboardActions: { [unowned self] in clipboardActionRequests += 1; return nil },
-                     system: { [unowned self] in systemRequests += 1; return nil },
+                     // 两个工厂在装配时取一次（构造依赖、不调用系统）；用例需要时注入自己的 fake。
+                     clipboardActions: { [unowned self] in clipboardActions }, system: { [unowned self] in system },
                      sourceBundleID: { "com.areachain.m6.test" }, revealWorkspace: { [unowned self] in reveals += 1 })
     }
 }
@@ -78,7 +78,9 @@ import Testing
                      drafts: EditDrafts(), filters: BoardFilterSession(), clipboard: clipboard,
                      clipboardStore: ClipboardHistoryStore(root: root.appending(path: "clipboard")), shortcuts: shortcuts,
                      attachments: AttachmentStore(keys: VaultKeyAccess(), root: root.appending(path: "attachments")),
-                     attachmentRoot: root.appending(path: "attachments"), productionAttachments: productionAttachments,
+                     attachmentRoot: root.appending(path: "attachments"),
+                     pasteboard: NSPasteboard(name: .init("AreaChain.M6." + UUID().uuidString)),
+                     productionAttachments: productionAttachments,
                      calendar: calendar, now: { DayKey.date(dayKey: Self.today, minutes: 720, calendar: calendar)! },
                      today: { Self.today }, effects: probe.effects)
     }

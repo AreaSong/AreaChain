@@ -10,6 +10,7 @@ import SwiftData
     let center: NotificationCenter
     let refresh: (_ includeCalendar: Bool) throws -> Refresh
     let requestAuthorization: ((Int) -> CommandTaskCreateFacts.Authorization)?
+    let grant: CommandStoreGrant?
     lazy var tagCatalog = TaskCreateTagCatalogReader(context: context)
     var beforePublication: () throws -> Void = {}
     var afterPublication: () throws -> Void = {}
@@ -32,8 +33,10 @@ import SwiftData
          source: @escaping () throws -> CommandTaskCreateSource,
          dependencies: TaskMutationService.Dependencies,
          refresh: @escaping (Bool) throws -> Refresh,
-         requestAuthorization: ((Int) -> CommandTaskCreateFacts.Authorization)? = nil) throws {
+         requestAuthorization: ((Int) -> CommandTaskCreateFacts.Authorization)? = nil,
+         grant: CommandStoreGrant? = nil) throws {
         self.context = context
+        self.grant = grant
         self.center = center
         self.source = source
         self.dependencies = dependencies
@@ -43,9 +46,7 @@ import SwiftData
     }
 
     func validate() throws {
-        guard center !== NotificationCenter.default, !context.autosaveEnabled,
-              !context.container.configurations.isEmpty,
-              context.container.configurations.allSatisfy(\.isStoredInMemoryOnly) else {
+        guard CommandStoreGrant.admits(context, center: center, grant: grant) else {
             throw TaskCreateCommandIssue.ineligibleEnvironment
         }
     }

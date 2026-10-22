@@ -1,10 +1,11 @@
 import Foundation
 import SwiftData
 
-/// capture.clipboard 的显式隔离装配：内存库、关闭自动保存的干净 context、私有事件与注入的剪贴板／附件目录／日期。
+/// capture.clipboard 的显式装配：无凭据时为内存库、关闭自动保存的干净 context 与私有事件，正式版凭 CommandStoreGrant；剪贴板／附件目录／日期均注入。
 @MainActor final class ClipboardCaptureCommandEnvironment {
     let id = UUID()
     let context: ModelContext
+    let grant: CommandStoreGrant?
     let center: NotificationCenter
     let capture: ClipboardCapture.Environment
     /// 偏好“附来源 Bundle ID”的当前值；预览据此说明，提交时由 capture.sourceBundleID 给出实际值。
@@ -14,19 +15,21 @@ import SwiftData
     var refresh: (Bool) -> Void = { _ in }
 
     init(context: ModelContext, center: NotificationCenter, capture: ClipboardCapture.Environment,
-         stampsSource: @escaping () -> Bool, transaction: ModelChanges.Boundary) throws {
+         stampsSource: @escaping () -> Bool, transaction: ModelChanges.Boundary,
+         grant: CommandStoreGrant? = nil) throws {
+        self.grant = grant
         self.context = context
         self.center = center
         self.capture = capture
         self.stampsSource = stampsSource
         self.transaction = transaction
-        try validateClean()
+        // 正式版主 context 可能有原界面尚未自动保存的改动；凭据装配只在每次准备／提交前要求干净。
+        if grant == nil { try validateClean() }
+        else if !CommandStoreGrant.admits(context, center: center, grant: grant) { throw ClipboardCaptureCommandIssue.unassembled }
     }
 
     func validateClean() throws {
-        guard center !== NotificationCenter.default, !context.autosaveEnabled,
-              !context.container.configurations.isEmpty,
-              context.container.configurations.allSatisfy(\.isStoredInMemoryOnly) else {
+        guard CommandStoreGrant.admits(context, center: center, grant: grant) else {
             throw ClipboardCaptureCommandIssue.unassembled
         }
         guard !context.hasChanges, !ModelChanges.hasActiveTransaction(in: context) else { throw ClipboardCaptureCommandIssue.stale }

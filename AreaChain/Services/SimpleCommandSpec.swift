@@ -61,7 +61,7 @@ extension SimpleCommandCallSpec {
     func apply(_ call: CommandSimpleCall, loan: CommandLongTextLoan, in context: ModelContext) throws
 }
 
-/// 简单指令的显式隔离装配：唯一事务边界与私有发布；只接受内存库、关闭自动保存的干净 context。
+/// 简单指令的显式装配：唯一事务边界与发布；无凭据时只接受内存库、关闭自动保存的干净 context，正式版凭 CommandStoreGrant。
 @MainActor final class SimpleCommandEnvironment {
     struct Dependencies {
         var transaction: ModelChanges.Boundary
@@ -72,20 +72,23 @@ extension SimpleCommandCallSpec {
     }
     let id = UUID()
     let context: ModelContext
+    let grant: CommandStoreGrant?
     let center: NotificationCenter
     let dependencies: Dependencies
 
-    init(context: ModelContext, center: NotificationCenter, dependencies: Dependencies) throws {
+    init(context: ModelContext, center: NotificationCenter, dependencies: Dependencies,
+         grant: CommandStoreGrant? = nil) throws {
+        self.grant = grant
         self.context = context
         self.center = center
         self.dependencies = dependencies
-        try validateClean()
+        // 正式版主 context 可能有原界面尚未自动保存的改动；凭据装配只在每次准备／提交前要求干净。
+        if grant == nil { try validateClean() }
+        else if !CommandStoreGrant.admits(context, center: center, grant: grant) { throw CommandSimpleIssue.unassembled }
     }
 
     func validateClean() throws {
-        guard center !== NotificationCenter.default, !context.autosaveEnabled,
-              !context.container.configurations.isEmpty,
-              context.container.configurations.allSatisfy(\.isStoredInMemoryOnly) else {
+        guard CommandStoreGrant.admits(context, center: center, grant: grant) else {
             throw CommandSimpleIssue.unassembled
         }
         guard !context.hasChanges, !ModelChanges.hasActiveTransaction(in: context) else { throw CommandSimpleIssue.stale }

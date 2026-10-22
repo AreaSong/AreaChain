@@ -4,6 +4,7 @@ import SwiftData
 /// 沿创建适配的显式依赖模式；没有生产默认值，仅允许受控内存库、私有发布和 fake 消费者。
 @MainActor final class TaskTitleCommandEnvironment {
     let context: ModelContext
+    let grant: CommandStoreGrant?
     let center: NotificationCenter
     let dependencies: TaskMutationService.TitleDependencies
     let source: (UUID) throws -> CommandTaskTitleEligibility
@@ -42,20 +43,22 @@ import SwiftData
          dependencies: TaskMutationService.TitleDependencies,
          source: @escaping (UUID) throws -> CommandTaskTitleEligibility,
          refresh: @escaping (CommandTaskTitleContext, Bool) throws -> Refresh,
-         requestAuthorization: @escaping (Int) -> CommandTaskTitleFacts.Authorization) throws {
+         requestAuthorization: @escaping (Int) -> CommandTaskTitleFacts.Authorization,
+         grant: CommandStoreGrant? = nil) throws {
+        self.grant = grant
         self.context = context
         self.center = center
         self.dependencies = dependencies
         self.source = source
         self.refresh = refresh
         self.requestAuthorization = requestAuthorization
-        try validateClean()
+        // 正式版主 context 可能有原界面尚未自动保存的改动；凭据装配只在每次准备／提交前要求干净。
+        if grant == nil { try validateClean() }
+        else if !CommandStoreGrant.admits(context, center: center, grant: grant) { throw TaskTitleCommandIssue.ineligibleEnvironment }
     }
 
     func validateClean() throws {
-        guard center !== NotificationCenter.default, !context.autosaveEnabled,
-              !context.container.configurations.isEmpty,
-              context.container.configurations.allSatisfy(\.isStoredInMemoryOnly) else {
+        guard CommandStoreGrant.admits(context, center: center, grant: grant) else {
             throw TaskTitleCommandIssue.ineligibleEnvironment
         }
         guard !context.hasChanges else { throw TaskTitleCommandIssue.dirtyContext }

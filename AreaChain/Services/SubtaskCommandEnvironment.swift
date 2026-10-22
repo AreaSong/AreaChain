@@ -5,6 +5,7 @@ import SwiftData
 @MainActor final class SubtaskCommandEnvironment {
     let id = UUID()
     let context: ModelContext
+    let grant: CommandStoreGrant?
     let center: NotificationCenter
     let dependencies: TaskMutationService.SubtaskDependencies
     let source: (CommandSubtaskSourceRequest) throws -> CommandSubtaskEligibility
@@ -17,19 +18,21 @@ import SwiftData
 
     init(context: ModelContext, center: NotificationCenter, dependencies: TaskMutationService.SubtaskDependencies,
          source: @escaping (CommandSubtaskSourceRequest) throws -> CommandSubtaskEligibility,
-         refresh: @escaping (CommandTaskTitleContext, Bool) throws -> TaskTitleCommandEnvironment.Refresh) throws {
+         refresh: @escaping (CommandTaskTitleContext, Bool) throws -> TaskTitleCommandEnvironment.Refresh,
+         grant: CommandStoreGrant? = nil) throws {
+        self.grant = grant
         self.context = context
         self.center = center
         self.dependencies = dependencies
         self.source = source
         self.refresh = refresh
-        try validateClean()
+        // 正式版主 context 可能有原界面尚未自动保存的改动；凭据装配只在每次准备／提交前要求干净。
+        if grant == nil { try validateClean() }
+        else if !CommandStoreGrant.admits(context, center: center, grant: grant) { throw TaskTitleCommandIssue.ineligibleEnvironment }
     }
 
     func validateClean() throws {
-        guard center !== NotificationCenter.default, !context.autosaveEnabled,
-              !context.container.configurations.isEmpty,
-              context.container.configurations.allSatisfy(\.isStoredInMemoryOnly) else {
+        guard CommandStoreGrant.admits(context, center: center, grant: grant) else {
             throw TaskTitleCommandIssue.ineligibleEnvironment
         }
         guard !context.hasChanges else { throw TaskTitleCommandIssue.dirtyContext }

@@ -37,6 +37,8 @@ import SwiftData
     var shortcuts: ShortcutStore
     var attachments: AttachmentStore
     var attachmentRoot: URL
+    /// capture.clipboard 只在执行时读取；正式版为通用剪贴板，测试为私有命名剪贴板。
+    var pasteboard: NSPasteboard = .general
     /// 为真时工作台各页附件读写保持原生产语义（共享目录、可解码私密附件），只有统一搜索自己的查阅走普通读取。
     var productionAttachments: Bool
     var calendar: Calendar = .current
@@ -61,6 +63,9 @@ import SwiftData
     private var handoffTask: Task<Void, Never>?
     /// 每个控制器的长文托管；宿主关闭（开关关闭或装配销毁）时逐个 discard。
     private(set) var escrows: [CommandLongTextEscrow] = []
+    /// 来源所有者的修订：隐私锁定、隐私变化或遮罩后更新，使之前接受的预览在提交前作废。
+    private(set) var sourceRevision = UUID()
+    private var privacyObservers: [NSObjectProtocol] = []
     /// 读取会话的失焦来源：视图自己调用 loseFocus，这里只给出不会被外部投递的私有中心。
     private let focus = NotificationCenter()
     private let focusObject = NSObject()
@@ -90,6 +95,11 @@ import SwiftData
         hostContext = host
         reads = ContentQueryProductionReads(context: services.context, clipboard: services.clipboardStore,
                                             calendar: services.calendar, now: services.now)
+        for name in [Notification.Name.privacyWillLock, .privacyDidChange, .privacyMask] {
+            privacyObservers.append(services.center.addObserver(forName: name, object: services.vault, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.sourceRevision = UUID() }
+            })
+        }
         workspace = try makeController(Self.workspaceHost)
         menubar = try makeController(Self.menubarHost)
     }
@@ -140,6 +150,8 @@ import SwiftData
         for escrow in escrows { escrow.revoke() }
         router.contents?.clear()
         services.navigation.searchPresentation = nil
+        for observer in privacyObservers { services.center.removeObserver(observer) }
+        privacyObservers = []
     }
 
     /// 菜单栏没有工作台路由：先显示工作台，再用同一查询在工作台读取，命中同一对象后沿原导航打开。
