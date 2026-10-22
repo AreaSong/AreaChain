@@ -6726,6 +6726,14 @@ NativeRegression为18方法／32次，新批量全部通过；4个旧方法出�
 **保留缺口与下一步边界。** 正常开发签名到期时未重复必然失败构建，不续签或改变个人配置；当前工具目录无指定Cursor verifier，材料就绪但复核未执行，未认证或用普通代理替代。指定材料包括用户B-M1原需求、本节契约、实际差异、全集／选择器／模型／事务／unknown／原生证据。C2B、人工／最低系统／真实多窗口及历史问题独立保留。批量完成／启停仍须先核定子项级联、执行日和桥接规则并沿共同事务补失败证据；多项计划须独立定义依赖及恢复，不能删除现有全局单项守卫。本批没有生产装配、真实数据／系统服务访问、自动分批、删除、notes、敏感执行、执行后撤销或跨重启恢复，也没有提交、推送、安装、发布、续签或权限变化。
 
 
+#### 补复核（M-5，2026-10-22）
+
+- 源码：HEAD `2e9d988`（代码同 `9daf97e`），工作区干净；1682 文件摘要 `14ef3fc4…846535` 运行前后一致。证据在忽略目录 `build/M5/`。
+- 测试：`quality_gate.py --profile swift` 定向 B+P1 组 27 类并集（只有前台轮，291 秒，前台守护切回 1 次），119 方法／224 次执行全部通过，0 失败、0 跳过、0 Expected Failure；本里程碑 7 类见 `build/M5/BP1-counts.txt`。
+- 结论：Claude Code `verifier` **通过**。11 条契约符合；"普通无备注"门槛由 M-1（§9.96）有意放宽，批量删除由 T-M4 经独立 `CommandTrash` 路径开放。
+- 整改：无。正式版没有构造 `UnifiedSearchController`／`BatchCommandAdapter`。
+- 指定复核缺口关闭；签名、C2B、真人输入法／VoiceOver、最低系统、真实多窗口仍保留。
+
 ### 9.80 里程碑 B-M2：批量状态、级联与补录总量控制
 
 2026-10-08（Asia/Shanghai）。用户明确批准 A～E 连续实施。本批仅显式隔离装配 `batch.completion`（`/tasks/batch/completion`）与 `batch.enabled`（`/tasks/batch/enabled`），一个操作、固定类型化集合、一个原计划项与一次共同事务。普通无备注、D3、唯一活身份、干净内存 context 和私有发布资格保持；B-M1 默认装配不获得状态能力。
@@ -6813,6 +6821,13 @@ NativeFinal和NormalDebugFinal申请前／锁后／运行后的1355文件全集�
 指定Cursor verifier当前无可调用能力，未认证、未执行、未用探索代理替代，整体保持partial。材料是用户B-M2原需求、本节已批准契约、实际差异、完整源码／选择器／事务／模型／未知／截图／签名证据；重点复核复合日期身份、物理写集计数、统一最终核验和不可拆分unknown。C2B、真人IME／VoiceOver、最低macOS及真实多窗口等历史缺口仍独立，未用本批自动证据关闭。
 
 多项计划／新输出依赖／跨重启恢复的实际前置仍是独立定义依赖、事务边界、稳定持久身份与共同提交恢复证明；不能删全局单项守卫或循环重放本批成员来获得这些能力。生产装配、真实数据／系统服务、批量跳过／删除、自动分批、notes／敏感执行及执行后撤销均未开放。
+
+#### 补复核（M-5，2026-10-22）
+
+- 源码与测试同 §9.79 的 M-5 段（B+P1 组 119 方法／224 次全部通过）；本里程碑 9 类：BatchStateCommand／Limit／Transaction／Boundary／Compatibility、UnifiedSearchBatchState、UnifiedSearchBatchStateBoundary、CommandHandoff、UnifiedSearchObjectContract。
+- 结论：Claude Code `verifier` **通过**。12 条契约符合：状态能力须显式装配，4000 实体上限在接受、提交、事务三处检查，`RoutineStateApplication` 只被单项与批量复用，afterCommit 先于发布。
+- 整改：无。D3 恢复算法本体按 R-M3 复核结论处理，本组只核对调用点。
+- 指定复核缺口关闭；4000 不是性能承诺，人工与平台缺口仍保留。
 
 ### 9.81 里程碑 P-M1：普通多项计划、顺序提交与运行内恢复
 
@@ -6913,6 +6928,13 @@ B-M2 的4000实体限制仍只作用于每个批量状态单元，不变成整�
 
 
 **交接时的并行源码差异。** HandoffQA／HandoffDebug申请前、锁后、运行后各自一致，QA与正常构建采用同一快照。最后核对时，`AreaChain/Features/Workspace/WorkspaceInspectorPresentation.swift`发生变化；本批文件相对该验证快照无变化。这些并行内容不归P-M1认领，当前工作区全集不能直接声称已通过最后编译；待其收敛后需补相关检查和完整构建。最后验证快照与当前差异分别保存在final-source-audit.json，不再无限重复不受影响的P-M1功能矩阵。
+
+#### 补复核（M-5，2026-10-22）
+
+- 源码与测试同 §9.79 的 M-5 段（B+P1 组 119 方法／224 次全部通过）；本里程碑 11 类：MultiPlanCommand／Recovery／Dispatch／AdditionalDispatch／CreationRetry／Setting／Boundary 与 UnifiedSearchMultiPlan、Lifecycle、Presentation、Composition。
+- 结论：Claude Code `verifier` **通过**。14 条契约符合：unknown 暂停整份计划，成员均调原适配器 execute，重试许可只由协调者签发；输出扩展由 P-M2、合并与返回由 P-M3 在显式装配下有意开放，回收／转换因独立确认被多项拒绝（T-M4／M-2）。
+- 整改（低，未修）：默认装配下"带 mergedOrigins／returnedAttempts 的计划项预检拒绝"（本节"尚未支持"段）没有直接测试；代码 `CommandPlanRevision.swift:34-37`、`MultiPlanCommandAdapter.swift:93` 满足。
+- 指定复核缺口关闭；文件设置 pending／commit 后端未逐行核对，人工与平台缺口仍保留。
 
 ### 9.82 里程碑 P-M2：类型化创建输出、受限分支与多级创建链
 
