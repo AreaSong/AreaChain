@@ -7207,6 +7207,14 @@ WorkspaceContentSource 只记录当前搜索读取的 PersistentIdentifier 和�
 **未完成前置。** 指定 Cursor verifier 为材料就绪／复核未执行，没有认证或普通代理替代。C2B、真人IME／VoiceOver、最低macOS、真实多窗口与历史缺口继续独立保留。本批只读查阅不替代手记编辑：后续仍需 C2B 完整正文输入事务与组合输入验收、唯一编辑会话／保存冲突／撤销和窗口接线；受保护内容查阅需要另行授权认证／解密能力及相应门禁。没有启用生产搜索、访问真实业务数据、提交、推送、安装、发布、续签或改变权限。
 
 
+#### 补复核（M-5，2026-10-22）
+
+- 源码：HEAD `8d9b0ef`（代码同 `9daf97e`），工作区干净；1682 文件摘要 `14ef3fc4…846535` 运行前后一致。证据在忽略目录 `build/M5/`。
+- 测试：`quality_gate.py --profile swift` 定向 N2+C 组 24 类（只有前台轮，225 秒），108 方法／174 次：170 通过、0 失败、4 跳过（`AREACHAIN_CM2_*` 环境变量门控的探针／性能用例）、0 Expected Failure；本里程碑 5 类 UnifiedSearchContent* 全部通过。
+- 结论：Claude Code `verifier` **不通过**。7 条契约符合（image.preview、diaryWindow.open 由 M-2／M-3 有意开放）；第 4 条"隔离工作台附件浏览无依赖时不回退共享目录"不符合。
+- 整改（本批不修）：中，涉及隐私与隔离边界——`AttachmentBrowserPage.swift:253-254` 与 `TrashPage.swift:21-22` 的 `hostContext?.attachments ?? .shared` 在隔离宿主没有附件依赖时退回共享附件目录，可读写未关联池与选图／粘贴写入；由 f4ecfa4（2026-10-12 附件中心）引入，非点名批次。低：UnifiedSearchContent* 未覆盖该情形。
+- 指定复核缺口未关闭（不通过）；受保护内容查阅、C2B、人工与平台缺口仍保留。
+
 ### 9.86 里程碑 C-M1：命令长文原生编辑与受控组合输入
 
 2026-10-10（Asia/Shanghai）。本节是 C-M1 的唯一交接。用户已批准 A～E 连续实施及应用控制范围内的组合输入保护；仅完整 PrivacyQA、合成内容、内存 vault 和假系统依赖，不接生产、业务保存、真实认证、敏感执行／转交、磁盘草稿、安装或发布。旧 §9.50～§9.52 的阶段停止和全部拒绝 marked text 限制由本批授权替代；历史失败和 mutable textStorage 反例保留。
@@ -7390,6 +7398,13 @@ R-handoff-lifecycle中一次工作台beginOperation返回nil（准备未就绪�
 正文保存handler仍需另批核验真实对象保护事实、字段操作、版本/冲突、唯一保存事务与失败保稿；敏感Run和跨宿主转交各自需要受控读取、执行资格、撤权/回退证据。当前C-M1-R的局部提速或启动探针不授予这些能力。整体仍为partial：性能目标和完整宿主真人检查未闭合、指定复核未执行；历史未知按证据保留，不写成已证明零副作用。
 
 
+#### 补复核（M-5，2026-10-22）
+
+- 源码与测试同 §9.85 的 M-5 段（N2+C 组 24 类 170 通过、4 门控跳过）；本里程碑 15 类：InputSyntaxInteraction、CommandTextComposition／Payload／Lifecycle／Difference／Geometry／LayoutControl／FragmentLayout／ProtectedUI／Performance、CommandTextQAWindowLease、CommandProtectedDraft、UnifiedSearchLongText、UnifiedSearchLongTextCommand；未纳入人工专用的 CommandTextInteractiveTests。
+- 结论：Claude Code `verifier` **通过**。正文唯一在 arguments、v2 载荷兼容 `command-draft:1`、先校验再建恢复点、锁定撤权、单一 owner、事务入口与旁路检测、C-M1-R 局部替换和窗口租约均符合；"不调用业务 handler" 由 L-M1b（§9.95）有意改变，64KiB 上限属 C-M3。
+- 整改：无。`assembleLongText` 与 `UnifiedSearchController` 仍无生产构造点。
+- 指定复核缺口关闭；启动偏离事件副作用未知、1MiB 单段性能、系统旁路、人工与平台缺口仍保留。
+
 ### 9.87 里程碑 C-M2：QA 启动门禁与两种有界排版原型
 
 2026-10-14（Asia/Shanghai）接续原会话 `01a12506-bd53-7380-99c1-c2457ce96971`。本节是 C-M2 唯一交接；原 §9.86 C-M1-R 的历史事件、基线和未知事项保留。用户批准 A～F 及新专用 QA 包的受控负向探针；不接业务保存、生产编辑器、敏感执行／转交、真实数据、安装、发布、提交或推送。
@@ -7489,6 +7504,13 @@ C-M3 在当前源码（HEAD `1931bbf`，工作区干净）上用新批次 cm3 �
 - TK2：`visibleCrossViewportReplacementAndAnchors`（两引擎 × 普通／受保护，含头、中、尾候选锚点高度）和 `nativeTextKitNetworkIdentity` 通过。历史失败格是环境门控的 CommandTextPrototypePerformanceTests 1KiB／compact／多段组词，本次没有重跑，不能写成该格已闭合。两种原型仍只在 QA 显式装配，正式采用结论不变。
 
 C-M3 之后的上限、实现与验证见 [§9.88](#988-里程碑-c-m3长文上限与超限引导)。
+
+#### 补复核（M-5，2026-10-22）
+
+- 源码与测试同 §9.85 的 M-5 段；本里程碑 AppStartup、AppTermination 与三组 CommandTextPrototype* 通过，`CommandTextPrototypePerformanceTests.boundedComparison` 按环境变量门控跳过；verifier 另跑 AppStartup 等 5 类通过。
+- 结论：Claude Code `verifier` **不通过**。身份交叉判定、内存容器与退出 78、`--qa-batch` 入口、原型仅 QA 显式装配、正式默认仍为 legacy、1b7f843 三项修复均符合；第 1 条"Delegate 的窗口服务只在 application 分支执行"不符合。
+- 整改（本批不修）：中，涉及隔离边界（窗口服务），不写真实库——`AreaChainApp.swift:85-105` 的 `application(_:open:)` 没有 `requireAllowed() == .application` 判断，会调用快速输入浮窗、工作台显示与 `WorkspaceNavigation.shared`；`Config/AppInfo.plist:16-19` 让 QA 包同样注册 `areachain` scheme；由 c99c2e5（2026-10-16 小组件）引入。低：AppStartupTests 未覆盖测试分支的 URL 打开。
+- 指定复核缺口未关闭（不通过）；TK2 历史性能格、深色视觉、人工与平台缺口仍保留。
 
 ### 9.88 里程碑 C-M3：长文上限与超限引导
 

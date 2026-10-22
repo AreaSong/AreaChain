@@ -39,7 +39,7 @@
 | [J3](unified-search-commands.md#J3) | 手记复制、转任务、回收 | 隔离实现＋打开原页面 | 已：diary.copy（整篇／标题／备注，PrivateClipboard）、diary.toTodo、diary.trash（共用独立确认、只能单项）；打开原页面：受保护手记 → 手记页（M-4） | M-4 | [§9.99](unified-search-commands.md#999-合并批-m-4普通手记写入) |
 | [G1](unified-search-commands.md#G1) | 标签新建、改名、颜色、排序、搜索与视图 | 隔离实现（部分） | 已：tag.create／rename／color（X-1）、tag.order（M-1）、tag.cancel、tag.search／view／deleted（M-2，取法即标签页的 TagListQuery）、go.tagList（N-M2）；未：新建时设为私密（需解锁） | X-1、2F、N-M2、T-M6、M-1、M-2 | [§9.92](unified-search-commands.md#992-提速基建-x-1)、[§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板) |
 | [G2](unified-search-commands.md#G2) | 标签合并、解绑、软删／恢复、清理 | 隔离实现＋打开原页面 | 已：tag.merge（决策 3：涉及私密标签整条拒绝）、tag.unlinkObject（受保护手记拒绝）、tag.trash／tag.restore（共用独立确认、只能单项）；打开原页面：tag.delete、tag.cleanup → 标签页（M-3）；tag.unlinkGlobal 目录 unavailable（原界面没有该功能，不算缺口） | M-2、M-3 | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板)、[§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
-| [A1](unified-search-commands.md#A1) | 图片附件 | 隔离实现＋打开原页面 | 已：图片元数据只读查询（2E、2K-6）、普通图片查阅（N-M2）、image.browse／image.preview／image.trash（M-2）；打开原页面：image.pick／paste／capture → 焦点对象的详情（手记打开手记页，习惯定义须先选执行日）（M-3） | 2K-6、N-M2、M-2、M-3 | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板)、[§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
+| [A1](unified-search-commands.md#A1) | 图片附件 | 隔离实现＋打开原页面 | 已：图片元数据只读查询（2E、2K-6）、普通图片查阅（N-M2，M-5 复核不通过）、image.browse／image.preview／image.trash（M-2）；打开原页面：image.pick／paste／capture → 焦点对象的详情（手记打开手记页，习惯定义须先选执行日）（M-3） | 2K-6、N-M2、M-2、M-3 | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板)、[§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
 | [C1](unified-search-commands.md#C1) | 剪贴板浏览与搜索 | 隔离实现 | 已：显式 /clipboard 只读提供者与文件只读适配（2G、2K-5）；clipboard.browse／search（M-2，与历史页 visibleItems 同一取法，原生等价验收逐行比对）；默认不进普通搜索不变 | 2G、2K-5、M-2 | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板) |
 | [C2](unified-search-commands.md#C2) | 剪贴板复制／粘贴 | 隔离实现 | 已：clipboard.copy／paste／pastePlain（ClipboardHistoryActions，写入失败不报成功；QA 中门与按键全为 fake、私有命名剪贴板）；真实辅助功能权限与 ⌘V 未接线 | M-2 | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板) |
 | [C3](unified-search-commands.md#C3) | 剪贴板置顶、删除、清空 | 隔离实现＋打开原页面 | 已：clipboard.pinned、clipboard.copyLetter（M-2）；打开原页面：delete、prune、empty → 剪贴板页（M-3） | M-2、M-3 | [§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板)、[§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
@@ -61,7 +61,7 @@
 | [D2](unified-search-commands.md#D2) | JSON 导出导入 | 打开原页面 | data.export／selectImport／validateImport／previewImport／applyImport → 数据与备份页（M-3）；不新增导入执行路径 | M-3 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
 | [D3](unified-search-commands.md#D3) | 加密备份与恢复 | 打开原页面 | backup.export／inspect／preview／restore → 数据与备份页（M-3）；不新增备份恢复执行路径 | M-3 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
 | [D4](unified-search-commands.md#D4) | 重置并退出 | 打开原页面 | recovery.status、recovery.resetQuit → 数据与备份页（降级提示就在该页，M-3）；resetQuit 目录仍 unavailable | M-3 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
-| [N1](unified-search-commands.md#N1) | 全页面与标签清单导航 | 隔离实现 | 已：16 个 go 入口（N-M1，M-5 已复核）、go.tagList（N-M2）；go.tagList 待本批 N2+C 组复核 | N-M1、N-M2 | [§9.84](unified-search-commands.md#984-里程碑-n-m1导航与返回搜索) |
+| [N1](unified-search-commands.md#N1) | 全页面与标签清单导航 | 隔离实现 | 已：16 个 go 入口（N-M1，M-5 已复核）、go.tagList（N-M2，M-5 复核不通过，见缺口“M-5 整改”） | N-M1、N-M2 | [§9.84](unified-search-commands.md#984-里程碑-n-m1导航与返回搜索) |
 | [N2](unified-search-commands.md#N2) | 工作台、浮层与面板 | 隔离实现（部分） | 已：workspace.open／reveal／close、overlay.toggle、routine.addPanel／managePanel（沿 AppWindows 与今日页原面板，不新建窗口，M-3）；未：overlay.mode（浮层的任务／手记页没有外部切换入口，只说明） | M-3 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口) |
 | [N3](unified-search-commands.md#N3) | 检查器与选择 | 隔离实现 | 已：inspector.open／inspector.day（N-M1，M-5 已复核）、selection.all／clear（M-1，沿页面投影） | N-M1、M-1 | [§9.84](unified-search-commands.md#984-里程碑-n-m1导航与返回搜索)、[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾) |
 | [N4](unified-search-commands.md#N4) | 手记小窗 | 隔离实现 | 已：diaryWindow.open（受保护手记拒绝）／draft（不写入，受保护草稿留给原页面）／pinned／close（沿小窗原有确认）（M-3）；diaryWindow.save（复用小窗会话保存，受保护会话只前置小窗，M-4） | M-3、M-4 | [§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口)、[§9.99](unified-search-commands.md#999-合并批-m-4普通手记写入) |
@@ -104,7 +104,7 @@
   - [x] R 组（R-M1～R-M3）：三份结论均“通过”，见 §9.76～§9.78 的 M-5 段。
   - [x] B+P1 组（B-M1、B-M2、P-M1）：三份结论均“通过”（多项计划 P-M1 不对应单独功能行），见 §9.79～§9.81 的 M-5 段。
   - [x] P+N1 组（P-M2、P-M3、N-M1）：三份结论均“通过”，首轮原生焦点失败经重跑判为环境原因，见 §9.82～§9.84 的 M-5 段。
-  - [ ] N2+C 组（N-M2、C-M1、C-M2）
+  - [x] N2+C 组（N-M2、C-M1、C-M2）：C-M1“通过”；N-M2、C-M2“不通过”（各一条中级，未修），见 §9.85～§9.87 的 M-5 段。
 - **G-1b～G-1e**：挪到接入正式版之前执行。提示词原放在被忽略的 `build/prompts/`，该目录后被清理；2026-10-19 已按同一模板重新生成到被忽略的 `.agents/prompts/`：G-1b（R-M1～R-M3）、G-1c（B-M1、B-M2、P-M1）、G-1d（P-M2、P-M3、N-M1）、G-1e（N-M2、C-M1、C-M2）。
 - L-M1b：指定复核第二轮通过，见 [§9.95](unified-search-commands.md#995-里程碑-l-m1b长文受控借用实现)。
 - 合并批 M-1：指定复核第二轮通过，见 [§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾)。
