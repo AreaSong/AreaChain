@@ -14,6 +14,8 @@ struct FooterBar: View {
     var isFilterDrawerPresented: Binding<Bool> = .constant(false)
     var onTriggerClick: (() -> Void)? = nil
     var activeCategory: Binding<FilterCategory>? = nil
+    /// 合并批 M-6：开关开时中间换成新版搜索框；nil 时保持原搜索框。
+    var unified: UnifiedSearchController? = nil
 
     @Environment(\.locale) private var locale
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -116,13 +118,19 @@ struct FooterBar: View {
             // 1. 左侧筛选入口区
             filterTrigger
 
-            // 2. 中间全宽搜索框（内嵌已生效 Token 胶囊流）
-            MenuBarSearchField(
-                tab: tab,
-                toolbar: toolbar,
-                availableTags: activeTags.map(\.name),
-                tokens: activeTokens
-            )
+            // 2. 中间全宽搜索框（内嵌已生效 Token 胶囊流）；新版搜索在用时换成统一输入
+            Group {
+                if let unified {
+                    MenuBarUnifiedSearchField(controller: unified)
+                } else {
+                    MenuBarSearchField(
+                        tab: tab,
+                        toolbar: toolbar,
+                        availableTags: activeTags.map(\.name),
+                        tokens: activeTokens
+                    )
+                }
+            }
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("menubar.toolbar.tools")
             .frame(maxWidth: .infinity)

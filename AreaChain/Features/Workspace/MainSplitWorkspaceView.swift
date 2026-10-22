@@ -8,12 +8,15 @@ struct MainSplitWorkspaceView: View {
     @Bindable private var navigation: WorkspaceNavigation
     var search: UnifiedSearchController?
     var hostContext: WorkspaceHostContext?
+    /// 隔离宿主一出现就显示搜索页；正式版（M-6）由 UnifiedSearchProduction 按当前查询决定，打开工作台仍落在原页面。
+    var presentsSearchOnAppear = true
 
     init(navigation: WorkspaceNavigation? = nil, search: UnifiedSearchController? = nil,
-         hostContext: WorkspaceHostContext? = nil) {
+         hostContext: WorkspaceHostContext? = nil, presentsSearchOnAppear: Bool = true) {
         self.navigation = navigation ?? .shared
         self.search = search
         self.hostContext = hostContext
+        self.presentsSearchOnAppear = presentsSearchOnAppear
     }
 
     private var searchRouter: WorkspaceSearchRouter? {
@@ -61,7 +64,7 @@ struct MainSplitWorkspaceView: View {
         .environment(\.workspaceSearchRouter, searchRouter)
         .background(WorkspaceNavigationProbe(router: searchRouter, key: "host"))
         .unifiedSearchOverlayHost()
-        .onAppear { if search != nil { navigation.searchPresentation = true } }
+        .onAppear { if search != nil && presentsSearchOnAppear { navigation.searchPresentation = true } }
         .onChange(of: navigation.searchPresentation) { _, value in
             if value == nil, let hostContext { search?.ordinaryWorkspaceVisit(hostContext, pendingLane: WorkspacePendingPageModel.make(
                 routines: routines, todos: todos, checks: checks, todayKey: DayClock.shared.todayKey,

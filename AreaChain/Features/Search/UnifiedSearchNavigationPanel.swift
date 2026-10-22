@@ -70,9 +70,12 @@ struct UnifiedSearchWorkspaceContent: View {
 
 struct UnifiedSearchWorkspaceInput: View {
     @Bindable var controller: UnifiedSearchController
+    /// 顶栏按窗口宽度给出搜索宽度；宿主传入其下限，避免标准布局的 420pt 在最小窗口盖住标题区。
+    var minimumWidth: CGFloat?
     var body: some View {
         UnifiedSearchInput(buffer: controller.buffer, focused: $controller.inputFocused,
-                           actions: controller.actions, reset: controller.inputReset, showsStatus: false)
+                           actions: controller.actions, reset: controller.inputReset, showsStatus: false,
+                           minimumWidth: minimumWidth)
     }
 }
 

@@ -119,6 +119,8 @@ enum DaybookMetrics {
         static let popoverMaxHeight: CGFloat = 490
         static let popoverHeight: CGFloat = 490
         static let popoverSize = CGSize(width: popoverWidth, height: popoverHeight)
+        /// 底栏中间搜索框的最小宽度：两侧筛选入口与右侧动作固定占位后剩下的空间（M-6 新搜索框沿用，不撑出浮层）。
+        static let popoverFooterSearchMinWidth: CGFloat = 120
         static let workspaceSize = CGSize(width: 960, height: 640)
         static let workspaceMinSize = CGSize(width: 780, height: 500)
     }

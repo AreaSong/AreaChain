@@ -9,8 +9,10 @@ final class MenuBarToolbarState {
     private(set) var isFiltering = false
     private(set) var allowsFilterHover = true
     let autocomplete = SyntaxAutocompleteState(context: .search)
+    /// 合并批 M-6：新版搜索在用且有查询／指令时为真；由 MenuBarUnifiedSearchBridge 维护，旧搜索时恒为 false。
+    var unifiedActive = false
 
-    var isSearching: Bool { !BoardSearch.normalized(searchText).isEmpty }
+    var isSearching: Bool { unifiedActive || !BoardSearch.normalized(searchText).isEmpty }
 
     func showFilters() {
         searchIsFocused = false

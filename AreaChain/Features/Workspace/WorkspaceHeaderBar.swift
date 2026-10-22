@@ -38,7 +38,7 @@ struct WorkspaceHeaderBar: View {
 
     @ViewBuilder private var search: some View {
         if let searchController {
-            UnifiedSearchWorkspaceInput(controller: searchController)
+            UnifiedSearchWorkspaceInput(controller: searchController, minimumWidth: WorkspaceLayout.searchMinWidth)
                 .environment(\.daybookChromelessWhenIdle, searchController.buffer.text.isEmpty)
         } else {
             WorkspaceHeaderSearchCapsule(

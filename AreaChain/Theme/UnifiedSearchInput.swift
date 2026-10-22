@@ -7,7 +7,7 @@ enum UnifiedSearchInputLayout: CaseIterable {
     var maximumSuggestionsHeight: CGFloat { self == .standard ? 300 : 240 }
 }
 
-/// 宿主提供唯一显示值和带原 lease 的事件回调；仅在隔离宿主使用，尚未接生产。
+/// 宿主提供唯一显示值和带原 lease 的事件回调；隔离宿主与正式版（M-6，开关控制）共用。
 struct UnifiedSearchInput: View {
     let buffer: UnifiedSearchBuffer
     let actions: UnifiedSearchActions
@@ -18,6 +18,8 @@ struct UnifiedSearchInput: View {
     var parameter: UnifiedSearchParameterContext?
     var previewBelow = false
     var showsStatus = true
+    /// 宿主可收窄最小宽度（菜单栏底栏）；nil 沿布局默认值，候选浮层高度仍按布局。
+    var minimumWidth: CGFloat?
     @Binding var focused: Bool
     @Environment(\.locale) private var locale
     @State private var state: UnifiedSearchInputState
@@ -25,7 +27,9 @@ struct UnifiedSearchInput: View {
     init(buffer: UnifiedSearchBuffer, focused: Binding<Bool>, actions: UnifiedSearchActions,
          layout: UnifiedSearchInputLayout = .standard, parser: CommandPathParser = .init(),
          configuration: CommandDiscoveryConfiguration = .standard, reset: UnifiedSearchInputReset? = nil,
-         parameter: UnifiedSearchParameterContext? = nil, previewBelow: Bool = false, showsStatus: Bool = true) {
+         parameter: UnifiedSearchParameterContext? = nil, previewBelow: Bool = false, showsStatus: Bool = true,
+         minimumWidth: CGFloat? = nil) {
+        self.minimumWidth = minimumWidth
         self.buffer = buffer
         _focused = focused
         self.actions = actions
@@ -67,7 +71,7 @@ struct UnifiedSearchInput: View {
                 .frame(height: 32, alignment: .topLeading)
                 .accessibilityIdentifier("unified.search.status") }
         }
-        .frame(minWidth: layout.minimumWidth)
+        .frame(minWidth: minimumWidth ?? layout.minimumWidth)
         .onAppear { reset?.state = state }
         .onDisappear { state.end(); if reset?.state === state { reset?.state = nil } }
     }

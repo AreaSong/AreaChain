@@ -46,7 +46,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         AppWindows.workspaceViewProvider = {
             AnyView(
-                MainSplitWorkspaceView()
+                // 合并批 M-6：开关开时取唯一装配点的工作台控制器，关时与原入口相同。
+                UnifiedSearchWorkspaceRoot()
                     .appChrome()
                     .modelContainer(Persistence.session.container)
             )

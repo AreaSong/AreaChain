@@ -27,14 +27,22 @@ struct MenuBarPopoverView: View {
     @State var hoverOpenWorkItem: DispatchWorkItem? = nil
     @State var hoverCloseWorkItem: DispatchWorkItem? = nil
     @State var filterCategory: FilterCategory = .date
+    private let production: UnifiedSearchProduction
     init(
         toolbar: MenuBarToolbarState? = nil,
         composer: BoardComposerSession? = nil,
-        filterSession: BoardFilterSession? = nil
+        filterSession: BoardFilterSession? = nil,
+        production: UnifiedSearchProduction? = nil
     ) {
         _toolbar = State(initialValue: toolbar ?? MenuBarToolbarState())
         self.composer = composer ?? .shared
         self.filterSession = filterSession ?? .shared
+        self.production = production ?? .shared
+    }
+
+    /// 合并批 M-6：开关开时为唯一装配的菜单栏控制器；关时 nil，浮层与改动前相同。
+    var unified: UnifiedSearchController? {
+        production.controller(for: UnifiedSearchProductionAssembly.menubarHost)
     }
 
     private var filters: BoardFilters {
@@ -82,6 +90,8 @@ struct MenuBarPopoverView: View {
             }
         }
         .syntaxOverlayHost(enabled: !showingSyntaxHelp)
+        .unifiedSearchOverlayHost()
+        .menuBarUnifiedSearch(unified, toolbar: toolbar)
         .background(KeyWindowHost { hostWindow = $0 })
         .animation(DaybookMotion.interactive(reduceMotion), value: showingSyntaxHelp)
         .animation(DaybookMotion.interactive(reduceMotion), value: isFilterDrawerPresented)
@@ -121,7 +131,9 @@ struct MenuBarPopoverView: View {
             integratedHeader
 
             Group {
-                if toolbar.isSearching {
+                if toolbar.isSearching, let unified {
+                    MenuBarUnifiedSearchContent(controller: unified)
+                } else if toolbar.isSearching {
                     MenuBarSearchResults(
                         query: toolbar.searchText,
                         filter: filters.selection(for: tab),
@@ -151,7 +163,8 @@ struct MenuBarPopoverView: View {
                 onShowSyntaxHelp: showSyntaxHelp,
                 isFilterDrawerPresented: $isFilterDrawerPresented,
                 onTriggerClick: toggleFilterDrawer,
-                activeCategory: $filterCategory
+                activeCategory: $filterCategory,
+                unified: unified
             )
             .zIndex(10)
         }
@@ -312,6 +325,15 @@ struct MenuBarPopoverView: View {
         showingSyntaxHelp = false
         if helpContext == .search {
             guard token == "#" || token == "!" || token == "@" else { return }
+            if let unified {
+                // 新版搜索：沿原输入事件把记号接在当前文字后面，再交回焦点；不改旧搜索框里留着的文字。
+                let text = unified.buffer.text
+                let next = text + (text.isEmpty || text.hasSuffix(" ") ? "" : " ") + token
+                _ = unified.edit(.init(source: unified.buffer, text: next,
+                                       selection: NSRange(location: next.utf16.count, length: 0)))
+                toolbar.focusSearch()
+                return
+            }
             let prefix = toolbar.searchText.isEmpty || toolbar.searchText.hasSuffix(" ") ? "" : " "
             toolbar.searchText += prefix + token
             toolbar.focusSearch()
