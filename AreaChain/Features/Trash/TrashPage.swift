@@ -21,16 +21,26 @@ struct TrashPage: View {
     private var storage: WorkspaceAttachmentStorage? { .resolve(hostContext) }
 
     private var items: [TrashRow] {
-        let standing = routines.compactMap { TrashRow.resident($0, attachments: attachments, tags: tags) }
-        let tasks = todos.compactMap { TrashRow.todo($0, attachments: attachments, tags: tags) }
-        let notes = diaries.compactMap { TrashRow.diary($0, attachments: attachments, tags: { tags }, locale: locale) }
+        let store = storage?.store
+        let standing = routines.compactMap { TrashRow.resident($0, attachments: attachments, tags: tags, attachmentStore: store) }
+        let tasks = todos.compactMap { TrashRow.todo($0, attachments: attachments, tags: tags, attachmentStore: store) }
+        let notes = diaries.compactMap {
+            TrashRow.diary($0, attachments: attachments, tags: { tags }, locale: locale, attachmentStore: store)
+        }
         let catalog = tags.compactMap { TrashRow.tag($0) }
-        return standing + tasks + notes + attachmentRows() + catalog
+        let rows = standing + tasks + notes + attachmentRows() + catalog
+        // 无宿主附件存储时清除一律禁用（含标签行），与附件页“写入禁用”一致，不新增文案（§9.102）。
+        guard store == nil else { return rows }
+        return rows.map { row in
+            var disabled = row
+            disabled.canPurge = false
+            return disabled
+        }
     }
 
     private func attachmentRows() -> [TrashRow] {
         // 隔离宿主没有附件存储时按无附件呈现：附件行不出现，其缩略图与单行清除就不会碰到共享目录。
-        guard storage != nil else { return [] }
+        guard let store = storage?.store else { return [] }
         let owners = (try? AttachmentAccess.ownerIndex(context: modelContext, keys: attachments.compactMap(\.ownerKey)))
             ?? .empty
         return attachments.compactMap { item in
@@ -43,7 +53,8 @@ struct TrashPage: View {
                 isPrivate: context.isPrivate,
                 titleProvider: {
                     context.isPrivate ? L10n.string("diary.private.attachment", locale: locale) : item.filename
-                }
+                },
+                attachmentStore: store
             )
         }
     }
@@ -98,7 +109,7 @@ struct TrashPage: View {
         }
         .workspaceHeader(actions: [WorkspaceHeaderAction(
             id: "trash.empty", title: "trash.empty.action", systemImage: "trash",
-            isEnabled: !items.isEmpty, role: .destructive, overflowOnly: true
+            isEnabled: !items.isEmpty && storage != nil, role: .destructive, overflowOnly: true
         ) { confirmEmpty = true }])
         .confirmationDialog("alert.purge.all.title", isPresented: $confirmEmpty, titleVisibility: .visible) {
             Button("alert.purge.all", role: .destructive, action: emptyTrash)
@@ -326,6 +337,7 @@ struct TrashPage: View {
     }
 
     private func askPurge(_ item: TrashRow) {
+        guard item.canPurge else { return }
         pendingPurge = PendingTrash(title: "", titleProvider: { item.displayTitle }) {
             purge(item)
         }
@@ -337,6 +349,7 @@ struct TrashPage: View {
     }
 
     private func emptyTrash() {
-        _ = try? LocalStorageInspector.emptyAllTrash(in: modelContext)
+        guard let storage else { return }
+        _ = try? LocalStorageInspector.emptyAllTrash(in: modelContext, store: storage.store, root: storage.root)
     }
 }

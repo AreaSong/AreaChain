@@ -93,13 +93,15 @@ enum CatalogChoices {
         ownerKind: AttachmentOwner,
         ownerID: UUID,
         items: [AttachmentItem],
-        context: ModelContext
+        context: ModelContext,
+        storage: WorkspaceAttachmentStorage? = .resolve(nil)
     ) -> TaskAttachmentContext {
         attachments(
             ownerKind: ownerKind,
             ownerID: ownerID,
             index: CatalogAttachmentIndex(items),
-            context: context
+            context: context,
+            storage: storage
         )
     }
 
@@ -107,19 +109,26 @@ enum CatalogChoices {
         ownerKind: AttachmentOwner,
         ownerID: UUID,
         index: CatalogAttachmentIndex,
-        context: ModelContext
+        context: ModelContext,
+        storage: WorkspaceAttachmentStorage? = .resolve(nil)
     ) -> TaskAttachmentContext {
-        TaskAttachmentContext(
+        // 写入落在宿主决定的存储；隔离宿主没有存储时菜单禁用、回调不写任何目录（§9.102）。
+        let store = storage?.store
+        return TaskAttachmentContext(
             items: attachments(ownerID: ownerID, in: index, ownerKind: ownerKind),
             onPickFile: {
-                AttachmentActions.pickImage(ownerKind: ownerKind, ownerID: ownerID, context: context)
+                guard let store else { return }
+                AttachmentActions.pickImage(ownerKind: ownerKind, ownerID: ownerID, context: context, store: store)
             },
             onPaste: {
-                _ = AttachmentActions.pasteImage(ownerKind: ownerKind, ownerID: ownerID, context: context)
+                guard let store else { return }
+                _ = AttachmentActions.pasteImage(ownerKind: ownerKind, ownerID: ownerID, context: context, store: store)
             },
             onCaptureScreen: {
-                AttachmentActions.captureScreen(ownerKind: ownerKind, ownerID: ownerID, context: context)
-            }
+                guard let store else { return }
+                AttachmentActions.captureScreen(ownerKind: ownerKind, ownerID: ownerID, context: context, store: store)
+            },
+            canWrite: store != nil
         )
     }
 }
@@ -132,11 +141,16 @@ struct TaskCatalogContext {
     var liveTags: [TagItem]
     var attachmentIndex: CatalogAttachmentIndex
 
+    /// 附件写入所用存储，由宿主经 `WorkspaceAttachmentStorage.resolve` 决定；默认即生产的共享目录。
+    var attachmentStorage: WorkspaceAttachmentStorage?
+
     init(
         tags: [TagItem],
         attachments: [AttachmentItem],
-        context: ModelContext
+        context: ModelContext,
+        attachmentStorage: WorkspaceAttachmentStorage? = .resolve(nil)
     ) {
+        self.attachmentStorage = attachmentStorage
         self.tags = tags
         self.attachments = attachments
         self.context = context
@@ -160,7 +174,8 @@ struct TaskCatalogContext {
             ownerKind: ownerKind,
             ownerID: ownerID,
             index: attachmentIndex,
-            context: context
+            context: context,
+            storage: attachmentStorage
         )
     }
 }

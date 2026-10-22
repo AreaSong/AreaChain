@@ -39,6 +39,9 @@ struct WorkspaceItemsListIdentity {
         let attachmentsCount: Int
         let todayKey: String
         let localeID: String
+        /// 缓存跨宿主共用；附件存储不同（生产共享目录、隔离宿主临时目录、无存储）不能复用同一份行回调。
+        let attachmentStore: ObjectIdentifier?
+        let attachmentRoot: URL?
     }
 
     private static var cachedKey: CacheKey?
@@ -51,7 +54,8 @@ struct WorkspaceItemsListIdentity {
         tags: [TagItem],
         attachments: [AttachmentItem],
         context: ModelContext,
-        locale: Locale
+        locale: Locale,
+        attachmentStorage: WorkspaceAttachmentStorage? = .resolve(nil)
     ) -> WorkspaceItemsListIdentity {
         let entries = groups.flatMap(\.entries)
         let entryIDs = entries.map(\.modelID)
@@ -73,7 +77,9 @@ struct WorkspaceItemsListIdentity {
             tagsCount: tags.count,
             attachmentsCount: attachments.count,
             todayKey: todayKey,
-            localeID: locale.identifier
+            localeID: locale.identifier,
+            attachmentStore: attachmentStorage.map { ObjectIdentifier($0.store) },
+            attachmentRoot: attachmentStorage?.root
         )
 
         if cachedKey == key, let cachedIdentity {
@@ -93,7 +99,8 @@ struct WorkspaceItemsListIdentity {
             entryIDs: entryIDs,
             checkIndex: checkIndex,
             checksByRoutine: checksByRoutine,
-            catalogs: TaskCatalogContext(tags: tags, attachments: attachments, context: context),
+            catalogs: TaskCatalogContext(tags: tags, attachments: attachments, context: context,
+                                         attachmentStorage: attachmentStorage),
             streaks: DayBoardPageProjection.currentStreaks(
                 routines: routineSnaps,
                 checksByRoutine: checksByRoutine,

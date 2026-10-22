@@ -170,6 +170,8 @@ struct TrashRow: Identifiable {
     var deletedAt: Date
     var restore: @MainActor () -> Void
     var purge: @MainActor () -> Bool
+    /// 隔离宿主没有附件存储时为 false：清除会级联删附件文件，不能落到共享目录（§9.102）。
+    var canPurge: Bool = true
     var removeFromStore: @MainActor (ModelContext) throws -> Void
     var purgesOwner: AttachmentOwnerKey? = nil
     var skipIfOwnerPurged: AttachmentOwnerKey? = nil
@@ -180,7 +182,8 @@ struct TrashRow: Identifiable {
 
     var displayTitle: String { titleProvider?() ?? title }
 
-    static func resident(_ item: DailyRoutine, attachments: [AttachmentItem], tags: [TagItem] = []) -> TrashRow? {
+    static func resident(_ item: DailyRoutine, attachments: [AttachmentItem], tags: [TagItem] = [],
+                         attachmentStore: AttachmentStore? = .shared) -> TrashRow? {
         guard let deletedAt = item.deletedAt else { return nil }
         let ownerKey = AttachmentOwnerKey(kind: .routine, id: item.id)
         let ownedFiles = attachments.filter { $0.ownerKey == ownerKey }.map(\.id)
@@ -203,7 +206,8 @@ struct TrashRow: Identifiable {
             isResident: true,
             deletedAt: deletedAt,
             restore: { _ = DayBoardMutations.restoreRoutine(item) },
-            purge: { DayBoardMutations.purgeRoutine(item) },
+            purge: { attachmentStore.map { DayBoardMutations.purgeRoutine(item, attachments: $0) } ?? false },
+            canPurge: attachmentStore != nil,
             removeFromStore: { context in
                 try DayBoardMutations.routineRepo(for: context).deleteRoutine(id: item.id, soft: false)
             },
@@ -213,7 +217,8 @@ struct TrashRow: Identifiable {
         )
     }
 
-    static func todo(_ item: TodoItem, attachments: [AttachmentItem], tags: [TagItem] = []) -> TrashRow? {
+    static func todo(_ item: TodoItem, attachments: [AttachmentItem], tags: [TagItem] = [],
+                     attachmentStore: AttachmentStore? = .shared) -> TrashRow? {
         guard let deletedAt = item.deletedAt else { return nil }
         let ownerKey = AttachmentOwnerKey(kind: .todo, id: item.id)
         let ownedFiles = attachments.filter { $0.ownerKey == ownerKey }.map(\.id)
@@ -242,7 +247,8 @@ struct TrashRow: Identifiable {
             isResident: false,
             deletedAt: deletedAt,
             restore: { _ = DayBoardMutations.restoreTodo(item) },
-            purge: { DayBoardMutations.purgeTodo(item) },
+            purge: { attachmentStore.map { DayBoardMutations.purgeTodo(item, attachments: $0) } ?? false },
+            canPurge: attachmentStore != nil,
             removeFromStore: { context in
                 try DayBoardMutations.taskRepo(for: context).deleteTodo(id: item.id, soft: false)
             },
@@ -256,7 +262,8 @@ struct TrashRow: Identifiable {
         _ item: DiaryEntry,
         attachments: [AttachmentItem],
         tags: @escaping () -> [TagItem],
-        locale: Locale
+        locale: Locale,
+        attachmentStore: AttachmentStore? = .shared
     ) -> TrashRow? {
         guard let deletedAt = item.deletedAt else { return nil }
         let ownerKey = AttachmentOwnerKey(kind: .diary, id: item.id)
@@ -287,7 +294,8 @@ struct TrashRow: Identifiable {
             isResident: false,
             deletedAt: deletedAt,
             restore: { _ = DayBoardMutations.restoreDiary(item) },
-            purge: { DayBoardMutations.purgeDiary(item) },
+            purge: { attachmentStore.map { DayBoardMutations.purgeDiary(item, attachments: $0) } ?? false },
+            canPurge: attachmentStore != nil,
             removeFromStore: { context in
                 try DayBoardMutations.diaryRepo(for: context).deleteDiary(id: item.id, soft: false)
             },
@@ -326,7 +334,8 @@ struct TrashRow: Identifiable {
         ownerDeleted: Bool,
         ownerTitle: String? = nil,
         isPrivate: Bool = false,
-        titleProvider: (() -> String)? = nil
+        titleProvider: (() -> String)? = nil,
+        attachmentStore: AttachmentStore? = .shared
     ) -> TrashRow? {
         guard let deletedAt = item.deletedAt else { return nil }
         let effectivePrivate = isPrivate || item.privacyVaultID != nil
@@ -350,11 +359,12 @@ struct TrashRow: Identifiable {
                 _ = DayBoardMutations.restoreAttachment(item)
             },
             purge: {
-                guard let context = item.modelContext else { return false }
+                guard let context = item.modelContext, let attachmentStore else { return false }
                 return ModelChanges.attempt(in: context) {
-                    try AttachmentCleanup.purge(ids: [item.id], context: context)
+                    try AttachmentCleanup.purge(ids: [item.id], context: context, store: attachmentStore)
                 }
             },
+            canPurge: attachmentStore != nil,
             removeFromStore: { _ in
                 // 文件成功删除后由 AttachmentCleanup 移除元数据，失败则留在回收站供重试。
             },

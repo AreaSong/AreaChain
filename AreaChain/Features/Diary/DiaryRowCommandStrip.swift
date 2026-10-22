@@ -17,6 +17,8 @@ struct DiaryRowCommandStrip: View {
     var onTogglePin: () -> Void
     var onAttach: () -> Void
     var onPaste: () -> Void
+    /// 隔离宿主没有附件存储时为 false，附件两项禁用（§9.102）。
+    var canAttach = true
     var onTogglePrivate: () -> Void
     var onInspect: () -> Void
     var onDelete: () -> Void
@@ -101,14 +103,14 @@ struct DiaryRowCommandStrip: View {
             key: "diary.quick.attach",
             action: onAttach
         )
-        .disabled(isSensitive)
+        .disabled(isSensitive || !canAttach)
 
         commandStripButton(
             icon: "doc.on.clipboard",
             key: "row.attach.paste",
             action: onPaste
         )
-        .disabled(isSensitive)
+        .disabled(isSensitive || !canAttach)
 
         // 8. 私密加锁 🔒
         commandStripButton(

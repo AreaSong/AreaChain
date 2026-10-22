@@ -24,10 +24,12 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
     var taskMutationContext: ModelContext? { context }
     private let context: ModelContext
     private let retainedContainer: ModelContainer?
+    private let attachmentStore: AttachmentStore
 
-    init(context: ModelContext, container: ModelContainer? = nil) {
+    init(context: ModelContext, container: ModelContainer? = nil, attachmentStore: AttachmentStore = .shared) {
         self.context = context
         self.retainedContainer = container
+        self.attachmentStore = attachmentStore
     }
 
     convenience init(container: ModelContainer) {
@@ -271,7 +273,7 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
         }
         let ids = Set(try ownedAttachments(todo.id).map(\.id))
         try deleteTodo(id: id, soft: false)
-        if !ids.isEmpty { try AttachmentCleanup.purge(ids: ids, context: context) }
+        if !ids.isEmpty { try AttachmentCleanup.purge(ids: ids, context: context, store: attachmentStore) }
     }
 
     // MARK: - 子任务级联操作 (Subtask Operations)

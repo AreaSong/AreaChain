@@ -219,7 +219,7 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
         }
         let ids = Set(try ownedAttachments(entry.id).map(\.id))
         try deleteDiary(id: id, soft: false)
-        if !ids.isEmpty { try AttachmentCleanup.purge(ids: ids, context: context) }
+        if !ids.isEmpty { try AttachmentCleanup.purge(ids: ids, context: context, store: attachmentStore, root: attachmentRoot) }
     }
 
     // MARK: - 内部辅助 (Internal Helpers)

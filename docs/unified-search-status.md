@@ -2,7 +2,7 @@
 
 本文是统一搜索与指令体系的**现状总览**：只记当前状态、覆盖、缺口和每批必读入口。设计、规则与历史证据仍以[权威设计](unified-search-commands.md)为准，本文不复制。每批怎样更新本文见[技能路由的路由维护](../skill-routing.md#路由维护)。
 
-最后更新：2026-10-22，修复批次 M-5F（[§9.101](unified-search-commands.md#9101-修复批次-m-5fn-m2-与-c-m2-中级整改)）。
+最后更新：2026-10-22，修复批次 M-5G（[§9.102](unified-search-commands.md#9102-修复批次-m-5g隔离宿主附件写入与删除不落共享目录)）。
 
 ## 目标与阶段
 
@@ -88,7 +88,7 @@
 - **已知历史问题**：T-M1 标题多目标面板消失的根因未判定；DetailSubtaskCompletionTests 两项 Expected Failure 保留；原生日期格按钮在统一搜索测试宿主里找不到标识（`nativeBooleanWeekdaysDayAndTime` 等）；`SubtaskModelTests.addTagSkipsDiaryPresetNames` 在未改动 HEAD 上同样失败。来源：[§9.73](unified-search-commands.md#973-里程碑-t-m1普通任务修改与受限依赖执行)、[§9.89](unified-search-commands.md#989-补复核-g-1at-系列)。
 - **工作台操作面板鼠标点击**：M-1 原生用例中，合成鼠标事件到不了工作台窗口操作面板里的按钮（缓冲版本与输入焦点均不变，原因未判定），改用 AXPress 验证同一按钮；真实鼠标点击未验证。来源：[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾)。
 - **G-1a 低级整改清单 9 条**：待单独批准的修复批次。
-- **M-5 整改清单 9 条**：两条中级（N-M2 附件回退共享目录、C-M2 URL 打开不分分支）与第 5 条测试缺口已由修复批次 M-5F 关闭（[§9.101](unified-search-commands.md#9101-修复批次-m-5fn-m2-与-c-m2-中级整改)）；其余六条低级（第 3、4、6～9 条）仍开放，待单独批准的修复批次。M-5F 另登记一条后续：隔离宿主的附件选图／粘贴写入与回收站清除仍走共享目录（不属 N-M2 读取契约）。来源：[§9.100](unified-search-commands.md#9100-合并批-m-5补复核-rbpnc-系列)。
+- **M-5 整改清单 9 条**：两条中级（N-M2 附件回退共享目录、C-M2 URL 打开不分分支）与第 5 条测试缺口已由修复批次 M-5F 关闭（[§9.101](unified-search-commands.md#9101-修复批次-m-5fn-m2-与-c-m2-中级整改)）；其余六条低级（第 3、4、6～9 条）仍开放，待单独批准的修复批次。M-5F 另登记的一条后续（隔离宿主附件选图／粘贴写入与回收站清除仍走共享目录）已由修复批次 M-5G 处理（[§9.102](unified-search-commands.md#9102-修复批次-m-5g隔离宿主附件写入与删除不落共享目录)）；M-5G 新登记后续：隔离宿主中 @附件 关联（会改写共享池索引）、手记卡片“取消保护”、输入联想读共享池仍走共享目录。来源：[§9.100](unified-search-commands.md#9100-合并批-m-5补复核-rbpnc-系列)。
 - **目录未决项**：tag.cleanup（预置标签范围）、backup.export（无锁可达性）等仍未定稿；diary.tags 已按 M-4 决策 2 解决；习惯 skip 语义已由 R-M3 的 D1 处理；tag.merge 已按决策 3、quadrant.complete 已按 R-M3 语义在 M-2 解决。来源：[§9.6](unified-search-commands.md#96-阶段-1a-目录决策与证据)、[§9.78](unified-search-commands.md#978-里程碑-r-m3兼容跳过习惯启停与指定执行日状态)、[§9.97](unified-search-commands.md#997-合并批-m-2看板标签附件剪贴板)。
 - **留给 M-3 打开原页面**：已关闭（合并批 M-3 A）。tag.delete／cleanup、clipboard.delete／prune／empty、C4、C5、image.pick／paste／capture 与 S2、S3、S5～S7、P1～P4（除 privacy.lock）、D1 永久删除、D2～D4、N6、N7 都只导航到原页面，对照唯一在 CommandOriginalPage。来源：[§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口)。
 - **M-3 偏离与限制**：calendarSync.openLocal 改为打开设置“系统日历”分节（搜索里没有冲突对象来源）；C5 指向剪贴板页的“剪贴板选项”（设置页没有剪贴板分节）；分节只在说明里指明，页面不自动滚动；overlay.mode 只说明（浮层切页没有外部入口）；stats.openActivity 没有活动对象来源，改在 stats.activity 的列表里打开；diaryWindow.save 已在 M-4 接通。来源：[§9.98](unified-search-commands.md#998-合并批-m-3导航窗口与系统入口)。
@@ -106,6 +106,7 @@
   - [x] B+P1 组（B-M1、B-M2、P-M1）：三份结论均“通过”（多项计划 P-M1 不对应单独功能行），见 §9.79～§9.81 的 M-5 段。
   - [x] P+N1 组（P-M2、P-M3、N-M1）：三份结论均“通过”，首轮原生焦点失败经重跑判为环境原因，见 §9.82～§9.84 的 M-5 段。
   - [x] N2+C 组（N-M2、C-M1、C-M2）：C-M1“通过”；N-M2、C-M2“不通过”（各一条中级），见 §9.85～§9.87 的 M-5 段。
+- **修复批次 M-5G**（2026-10-22）：隔离宿主附件写入与删除改走宿主注入存储、无存储时禁用，指定复核“通过”，见 [§9.102](unified-search-commands.md#9102-修复批次-m-5g隔离宿主附件写入与删除不落共享目录)。
 - **修复批次 M-5F**（2026-10-22）：N-M2、C-M2 整改后指定复核“通过”（N-M2 第一轮不通过、修复后第二轮通过），见 [§9.101](unified-search-commands.md#9101-修复批次-m-5fn-m2-与-c-m2-中级整改) 与 §9.85、§9.87 末尾的 M-5F 段。
 - **G-1b～G-1e**：已由合并批 M-5 执行（见上）。原定挪到接入正式版之前执行。提示词原放在被忽略的 `build/prompts/`，该目录后被清理；2026-10-19 已按同一模板重新生成到被忽略的 `.agents/prompts/`：G-1b（R-M1～R-M3）、G-1c（B-M1、B-M2、P-M1）、G-1d（P-M2、P-M3、N-M1）、G-1e（N-M2、C-M1、C-M2）。
 - L-M1b：指定复核第二轮通过，见 [§9.95](unified-search-commands.md#995-里程碑-l-m1b长文受控借用实现)。

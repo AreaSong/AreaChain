@@ -184,7 +184,9 @@ enum LocalStorageInspector {
     @discardableResult
     static func emptyAllTrash(
         in context: ModelContext,
-        removeFile: (UUID) throws -> Void = { try AttachmentStore.removeFiles([$0]) }
+        store: AttachmentStore = .shared,
+        root: URL? = nil,
+        removeFile: ((UUID) throws -> Void)? = nil
     ) throws -> Int {
         let deletedRoutines = (try? context.fetch(FetchDescriptor<DailyRoutine>(predicate: SoftDelete.deletedRoutines))) ?? []
         let deletedTodos = (try? context.fetch(FetchDescriptor<TodoItem>(predicate: SoftDelete.deletedTodos))) ?? []
@@ -220,6 +222,8 @@ enum LocalStorageInspector {
                     try DayBoardMutations.catalogRepo(for: ctx).deleteTag(id: tag.id, soft: false)
                 }
             },
+            store: store,
+            root: root,
             removeFile: removeFile
         )
         guard succeeded else { return 0 }

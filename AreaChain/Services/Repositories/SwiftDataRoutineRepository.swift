@@ -6,10 +6,12 @@ import SwiftData
 final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
     private let context: ModelContext
     private let retainedContainer: ModelContainer?
+    private let attachmentStore: AttachmentStore
 
-    init(context: ModelContext, container: ModelContainer? = nil) {
+    init(context: ModelContext, container: ModelContainer? = nil, attachmentStore: AttachmentStore = .shared) {
         self.context = context
         self.retainedContainer = container
+        self.attachmentStore = attachmentStore
     }
 
     convenience init(container: ModelContainer) {
@@ -415,7 +417,7 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
         }
         let ids = Set(try ownedAttachments(routine.id).map(\.id))
         try deleteRoutine(id: id, soft: false)
-        if !ids.isEmpty { try AttachmentCleanup.purge(ids: ids, context: context) }
+        if !ids.isEmpty { try AttachmentCleanup.purge(ids: ids, context: context, store: attachmentStore) }
     }
 
     // MARK: - 排序 (Reorder)

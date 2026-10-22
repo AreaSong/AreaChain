@@ -5,6 +5,7 @@ import SwiftUI
 struct WorkspaceItemsList: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.locale) private var locale
+    @Environment(\.workspaceHostContext) private var hostContext
     @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     var groups: [WorkspaceItemGroup]
@@ -103,7 +104,8 @@ struct WorkspaceItemsList: View {
             tags: tags,
             attachments: attachments,
             context: modelContext,
-            locale: locale
+            locale: locale,
+            attachmentStorage: .resolve(hostContext)
         )
     }
 

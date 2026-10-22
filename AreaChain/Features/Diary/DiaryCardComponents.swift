@@ -43,6 +43,7 @@ extension DiaryNoteCard {
                     onTogglePin: { _ = DayBoardMutations.togglePinDiary(entry) },
                     onAttach: attachImage,
                     onPaste: pasteImage,
+                    canAttach: attachmentStore != nil,
                     onTogglePrivate: { _ = DayBoardMutations.togglePrivateDiary(entry) },
                     onInspect: inspectDiaryInWorkspace,
                     onDelete: onDelete
@@ -69,16 +70,16 @@ extension DiaryNoteCard {
     }
 
     func attachImage() {
-        guard !(isPasswordType && isMasked) else { return }
-        AttachmentActions.pickDiaryImage(entry, context: modelContext, vault: privacyVault)
+        guard !(isPasswordType && isMasked), let attachmentStore else { return }
+        AttachmentActions.pickDiaryImage(entry, context: modelContext, vault: privacyVault, store: attachmentStore)
     }
 
     func pasteImage() {
-        guard !(isPasswordType && isMasked) else { return }
+        guard !(isPasswordType && isMasked), let attachmentStore else { return }
         if let session = editingSession {
             _ = session.pasteAttachment()
         } else {
-            AttachmentActions.pasteDiaryImage(entry, context: modelContext, vault: privacyVault)
+            AttachmentActions.pasteDiaryImage(entry, context: modelContext, vault: privacyVault, store: attachmentStore)
         }
     }
 
@@ -101,7 +102,7 @@ extension DiaryNoteCard {
                     text: $session.text, focused: $editFocused,
                     placeholder: L10n.string("diary.composer.placeholder", locale: locale), onSubmit: saveTextEdit,
                     commandChord: shortcuts.armedChord(for: .commitDiary),
-                    onPasteImage: { session.pasteAttachment(from: $0) }
+                    onPasteImage: attachmentStore == nil ? nil : { session.pasteAttachment(from: $0) }
                 )
                 .frame(minHeight: 64, maxHeight: 160)
                 .onAppear { editFocused = true }
@@ -130,7 +131,10 @@ extension DiaryNoteCard {
 
     func beginEditing() {
         PrivacyAccess.withDiary(entry, requiresUnlock: editingSession?.needsUnlock == true, vault: privacyVault) { current in
-            _ = drafts.begin(current, context: modelContext, vault: privacyVault)
+            // 无宿主存储时会话的附件入口（粘贴按钮、编辑器贴图）全部关闭，不会暂存附件；会话仍按原默认存储构造，
+            // 正文保存里的 @附件 关联与私密加密批处理会照旧落共享目录，登记为 §9.102 后续缺口。
+            _ = drafts.begin(current, context: modelContext, vault: privacyVault,
+                             attachmentStore: attachmentStore ?? AttachmentStore.shared)
             showsEditConflict = false
             isMasked = false
         }
@@ -238,7 +242,7 @@ extension DiaryNoteCard {
             Image(systemName: "photo")
         }
         .buttonStyle(DaybookButtonStyle(.icon, size: .compact))
-        .disabled(isPasswordType && isMasked)
+        .disabled((isPasswordType && isMasked) || attachmentStore == nil)
         .help(isPasswordType && isMasked ? "diary.unmask.first" : "diary.attach")
         .accessibilityLabel("diary.attach")
     }
@@ -248,7 +252,7 @@ extension DiaryNoteCard {
             Image(systemName: "doc.on.clipboard")
         }
         .buttonStyle(DaybookButtonStyle(.icon, size: .compact))
-        .disabled(isPasswordType && isMasked)
+        .disabled((isPasswordType && isMasked) || attachmentStore == nil)
         .help(isPasswordType && isMasked ? "diary.unmask.first" : "row.attach.paste")
         .accessibilityLabel("row.attach.paste")
         .accessibilityIdentifier("diary.paste")

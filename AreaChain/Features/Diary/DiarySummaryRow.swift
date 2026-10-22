@@ -8,6 +8,7 @@ struct DiarySummaryRow: View {
     @Environment(\.calendar) private var calendar
     @Environment(\.locale) private var locale
     @Environment(\.accessibilityReduceMotion) var reduceMotion
+    @Environment(\.workspaceHostContext) private var hostContext
     var entry: DiaryEntry
     var privacyTags: [TagItem] = []
     var allTags: [TagItem] = []
@@ -294,6 +295,7 @@ struct DiarySummaryRow: View {
                     onTogglePin: togglePin,
                     onAttach: attach,
                     onPaste: paste,
+                    canAttach: attachmentStore != nil,
                     onTogglePrivate: togglePrivate,
                     onInspect: inspectInWorkspace,
                     onDelete: onDelete
@@ -389,16 +391,20 @@ struct DiarySummaryRow: View {
         }
     }
 
+    /// 附件写入所用存储；当前只在菜单栏紧凑列表出现（无宿主＝共享目录），仍按宿主解析以免日后嵌入时回退共享目录。
+    private var attachmentStore: AttachmentStore? { WorkspaceAttachmentStorage.resolve(hostContext)?.store }
+
     private func attach() {
-        AttachmentActions.pickImage(ownerKind: .diary, ownerID: entry.id, context: context, canAttach: {
+        guard let attachmentStore else { return }
+        AttachmentActions.pickImage(ownerKind: .diary, ownerID: entry.id, context: context, store: attachmentStore, canAttach: {
             guard entry.deletedAt == nil, let tags = try? context.fetch(FetchDescriptor<TagItem>()) else { return false }
             return !DiaryPrivacy.isSensitive(entry.snapshot, tags: tags)
         })
     }
 
     private func paste() {
-        guard !isSensitive else { return }
-        AttachmentActions.pasteDiaryImage(entry, context: context)
+        guard !isSensitive, let attachmentStore else { return }
+        AttachmentActions.pasteDiaryImage(entry, context: context, store: attachmentStore)
     }
 
     private func togglePin() {

@@ -10,16 +10,16 @@ enum DayBoardMutations {
     static var catalogRepositoryProvider: ((ModelContext?) -> any CatalogRepositoryProtocol)?
     static var diaryRepositoryProvider: ((ModelContext?) -> any DiaryRepositoryProtocol)?
 
-    static func taskRepo(for context: ModelContext? = nil) -> any TaskRepositoryProtocol {
+    static func taskRepo(for context: ModelContext? = nil, attachments: AttachmentStore = .shared) -> any TaskRepositoryProtocol {
         if let provider = taskRepositoryProvider { return provider(context) }
         let ctx = context ?? Persistence.session.container.mainContext
-        return SwiftDataTaskRepository(context: ctx)
+        return SwiftDataTaskRepository(context: ctx, attachmentStore: attachments)
     }
 
-    static func routineRepo(for context: ModelContext? = nil) -> any RoutineRepositoryProtocol {
+    static func routineRepo(for context: ModelContext? = nil, attachments: AttachmentStore = .shared) -> any RoutineRepositoryProtocol {
         if let provider = routineRepositoryProvider { return provider(context) }
         let ctx = context ?? Persistence.session.container.mainContext
-        return SwiftDataRoutineRepository(context: ctx)
+        return SwiftDataRoutineRepository(context: ctx, attachmentStore: attachments)
     }
 
     static func catalogRepo(for context: ModelContext? = nil) -> any CatalogRepositoryProtocol {
@@ -28,10 +28,10 @@ enum DayBoardMutations {
         return SwiftDataCatalogRepository(context: ctx)
     }
 
-    static func diaryRepo(for context: ModelContext? = nil) -> any DiaryRepositoryProtocol {
+    static func diaryRepo(for context: ModelContext? = nil, attachments: AttachmentStore = .shared) -> any DiaryRepositoryProtocol {
         if let provider = diaryRepositoryProvider { return provider(context) }
         let ctx = context ?? Persistence.session.container.mainContext
-        return SwiftDataDiaryRepository(context: ctx)
+        return SwiftDataDiaryRepository(context: ctx, attachmentStore: attachments)
     }
 
     // MARK: - 保存与错误反馈
@@ -185,8 +185,10 @@ enum DayBoardMutations {
     }
 
     @discardableResult
-    static func purgeTodo(_ todo: TodoItem) -> Bool {
-        ModelChanges.attempt(in: todo.modelContext) { try taskRepo(for: todo.modelContext).purgeTodo(id: todo.id) }
+    static func purgeTodo(_ todo: TodoItem, attachments: AttachmentStore = .shared) -> Bool {
+        ModelChanges.attempt(in: todo.modelContext) {
+            try taskRepo(for: todo.modelContext, attachments: attachments).purgeTodo(id: todo.id)
+        }
     }
 
     @discardableResult
@@ -332,9 +334,9 @@ enum DayBoardMutations {
     }
 
     @discardableResult
-    static func purgeRoutine(_ routine: DailyRoutine) -> Bool {
+    static func purgeRoutine(_ routine: DailyRoutine, attachments: AttachmentStore = .shared) -> Bool {
         ModelChanges.attempt(in: routine.modelContext) {
-            try routineRepo(for: routine.modelContext).purgeRoutine(id: routine.id)
+            try routineRepo(for: routine.modelContext, attachments: attachments).purgeRoutine(id: routine.id)
         }
     }
 
@@ -419,8 +421,10 @@ enum DayBoardMutations {
     }
 
     @discardableResult
-    static func purgeDiary(_ entry: DiaryEntry) -> Bool {
-        ModelChanges.attempt(in: entry.modelContext) { try diaryRepo(for: entry.modelContext).purgeDiary(id: entry.id) }
+    static func purgeDiary(_ entry: DiaryEntry, attachments: AttachmentStore = .shared) -> Bool {
+        ModelChanges.attempt(in: entry.modelContext) {
+            try diaryRepo(for: entry.modelContext, attachments: attachments).purgeDiary(id: entry.id)
+        }
     }
 
     @discardableResult

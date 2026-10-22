@@ -38,6 +38,7 @@ struct DiaryNoteCard: View {
     @Environment(\.calendar) private var calendar
     @Environment(\.locale) var locale
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.workspaceHostContext) var hostContext
     @Bindable var shortcuts = ShortcutStore.shared
     var entry: DiaryEntry
     var activeTags: [TagItem]
@@ -61,6 +62,8 @@ struct DiaryNoteCard: View {
     @State var confirmsUnprotect = false
 
     var privacyVault: PrivacyVault { vault ?? .shared }
+    /// 附件写入所用存储；隔离宿主没有存储时为 nil，附件入口禁用（§9.102）。
+    var attachmentStore: AttachmentStore? { WorkspaceAttachmentStorage.resolve(hostContext)?.store }
     var drafts: DiaryCardDrafts { draftStore ?? localDrafts }
     var editingSession: DiaryEditorSession? { drafts.editor(for: entry.id) }
     var isEditing: Bool { editingSession != nil }

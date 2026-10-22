@@ -70,6 +70,7 @@ struct DayBoardList: View {
     @WorkspaceBoardContext var boardSelection
     @Environment(\.modelContext) var modelContext
     @Environment(\.locale) var locale
+    @Environment(\.workspaceHostContext) private var hostContext
 
     var dayKey: String
     var routines: [DailyRoutine]
@@ -186,7 +187,8 @@ struct DayBoardList: View {
             routines: routines,
             checks: checks,
             todos: todos,
-            catalogs: TaskCatalogContext(tags: tags, attachments: attachments, context: modelContext),
+            catalogs: TaskCatalogContext(tags: tags, attachments: attachments, context: modelContext,
+                                         attachmentStorage: .resolve(hostContext)),
             includeDoneStreaks: showCompleted
         )
     }

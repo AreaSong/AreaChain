@@ -85,6 +85,8 @@ struct TaskAttachmentContext {
     var onPickFile: () -> Void
     var onPaste: () -> Void
     var onCaptureScreen: (() -> Void)? = nil
+    /// 隔离宿主没有附件存储时为 false，菜单项禁用（§9.102）。
+    var canWrite = true
 }
 
 // MARK: - Selection State

@@ -127,6 +127,17 @@ final class AttachmentStore: AttachmentStorageProtocol, @unchecked Sendable {
         }
     }
 
+    /// 只有数据库删除成功后才移除物理文件；备份中的无二进制元数据允许重复清理。
+    func removeFiles(_ ids: [UUID], root: URL? = nil) throws {
+        for id in ids {
+            do {
+                try FileManager.default.removeItem(at: fileURL(id: id, root: root))
+            } catch let error as CocoaError where error.code == .fileNoSuchFile {
+                continue
+            }
+        }
+    }
+
     func resetDirectory(fileManager: FileManager = .default) throws {
         try fileManager.removeItem(at: directory(fileManager: fileManager))
     }
@@ -179,15 +190,8 @@ final class AttachmentStore: AttachmentStorageProtocol, @unchecked Sendable {
         shared.removeFile(id: id, root: root)
     }
 
-    /// 只有数据库删除成功后才移除物理文件；备份中的无二进制元数据允许重复清理。
     static func removeFiles(_ ids: [UUID], root: URL? = nil) throws {
-        for id in ids {
-            do {
-                try FileManager.default.removeItem(at: fileURL(id: id, root: root))
-            } catch let error as CocoaError where error.code == .fileNoSuchFile {
-                continue
-            }
-        }
+        try shared.removeFiles(ids, root: root)
     }
 
     static func purge(

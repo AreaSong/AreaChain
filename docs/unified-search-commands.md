@@ -8401,6 +8401,56 @@ Claude Code `verifier` 第一轮：C-M2 通过；N-M2 不通过（检查器缩�
 
 #### 未覆盖与后续
 
-- **登记为后续批次**（隔离宿主仍写入或删除共享目录，不属于 §9.85 的"浏览／缩略图读取"契约）：检查器选图／粘贴（`TaskDetailSections.swift:248,252`）、`TaskCatalogChoices.swift:115,118`、`DiarySummaryRow.swift:393,401`、`DiaryCardComponents.swift:73,81` 走 AttachmentPicker 默认共享存储；回收站单项清除与清空（`TrashPage.swift:335,340`，经 AttachmentCleanup／LocalStorageInspector）；`DiaryEditorSession.swift:198` 读共享池文件名用于避免重名。这些都要用户点按钮才触发。
+- **登记为后续批次（已由 [§9.102](#9102-修复批次-m-5g隔离宿主附件写入与删除不落共享目录) 处理）**（隔离宿主仍写入或删除共享目录，不属于 §9.85 的"浏览／缩略图读取"契约）：检查器选图／粘贴（`TaskDetailSections.swift:248,252`）、`TaskCatalogChoices.swift:115,118`、`DiarySummaryRow.swift:393,401`、`DiaryCardComponents.swift:73,81` 走 AttachmentPicker 默认共享存储；回收站单项清除与清空（`TrashPage.swift:335,340`，经 AttachmentCleanup／LocalStorageInspector）；`DiaryEditorSession.swift:198` 读共享池文件名用于避免重名。这些都要用户点按钮才触发。
 - 页面测试只在界面层断言"按无附件呈现"，没有用读取探针直接证明共享目录未被访问；红轮在 HEAD 上会走原有的共享读取路径（只读，未点击写入）。
 - 可选后续：QA 包是否取消注册 `areachain` scheme（需改 `Config/AppInfo.plist`，另议）；真实 URL 路由、原生截图、VoiceOver、真人交互未做。
+
+### 9.102 修复批次 M-5G：隔离宿主附件写入与删除不落共享目录
+
+2026-10-22（Asia/Shanghai）。处理 §9.101「登记为后续批次」一条。基线 `fd6e05b`，本地提交、不推送；未改签名、凭据、`Config/AppInfo.plist`、QA.xcconfig、build.sh；不读写真实用户库或真实附件目录。证据在忽略目录 `build/M5G/`（`results.md` 为汇总，xcresult 已复制保存）。
+
+#### 决定与入口
+
+- 唯一入口仍是 `WorkspaceAttachmentStorage.resolve`（`AreaChain/Features/Workspace/WorkspaceHostContext.swift`），不另建入口：无宿主 `(.shared, nil)`；隔离宿主有存储 `(store, store.directory())`；没有存储为 nil。
+- **生产不变**：所有新参数的默认值等于原值（`.shared`／root nil），或把 `resolve(nil)` 的结果传下去。静态 `AttachmentStore.removeFiles` 改为委托新增的实例方法 `shared.removeFiles`，逐行等价。
+- **删除注入（决定 1，走仓储参数链）**：`AttachmentCleanup.purge`／`emptyListed` 增加 `store`／`root`，同时驱动删除与 `AttachmentPoolStore.unlinkedItems(store:root:)` 的保留集合；`LocalStorageInspector.emptyAllTrash(store:root:)` 转发；任务、习惯仓储新增 `attachmentStore` 初始化参数，手记仓储改用已有的 `attachmentStore`／`attachmentRoot`；`DayBoardMutations.taskRepo/routineRepo/diaryRepo(for:attachments:)` 与 `purgeTodo/purgeRoutine/purgeDiary(_:attachments:)` 沿用（测试 provider 注入时忽略该参数）。没有新增协议、工厂或全局可变状态，Domain 协议未改。
+- **回收站（决定 2）**：`TrashRow` 新增 `canPurge`；四个工厂取 `attachmentStore: AttachmentStore? = .shared`，nil 时清除返回 false。`TrashPage` 传 `storage?.store`；无存储时所有行（含标签行）`canPurge = false`，页头“清空”禁用，`askPurge`／`emptyTrash` 加守卫。三处“彻底删除”按钮 `.disabled(!item.canPurge)`。没有新增文案；既有 `UnifiedSearchTrash*` 用例不在无存储状态下清除，未改其断言。
+- **写入**：检查器选图／粘贴（`TaskDetailSections`）、任务行附件菜单（`TaskCatalogContext.attachmentStorage` → `CatalogChoices.attachments(storage:)`，选图、粘贴、截屏同等对待，由 `TaskAttachmentContext.canWrite` 控制菜单禁用）、手记卡片（按钮、⌘ 命令条、编辑器贴图、`DiaryCardDrafts.begin(attachmentStore:)`）、菜单栏手记行（`DiarySummaryRow`）都传 `resolve` 出的存储，没有存储时禁用。`TasksPage`、`DayBoardList`、`WorkspaceFilteredListView`、`WorkspaceItemsList` 读 `workspaceHostContext` 后传入；`WorkspaceItemsListIdentity` 的静态缓存键加入存储标识与 root，避免跨宿主复用行回调。
+- 卡片编辑会话保存（`DiaryEditorSession.save`）里的 `SwiftDataDiaryRepository` 改用会话自己的存储，使 @附件 关联、私密加密批处理与暂存附件落在同一目录；默认会话仍为 `.shared`。
+- `DiaryWindows` 的三个独立小窗会话是生产入口，工作台宿主无法到达，保持默认存储不动。`DiarySummaryRow` 目前只在菜单栏紧凑列表出现（宿主为 nil），仍按宿主解析，以免日后嵌入时回退。
+
+#### 路径核对表
+
+| 路径 | 有存储 | 无存储 |
+|---|---|---|
+| 检查器选图／粘贴 | 传 store | 两按钮禁用 |
+| 任务行附件菜单（选图／粘贴／截屏） | 传 store | 菜单项禁用，回调空操作 |
+| 手记卡片按钮、命令条、编辑器贴图、卡片会话 | 传 store（会话保存与池名读取随之） | 禁用，贴图回调为 nil |
+| 菜单栏手记行（宿主不可达） | 传 store | 命令条两项禁用 |
+| 回收站拥有者清除（级联附件） | 仓储 `attachmentStore` → `AttachmentCleanup.purge(store:)` | 按钮禁用，purge 返回 false |
+| 回收站附件行清除 | `AttachmentCleanup.purge(store:)` | 附件行不出现（M-5F） |
+| 清空回收站 | `emptyAllTrash(store:root:)` | 页头禁用，加守卫 |
+| 重名检查读未关联池 | `saveOrLink`／`stageAttachment` 随 store | 入口禁用，不可达 |
+| 小窗 `DiaryWindows` | 生产入口，宿主不可达 | — |
+
+#### 测试（先红后绿）
+
+- 新增 `AreaChainTests/Features/UnifiedSearchContentAttachmentWriteHostTests.swift`（后台轮，13 例，含 3 个参数）：只用内存库、临时目录与私有命名剪贴板。
+- **红**（HEAD 行为加仅签名的桩，`build/M5G/red-stub.diff`）：无存储时检查器、手记卡片、回收站“彻底删除”按钮可用，`TaskCatalogContext` 无存储时 `canWrite` 仍为 true；有存储时拥有者清除（todo、routine、diary）、附件行清除、清空后临时文件仍在（HEAD 删的是共享路径下同名的随机 UUID，文件不存在，无副作用）。以上均为断言失败。首轮删除组因夹具让容器提前释放而崩溃，作废后修正（`red1`）。池护栏 `purgeKeepsFilesStillListedInHostPool` 与等价用例 `instanceRemovalMatchesStaticProxy` 在红轮即通过，属回归护栏。
+- **先红不可行**：`diaryCardSessionSavesIntoHostStore`（红轮会把附件写入真实共享目录；QA 宿主的 App Group 目录无法证明与日用应用隔离，按不隔离处理）；`trashRowWithoutStoreRefusesPurge`（桩里工厂参数非可选，传 nil 编译不过）。这两例只做修复后的绿轮。
+- **绿**：新套件 13/13，`UnifiedSearchContentAttachmentHostTests` 5/5，`AttachmentCleanupTests` 6/6；verifier 重跑新套件 13/13。
+- **门禁**：`quality_gate.py --profile swift` 推导 242 类（`build/M5G/final-classes.txt`）。workflow、SwiftLint、security-static、322 项脚本回归、构建通过；swift-tests 因前台轮超过门禁 1800 秒上限（期间屏幕锁定，前台为 loginwindow）、后台轮等锁超时而失败。随后按同一入口 `build.sh qa` 分轮补跑：后台轮 16 类 71/71 通过；前台轮（锁屏）1323 次中 123 次失败（105 次为焦点前置）；解锁后重跑失败的 42 类共 217 次，197 通过、4 Expected Failure、16 失败。这 16 次分布在 12 个类（SubtaskModelTests、DiaryWindowLifecycleTests、PrivacyButtonConsumerTests、YesterdayCardConsumerTests、YesterdayCardActionTests、DiaryPageListModelTests、MenuBarPopoverRenderingTests、WeekdayConsumerBaselineTests、DiaryTitleHoverTests、DiaryButtonConsumerTests、AIPlanTemplateServiceTests、WorkspaceMenuConsumerTests），在 `fd6e05b` 临时 worktree 上以相同断言全部复现（基线 17 次失败），判为既有问题，本批不处理。§9.101 记录的两项既有失败本次未出现。未跑 `--profile full`。
+
+#### 复核结论
+
+Claude Code `verifier` 一轮：**通过**。四项都成立：生产取值不变；有存储时写入与删除都落注入存储；无存储时禁用；点名入口没有遗漏。整改项中，R2（卡片编辑注释与事实不符）和 R3（组件目录缺句号）已改；R1 见下条；R4（两例只有绿轮）已在上节写明。主对话抽查了 `AttachmentStore.swift:193-195`、`DiaryNoteCard.swift:171`、`DiaryProtection.swift:11`，均属实。
+
+#### 未覆盖与后续
+
+- **登记为后续批次**。下列路径在隔离宿主可达、仍落共享目录，不在本批“选图／粘贴／截屏、清除／清空、重名读取”的契约内：
+  - `InputAttachmentResolver.linkIfPresent`：任务／习惯标题、备注、捕获保存时的 @附件 关联（`TaskMutationService+Title.swift:51`、`TaskMutationService.swift:77`、`TaskNotesService.swift:32,43`、`DayBoardMutations+Capture.swift:67,101`、`RoutineCaptureService.swift:34`）。它读共享池，并会经 `removeUnlinkedEntry` **改写共享池索引**。无存储时手记卡片的正文保存也经仓储走这条路，私密加密批处理同样如此。
+  - 手记卡片“取消保护”：`DiaryNoteCard.swift:171` 使用默认的 `PrivacyPersistence(attachments: .shared)`，会在共享目录解密并改写附件文件，与有存储时卡片会话保存的加密路径不一致。
+  - `SyntaxOverlay.availableFilenames`（输入联想）：只读共享池与内容哈希。
+  - 设置页 `LocalStorageInspector.cleanReclaimableData` 只在设置页可达，不在工作台宿主树内。
+- 只由代码阅读确认、测试没有直接观察的：任务行菜单的禁用渲染（只测了 `canWrite`）、命令条与菜单栏手记行的禁用、编辑器贴图回调为 nil、页头“清空”的 `isEnabled`（位于溢出菜单内）、截屏写入，以及检查器和任务行在有存储时实际写入宿主目录（需要系统选图面板或通用剪贴板，测试中不触发）。`diaryCardSessionSavesIntoHostStore` 只验证 `begin` 把存储传到了会话，没有覆盖仓储 store 的改动，也没有断言共享目录未被写入。
+- 原生截图、中英文／浅深色／最小窗口人工验收、VoiceOver、真人交互均未做。

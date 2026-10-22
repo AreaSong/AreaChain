@@ -243,6 +243,7 @@ struct TrashListCardView: View {
                     .help(item.canRestore ? "trash.restore" : "trash.restore.blocked")
                 Button("trash.purge", role: .destructive, action: onPurge)
                     .buttonStyle(DaybookButtonStyle(.destructive))
+                    .disabled(!item.canPurge)
             }
             .font(DaybookType.caption)
         }
@@ -431,6 +432,7 @@ struct TrashGridCardView: View {
                 .help(item.canRestore ? "trash.restore" : "trash.restore.blocked")
             Button("trash.purge", role: .destructive, action: onPurge)
                 .buttonStyle(DaybookButtonStyle(.destructive, size: .compact))
+                .disabled(!item.canPurge)
         }
     }
 }

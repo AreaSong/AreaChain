@@ -44,6 +44,7 @@ struct TasksPage: View {
     @Environment(\.modelContext) var modelContext
     @Environment(\.locale) var locale
     @Environment(\.workspaceEmbedded) var embedded
+    @Environment(\.workspaceHostContext) private var hostContext
 
     var todayKey: String
     var routines: [DailyRoutine]
@@ -202,7 +203,8 @@ struct TasksPage: View {
             routines: routines,
             checks: checks,
             todos: todos,
-            catalogs: TaskCatalogContext(tags: tags, attachments: attachments, context: modelContext),
+            catalogs: TaskCatalogContext(tags: tags, attachments: attachments, context: modelContext,
+                                         attachmentStorage: .resolve(hostContext)),
             filter: effectiveFilter
         )
     }

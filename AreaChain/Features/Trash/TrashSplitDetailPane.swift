@@ -122,6 +122,7 @@ struct TrashSplitDetailPane: View {
                 .help(item.canRestore ? "trash.restore" : "trash.restore.blocked")
             Button("trash.purge", role: .destructive) { onPurge(item) }
                 .buttonStyle(DaybookButtonStyle(.destructive, size: .compact))
+                .disabled(!item.canPurge)
         }
     }
 

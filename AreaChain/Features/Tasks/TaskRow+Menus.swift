@@ -291,11 +291,14 @@ extension TaskRow {
     @ViewBuilder
     var attachmentMenus: some View {
         if let attachments = state.attachments {
-            Button("row.attach", action: attachments.onPickFile)
-            Button("row.attach.paste", action: attachments.onPaste)
-            if let onCapture = attachments.onCaptureScreen {
-                Button("row.attach.screen", action: onCapture)
+            Group {
+                Button("row.attach", action: attachments.onPickFile)
+                Button("row.attach.paste", action: attachments.onPaste)
+                if let onCapture = attachments.onCaptureScreen {
+                    Button("row.attach.screen", action: onCapture)
+                }
             }
+            .disabled(!attachments.canWrite)
         }
     }
 }

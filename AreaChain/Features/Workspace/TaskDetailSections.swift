@@ -238,6 +238,8 @@ struct TaskDetailAssetsSectionView: View {
         let taskAttachments = attachments.filter {
             $0.ownerID == props.ownerID && $0.ownerKind == props.ownerKind.rawValue && $0.deletedAt == nil
         }
+        // 写入落在宿主决定的存储；隔离宿主没有存储时两个入口禁用，不回退共享目录（§9.102）。
+        let store = WorkspaceAttachmentStorage.resolve(hostContext)?.store
         return VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text("drawer.attachments.title \(taskAttachments.count)")
@@ -245,12 +247,18 @@ struct TaskDetailAssetsSectionView: View {
                     .foregroundStyle(DaybookPalette.text.secondary)
                 Spacer()
                 DaybookIconButton(systemName: "plus", label: "drawer.attachments.pick", size: .inline) {
-                    AttachmentActions.pickImage(ownerKind: props.ownerKind, ownerID: props.ownerID, context: modelContext)
+                    guard let store else { return }
+                    AttachmentActions.pickImage(ownerKind: props.ownerKind, ownerID: props.ownerID,
+                                                context: modelContext, store: store)
                 }
+                .disabled(store == nil)
 
                 DaybookIconButton(systemName: "doc.on.clipboard", label: "drawer.attachments.paste", size: .inline) {
-                    _ = AttachmentActions.pasteImage(ownerKind: props.ownerKind, ownerID: props.ownerID, context: modelContext)
+                    guard let store else { return }
+                    _ = AttachmentActions.pasteImage(ownerKind: props.ownerKind, ownerID: props.ownerID,
+                                                     context: modelContext, store: store)
                 }
+                .disabled(store == nil)
             }
 
             if !taskAttachments.isEmpty {

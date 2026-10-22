@@ -5,6 +5,7 @@ import SwiftUI
 struct WorkspaceFilteredListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.locale) private var locale
+    @Environment(\.workspaceHostContext) private var hostContext
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var tag: TagItem
@@ -78,7 +79,8 @@ struct WorkspaceFilteredListView: View {
             routines: routines,
             diaries: diaries,
             checks: checks,
-            catalogs: TaskCatalogContext(tags: tags, attachments: attachments, context: modelContext),
+            catalogs: TaskCatalogContext(tags: tags, attachments: attachments, context: modelContext,
+                                         attachmentStorage: .resolve(hostContext)),
             locale: locale,
             showCompleted: showCompleted
         )

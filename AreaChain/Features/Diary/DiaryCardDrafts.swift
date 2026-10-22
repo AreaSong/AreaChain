@@ -10,9 +10,11 @@ final class DiaryCardDrafts {
     func editor(for id: UUID) -> DiaryEditorSession? { sessions[id] }
 
     @discardableResult
-    func begin(_ entry: DiaryEntry, context: ModelContext, vault: PrivacyVault) -> DiaryEditorSession {
+    func begin(_ entry: DiaryEntry, context: ModelContext, vault: PrivacyVault,
+               attachmentStore: any AttachmentStorageProtocol = AttachmentStore.shared) -> DiaryEditorSession {
         if let existing = sessions[entry.id] { existing.reveal(); return existing }
-        let session = DiaryEditorSession(source: .entry(entry), context: context, vault: vault)
+        let session = DiaryEditorSession(source: .entry(entry), context: context, vault: vault,
+                                         attachmentStore: attachmentStore)
         sessions[entry.id] = session
         session.reveal()
         return session
