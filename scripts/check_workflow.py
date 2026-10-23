@@ -355,6 +355,7 @@ COMPONENT_ENTRIES = (
     ("AreaChain/Features/Board/BoardRowChrome.swift", "BoardRowChrome"),
     ("AreaChain/Features/Board/BoardCommandStrip.swift", "BoardCommandStrip"),
     ("AreaChain/Features/Workspace/WorkspaceHeaderBar.swift", "WorkspaceHeaderBar"),
+    ("AreaChain/Features/Search/UnifiedSearchProductionHosts.swift", "UnifiedSearchUnavailableField"),
     ("AreaChain/Features/Workspace/WorkspaceInspectorPresentation.swift", "WorkspaceInspectorFocus"),
     ("AreaChain/Theme/DaybookScrollScope.swift", "daybookScrollTopEdge"),
     ("AreaChain/Features/Workspace/WorkspaceHeaderContent.swift", "WorkspaceHeaderAction"),

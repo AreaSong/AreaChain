@@ -46,7 +46,7 @@ class WorkflowCheckTests(unittest.TestCase):
             "skill-routing.md": "areachain-workflow areachain-ui areachain-verify docs/component-catalog.md docs/quality-gates.md 用户输入契约 三个项目技能 Claude Code `verifier`\n",
             "docs/quality-gates.md": "quality_gate.py performance-baselines.json security-static comment-contract\n",
             "docs/unified-search-status.md": "现状总览 功能覆盖表 每批最少必读\n",
-            "docs/component-catalog.md": "TaskContentQueryReader DaybookInputShell DaybookTextField SyntaxTextField DaybookButtonStyle DaybookToggleStyle checkbox Checkbox DaybookStepper Stepper DaybookSegmentedControl DaybookSegmentOption DaybookSegmentedBar Segmented segmented DaybookPicker DaybookPickerOption formRow verbatim Picker ModernCheckbox inlineSubtask detailSubtask detailSubtaskSymbolSize Completion DaybookControlsPreview ControlsPreviewWindowController openControlsPreview settings.controlsPreview DaybookOverlaySamples daybookSurface TaskRow DayBoardList BoardFilter BoardSearch CommandCatalog DayKey AgendaProjection DayBoardPageProjection DayBoardCheckIndex DayBoardMutations ModelChanges PendingTrash BoardRowChrome BoardCommandStrip WorkspaceHeaderBar WorkspaceHeaderAction 新公共组件\n",
+            "docs/component-catalog.md": "TaskContentQueryReader DaybookInputShell DaybookTextField SyntaxTextField DaybookButtonStyle DaybookToggleStyle checkbox Checkbox DaybookStepper Stepper DaybookSegmentedControl DaybookSegmentOption DaybookSegmentedBar Segmented segmented DaybookPicker DaybookPickerOption formRow verbatim Picker ModernCheckbox inlineSubtask detailSubtask detailSubtaskSymbolSize Completion DaybookControlsPreview ControlsPreviewWindowController openControlsPreview settings.controlsPreview DaybookOverlaySamples daybookSurface TaskRow DayBoardList BoardFilter BoardSearch CommandCatalog DayKey AgendaProjection DayBoardPageProjection DayBoardCheckIndex DayBoardMutations ModelChanges PendingTrash BoardRowChrome BoardCommandStrip WorkspaceHeaderBar WorkspaceHeaderAction 新公共组件 UnifiedSearchUnavailableField\n",
         }
         contract_docs["docs/component-catalog.md"] += " AppLaunchPolicy AppStartup CommandTextSystem\n"
         contract_docs["docs/component-catalog.md"] += " WorkspaceSearchRouter UnifiedSearchReturnContext WorkspaceObjectNavigation WorkspaceHostContext\n"
@@ -497,6 +497,14 @@ class WorkflowCheckTests(unittest.TestCase):
         self.assertEqual(result["status"], "failed")
         for symbol in symbols:
             self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_unified_search_unavailable_field(self):
+        self.make_project()
+        source = self.root / "AreaChain/Features/Search/UnifiedSearchProductionHosts.swift"
+        source.write_text(source.read_text().replace("UnifiedSearchUnavailableField", "unrelated"))
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        self.assertTrue(any("UnifiedSearchUnavailableField" in item["message"] for item in result["issues"]))
 
     def test_component_catalog_requires_controls_preview(self):
         self.make_project()

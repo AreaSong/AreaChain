@@ -8582,36 +8582,48 @@ Claude Code `verifier` 一轮：**通过**。四项都成立：生产取值不�
 
 ### 9.106 收尾批 M-7：删除旧全局搜索
 
-2026-10-23（Asia/Shanghai）。用户当日决定跳过替换前的全量回归与真实数据验收，直接删除旧全局搜索，统一搜索成为唯一入口；知悉删除后“新版搜索与指令”开关不再有退路、M-6R 与 §9.105 只跑过定向测试。授权改代码、按检查点本地提交、不推送、不安装；只用合成数据与隔离 QA。
+2026-10-23（Asia/Shanghai）。用户当日决定跳过替换前的全量回归与真实数据验收，直接删除旧全局搜索，统一搜索成为唯一入口；知悉删除后“新版搜索与指令”开关不再有退路、M-6R 与 §9.105 只跑过定向测试。授权改代码、按检查点本地提交、不推送、不安装；只用合成数据与隔离 QA，证据在忽略目录 `build/M7/`。提交：A `f18e3fc`、B `101d92d`，C、D 见“验证与复核”。
 
-#### A：盘点与等价核对
+#### 删除与保留
 
-只服务旧全局搜索（以 grep 为准，B 删除）：
-
-| 位置 | 内容 |
+| 删除（只服务旧全局搜索） | 内容 |
 |---|---|
-| Features/Workspace | `WorkspaceGlobalSearchView.swift`（含 `WorkspaceAttachmentQuery`）、`WorkspaceHeaderSearch.swift`；`WorkspacePageModels` 的 `WorkspaceSearchSources`／`WorkspaceSearchPageModel`；`WorkspaceNavigation` 的 `searchQuery`／`isSearchFocused`／`searchResultIndex`／`focusSearch`／`clearSearch`；`MainSplitWorkspaceView`、`WorkspaceHeaderBar` 的旧分支 |
-| Features/Search | `SearchResultsView.swift`、`SearchResultKeys.swift`（`SearchResultOrder`／`SearchHitCommands`）、`BoardSearchHitRow.swift`（`BoardSearchHitGroups`） |
-| Features/MenuBar | `MenuBarSearchField.swift`（含 `SearchFilterToken`）、`MenuBarSearchResults.swift`；`FooterBar.activeTokens` 与旧分支；`MenuBarToolbarState` 的 `searchText`／`resultIndex`／`autocomplete`／`clearSearch`；`MenuBarPopoverView` 的旧结果与旧记号插入 |
-| 开关 | `AppPreferences.unifiedSearchEnabled`（键留在 UserDefaults，不迁移）、设置“搜索”分节、`UnifiedSearchProduction` 的开关同步、`UnifiedSearchWorkspaceRoot` 的旧入口分支；`BoardFilterSession.globalSearchFilter` |
+| Features/Workspace | `WorkspaceGlobalSearchView`（含 `WorkspaceAttachmentQuery`）、`WorkspaceHeaderSearch`；`WorkspaceSearchSources`／`WorkspaceSearchPageModel`；`WorkspaceNavigation` 的 `searchQuery`／`isSearchFocused`／`searchResultIndex`／`focusSearch`／`clearSearch`；根视图与顶栏的旧分支 |
+| Features/Search、MenuBar | `SearchResultsView`、`SearchResultKeys`、`BoardSearchHitRow`、`MenuBarSearchField`（含 `SearchFilterToken`）、`MenuBarSearchResults`；`FooterBar.activeTokens`；`MenuBarToolbarState` 的 `searchText`／`resultIndex`／`autocomplete`／`clearSearch` |
+| 开关与文案 | `AppPreferences.unifiedSearchEnabled`（键留在 UserDefaults，不迁移、不读取）、设置“搜索”分节、`UnifiedSearchProduction` 的开关同步、`make(enabled:)`、`BoardFilterSession.globalSearchFilter`；只被它们用的 11 个文案键（中英文一起） |
 
-保留（共用）：`Domain/BoardSearch.swift` 全部（新搜索 ContentQuerySnapshotMatching／TodoQueryPageRules、手记列表 DiaryPageListModel／SwiftDataDiaryRepository 在用）；`daybookSearchResultSurface`（新结果行在用）；`AppWindows.openWorkspace(…opening:)`（系统指令在用）；`SyntaxAutocompleteState(context: .search)`（页面筛选在用）。页面内筛选不在本批范围，保留不动：手记页 `DiaryPage.searchChrome`、手记小窗 `DiaryWindowView`、标签页 `TagManagementPage.searchField`、剪贴板历史 `ClipboardHistoryBrowser`、附件中心 `AttachmentBrowserPage`。
+保留：`Domain/BoardSearch.swift` 全部（统一搜索 ContentQuerySnapshotMatching／TodoQueryPageRules 与手记列表在用）；`daybookSearchResultSurface`；`AppWindows.WorkspaceOpening`（系统指令在用）；`SyntaxAutocompleteState(context: .search)`（统一搜索输入在用）。页面内筛选保留不动，留给用户决定：手记页 `DiaryPage.searchChrome`、手记小窗 `DiaryWindowView`、标签管理 `TagManagementPage.searchField`、剪贴板历史 `ClipboardHistoryBrowser`、附件中心 `AttachmentBrowserPage`。
 
-等价核对（§9.1 阶段 4 条件；“新”指 M-6 起默认开启的统一搜索）：
+#### 等价核对（§9.1 阶段 4 条件；“新”指 M-6 起默认的统一搜索）
 
 | 项 | 旧 | 新 | 结论 |
 |---|---|---|---|
-| ⌘F 聚焦 | 顶栏胶囊、底栏放大镜 `.appShortcut(.search)`；浮层键盘监听 | 工作台 `UnifiedSearchFocusShortcut` 同一快捷键；浮层监听→`toolbar.focusSearch`→桥接控制器 | 等价 |
-| ⌘⇧F 筛选浮层 | 底栏筛选按钮 `.appShortcut(.openFilter)` | 同一按钮，不经搜索框 | 等价 |
-| Esc | 先清空再失焦 | 输入框按统一搜索 Esc 规则；工作台结果页交 `intent(.escape)`；浮层帮助／筛选的 Esc 判断不变 | 等价（按 M-6 规则） |
-| 菜单栏底栏位置与最小窗口 | 底栏中间 | 同一位置，最小宽 120pt，不撑宽右侧 56pt 动作区 | 等价 |
-| 结果分组与打开 | 按日分组；菜单栏打开日历检查器／手记小窗 | 按类型分组；菜单栏 `recordOpen` 先显示工作台再打开同一对象 | 有意差异（M-6 已登记） |
-| 显式范围 | 无回收站、剪贴板 | 显式 `/trash`、`/clipboard`（默认不含） | 新增 |
-| 跨日期查找 | 全部日期 | 默认全部，另有 `date:`／`on:` | 等价 |
-| 语法 | `#标签`、`!p1`～`!p4`、裸时刻（如 `9:30`、自然语言时刻） | `#标签`、`!p1`～`!p4`、`@09:30` | 裸时刻不再当提醒条件，改作文字；未补（语法属 §1 定稿） |
-| 附件文件名 | 工作台匹配可浏览附件文件名 | 默认读取含图片文件名 | 等价 |
-| 原页面草稿／滚动 | 搜索覆盖页面，页面草稿在导航里 | 同上，另有返回条 | 等价 |
-| 菜单栏筛选收窄结果、底栏筛选胶囊 | 结果受当前筛选约束；搜索框内显示可单个移除的胶囊 | M-6 起不受筛选约束、不显示胶囊；筛选仍作用于列表，按钮显示计数，可在筛选浮层移除 | 未补（属阶段 4 页面筛选双向同步） |
-| 结果上空格 | 切换完成 | 选择结果；完成走指令 | 有意差异 |
+| ⌘F／⌘⇧F | 顶栏、底栏 `.appShortcut(.search)`；筛选按钮 `.openFilter` | `UnifiedSearchFocusShortcut`；浮层监听→`toolbar.focusSearch`→桥接；筛选按钮不变 | 等价 |
+| Esc | 关候选→清空→失焦 | 关候选→焦点留在输入框，不清空查询；结果页交 `intent(.escape)` | 有意差异（M-6 规则） |
+| 底栏位置与最小窗口 | 底栏中间 | 同位，最小宽 120pt，不撑宽 56pt 动作区 | 等价 |
+| 结果分组与打开 | 按日；菜单栏开日历检查器／小窗 | 按类型；菜单栏 `recordOpen` 转工作台打开同一对象 | 有意差异（M-6 已登记） |
+| 显式范围／跨日期 | 无回收站、剪贴板；全部日期 | 显式 `/trash`、`/clipboard`（默认不含）；默认全部日期，另有 `date:`／`on:` | 新增／等价 |
+| 语法 | `#`、`!p1`～`!p4`、裸时刻 | `#`、`!p1`～`!p4`、`@09:30` | 裸时刻改作文字，未补（§1 语法） |
+| 附件文件名、原页面草稿 | 工作台匹配；搜索盖住页面 | 默认读取含图片文件名；同上并有返回条 | 等价 |
+| 筛选收窄结果、底栏筛选胶囊 | 有 | M-6 起无；筛选只作用于列表，按钮显示计数 | 未补（阶段 4 双向同步） |
+| 结果上空格 | 切换完成 | 选择；完成走指令 | 有意差异 |
+| 进入／离开搜索关检查器 | 改查询即作废检查器上下文 | M-6 不作废（检查器盖在结果上） | B 补齐：`searchPresentation` 进出结果页时作废 |
+| 详情收起后的焦点、标题栏双击 | 交给顶栏搜索框；搜索锚点避开缩放 | M-6 焦点落空、新搜索框无锚点 | B 补齐 |
 
-未补三项只在入口 UI 层，没有旧入口就无法单独保留；对应能力的领域规则（`BoardSearch` 的时刻解析与 `BoardSearchScope`、`DayBoardMutations` 的完成切换）都保留。
+未补三项只在入口 UI 层，没有旧入口就无法单独保留；对应领域规则（`BoardSearch` 时刻解析与 `BoardSearchScope`、`DayBoardMutations` 完成切换）都保留。
+
+#### B：代码
+
+- 装配失败：`UnifiedSearchUnavailableField` 在两宿主搜索框位置显示一句不阻塞的中英文说明（悬停完整原因）；任一偏好变化只在无装配时重试，已有装配不重建；浮层无控制器时撤回搜索焦点，列表键盘不被卡住。
+- **M-6 遗留缺陷（本批修）**：正式版宿主也让工作台隐私、备份、剪贴板、设置、快捷键页 `.disabled`、设置页不观察系统状态；开关在时可关掉退回，删开关后会永久不可用。改为只对隔离宿主（`WorkspaceHostContext.isIsolated`）只读。
+- **待用户决定（未改）**：正式版宿主下检查器标题／子任务失焦不保存、备注卸载只留草稿（N-M1 宿主行为），删开关后没有退路，见现状总览。
+
+#### C：文档
+
+README、features、usage、architecture 改为统一搜索描述并删开关说明；组件目录换掉旧搜索条目，新增 `UnifiedSearchUnavailableField`；本节与现状总览。`skill-routing.md` 没有旧搜索的路由或条目，路由未变化，按“路由维护”不加段落。
+
+#### 测试变化
+
+- 删除（对应被删代码）：WorkspaceLegacySearchRoutingTests、WorkspaceAttachmentSearchTests 整份；SearchMultiline 的 workspace／menu 两个消费者及 `workspaceNativeBaseline`、两条 workspace 撤销门槛；`globalSearchUsesTheSharedTaskFilter`、`searchUsesParentTasksAndAttachmentOwnersWithoutDiaryTargets`、`footerTokensExposeSharedReminderSourceAndNoTag`、`clickingAnUpwardSyntaxCandidateCompletesTheFocusedSearchOnly`、开关三条（偏好默认、关时不装配、关开切换）与设置“搜索”分节一条。
+- 改为针对统一搜索（断言原意不变）：菜单栏原生测试经 `MenuBarUnifiedSearchProbe`（同一装配、测试自己的内存容器）挂接；工作台尺寸／渲染／检查器／窗口测试挂接导航为 `.shared` 的控制器；状态测试以 `searchPresentation` 进入结果页；“搜索文字恰好写一次”改用只计文字变化的 `ObservedTextChanges`；第二次 Esc 断言按 M-6 规则改为查询保留。
+- 新增：旧键不再读取、偏好变化不重建装配、两宿主装配失败说明（中英、浅深、正常与最小窗口）、正式版宿主系统页可操作。
