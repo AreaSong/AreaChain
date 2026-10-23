@@ -46,7 +46,7 @@ class WorkflowCheckTests(unittest.TestCase):
             "skill-routing.md": "areachain-workflow areachain-ui areachain-verify docs/component-catalog.md docs/quality-gates.md 用户输入契约 三个项目技能 Claude Code `verifier`\n",
             "docs/quality-gates.md": "quality_gate.py performance-baselines.json security-static comment-contract\n",
             "docs/unified-search-status.md": "现状总览 功能覆盖表 每批最少必读\n",
-            "docs/component-catalog.md": "TaskContentQueryReader DaybookInputShell DaybookTextField SyntaxTextField DaybookButtonStyle DaybookToggleStyle checkbox Checkbox DaybookStepper Stepper DaybookSegmentedControl DaybookSegmentOption DaybookSegmentedBar Segmented segmented DaybookPicker DaybookPickerOption formRow verbatim Picker ModernCheckbox inlineSubtask detailSubtask detailSubtaskSymbolSize Completion DaybookControlsPreview ControlsPreviewWindowController openControlsPreview settings.controlsPreview DaybookOverlaySamples daybookSurface TaskRow DayBoardList BoardFilter BoardSearch CommandCatalog DayKey AgendaProjection DayBoardPageProjection DayBoardCheckIndex DayBoardMutations ModelChanges PendingTrash BoardRowChrome BoardCommandStrip BoardSearchHitGroups WorkspaceHeaderBar WorkspaceHeaderAction WorkspaceHeaderSearchCapsule 新公共组件\n",
+            "docs/component-catalog.md": "TaskContentQueryReader DaybookInputShell DaybookTextField SyntaxTextField DaybookButtonStyle DaybookToggleStyle checkbox Checkbox DaybookStepper Stepper DaybookSegmentedControl DaybookSegmentOption DaybookSegmentedBar Segmented segmented DaybookPicker DaybookPickerOption formRow verbatim Picker ModernCheckbox inlineSubtask detailSubtask detailSubtaskSymbolSize Completion DaybookControlsPreview ControlsPreviewWindowController openControlsPreview settings.controlsPreview DaybookOverlaySamples daybookSurface TaskRow DayBoardList BoardFilter BoardSearch CommandCatalog DayKey AgendaProjection DayBoardPageProjection DayBoardCheckIndex DayBoardMutations ModelChanges PendingTrash BoardRowChrome BoardCommandStrip WorkspaceHeaderBar WorkspaceHeaderAction 新公共组件\n",
         }
         contract_docs["docs/component-catalog.md"] += " AppLaunchPolicy AppStartup CommandTextSystem\n"
         contract_docs["docs/component-catalog.md"] += " WorkspaceSearchRouter UnifiedSearchReturnContext WorkspaceObjectNavigation WorkspaceHostContext\n"
@@ -1432,7 +1432,7 @@ class WorkflowCheckTests(unittest.TestCase):
                    ".opacity(0)\n"
                    "let note = \"Color.red\"\n"
                    "// DaybookTheme.ink\n"
-                   "WorkspaceHeaderSearchCapsule(navigation: navigation)\n")
+                   "UnifiedSearchWorkspaceInput(controller: controller)\n")
         self.write("AreaChain/Features/Workspace/WorkspaceHeaderBar.swift",
                    "WorkspaceLayout.headerHeight\n")
         result = workflow.check_theme_tokens(self.root)

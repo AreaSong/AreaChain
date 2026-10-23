@@ -5,9 +5,9 @@ import Testing
 @testable import AreaChain
 
 enum SearchMultilineConsumer: String, CaseIterable {
-    case workspace, menu, clipboard, tags, diary, capture, form
-    static let searches: [Self] = [.workspace, .menu, .clipboard, .tags, .diary]
-    static let ordinarySearches: [Self] = [.workspace, .menu, .tags, .diary]
+    case clipboard, tags, diary, capture, form
+    static let searches: [Self] = [.clipboard, .tags, .diary]
+    static let ordinarySearches: [Self] = [.tags, .diary]
 }
 
 @MainActor @Observable
@@ -24,7 +24,6 @@ final class SearchMultilineDraft {
     var focused = false
     var commits = 0
     var diaryCommits = 0
-    var tokenRemovals = 0
     var committedIDs: [UUID] = []
     var committedOptions: [(plain: Bool, paste: Bool)] = []
     var allowsDiaryShortcut = true
@@ -46,8 +45,6 @@ final class SearchMultilineDraft {
 @MainActor
 final class SearchMultilineFixture {
     let base: ClipboardOptionsFixture
-    let navigation = WorkspaceNavigation(boardSelection: BoardSelection())
-    let toolbar = MenuBarToolbarState()
     let draft = SearchMultilineDraft()
     let session: ClipboardHistorySession
     let vault = PrivacyVault(store: MemoryVaultConfigurationStore(), systemKeys: FakeSystemVaultKeys())
@@ -69,9 +66,6 @@ final class SearchMultilineFixture {
         for (index, name) in ["工作", "甲 乙 TAG_SPACE", "甲 // 乙 TAG_SLASH"].enumerated() {
             context.insert(TagItem(name: name, sortOrder: index))
         }
-        for title in ["甲 乙 TASK_SPACE", "甲 // 乙 TASK_SLASH"] {
-            context.insert(TodoItem(title: title, dayKey: "2026-10-05"))
-        }
         try context.save()
         let records = ["甲\n乙 CLIP_LF", "甲 乙 CLIP_SPACE", "甲 // 乙 CLIP_SLASH", #"甲\n乙 CLIP_ESCAPE"#].map {
             ClipboardHistoryRecord(id: UUID(), copiedAt: .now, pinnedAt: nil, sourceBundleID: "",
@@ -79,7 +73,7 @@ final class SearchMultilineFixture {
         }
         try ClipboardHistoryStore(root: base.root).save(records)
         session = base.session()
-        window = base.native.window(SearchMultilineHost(kind: kind, navigation: navigation, toolbar: toolbar,
+        window = base.native.window(SearchMultilineHost(kind: kind,
             draft: draft, session: session, entries: entries, vault: vault, commitsOnClick: commitsOnClick,
             platform: platform), locale: locale, scheme: scheme, size: size,
             suppliedWindow: platform == nil ? nil : ControlsEvidenceWindow())
@@ -103,8 +97,6 @@ final class SearchMultilineFixture {
         // 手记卡片正文不是搜索；只通过原本地化 placeholder 唯一定位。
         let key: String
         switch kind {
-        case .workspace: key = "workspace.search.placeholder"
-        case .menu: key = "footer.search.placeholder.short"
         case .clipboard: key = "clipboard.search"
         case .tags: key = "tags.search.placeholder"
         case .diary: key = "diary.search.placeholder"
@@ -162,7 +154,7 @@ final class SearchMultilineFixture {
         }
         guard SearchMultilineConsumer.ordinarySearches.contains(kind) else { return [:] }
         let labels = FormInputTestSupport.labels(in: window).joined(separator: "\n")
-        let prefix = kind == .tags ? "TAG" : (kind == .diary ? "DIARY" : "TASK")
+        let prefix = kind == .tags ? "TAG" : "DIARY"
         let space = labels.contains("\(prefix)_SPACE")
         let slash = labels.contains("\(prefix)_SLASH")
         var values: [String: Any] = ["resultHasSpace": space, "resultHasSlash": slash]
@@ -175,7 +167,6 @@ final class SearchMultilineFixture {
         let labels = FormInputTestSupport.labels(in: window).joined(separator: "\n")
         let prefix: String
         switch kind {
-        case .workspace, .menu: prefix = "TASK"
         case .diary: prefix = "DIARY"
         case .tags: prefix = "TAG"
         case .clipboard: prefix = "CLIP"
@@ -189,8 +180,6 @@ final class SearchMultilineFixture {
 @MainActor
 private struct SearchMultilineHost: View {
     let kind: SearchMultilineConsumer
-    @Bindable var navigation: WorkspaceNavigation
-    @Bindable var toolbar: MenuBarToolbarState
     @Bindable var draft: SearchMultilineDraft
     @Bindable var session: ClipboardHistorySession
     let entries: [DiaryEntry]
@@ -209,15 +198,6 @@ private struct SearchMultilineHost: View {
                 }
             }
             switch kind {
-            case .workspace:
-                WorkspaceHeaderSearchCapsule(navigation: navigation, tagNames: ["工作"])
-                WorkspaceGlobalSearchView(navigation: navigation, query: navigation.searchQuery)
-            case .menu:
-                MenuBarSearchField(toolbar: toolbar, availableTags: ["工作"], tokens: [
-                    SearchFilterToken(id: "synthetic", title: "SYNTHETIC_TOKEN", onRemove: { draft.tokenRemovals += 1 })
-                ])
-                MenuBarSearchResults(query: toolbar.searchText, filter: BoardFilter(), toolbar: toolbar,
-                                     onClearSearch: { toolbar.clearSearch() }, onClearFilter: {})
             case .clipboard:
                 ClipboardHistoryBrowser(session: session, showsFooter: true, commitsOnClick: commitsOnClick,
                                         onCommit: { id, plain, paste in

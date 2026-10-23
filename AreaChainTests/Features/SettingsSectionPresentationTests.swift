@@ -23,24 +23,19 @@ struct SettingsSectionPresentationTests {
         try SystemPageHost.assertContained(["settings.login.needsApproval", "settings.login.openSystem"], in: window)
     }
 
-    /// 修复批 M-6R 检查点 D：装配失败时“搜索”分节给一句不阻塞的说明；开关语义不变。
-    @Test(arguments: ["zh-Hans", "en"]) func searchAssemblyFailureIsExplainedWithoutBlockingToggle(locale: String) async throws {
+    /// 收尾批 M-7：统一搜索是唯一入口，通用设置不再有“搜索”分节与开关；装配失败的说明改在搜索框里（见 UnifiedSearchProductionHostTests）。
+    @Test(arguments: ["zh-Hans", "en"]) func generalSettingsHaveNoSearchSwitch(locale: String) async throws {
         let fixture = try SettingsButtonTestSupport()
         defer { fixture.cleanup() }
-        fixture.prefs.unifiedSearchEnabled = true
-        for (failed, size) in [(true, NSSize(width: 520, height: 900)), (false, NSSize(width: 360, height: 900))] {
-            let window = SystemPageHost.window(SearchAvailabilityProbe(prefs: fixture.prefs, failed: failed),
-                container: fixture.container, scheme: failed ? .light : .dark, locale: locale, size: size)
+        for (scheme, size) in [(ColorScheme.light, NSSize(width: 520, height: 900)), (.dark, NSSize(width: 360, height: 900))] {
+            let window = SystemPageHost.window(GeneralSettingsProbe(prefs: fixture.prefs),
+                container: fixture.container, scheme: scheme, locale: locale, size: size)
             defer { SystemPageHost.release(window) }
             try await SystemPageHost.settle(window)
             let ids = SystemPageHost.identifiers(in: window)
-            #expect(ids.contains("settings.search.unified"))
-            #expect(ids.contains("settings.search.unified.unavailable") == failed)
-            if failed { try SystemPageHost.assertContained(["settings.search.unified.unavailable"], in: window) }
+            #expect(ids.contains("settings.language") && ids.contains("settings.login"))
+            #expect(!ids.contains { $0.hasPrefix("settings.search") })
         }
-        #expect(fixture.prefs.unifiedSearchEnabled)
-        #expect(L10n.string("settings.search.unified.unavailable", locale: Locale(identifier: "zh-Hans")).contains("旧搜索"))
-        #expect(L10n.string("settings.search.unified.unavailable", locale: Locale(identifier: "en")).contains("previous search"))
     }
 
     @Test func notificationTestBannerIsOfferedUntilDenied() async throws {
@@ -158,19 +153,18 @@ struct SettingsSectionPresentationTests {
         }
     }
 
-    private struct SearchAvailabilityProbe: View {
+    private struct GeneralSettingsProbe: View {
         var prefs: AppPreferences
-        var failed: Bool
         @State private var markers: Set<String> = []
 
         var body: some View {
             Form {
                 GeneralSettingsSection(prefs: prefs, launchesAtLogin: .constant(false), loginNeedsApproval: false,
-                                       statusMessage: nil, onUpdateLoginItem: { _ in }, searchAssemblyFailed: failed)
+                                       statusMessage: nil, onUpdateLoginItem: { _ in })
             }
             .formStyle(.grouped)
             .systemPageMarkers($markers)
-            .accessibilityIdentifier("settings.search.probe")
+            .accessibilityIdentifier("settings.general.probe")
             .accessibilityValue(markers.sorted().joined(separator: " "))
         }
     }

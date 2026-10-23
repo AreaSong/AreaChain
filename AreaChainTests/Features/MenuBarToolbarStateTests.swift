@@ -62,19 +62,17 @@ struct MenuBarToolbarStateTests {
         #expect(actions == 1)
     }
 
-    @Test func changingToolbarContentsPreservesSearchAndDismissesCompletion() {
+    /// 收尾批 M-7：搜索文字由统一搜索控制器持有，工具栏只剩“正在搜索”（桥接维护的 unifiedActive）与焦点。
+    @Test func changingToolbarContentsPreservesSearch() {
         let toolbar = MenuBarToolbarState()
-        toolbar.searchText = "会议 #工"
+        toolbar.unifiedActive = true
         toolbar.focusSearch()
-        toolbar.autocomplete.update(text: toolbar.searchText, cursorLocation: 5, availableTags: ["工作"])
-        #expect(toolbar.autocomplete.isActive)
 
         for _ in 0..<20 {
             toolbar.showFilters()
             #expect(toolbar.isFiltering)
             #expect(!toolbar.searchIsFocused)
-            #expect(!toolbar.autocomplete.isActive)
-            #expect(toolbar.searchText == "会议 #工")
+            #expect(toolbar.isSearching)
             toolbar.closeFilters()
             #expect(!toolbar.isFiltering)
         }
@@ -85,26 +83,26 @@ struct MenuBarToolbarStateTests {
 
     @Test func clearingSearchDoesNotExitFilterMode() {
         let toolbar = MenuBarToolbarState()
-        toolbar.searchText = "#工作 !p1"
+        toolbar.unifiedActive = true
         toolbar.showFilters()
-        toolbar.clearSearch()
-        #expect(toolbar.searchText.isEmpty)
+        toolbar.unifiedActive = false
         #expect(toolbar.isFiltering)
         #expect(!toolbar.isSearching)
         toolbar.focusSearch()
         #expect(!toolbar.isFiltering && toolbar.searchIsFocused)
     }
 
+    /// 搜索语境补全由统一搜索输入（UnifiedSearchInputState.suggestions）使用；旧底栏搜索删除后直接构造同一语境验证。
     @Test func searchCompletionUsesSearchCapabilitiesAndResetsUnsupportedTriggers() {
-        let toolbar = MenuBarToolbarState()
-        toolbar.autocomplete.update(text: "#", cursorLocation: 1, availableTags: ["工作"])
-        #expect(toolbar.autocomplete.candidates.first?.subtitle == "syntax.search.tag")
-        toolbar.autocomplete.update(text: "@", cursorLocation: 1)
-        #expect(toolbar.autocomplete.isActive)
-        #expect(toolbar.autocomplete.candidates.allSatisfy { !$0.isCreation && $0.kind == .time })
-        toolbar.autocomplete.update(text: "!", cursorLocation: 1)
-        toolbar.autocomplete.selectPrevious()
-        #expect(toolbar.autocomplete.selectedCandidate()?.insertText == "!p4 ")
+        let autocomplete = SyntaxAutocompleteState(context: .search)
+        autocomplete.update(text: "#", cursorLocation: 1, availableTags: ["工作"])
+        #expect(autocomplete.candidates.first?.subtitle == "syntax.search.tag")
+        autocomplete.update(text: "@", cursorLocation: 1)
+        #expect(autocomplete.isActive)
+        #expect(autocomplete.candidates.allSatisfy { !$0.isCreation && $0.kind == .time })
+        autocomplete.update(text: "!", cursorLocation: 1)
+        autocomplete.selectPrevious()
+        #expect(autocomplete.selectedCandidate()?.insertText == "!p4 ")
     }
 
     @Test func searchAndFilterFocusDisableTheUnderlyingListInteraction() {
@@ -122,17 +120,6 @@ struct MenuBarToolbarStateTests {
         #expect(!list.config.interaction.isKeyboardEnabled())
         toolbar.closeFilters()
         #expect(list.config.interaction.isKeyboardEnabled())
-    }
-
-    @Test func globalSearchUsesTheSharedTaskFilter() {
-        let session = BoardFilterSession()
-        var filters = BoardFilters()
-        filters.tasks = BoardFilter(tagID: UUID(), reminderScope: .set, dateScope: .today)
-        filters.diary = BoardFilter(tagID: UUID())
-        session.filters = filters
-        #expect(session.globalSearchFilter == filters.tasks)
-        #expect(session.globalSearchFilter.dateScope == .today)
-        #expect(session.globalSearchFilter.tagID != filters.diary.tagID)
     }
 
     @Test func failedCalendarDropKeepsTheSelectedDay() {

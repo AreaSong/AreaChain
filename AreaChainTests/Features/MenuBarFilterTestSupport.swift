@@ -110,9 +110,10 @@ enum MenuBarFilterTestSupport {
     }
 
     static func host(_ support: SettingsButtonTestSupport, composer: BoardComposerSession,
-                     filters: BoardFilterSession, toolbar: MenuBarToolbarState,
+                     filters: BoardFilterSession, toolbar: MenuBarToolbarState, search: MenuBarUnifiedSearchProbe? = nil,
                      locale: String = "en", scheme: ColorScheme = .light) -> NSWindow {
-        support.window(MenuBarPopoverView(toolbar: toolbar, composer: composer, filterSession: filters),
+        support.window(MenuBarPopoverView(toolbar: toolbar, composer: composer, filterSession: filters,
+                                          production: search?.production ?? UnifiedSearchProduction()),
                        locale: locale, scheme: scheme, size: DaybookMetrics.Window.popoverSize)
     }
 }

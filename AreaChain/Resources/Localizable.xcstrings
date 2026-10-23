@@ -27289,74 +27289,6 @@
         }
       }
     },
-    "footer.search.help": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Search tasks, subtasks, habits and notes across all dates. Supports #tags, !p1–!p4 and @time. ⌘F to focus."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "跨日期搜索事项、子任务和手记，支持 #标签、!p1～!p4 与 @时间。⌘F 聚焦搜索。"
-          }
-        }
-      }
-    },
-    "footer.search.label": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Search all dates"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "搜索所有日期"
-          }
-        }
-      }
-    },
-    "footer.search.placeholder": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Search tasks & syntax..."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "搜索待办与语法..."
-          }
-        }
-      }
-    },
-    "footer.search.placeholder.short": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Search..."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "搜索..."
-          }
-        }
-      }
-    },
     "footer.syntax.guide": {
       "extractionState": "manual",
       "localizations": {
@@ -32201,23 +32133,6 @@
         }
       }
     },
-    "search.empty": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nothing matches."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "没有对上的。"
-          }
-        }
-      }
-    },
     "search.hint": {
       "extractionState": "manual",
       "localizations": {
@@ -32316,23 +32231,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "搜索内容 · #标签 !p1 @时间"
-          }
-        }
-      }
-    },
-    "search.results.count %lld": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Results: %lld"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "找到 %lld 项"
           }
         }
       }
@@ -33319,74 +33217,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "开启后，子任务不再折叠在大任务内部，而是紧跟在大任务下方平铺为独立数据条（右侧附带所属主任务标志）；勾选完成的子任务自动沉入「已完成」区。"
-          }
-        }
-      }
-    },
-    "settings.search": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Search"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "搜索"
-          }
-        }
-      }
-    },
-    "settings.search.unified": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "New search and commands"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "新版搜索与指令"
-          }
-        }
-      }
-    },
-    "settings.search.unified.help": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The workspace header and the menu bar footer use the new search box: search everything and run commands (type / to start one). Turn it off to switch back to the previous search right away; nothing is deleted."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "工作台顶栏与菜单栏底栏改用新版搜索框：可以搜索全部内容并执行指令（输入 / 开始）。关闭后立即回到旧搜索，不删除任何数据。"
-          }
-        }
-      }
-    },
-    "settings.search.unified.unavailable": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The new search could not be started this time, so the previous search is still in use. Your data is unaffected; it will try again after you change any setting or restart the app."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "新版搜索这次未能启用，暂时仍在使用旧搜索。数据不受影响；更改任一设置或重新打开应用后会再试一次。"
           }
         }
       }
@@ -51251,22 +51081,6 @@
         }
       }
     },
-    "workspace.search.placeholder": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Search tasks, notes and attachment names"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "搜索事项、手记和附件文件名"
-          }
-        }
-      }
-    },
     "workspace.search.title": {
       "localizations": {
         "en": {
@@ -58978,6 +58792,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "复制手记标题行之后的内容；受保护手记改为打开原手记页。"
+          }
+        }
+      }
+    },
+    "search.unavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search is unavailable; everything else still works"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索暂不可用，其他功能照常"
+          }
+        }
+      }
+    },
+    "search.unavailable.short": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search unavailable"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索暂不可用"
+          }
+        }
+      }
+    },
+    "search.unavailable.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search couldn't start this time. Your data is not affected and everything else still works; it tries again when you change any setting or reopen the app."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索这次未能启动。数据不受影响，其他功能照常；更改任一设置或重新打开应用后会再试一次。"
           }
         }
       }

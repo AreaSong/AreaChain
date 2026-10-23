@@ -166,7 +166,7 @@ extension CalendarWeekLayoutTests {
         let restore = CalendarSpanTestSupport.preserveState()
         defer { restore(); f.cleanup() }
         WorkspaceNavigation.shared.revealTab(.calendar)
-        WorkspaceNavigation.shared.clearSearch()
+        WorkspaceNavigation.shared.searchPresentation = nil
         BoardSelection.shared.inspectingDayKey = "2026-12-31"
         let window = ScrollOwnershipEvidence.window(MainSplitWorkspaceView()
             .modelContainer(f.container).environment(f.prefs), locale: locale,

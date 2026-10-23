@@ -44,7 +44,7 @@ import Testing
     let vault = PrivacyVault(store: MemoryVaultConfigurationStore(), systemKeys: FakeSystemVaultKeys())
     let defaults: UserDefaults
     let preferences: AppPreferences
-    let navigation = WorkspaceNavigation(boardSelection: BoardSelection())
+    let navigation: WorkspaceNavigation
     let probe = ProductionEffectsProbe()
     let root: URL
     let clipboard: ClipboardHistorySession
@@ -53,9 +53,12 @@ import Testing
     private var observers: [NSObjectProtocol] = []
     var context: ModelContext { container.mainContext }
 
-    init() throws {
-        container = try ModelContainer(for: Schema(AreaChainSchema.models),
-                                       configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+    /// container 为 nil 时新建内存容器；原生测试可传入自己的内存容器，让页面与统一搜索共用同一 mainContext（与正式版同形）。
+    /// navigation 为 nil 时用独立导航；挂在 `.shared` 工作台上的旧测试传 `.shared`，让结果页的展示状态写到同一导航。
+    init(container existing: ModelContainer? = nil, navigation: WorkspaceNavigation? = nil) throws {
+        self.navigation = navigation ?? WorkspaceNavigation(boardSelection: BoardSelection())
+        container = try existing ?? ModelContainer(for: Schema(AreaChainSchema.models),
+                                                   configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         Self.retainedContainers.append(container)
         defaults = try #require(UserDefaults(suiteName: "AreaChain.M6." + UUID().uuidString))
         preferences = AppPreferences(defaults: defaults)
@@ -86,7 +89,7 @@ import Testing
     }
 
     func assembly() throws -> UnifiedSearchProductionAssembly {
-        try #require(UnifiedSearchProductionAssembly.make(enabled: true, services: { self.services() }))
+        try UnifiedSearchProductionAssembly.attempt(services: services()).get()
     }
 
     @discardableResult func insert<T: PersistentModel>(_ model: T) throws -> T {
@@ -96,4 +99,34 @@ import Testing
     }
 
     func cleanup() { try? FileManager.default.removeItem(at: root) }
+}
+
+/// 收尾批 M-7：旧底栏搜索删除后，菜单栏原生测试经同一唯一装配挂接统一搜索；装配失败时测试直接失败，不静默退回。
+@MainActor final class MenuBarUnifiedSearchProbe {
+    let fixture: UnifiedSearchProductionFixture
+    let production = UnifiedSearchProduction()
+
+    init(container: ModelContainer) throws {
+        fixture = try UnifiedSearchProductionFixture(container: container)
+        production.start(center: fixture.center, makeServices: { [fixture] in fixture.services() })
+        try #require(production.assembly != nil)
+    }
+
+    var controller: UnifiedSearchController {
+        get throws { try #require(production.assembly?.menubar) }
+    }
+
+    /// 经控制器的原输入事件写入查询（光标在末尾）；非空查询等到首批结果发布，宿主再按“正在搜索”切换中部。
+    func type(_ text: String) async throws {
+        let controller = try controller
+        _ = controller.edit(.init(source: controller.buffer, text: text,
+                                  selection: NSRange(location: text.utf16.count, length: 0)))
+        guard !text.isEmpty else { return }
+        for _ in 0..<100 where (try? controller.session.presentation()) == nil { try await Task.sleep(for: .milliseconds(20)) }
+    }
+
+    func stop() {
+        production.stop(center: fixture.center)
+        fixture.cleanup()
+    }
 }

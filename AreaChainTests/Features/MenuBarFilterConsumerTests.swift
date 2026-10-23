@@ -89,7 +89,7 @@ struct MenuBarFilterConsumerTests {
             #expect(!toolbar.isFiltering)
         }
         #expect(composer.tasks.text == "Synthetic task draft" && composer.diary.text == "Synthetic diary draft")
-        #expect(toolbar.searchText.isEmpty && writes == 0 && mutations.writes == 0 && mutations.saves == 0)
+        #expect(!toolbar.isSearching && writes == 0 && mutations.writes == 0 && mutations.saves == 0)
         #expect(try context.fetchCount(FetchDescriptor<TodoItem>()) == 1)
         #expect(try context.fetchCount(FetchDescriptor<DiaryEntry>()) == 1)
         #expect(!context.hasChanges)

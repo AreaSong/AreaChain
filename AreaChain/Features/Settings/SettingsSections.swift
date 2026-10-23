@@ -11,8 +11,6 @@ struct GeneralSettingsSection: View {
     var loginNeedsApproval: Bool
     var statusMessage: String?
     var onUpdateLoginItem: (Bool) -> Void
-    /// 默认读正式版唯一运行时入口；测试可直接注入。
-    var searchAssemblyFailed: Bool = UnifiedSearchProduction.shared.assemblyFailed
 
     var body: some View {
         Section("settings.chrome") {
@@ -71,29 +69,6 @@ struct GeneralSettingsSection: View {
                 .font(DaybookType.subtitle)
                 .foregroundStyle(DaybookPalette.text.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-        }
-
-        Section("settings.search") {
-            Toggle(isOn: $prefs.unifiedSearchEnabled) {
-                Text("settings.search.unified")
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .toggleStyle(DaybookToggleStyle(.switchControl))
-            .accessibilityIdentifier("settings.search.unified")
-            .systemPageMarker("settings.search.unified")
-            Text("settings.search.unified.help")
-                .font(DaybookType.subtitle)
-                .foregroundStyle(DaybookPalette.text.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            if prefs.unifiedSearchEnabled && searchAssemblyFailed {
-                // 不阻塞：开关保持原语义，只说明此刻仍在用旧搜索。
-                Text("settings.search.unified.unavailable")
-                    .font(DaybookType.subtitle)
-                    .foregroundStyle(DaybookPalette.text.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityIdentifier("settings.search.unified.unavailable")
-                    .systemPageMarker("settings.search.unified.unavailable")
-            }
         }
 
         Section("settings.launch") {

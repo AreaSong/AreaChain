@@ -12,9 +12,11 @@ struct MenuBarPopoverRenderingTests {
 
     @Test func searchRequestedBeforeMountWinsOverCaptureAutofocus() async throws {
         let container = try fixture()
+        let search = try MenuBarUnifiedSearchProbe(container: container)
+        defer { search.stop() }
         let toolbar = MenuBarToolbarState()
         toolbar.focusSearch()
-        let window = host(toolbar: toolbar, container: container)
+        let window = host(toolbar: toolbar, container: container, search: search)
         defer { window.contentView = nil; window.orderOut(nil) }
         let view = try #require(window.contentView)
         let field = try await focusSearch(toolbar, in: view, requestFocus: false)
@@ -26,8 +28,10 @@ struct MenuBarPopoverRenderingTests {
         let composer = BoardComposerSession()
         composer.tasks.text = "这条草稿不应被搜索快捷键提交"
         let container = try fixture()
+        let search = try MenuBarUnifiedSearchProbe(container: container)
+        defer { search.stop() }
         let toolbar = MenuBarToolbarState()
-        let window = host(toolbar: toolbar, container: container, composer: composer)
+        let window = host(toolbar: toolbar, container: container, composer: composer, search: search)
         defer { window.contentView = nil; window.orderOut(nil) }
         let view = try #require(window.contentView)
         try await settle(view)
@@ -45,8 +49,10 @@ struct MenuBarPopoverRenderingTests {
 
     @Test func diaryComposerDraftSurvivesSearchingAndReturning() async throws {
         let container = try fixture()
+        let search = try MenuBarUnifiedSearchProbe(container: container)
+        defer { search.stop() }
         let toolbar = MenuBarToolbarState()
-        let window = host(toolbar: toolbar, container: container)
+        let window = host(toolbar: toolbar, container: container, search: search)
         defer { window.contentView = nil; window.orderOut(nil) }
         let view = try #require(window.contentView)
         try await settle(view)
@@ -56,18 +62,21 @@ struct MenuBarPopoverRenderingTests {
         editor.insertText("查资料前留下的手记草稿", replacementRange: NSRange(location: 0, length: 0))
         try await settle(view)
         toolbar.focusSearch()
-        toolbar.searchText = "会议"
+        try await search.type("会议")
         try await settle(view)
+        #expect(toolbar.isSearching)
         #expect(diaryEditor(in: view) == nil)
-        toolbar.clearSearch()
+        try await search.type("")
         try await settle(view)
         #expect(diaryEditor(in: view)?.string == "查资料前留下的手记草稿")
     }
 
     @Test func emptyFooterSearchCannotSubmitTheNoteDraft() async throws {
         let container = try fixture()
+        let search = try MenuBarUnifiedSearchProbe(container: container)
+        defer { search.stop() }
         let toolbar = MenuBarToolbarState()
-        let window = host(toolbar: toolbar, container: container)
+        let window = host(toolbar: toolbar, container: container, search: search)
         defer { window.contentView = nil; window.orderOut(nil) }
         let view = try #require(window.contentView)
         try await settle(view)
@@ -88,8 +97,10 @@ struct MenuBarPopoverRenderingTests {
     @Test(arguments: ["zh-Hans", "en"], [ColorScheme.light, .dark])
     func diaryUsesOnlyFooterSearchAndFilters(locale: String, scheme: ColorScheme) async throws {
         let container = try fixture()
+        let search = try MenuBarUnifiedSearchProbe(container: container)
+        defer { search.stop() }
         let toolbar = MenuBarToolbarState()
-        let window = host(toolbar: toolbar, container: container, locale: locale, scheme: scheme)
+        let window = host(toolbar: toolbar, container: container, search: search, locale: locale, scheme: scheme)
         defer { window.contentView = nil; window.orderOut(nil) }
         let view = try #require(window.contentView)
         try await settle(view)
@@ -116,8 +127,10 @@ struct MenuBarPopoverRenderingTests {
 
     @Test func diaryFooterFilteringAndSearchingPreserveDraft() async throws {
         let container = try fixture()
+        let search = try MenuBarUnifiedSearchProbe(container: container)
+        defer { search.stop() }
         let toolbar = MenuBarToolbarState()
-        let window = host(toolbar: toolbar, container: container)
+        let window = host(toolbar: toolbar, container: container, search: search)
         defer { window.contentView = nil; window.orderOut(nil) }
         let view = try #require(window.contentView)
         try await settle(view)
@@ -140,11 +153,12 @@ struct MenuBarPopoverRenderingTests {
         let field = try await focusSearch(toolbar, in: view)
         let editor = try #require(field.currentEditor() as? NSTextView)
         editor.insertText("会议", replacementRange: NSRange(location: 0, length: 0))
+        for _ in 0..<100 where !toolbar.isSearching { try await Task.sleep(for: .milliseconds(20)) }
         try await settle(view)
-        #expect(toolbar.searchText == "会议")
+        #expect(try search.controller.buffer.text == "会议")
         #expect(diaryEditor(in: view) == nil)
         try snapshot(view, name: "menubar-notes-search-zh")
-        toolbar.clearSearch()
+        try await search.type("")
         try await settle(view)
         #expect(diaryEditor(in: view)?.string == "筛选和搜索期间保留的草稿")
         try snapshot(view, name: "menubar-notes-filter-after-search-zh")
@@ -257,8 +271,10 @@ struct MenuBarPopoverRenderingTests {
 
     @Test func nativeToolbarReplacementPreservesSearchAndRendersBothAppearances() async throws {
         let container = try fixture()
+        let search = try MenuBarUnifiedSearchProbe(container: container)
+        defer { search.stop() }
         let toolbar = MenuBarToolbarState()
-        let window = host(toolbar: toolbar, container: container)
+        let window = host(toolbar: toolbar, container: container, search: search)
         defer { window.contentView = nil; window.orderOut(nil) }
         let view = try #require(window.contentView)
         try await settle(view)
@@ -267,14 +283,15 @@ struct MenuBarPopoverRenderingTests {
         #expect(initialFrame.width > 100)
         try snapshot(view, name: "menubar-normal-zh")
 
-        toolbar.searchText = "会议 #工作"
+        try await search.type("会议 #工作")
         try await settle(view)
+        #expect(toolbar.isSearching)
         try snapshot(view, name: "menubar-search-zh")
         try click(at: try filterTriggerPoint(in: window), in: window)
         try await settle(view)
         #expect(toolbar.isFiltering)
         #expect(searchField(in: view) != nil)
-        #expect(toolbar.searchText == "会议 #工作")
+        #expect(try search.controller.buffer.text == "会议 #工作")
         try snapshot(view, name: "menubar-filters-zh")
 
         try click(at: try filterTriggerPoint(in: window), in: window)
@@ -283,45 +300,18 @@ struct MenuBarPopoverRenderingTests {
         let restoredField = try #require(searchField(in: view))
         #expect(restoredField.stringValue == "会议 #工作")
         #expect(abs(restoredField.convert(restoredField.bounds, to: view).midY - initialFrame.midY) < 1)
-        toolbar.clearSearch()
+        try await search.type("")
         try await settle(view)
         #expect(searchField(in: view)?.stringValue == "")
         #expect(try container.mainContext.fetchCount(FetchDescriptor<TodoItem>()) == 4)
 
-        let dark = host(toolbar: MenuBarToolbarState(), container: container, locale: "en", scheme: .dark)
+        let darkSearch = try MenuBarUnifiedSearchProbe(container: container)
+        defer { darkSearch.stop() }
+        let dark = host(toolbar: MenuBarToolbarState(), container: container, search: darkSearch, locale: "en", scheme: .dark)
         defer { dark.contentView = nil; dark.orderOut(nil) }
         let darkView = try #require(dark.contentView)
         try await settle(darkView)
         try snapshot(darkView, name: "menubar-normal-en-dark")
-    }
-
-    @Test func clickingAnUpwardSyntaxCandidateCompletesTheFocusedSearchOnly() async throws {
-        let container = try fixture()
-        let toolbar = MenuBarToolbarState()
-        let window = host(toolbar: toolbar, container: container)
-        defer { window.contentView = nil; window.orderOut(nil) }
-        let view = try #require(window.contentView)
-        try await settle(view)
-        let field = try await focusSearch(toolbar, in: view)
-        let editor = try #require(field.currentEditor() as? NSTextView)
-        editor.insertText("#工", replacementRange: NSRange(location: 0, length: 0))
-        try await settle(view)
-        #expect(toolbar.searchText == "#工")
-        #expect(searchField(in: view) === field, "切换结果区不应重建底部输入框")
-        #expect(toolbar.autocomplete.isActive)
-        #expect(toolbar.searchIsFocused, "key=\(window.isKeyWindow), active=\(NSApp.isActive), editing=\(field.currentEditor() != nil)")
-        try snapshot(view, name: "menubar-search-completion-zh")
-        let fieldFrame = field.convert(field.bounds, to: nil)
-        let candidatePoint = try NativeSyntaxUI.center("syntax.candidate.tag_工作", in: window)
-        #expect(candidatePoint.y > fieldFrame.maxY)
-        try click(at: candidatePoint, in: window)
-        try await settle(view)
-        #expect(toolbar.searchText == "#工作 ")
-        #expect(searchField(in: view)?.stringValue == "#工作 ")
-        #expect(searchField(in: view)?.currentEditor() != nil)
-        #expect(!toolbar.autocomplete.isActive)
-        #expect(try container.mainContext.fetchCount(FetchDescriptor<TagItem>()) == 5)
-        #expect(try container.mainContext.fetchCount(FetchDescriptor<TodoItem>()) == 4)
     }
 
     @Test func commandArrowTabChangesDoNotRepublishUnchangedPresetTags() async throws {

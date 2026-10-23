@@ -2,7 +2,7 @@ import AppKit
 import SwiftData
 
 /// 合并批 M-6：正式版统一搜索的系统副作用。全部只在用户执行对应指令时才被调用：
-/// 装配、启动和开关切换都不调用其中任何一项，因此不会触发通知、日历或辅助功能授权。
+/// 装配与启动都不调用其中任何一项，因此不会触发通知、日历或辅助功能授权。
 @MainActor struct UnifiedSearchProductionEffects {
     /// 保存成功后的提醒／日历／小组件刷新，与原界面 `BoardEvents.Dependencies.production` 同一路径。
     var refresh: (_ includeCalendar: Bool) -> Void
@@ -49,7 +49,7 @@ import SwiftData
 
 /// 合并批 M-6：正式版里唯一构造统一搜索（协调者、读取会话、各指令适配器与规格、页面宿主、导航路由、控制器）的地方。
 /// check_workflow 的 unified-search-assembly 守卫保证生产代码只在本文件与 +Commands 扩展里构造这些类型。
-/// 开关关闭时 `make` 返回 nil，宿主走原有旧搜索；协调者可由上一次装配传入，保留未提交的草稿与计划。
+/// 构造失败时 `attempt` 返回失败，宿主搜索框显示不可用说明（收尾批 M-7 删除旧搜索后没有退回入口）。
 @MainActor final class UnifiedSearchProductionAssembly {
     static let workspaceHost = "workspace"
     static let menubarHost = "menubar"
@@ -61,7 +61,7 @@ import SwiftData
     private(set) var workspace: UnifiedSearchController!
     private(set) var menubar: UnifiedSearchController!
     private var handoffTask: Task<Void, Never>?
-    /// 每个控制器的长文托管；宿主关闭（开关关闭或装配销毁）时逐个 discard。
+    /// 每个控制器的长文托管；装配销毁时逐个 discard。
     private(set) var escrows: [CommandLongTextEscrow] = []
     /// 来源所有者的修订：隐私锁定、隐私变化或遮罩后更新，使之前接受的预览在提交前作废。
     private(set) var sourceRevision = UUID()
@@ -71,13 +71,7 @@ import SwiftData
     private let focusObject = NSObject()
     private static let focusLost = Notification.Name("areachain.unifiedSearch.production.focusLost")
 
-    static func make(enabled: Bool, services: () -> UnifiedSearchProductionServices,
-                     coordinator: CommandHandoffCoordinator? = nil) -> UnifiedSearchProductionAssembly? {
-        guard enabled else { return nil }
-        return try? attempt(services: services(), coordinator: coordinator).get()
-    }
-
-    /// 与 make 相同的唯一构造，但保留失败：开关同步用它在设置里提示“未能启用”（修复批 M-6R），不改开关语义。
+    /// 唯一构造，保留失败原因；UnifiedSearchProduction 据此让两个宿主显示不可用说明。
     static func attempt(services: UnifiedSearchProductionServices,
                         coordinator: CommandHandoffCoordinator? = nil) -> Result<UnifiedSearchProductionAssembly, Error> {
         Result { try UnifiedSearchProductionAssembly(services: services, coordinator: coordinator) }

@@ -28,7 +28,7 @@ final class CalendarSpanTestSupport {
         self.embedded = embedded
         restore = Self.preserveState()
         WorkspaceNavigation.shared.revealTab(.calendar)
-        WorkspaceNavigation.shared.clearSearch()
+        WorkspaceNavigation.shared.searchPresentation = nil
         BoardSelection.shared.inspectingDayKey = day
         let tag = TagItem(name: "QA", sortOrder: 0)
         fixture.container.mainContext.insert(tag)
@@ -213,7 +213,7 @@ final class CalendarSpanTestSupport {
         let targets = nav.inspectorTargetIDs
         let tab = nav.selectedTab, tag = nav.selectedTagID, inlineTitle = nav.isInlineTitleVisible
         let pending = nav.pendingLaneSession, filter = nav.pendingFilter, trash = nav.focusedTrashID
-        let search = nav.searchQuery, searchFocused = nav.isSearchFocused, searchIndex = nav.searchResultIndex
+        let search = nav.searchPresentation
         return {
             nav.selectedTab = tab
             nav.selectedTagID = tag
@@ -221,9 +221,7 @@ final class CalendarSpanTestSupport {
             nav.pendingLaneSession = pending
             nav.pendingFilter = filter
             nav.focusedTrashID = trash
-            nav.searchQuery = search
-            nav.isSearchFocused = searchFocused
-            nav.searchResultIndex = searchIndex
+            nav.searchPresentation = search
             nav.updateInspectorTargets(targets)
             listing()
             selection.inspectingDayKey = day

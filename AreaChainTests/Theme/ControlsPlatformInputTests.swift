@@ -66,8 +66,9 @@ struct ControlsPlatformInputTests {
         #expect(!FileManager.default.fileExists(atPath: root.path))
     }
 
+    /// 收尾批 M-7：旧工作台搜索框删除后，中段初值的准备机制改在仍存在的普通搜索（标签页筛选框）上验证。
     @Test func middleInitialAndSelectionAreExplicitPreparation() async throws {
-        let session = opened(.workspace, middle: true)
+        let session = opened(.tags, middle: true)
         defer { session.close() }
         let fixture = try #require(session.input)
         let field = try await fixture.prepare()

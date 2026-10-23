@@ -6,11 +6,13 @@ import Testing
 @Suite(.serialized) @MainActor
 struct WorkspaceHeaderSizingTests {
     private let previousAccessibility = NSApp.accessibilityAttributeValue(NSAccessibility.Attribute(rawValue: "AXEnhancedUserInterface"))
+    /// 收尾批 M-7：顶栏只有统一搜索；每个窗口经唯一装配挂接一个工作台控制器，release 时销毁。
+    private static var searches: [ObjectIdentifier: (UnifiedSearchProductionFixture, UnifiedSearchProductionAssembly)] = [:]
     @Test func longTitleWithoutActionsKeepsInputAndHasNoEmptyMenu() async throws {
         let nav = WorkspaceNavigation(boardSelection: BoardSelection())
         let tag = TagItem(name: "Synthetic very long navigation title 合成的很长的标签名称", sortOrder: 0)
         nav.selectedTagID = tag.id
-        let window = makeWindow(navigation: nav, tags: [tag])
+        let window = try makeWindow(navigation: nav, tags: [tag])
         defer { release(window) }
         window.setContentSize(.init(width: 520, height: 180))
         try await SystemPageHost.settle(window)
@@ -36,7 +38,7 @@ struct WorkspaceHeaderSizingTests {
             WorkspaceHeaderAction(id: "danger", title: "trash.purge", systemImage: "trash", role: .destructive, overflowOnly: true) { calls.append("danger") }
         ]
         let nav = WorkspaceNavigation(boardSelection: BoardSelection())
-        let window = makeWindow(navigation: nav, content: .init(actions: actions))
+        let window = try makeWindow(navigation: nav, content: .init(actions: actions))
         defer { release(window) }
         window.setContentSize(.init(width: 360, height: 180))
         try await NativeSyntaxUI.prepareFocus(in: window)
@@ -69,7 +71,7 @@ struct WorkspaceHeaderSizingTests {
             WorkspaceHeaderAction(id: "overflow", title: "trash.purge", systemImage: "trash", role: .destructive, overflowOnly: true)
         ]
         let content = WorkspaceHeaderContent(actions: actions, status: AnyView(Text("12/345").monospacedDigit()))
-        let window = makeWindow(navigation: navigation, content: content, locale: locale, scheme: scheme)
+        let window = try makeWindow(navigation: navigation, content: content, locale: locale, scheme: scheme)
         defer { release(window) }
         var counts: [Int] = []
         for width in [520.0, 640, 780, 980, 1400] {
@@ -95,7 +97,7 @@ struct WorkspaceHeaderSizingTests {
 
     @Test func resizingKeepsEditorSelectionMarkedTextAndUndo() async throws {
         let navigation = WorkspaceNavigation(boardSelection: BoardSelection())
-        let window = makeWindow(navigation: navigation)
+        let window = try makeWindow(navigation: navigation)
         defer { release(window) }
         try await NativeSyntaxUI.prepareFocus(in: window)
         try await SystemPageHost.settle(window)
@@ -111,7 +113,7 @@ struct WorkspaceHeaderSizingTests {
             #expect(fields(window).count == 1 && fields(window).first === field)
             #expect(window.firstResponder === editor)
             #expect(editor.selectedRange() == NSRange(location: 2, length: 4))
-            #expect(navigation.searchQuery == "Synthetic query")
+            #expect(try controller(window).buffer.text == "Synthetic query")
         }
         editor.setMarkedText("拼音", selectedRange: NSRange(location: 2, length: 0), replacementRange: editor.selectedRange())
         let marked = editor.markedRange()
@@ -121,23 +123,26 @@ struct WorkspaceHeaderSizingTests {
         editor.unmarkText()
         editor.insertText(" committed", replacementRange: editor.selectedRange())
         try await SystemPageHost.settle(window)
-        let committed = navigation.searchQuery
+        let committed = try controller(window).buffer.text
         let undo = try #require(editor.undoManager)
         #expect(undo.canUndo)
         undo.undo()
         try await SystemPageHost.settle(window)
-        #expect(navigation.searchQuery != committed)
+        #expect(try controller(window).buffer.text != committed)
         undo.redo()
         try await SystemPageHost.settle(window)
-        #expect(navigation.searchQuery == committed)
+        #expect(try controller(window).buffer.text == committed)
     }
 
     private func makeWindow(navigation: WorkspaceNavigation, content: WorkspaceHeaderContent = .init(),
-                            locale: String = "en", scheme: ColorScheme = .light, tags: [TagItem] = []) -> NSWindow {
-        let root = WorkspaceHeaderBar(navigation: navigation, tags: tags, content: content)
+                            locale: String = "en", scheme: ColorScheme = .light, tags: [TagItem] = []) throws -> NSWindow {
+        let search = try UnifiedSearchProductionFixture()
+        let assembly = try search.assembly()
+        let root = WorkspaceHeaderBar(navigation: navigation, tags: tags, searchController: assembly.workspace, content: content)
             .frame(maxHeight: .infinity, alignment: .top)
             .environment(\.locale, Locale(identifier: locale)).preferredColorScheme(scheme)
             .syntaxOverlayHost()
+            .unifiedSearchOverlayHost()
         let window = NSWindow(contentRect: .init(x: 0, y: 0, width: 980, height: 180),
                               styleMask: [.titled, .resizable], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
@@ -146,7 +151,12 @@ struct WorkspaceHeaderSizingTests {
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
+        Self.searches[ObjectIdentifier(window)] = (search, assembly)
         return window
+    }
+
+    private func controller(_ window: NSWindow) throws -> UnifiedSearchController {
+        try #require(Self.searches[ObjectIdentifier(window)]?.1.workspace)
     }
 
     private func fields(_ window: NSWindow) -> [DaybookAppKitTextField] {
@@ -157,6 +167,10 @@ struct WorkspaceHeaderSizingTests {
         window.makeFirstResponder(nil)
         window.contentView = nil
         window.orderOut(nil)
+        if let entry = Self.searches.removeValue(forKey: ObjectIdentifier(window)) {
+            entry.1.discard()
+            entry.0.cleanup()
+        }
         NSApp.accessibilitySetValue(previousAccessibility ?? false, forAttribute: NSAccessibility.Attribute(rawValue: "AXEnhancedUserInterface"))
     }
 }

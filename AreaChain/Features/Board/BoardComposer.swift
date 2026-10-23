@@ -44,9 +44,6 @@ final class BoardFilterSession {
     init(filters: BoardFilters = BoardFilters()) {
         self.filters = filters
     }
-
-    /// 工作台顶部搜索使用任务筛选，与菜单栏任务页同一份。
-    var globalSearchFilter: BoardFilter { filters.tasks }
 }
 
 /// 本次运行里的任务草稿和手记草稿。收起菜单栏不丢弃，也不写入偏好。锁定只封存手记草稿。

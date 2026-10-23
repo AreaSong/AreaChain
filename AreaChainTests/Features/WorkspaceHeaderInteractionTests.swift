@@ -87,25 +87,34 @@ struct WorkspaceHeaderInteractionTests {
         #expect(host.createField?.stringValue == "")
     }
 
+    /// 收尾批 M-7：⌘F 聚焦的是统一搜索框（经唯一装配，测试容器与页面同一 mainContext）；搜索不创建标签，清空后回到原页面。
     @Test func globalShortcutWinsOverDiaryLocalSearchAndClearingRestoresSource() async throws {
         let host = try HeaderTestHost()
         defer { host.close() }
-        let navigation = WorkspaceNavigation.shared
+        let search = try UnifiedSearchProductionFixture(container: host.container)
+        defer { search.cleanup() }
+        let assembly = try search.assembly()
+        defer { assembly.discard() }
+        let controller = try #require(assembly.workspace)
+        let navigation = search.navigation
         navigation.revealTab(.diary)
-        host.show(DiaryPage(todayKey: DayKey.today(), entries: []))
+        host.show(DiaryPage(todayKey: DayKey.today(), entries: []), navigation: navigation, search: controller)
         try await host.prepare()
         let local = try #require(host.fields.first { $0.placeholderString == L10n.string("diary.search.placeholder", locale: host.locale) })
         host.window.makeFirstResponder(local)
         try host.key("f", code: 3, modifiers: .command)
         try await host.settle()
-        let global = try #require(host.fields.first { $0.placeholderString == L10n.string("workspace.search.placeholder", locale: host.locale) })
+        let global = try #require(host.fields.first { ($0.delegate as? DaybookTextField.Coordinator)?.parent.unifiedSearch != nil })
         #expect(host.window.firstResponder === global.currentEditor())
         let editor = try #require(global.currentEditor() as? NSTextView)
         editor.insertText("#未知标签", replacementRange: editor.selectedRange())
+        for _ in 0..<100 where !navigation.isSearching { try await Task.sleep(for: .milliseconds(20)) }
         try await host.settle()
         #expect(navigation.isSearching)
         #expect(!host.tags.contains { $0.name == "未知标签" })
-        navigation.clearSearch()
+        _ = controller.edit(.init(source: controller.buffer, text: "", selection: NSRange(location: 0, length: 0)))
+        try await host.settle()
+        #expect(!navigation.isSearching)
         #expect(navigation.selectedTab == .diary)
     }
 
@@ -153,14 +162,16 @@ private final class HeaderTestHost {
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 980, height: 600), styleMask: [.titled, .resizable], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
         NSApp.accessibilitySetValue(true, forAttribute: NSAccessibility.Attribute(rawValue: "AXEnhancedUserInterface"))
-        WorkspaceNavigation.shared.clearSearch()
+        WorkspaceNavigation.shared.searchPresentation = nil
     }
 
-    func show<V: View>(_ page: V) {
+    func show<V: View>(_ page: V, navigation: WorkspaceNavigation = .shared, search: UnifiedSearchController? = nil) {
         let root = page.padding(.top, 50)
             .overlayPreferenceValue(WorkspaceHeaderContentKey.self, alignment: .top) { content in
-                WorkspaceHeaderBar(navigation: WorkspaceNavigation.shared, tags: [], content: content).frame(height: 50)
+                WorkspaceHeaderBar(navigation: navigation, tags: [], searchController: search, content: content).frame(height: 50)
             }
+            .background { if let search { UnifiedSearchFocusShortcut(controller: search) } }
+            .unifiedSearchOverlayHost()
             .modelContainer(container)
             .environment(AppPreferences.shared)
             .environment(\.locale, locale)
@@ -215,7 +226,7 @@ private final class HeaderTestHost {
         window.makeFirstResponder(nil)
         window.contentView = nil
         window.orderOut(nil)
-        WorkspaceNavigation.shared.clearSearch()
+        WorkspaceNavigation.shared.searchPresentation = nil
         WorkspaceNavigation.shared.revealTab(oldTab)
         NSApp.accessibilitySetValue(previousAccessibility ?? false, forAttribute: NSAccessibility.Attribute(rawValue: "AXEnhancedUserInterface"))
     }

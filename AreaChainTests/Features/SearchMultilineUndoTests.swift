@@ -4,15 +4,6 @@ import Testing
 
 @Suite(.serialized) @MainActor
 struct SearchMultilineUndoTests {
-    // 单入口门槛复用完整回归体，允许先确认核心路径再扩大消费者。
-    @Test func workspaceMiddleUndoRedoGate() async throws {
-        try await repeatedUndoRedoRestoresTextAndSelection(kind: .workspace, middle: true)
-    }
-
-    @Test func workspaceQueuedUndoRedoGate() async throws {
-        try await queuedUndoRedo(kind: .workspace)
-    }
-
     @Test func formQueuedUndoRedoControl() async throws {
         try await queuedUndoRedo(kind: .form)
     }

@@ -34,9 +34,9 @@ struct WorkspaceInspectorSizingTests {
             EditDrafts.shared.titles.removeValue(forKey: key)
             EditDrafts.shared.notes.removeValue(forKey: key)
         }
-        nav.clearSearch()
+        nav.searchPresentation = nil
         nav.revealTab(.today)
-        let window = makeWindow(fixture)
+        let window = try makeWindow(fixture)
         defer { release(window) }
         try await NativeSyntaxUI.prepareFocus(in: window)
         try await settle(window)
@@ -54,10 +54,9 @@ struct WorkspaceInspectorSizingTests {
         try await settle(window)
         #expect(!nav.isInspectorPresented && nav.selectedTaskID == todo.id && nav.inspectingDayKey == todo.dayKey)
         #expect(window.firstResponder !== editor)
-        let search = try #require(fields(window).first {
-            $0.placeholderString == L10n.string("workspace.search.placeholder", locale: Locale(identifier: "en"))
-        })
-        #expect(window.firstResponder === search.currentEditor() && nav.isSearchFocused && nav.searchQuery.isEmpty)
+        let search = try unifiedField(window)
+        let controller = try searchController(window)
+        #expect(window.firstResponder === search.currentEditor() && controller.inputFocused && controller.buffer.text.isEmpty)
         #expect(todo.title == "Synthetic title" && todo.notes == "Synthetic notes")
         #expect((title ? EditDrafts.shared.titles[key] : EditDrafts.shared.notes[key]) == draft)
         window.setContentSize(.init(width: 1400, height: 700))
@@ -102,10 +101,10 @@ struct WorkspaceInspectorSizingTests {
         let todo = TodoItem(title: "Synthetic focus target", dayKey: DayClock.shared.todayKey)
         fixture.container.mainContext.insert(todo)
         try fixture.container.mainContext.save()
-        nav.clearSearch()
+        nav.searchPresentation = nil
         nav.revealTab(.today)
         nav.todayDraft = "Synthetic retained composer"
-        let window = makeWindow(fixture)
+        let window = try makeWindow(fixture)
         defer { release(window) }
         try await NativeSyntaxUI.prepareFocus(in: window)
         try await settle(window)
@@ -120,23 +119,24 @@ struct WorkspaceInspectorSizingTests {
         let split = try #require(ancestor as? NSSplitView)
         split.setPosition(260, ofDividerAt: 0)
         try await settle(window)
-        let search = try #require(fields(window).first {
-            $0.placeholderString == L10n.string("workspace.search.placeholder", locale: Locale(identifier: "en"))
-        })
+        let search = try unifiedField(window)
+        let controller = try searchController(window)
         try #require(window.makeFirstResponder(search))
         let editor = try #require(search.currentEditor() as? NSTextView)
-        nav.isSearchFocused = true
+        controller.inputFocused = true
         window.setContentSize(.init(width: 780, height: 600))
         try await settle(window)
         #expect(!nav.isInspectorPresented && window.firstResponder === editor)
         #expect(fields(window).contains { $0 === search })
         editor.insertText("Synthetic", replacementRange: editor.selectedRange())
+        for _ in 0..<100 where !nav.isSearching { try await Task.sleep(for: .milliseconds(20)) }
         try await settle(window)
         #expect(nav.isSearching && window.firstResponder === editor)
         #expect(fields(window).contains { $0 === search })
         #expect(nav.todayDraft == "Synthetic retained composer")
-        nav.clearSearch()
+        _ = controller.edit(.init(source: controller.buffer, text: "", selection: NSRange(location: 0, length: 0)))
         try await settle(window)
+        #expect(!nav.isSearching)
         #expect(nav.todayDraft == "Synthetic retained composer" && nav.selectedTaskID == nil)
         #expect(todo.title == "Synthetic focus target" && !fixture.container.mainContext.hasChanges)
     }
@@ -153,8 +153,8 @@ struct WorkspaceInspectorSizingTests {
             fixture.container.mainContext.insert(TagItem(name: "Synthetic tag \(index)", sortOrder: index))
         }
         try fixture.container.mainContext.save()
-        nav.clearSearch()
-        let window = makeWindow(fixture)
+        nav.searchPresentation = nil
+        let window = try makeWindow(fixture)
         defer { release(window) }
         var oldEdges: [DaybookScrollEdgeObserverNSView] = []
         for tab in [WorkspaceTab.today, .allItems, .pending, .diary, .tags, .settings, .calendar, .quadrant, .gantt] {
@@ -179,10 +179,14 @@ struct WorkspaceInspectorSizingTests {
             }
             oldEdges = edges
         }
-        nav.searchQuery = "Synthetic"
+        let controller = try searchController(window)
+        _ = controller.edit(.init(source: controller.buffer, text: "Synthetic", selection: NSRange(location: 9, length: 0)))
+        for _ in 0..<100 where !nav.isSearching { try await Task.sleep(for: .milliseconds(20)) }
         try await settle(window)
-        nav.clearSearch()
+        #expect(nav.isSearching)
+        _ = controller.edit(.init(source: controller.buffer, text: "", selection: NSRange(location: 0, length: 0)))
         try await settle(window)
+        #expect(!nav.isSearching)
         #expect(!fixture.container.mainContext.hasChanges)
     }
 
@@ -195,9 +199,9 @@ struct WorkspaceInspectorSizingTests {
         let todo = TodoItem(title: "Synthetic inspection", dayKey: day)
         fixture.container.mainContext.insert(todo)
         try fixture.container.mainContext.save()
-        navigation.clearSearch()
+        navigation.searchPresentation = nil
         navigation.revealTab(.today)
-        let window = makeWindow(fixture)
+        let window = try makeWindow(fixture)
         defer { release(window) }
         try await settle(window)
         print("WORKSPACE_SHELL initial wide ready")
@@ -234,8 +238,14 @@ struct WorkspaceInspectorSizingTests {
         #expect(todo.title == "Synthetic inspection" && !fixture.container.mainContext.hasChanges)
     }
 
-    private func makeWindow(_ fixture: SettingsButtonTestSupport) -> NSWindow {
-        let content = MainSplitWorkspaceView().modelContainer(fixture.container).environment(fixture.prefs)
+    /// 收尾批 M-7：顶栏只有统一搜索。装配的导航就是 `.shared`，结果页展示写到本工作台；不传宿主，页面仍按无宿主运行。
+    private static var searches: [ObjectIdentifier: (UnifiedSearchProductionFixture, UnifiedSearchProductionAssembly)] = [:]
+
+    private func makeWindow(_ fixture: SettingsButtonTestSupport) throws -> NSWindow {
+        let search = try UnifiedSearchProductionFixture(container: fixture.container, navigation: .shared)
+        let assembly = try search.assembly()
+        let content = MainSplitWorkspaceView(search: assembly.workspace, presentsSearchOnAppear: false)
+            .modelContainer(fixture.container).environment(fixture.prefs)
             .environment(\.locale, Locale(identifier: "en"))
             .preferredColorScheme(.light)
             .transaction { $0.disablesAnimations = true }
@@ -248,7 +258,16 @@ struct WorkspaceInspectorSizingTests {
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
+        Self.searches[ObjectIdentifier(window)] = (search, assembly)
         return window
+    }
+
+    private func searchController(_ window: NSWindow) throws -> UnifiedSearchController {
+        try #require(Self.searches[ObjectIdentifier(window)]?.1.workspace)
+    }
+
+    private func unifiedField(_ window: NSWindow) throws -> DaybookAppKitTextField {
+        try #require(fields(window).first { ($0.delegate as? DaybookTextField.Coordinator)?.parent.unifiedSearch != nil })
     }
 
     private func release(_ window: NSWindow) {
@@ -258,6 +277,10 @@ struct WorkspaceInspectorSizingTests {
         // 与原 WorkspaceRenderingTests 相同：先退出 fullSizeContentView，再注销系统侧栏分隔条。
         window.styleMask.remove(.fullSizeContentView)
         window.contentViewController = nil
+        if let entry = Self.searches.removeValue(forKey: ObjectIdentifier(window)) {
+            entry.1.discard()
+            entry.0.cleanup()
+        }
     }
 
     private func fields(_ window: NSWindow) -> [DaybookAppKitTextField] {

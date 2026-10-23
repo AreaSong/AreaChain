@@ -54,12 +54,14 @@ struct MenuBarCaptureSubmissionTests {
         let composer = BoardComposerSession(vault: PrivacyVault(store: MemoryVaultConfigurationStore(), systemKeys: FakeSystemVaultKeys()))
         composer.tasks.text = "Synthetic pending capture"
         let toolbar = MenuBarToolbarState()
+        let probe = try MenuBarUnifiedSearchProbe(container: support.container)
+        defer { probe.stop() }
         let window = support.window(MenuBarPopoverView(toolbar: toolbar, composer: composer,
-            filterSession: BoardFilterSession()), size: NSSize(width: 380, height: 490))
+            filterSession: BoardFilterSession(), production: probe.production), size: NSSize(width: 380, height: 490))
         defer { SystemPageHost.release(window) }
         try await NativeSyntaxUI.prepareFocus(in: window)
         try await SystemPageHost.settle(window)
-        if search { toolbar.searchText = "Synthetic search"; toolbar.focusSearch() }
+        if search { try await probe.type("Synthetic search"); toolbar.focusSearch() }
         else { toolbar.showFilters() }
         try await SystemPageHost.settle(window)
         #expect(toolbar.isSearching || toolbar.isFiltering)

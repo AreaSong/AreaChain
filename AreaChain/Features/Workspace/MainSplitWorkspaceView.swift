@@ -25,6 +25,7 @@ struct MainSplitWorkspaceView: View {
     }
 
     private var activeInspectorFocus: WorkspaceInspectorFocus { searchRouter?.inspectorFocus ?? inspectorFocus }
+    private var isIsolatedHost: Bool { hostContext?.isIsolated == true }
     @State private var inspectorWidth = WorkspaceLayout.inspectorIdealWidth
     @State private var inspectorFocus = WorkspaceInspectorFocus()
 
@@ -168,7 +169,7 @@ struct MainSplitWorkspaceView: View {
             navigation: navigation,
             tags: tags,
             searchController: search,
-            content: navigation.isSearching ? WorkspaceHeaderContent() : content
+            content: navigation.isSearching && search != nil ? WorkspaceHeaderContent() : content
         )
         .frame(height: height)
     }
@@ -176,9 +177,8 @@ struct MainSplitWorkspaceView: View {
     /// 第 3 块公用空间：右下主内容区（各页面代码插入槽，独立占满顶栏下方剩余空间）
     private var bottomContentSlot: some View {
         ZStack {
-            if navigation.isSearching {
-                if let search { UnifiedSearchWorkspaceContent(controller: search) }
-                else { WorkspaceGlobalSearchView(navigation: navigation, query: navigation.searchQuery) }
+            if navigation.isSearching, let search {
+                UnifiedSearchWorkspaceContent(controller: search)
             } else {
                 VStack(spacing: 0) {
                     if let search { UnifiedSearchReturnBar(controller: search) }
@@ -203,8 +203,8 @@ struct MainSplitWorkspaceView: View {
             + (visible ? 0 : inspectorWidth + WorkspaceLayout.inspectorReopenMargin)
         let available = main >= required
         if visible && !available && activeInspectorFocus.releaseFocus() {
-            // nil responder 会被系统布局恢复到隐藏字段；将实际详情焦点交给始终可见的原搜索入口。
-            navigation.focusSearch()
+            // nil responder 会被系统布局恢复到隐藏字段；将实际详情焦点交给始终可见的统一搜索框（装配失败时没有可接的输入）。
+            search?.inputFocused = true
         }
         navigation.updateInspectorSpace(available: available)
     }
@@ -216,13 +216,6 @@ struct MainSplitWorkspaceView: View {
                 search.intent(.escape, source: search.buffer)
                 return .handled
             }
-        }
-        if navigation.isSearchFocused {
-            return .ignored
-        }
-        if navigation.isSearching {
-            navigation.searchQuery = ""
-            return .handled
         }
         if let editor = NSApp.keyWindow?.firstResponder as? NSTextView {
             if editor.hasMarkedText() { return .ignored }
@@ -277,10 +270,10 @@ struct MainSplitWorkspaceView: View {
             switch navigation.selectedTab {
             case .privacy:
                 PrivacyUnlockSettingsView(vault: hostContext?.vault)
-                    .disabled(hostContext != nil)
+                    .disabled(isIsolatedHost)
             case .dataBackup:
                 DataBackupView()
-                    .disabled(hostContext != nil)
+                    .disabled(isIsolatedHost)
             case .dashboard:
                 DashboardView()
             case .today:
@@ -301,17 +294,17 @@ struct MainSplitWorkspaceView: View {
                 AttachmentBrowserPage()
             case .clipboard:
                 ClipboardHistoryPage(session: hostContext?.clipboard ?? .shared)
-                    .disabled(hostContext != nil)
+                    .disabled(isIsolatedHost)
             case .tags:
                 TagManagementPage()
             case .trash:
                 TrashPage()
             case .settings:
-                SettingsView(observesSystemStatus: hostContext == nil)
-                    .disabled(hostContext != nil)
+                SettingsView(observesSystemStatus: !isIsolatedHost)
+                    .disabled(isIsolatedHost)
             case .shortcuts:
                 ShortcutsSettingsView(store: hostContext?.shortcuts)
-                    .disabled(hostContext != nil)
+                    .disabled(isIsolatedHost)
             }
         }
     }

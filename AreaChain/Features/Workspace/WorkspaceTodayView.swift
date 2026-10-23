@@ -37,7 +37,7 @@ struct WorkspaceTodayView: View {
                 focus: $composerFocused,
                 onTodo: addTodo,
                 onDiary: addDiary,
-                allowsDiaryShortcut: !navigation.isSearchFocused && !navigation.isSearching
+                allowsDiaryShortcut: !navigation.isSearching
             )
 
             TasksPage(

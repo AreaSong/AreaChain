@@ -26,7 +26,9 @@ extension MenuBarPopoverRenderingTests {
         for (index, name) in DiaryMemoTags.presets.enumerated() { context.insert(TagItem(name: name, sortOrder: index)) }
         try context.save()
         let initialTagIDs = Set(try context.fetch(FetchDescriptor<TagItem>()).map(\.id))
-        let root = MenuBarPopoverView(toolbar: toolbar, composer: composer, filterSession: filters)
+        let probe = try MenuBarUnifiedSearchProbe(container: support.container)
+        defer { probe.stop() }
+        let root = MenuBarPopoverView(toolbar: toolbar, composer: composer, filterSession: filters, production: probe.production)
         let window = support.window(root, locale: locale, scheme: scheme, size: DaybookMetrics.Window.popoverSize)
         defer { SystemPageHost.release(window) }
         try await NativeSyntaxUI.prepareFocus(in: window)
@@ -47,11 +49,11 @@ extension MenuBarPopoverRenderingTests {
         #expect(!toolbar.isFiltering)
         let view = try #require(window.contentView)
         let field = try await focusSearch(toolbar, in: view)
-        toolbar.searchText = "Synthetic"
+        try await probe.type("Synthetic")
         try await settle(view)
         let responder = window.firstResponder
         try await switchSegment(.tasks, locale: locale, in: window, mouse: true)
-        #expect(toolbar.searchIsFocused && toolbar.searchText == "Synthetic")
+        #expect(try toolbar.searchIsFocused && probe.controller.buffer.text == "Synthetic")
         #expect(window.firstResponder === responder && field.currentEditor() != nil)
         try await SettingsButtonTestSupport.key(124, flags: .command, in: window)
         try assertSegment(.tasks, locale: locale, in: window)
@@ -70,7 +72,7 @@ extension MenuBarPopoverRenderingTests {
         #expect(!context.hasChanges)
         try assertSegmentHeaderBounds(locale: locale, in: window)
         try SettingsButtonTestSupport.snapshot(window, name: "segment-menubar-search-\(locale)-\(scheme)")
-        toolbar.clearSearch()
+        try await probe.type("")
         try await settle(view)
         try assertSegmentHeaderBounds(locale: locale, in: window)
         try SettingsButtonTestSupport.snapshot(window, name: "segment-menubar-\(locale)-\(scheme)")

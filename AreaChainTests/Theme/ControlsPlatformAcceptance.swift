@@ -26,7 +26,7 @@ final class ControlsPlatformAcceptance {
     nonisolated static let maximumSeconds: TimeInterval = 600
     nonisolated static let windDownSeconds: TimeInterval = 30
     var selection = Scene.capture
-    var searchConsumer = SearchMultilineConsumer.workspace
+    var searchConsumer = SearchMultilineConsumer.tags
     var middleInsertion = false
     var dark = false
     var chinese = true

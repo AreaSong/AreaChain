@@ -74,8 +74,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NotificationScheduler.shared.start()
         CompletionUndo.shared.install()
         CalendarSync.start()
-        // 只装配、不读库、不申请权限；开关关闭时不构造任何统一搜索对象。
-        UnifiedSearchProduction.shared.start(preferences: .shared, makeServices: UnifiedSearchLiveServices.make)
+        // 只装配、不读库、不申请权限；装配失败时搜索框显示说明，其余功能照常。
+        UnifiedSearchProduction.shared.start(makeServices: UnifiedSearchLiveServices.make)
         AppWindows.hideStrayWindows()
         if Persistence.session.isFallback {
             MutationFeedback.shared.reportMemoryFallback()

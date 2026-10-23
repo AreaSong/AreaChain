@@ -31,16 +31,18 @@ extension MenuBarPopoverRenderingTests {
         return container
     }
 
+    /// search 为 nil 时浮层没有统一搜索装配（底栏显示不可用说明）；需要搜索的用例传入同一容器上的探针。
     func host(
         toolbar: MenuBarToolbarState, container: ModelContainer,
-        composer: BoardComposerSession? = nil,
+        composer: BoardComposerSession? = nil, search: MenuBarUnifiedSearchProbe? = nil,
         locale: String = "zh-Hans", scheme: ColorScheme = .light
     ) -> NSWindow {
         host(
             MenuBarPopoverView(
                 toolbar: toolbar,
                 composer: composer ?? BoardComposerSession(),
-                filterSession: BoardFilterSession()
+                filterSession: BoardFilterSession(),
+                production: search?.production ?? UnifiedSearchProduction()
             ),
             container: container, locale: locale, scheme: scheme
         )
@@ -75,17 +77,19 @@ extension MenuBarPopoverRenderingTests {
         view.layoutSubtreeIfNeeded()
     }
 
+    /// 底栏统一搜索输入（收尾批 M-7 起是浮层唯一的全局搜索框）。
     func searchField(in view: NSView) -> NSTextField? {
         if let field = view as? DaybookAppKitTextField,
            let coordinator = field.delegate as? DaybookTextField.Coordinator,
-           coordinator.parent.autocomplete?.context == .search { return field }
+           coordinator.parent.unifiedSearch != nil { return field }
         return view.subviews.lazy.compactMap { searchField(in: $0) }.first
     }
 
+    /// 全部搜索类输入：统一搜索框加页面自己的搜索语境输入。
     func searchInputCount(in view: NSView) -> Int {
         let coordinator = (view as? DaybookAppKitTextField)?.delegate as? DaybookTextField.Coordinator
-        let current = coordinator?.parent.autocomplete?.context.isSearch == true ? 1 : 0
-        return current + view.subviews.reduce(0) { $0 + searchInputCount(in: $1) }
+        let isSearch = coordinator?.parent.unifiedSearch != nil || coordinator?.parent.autocomplete?.context.isSearch == true
+        return (isSearch ? 1 : 0) + view.subviews.reduce(0) { $0 + searchInputCount(in: $1) }
     }
 
     func clickAndSettle(at point: NSPoint, in window: NSWindow) async throws {
@@ -131,6 +135,7 @@ extension MenuBarPopoverRenderingTests {
     func diaryField(in view: NSView) -> DaybookAppKitTextField? {
         if let field = view as? DaybookAppKitTextField,
            let coordinator = field.delegate as? DaybookTextField.Coordinator,
+           coordinator.parent.unifiedSearch == nil,
            coordinator.parent.autocomplete == nil || coordinator.parent.autocomplete?.context == .diaryCapture {
             return field
         }

@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// 合并批 M-6：工作台根视图。开关开时把唯一装配的工作台控制器与宿主交给原 MainSplitWorkspaceView；
-/// 开关关时与改动前的入口完全相同（`MainSplitWorkspaceView()`：旧搜索、无显式宿主）。切换时整棵重挂，旧控制器不留在视图里。
+/// 工作台根视图：把唯一装配的工作台控制器与宿主交给 MainSplitWorkspaceView。装配失败时仍是同一个工作台，
+/// 只是顶栏搜索框换成不可用说明（见 UnifiedSearchUnavailableField）；重建装配时整棵重挂，旧控制器不留在视图里。
 struct UnifiedSearchWorkspaceRoot: View {
     var production: UnifiedSearchProduction = .shared
 
@@ -17,7 +17,31 @@ struct UnifiedSearchWorkspaceRoot: View {
     }
 }
 
-/// 搜索快捷键（默认 ⌘F，快捷键页可改或停用）聚焦新搜索框；与旧搜索框的 `.appShortcut(.search)` 同一入口。
+/// 统一搜索没有可用控制器（装配失败）时占住搜索框的位置：一句不阻塞的说明，悬停给出完整原因；不可编辑、不抢焦点。
+struct UnifiedSearchUnavailableField: View {
+    var compact = false
+
+    var body: some View {
+        DaybookInputShell(kind: .search, focused: false) {
+            Image(systemName: "exclamationmark.magnifyingglass")
+                .font(DaybookType.caption.weight(.medium))
+                .foregroundStyle(DaybookPalette.text.secondary)
+                .accessibilityHidden(true)
+        } field: {
+            Text(compact ? "search.unavailable.short" : "search.unavailable")
+                .font(DaybookType.caption)
+                .foregroundStyle(DaybookPalette.text.secondary)
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .help(Text("search.unavailable.help"))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text("search.unavailable.help"))
+    }
+}
+
+/// 搜索快捷键（默认 ⌘F，快捷键页可改或停用）聚焦统一搜索框。
 struct UnifiedSearchFocusShortcut: View {
     let controller: UnifiedSearchController
 
@@ -75,8 +99,9 @@ struct MenuBarUnifiedSearchContent: View {
     }
 }
 
-/// 把新搜索的焦点与“正在搜索”接到菜单栏原有的 MenuBarToolbarState：原有的快捷键、Esc、手记快捷键与
-/// 列表键盘的判断都读 toolbar，这样不必逐处改写。
+/// 把统一搜索的焦点与“正在搜索”接到菜单栏的 MenuBarToolbarState：快捷键、Esc、手记快捷键与
+/// 列表键盘的判断都读 toolbar，这样不必逐处改写。装配失败（controller 为 nil）时没有可聚焦的输入，
+/// ⌘F 等入口置起的搜索焦点立即撤回，列表键盘不会因此停用。
 struct MenuBarUnifiedSearchBridge: ViewModifier {
     let controller: UnifiedSearchController?
     @Bindable var toolbar: MenuBarToolbarState
@@ -90,7 +115,11 @@ struct MenuBarUnifiedSearchBridge: ViewModifier {
                 if toolbar.searchIsFocused != focused { toolbar.searchIsFocused = focused }
             }
             .onChange(of: toolbar.searchIsFocused) { _, focused in
-                if let controller, controller.inputFocused != focused { controller.inputFocused = focused }
+                guard let controller else {
+                    if focused { toolbar.searchIsFocused = false }
+                    return
+                }
+                if controller.inputFocused != focused { controller.inputFocused = focused }
             }
             // 浮层原有的焦点逻辑（打开时聚焦捕获框）为准：新控制器默认 inputFocused 为真，不能借此抢走焦点。
             .onAppear { if let controller, controller.inputFocused != toolbar.searchIsFocused {

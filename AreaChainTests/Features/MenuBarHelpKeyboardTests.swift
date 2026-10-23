@@ -21,8 +21,10 @@ extension MenuBarHelpSurfaceTests {
         composer.tasks.text = "Synthetic original #tag"
         composer.diary.text = "Synthetic diary"
         let toolbar = MenuBarToolbarState()
-        if search { toolbar.searchText = "query"; toolbar.focusSearch() }
-        let window = helpWindow(support, composer: composer, toolbar: toolbar, configuration: (locale, scheme, width))
+        let probe = try MenuBarUnifiedSearchProbe(container: support.container)
+        defer { probe.stop() }
+        if search { try await probe.type("query"); toolbar.focusSearch() }
+        let window = helpWindow(support, composer: composer, toolbar: toolbar, search: probe, configuration: (locale, scheme, width))
         defer { SystemPageHost.release(window) }
         try await NativeSyntaxUI.prepareFocus(in: window)
         try await openHelp(in: window, locale: locale)
@@ -32,7 +34,9 @@ extension MenuBarHelpSurfaceTests {
             ? MenuBarPopoverRenderingTests().searchField(in: root) as? DaybookAppKitTextField
             : captureField(window))
         let editor = try #require(field.currentEditor() as? NSTextView)
-        let state = try #require((field.delegate as? DaybookTextField.Coordinator)?.parent.autocomplete)
+        // 统一搜索框的补全状态在 UnifiedSearchInputState.suggestions（同为搜索语境的 SyntaxAutocompleteState）。
+        let coordinator = field.delegate as? DaybookTextField.Coordinator
+        let state = try #require(search ? coordinator?.parent.unifiedSearch?.suggestions : coordinator?.parent.autocomplete)
         let preview = state.showsPreview
         let active = state.isActive
         let text = editor.string
@@ -44,12 +48,13 @@ extension MenuBarHelpSurfaceTests {
         #expect(editor.string == text && editor.selectedRange() == selection)
         #expect(state.showsPreview == preview && state.isActive == active)
         #expect(composer.tasks.text == "Synthetic original #tag" && composer.diary.text == "Synthetic diary")
-        #expect(toolbar.searchText == (search ? "query" : ""))
+        #expect(try probe.controller.buffer.text == (search ? "query" : ""))
         #expect(window.isVisible && window.isKeyWindow)
         describeInput(window)
         try await helpKey(53, in: window)
         if preview { #expect(!state.showsPreview) }
-        else if search { #expect(toolbar.searchText.isEmpty) }
+        // 统一搜索的 Esc（M-6 规则）把焦点留在输入框、不清空查询；旧底栏搜索在这里会清空。
+        else if search { #expect(try probe.controller.buffer.text == "query" && field.currentEditor() === editor) }
         #expect(!anyHelpVisible(window) && !support.container.mainContext.hasChanges)
     }
 
@@ -59,8 +64,10 @@ extension MenuBarHelpSurfaceTests {
         defer { support.cleanup() }
         let composer = BoardComposerSession()
         let toolbar = MenuBarToolbarState()
-        if search { toolbar.searchText = "query"; toolbar.focusSearch() }
-        let window = helpWindow(support, composer: composer, toolbar: toolbar)
+        let probe = try MenuBarUnifiedSearchProbe(container: support.container)
+        defer { probe.stop() }
+        if search { try await probe.type("query"); toolbar.focusSearch() }
+        let window = helpWindow(support, composer: composer, toolbar: toolbar, search: probe)
         defer { SystemPageHost.release(window) }
         try await NativeSyntaxUI.prepareFocus(in: window)
         try await openHelp(in: window)

@@ -36,19 +36,18 @@ struct WorkspaceHeaderBar: View {
         }
     }
 
+    /// 锚点让标题栏双击缩放避开搜索框（AppWindows.interactiveAnchorIDs），也是尺寸测试的测量入口。
     @ViewBuilder private var search: some View {
-        if let searchController {
-            UnifiedSearchWorkspaceInput(controller: searchController, minimumWidth: WorkspaceLayout.searchMinWidth)
-                .environment(\.daybookChromelessWhenIdle, searchController.buffer.text.isEmpty)
-        } else {
-            WorkspaceHeaderSearchCapsule(
-                navigation: navigation,
-                tagNames: tags.filter { $0.deletedAt == nil }.map(\.name)
-            )
-            .background(SyntaxViewAnchor("syntax.workspace.search.bounds"))
-            .accessibilityElement(children: .contain)
-            .accessibilityIdentifier("workspace.header.search.shell")
+        Group {
+            if let searchController {
+                UnifiedSearchWorkspaceInput(controller: searchController, minimumWidth: WorkspaceLayout.searchMinWidth)
+                    .environment(\.daybookChromelessWhenIdle, searchController.buffer.text.isEmpty)
+            } else {
+                UnifiedSearchUnavailableField()
+                    .accessibilityIdentifier("workspace.header.search.unavailable")
+            }
         }
+        .background(SyntaxViewAnchor("syntax.workspace.search.bounds"))
     }
 
     private var title: some View {

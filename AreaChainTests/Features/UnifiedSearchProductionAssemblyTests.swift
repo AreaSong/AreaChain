@@ -3,27 +3,19 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-6 检查点 B：开关、唯一装配点与新旧切换。纯程序化，不开窗口、不发键鼠事件。
+/// 合并批 M-6 检查点 B：唯一装配点；收尾批 M-7 删除开关后，启动即装配、失败可重试。纯程序化，不开窗口、不发键鼠事件。
 @Suite(.serialized, .tags(.backgroundWindow)) @MainActor struct UnifiedSearchProductionAssemblyTests {
-    @Test func preferenceDefaultsOnAndPersists() throws {
-        let defaults = try #require(UserDefaults(suiteName: "AreaChain.M6.pref." + UUID().uuidString))
-        let first = AppPreferences(defaults: defaults)
-        #expect(first.unifiedSearchEnabled)
-        #expect(defaults.object(forKey: AppPreferences.unifiedSearchEnabledKey) == nil)
-        first.unifiedSearchEnabled = false
-        #expect(defaults.object(forKey: AppPreferences.unifiedSearchEnabledKey) as? Bool == false)
-        #expect(!AppPreferences(defaults: defaults).unifiedSearchEnabled)
-    }
-
-    @Test func disabledAssemblesNothing() throws {
+    /// 收尾批 M-7：旧开关键留在 UserDefaults 不迁移，代码不再读取——存着“关”也照样装配。
+    @Test func legacyPreferenceKeyIsIgnored() throws {
         let fixture = try UnifiedSearchProductionFixture()
         defer { fixture.cleanup() }
-        var built = false
-        let assembly = UnifiedSearchProductionAssembly.make(enabled: false, services: {
-            built = true
-            return fixture.services()
-        })
-        #expect(assembly == nil && !built)
+        fixture.defaults.set(false, forKey: "areachain.prefs.unifiedSearchEnabled")
+        let production = UnifiedSearchProduction()
+        defer { production.stop(center: fixture.center) }
+        production.start(center: fixture.center, makeServices: { fixture.services() })
+        #expect(production.assembly != nil && !production.assemblyFailed)
+        #expect(fixture.defaults.object(forKey: "areachain.prefs.unifiedSearchEnabled") as? Bool == false)
+        #expect(fixture.probe.total == 0 && fixture.saves == 0)
     }
 
     @Test func assemblesBothHostsWithoutSideEffects() throws {
@@ -48,8 +40,7 @@ import Testing
     @Test func productionHostKeepsOriginalAttachmentSemantics() throws {
         let fixture = try UnifiedSearchProductionFixture()
         defer { fixture.cleanup() }
-        let production = try #require(UnifiedSearchProductionAssembly.make(enabled: true,
-            services: { fixture.services(productionAttachments: true) }))
+        let production = try UnifiedSearchProductionAssembly.attempt(services: fixture.services(productionAttachments: true)).get()
         defer { production.discard() }
         let shared = try #require(WorkspaceAttachmentStorage.resolve(production.hostContext))
         #expect(shared.store === AttachmentStore.shared && shared.root == nil && !shared.ordinaryOnly)
@@ -59,8 +50,8 @@ import Testing
         #expect(own.store !== AttachmentStore.shared && own.ordinaryOnly && own.root != nil)
     }
 
-    /// 修复批 M-6R 检查点 D：装配失败不再无声——记录失败供设置提示；关开关清除，偏好变化后重试成功也清除。
-    @Test func assemblyFailureIsRecordedAndClearedOnRetryOrToggleOff() throws {
+    /// 修复批 M-6R 检查点 D：装配失败不再无声——记录失败供宿主搜索框提示；仍失败时保持失败，偏好变化后重试成功即清除。
+    @Test func assemblyFailureIsRecordedAndClearedOnRetry() throws {
         let fixture = try UnifiedSearchProductionFixture()
         defer { fixture.cleanup() }
         let production = UnifiedSearchProduction()
@@ -69,44 +60,31 @@ import Testing
         production.assemble = { services, coordinator in
             fail ? .failure(CommandHandoffError.stale) : UnifiedSearchProductionAssembly.attempt(services: services, coordinator: coordinator)
         }
-        production.start(preferences: fixture.preferences, center: fixture.center, makeServices: { fixture.services() })
+        production.start(center: fixture.center, makeServices: { fixture.services() })
         #expect(production.assembly == nil && production.assemblyFailed)
-        #expect(fixture.preferences.unifiedSearchEnabled)
-        fixture.preferences.unifiedSearchEnabled = false
         fixture.center.post(name: .appPreferencesDidChange, object: nil)
-        #expect(!production.assemblyFailed)
+        #expect(production.assembly == nil && production.assemblyFailed)
         fail = false
-        fixture.preferences.unifiedSearchEnabled = true
         fixture.center.post(name: .appPreferencesDidChange, object: nil)
         #expect(production.assembly != nil && !production.assemblyFailed)
         #expect(fixture.probe.total == 0 && fixture.saves == 0)
     }
 
-    @Test func toggleOffRestoresOldSearchAndKeepsDrafts() throws {
+    /// 收尾批 M-7：已有装配时偏好变化不重建，控制器、查询与工作台展示状态都不动。
+    @Test func preferenceChangesKeepTheExistingAssembly() throws {
         let fixture = try UnifiedSearchProductionFixture()
         defer { fixture.cleanup() }
         let production = UnifiedSearchProduction()
         defer { production.stop(center: fixture.center) }
-        production.start(preferences: fixture.preferences, center: fixture.center, makeServices: { fixture.services() })
+        production.start(center: fixture.center, makeServices: { fixture.services() })
         let first = try #require(production.assembly)
-        let workspace = try #require(first.workspace)
         #expect(fixture.navigation.searchPresentation == false)
         try first.coordinator.send(.query(.setInput("needle")),
                                    expecting: first.coordinator.host(UnifiedSearchProductionAssembly.workspaceHost).lease)
         let generation = production.generation
-
-        fixture.preferences.unifiedSearchEnabled = false
         fixture.center.post(name: .appPreferencesDidChange, object: nil)
-        #expect(production.assembly == nil && production.generation == generation + 1)
-        #expect(workspace.session.diagnostic == .detached)
-        #expect(fixture.navigation.searchPresentation == nil)
-
-        fixture.preferences.unifiedSearchEnabled = true
-        fixture.center.post(name: .appPreferencesDidChange, object: nil)
-        let second = try #require(production.assembly)
-        #expect(second !== first && second.coordinator === first.coordinator)
-        #expect(second.workspace.buffer.text == "needle")
-        #expect(fixture.navigation.searchPresentation == true)
+        #expect(production.assembly === first && production.generation == generation)
+        #expect(first.workspace.session.diagnostic != .detached && fixture.navigation.searchPresentation == false)
         #expect(fixture.probe.total == 0 && fixture.saves == 0)
     }
 }

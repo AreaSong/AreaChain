@@ -75,6 +75,9 @@ struct WorkspaceWindowLifecycleTests {
 @MainActor
 private final class WorkspaceWindowHost: NSObject, NSWindowDelegate {
     let fixture: SettingsButtonTestSupport
+    /// 收尾批 M-7：顶栏只有统一搜索；经唯一装配挂接，与工作台页面共用同一内存容器。
+    let searchFixture: UnifiedSearchProductionFixture
+    let assembly: UnifiedSearchProductionAssembly
     let window: NSWindow
     let restore: () -> Void
     var entered = false
@@ -87,9 +90,12 @@ private final class WorkspaceWindowHost: NSObject, NSWindowDelegate {
             fixture.container.mainContext.insert(TodoItem(title: "Synthetic item \(index)", dayKey: DayClock.shared.todayKey))
         }
         try fixture.container.mainContext.save()
-        WorkspaceNavigation.shared.clearSearch()
+        WorkspaceNavigation.shared.searchPresentation = nil
         WorkspaceNavigation.shared.revealTab(.today)
-        let root = MainSplitWorkspaceView().modelContainer(fixture.container).environment(fixture.prefs)
+        searchFixture = try UnifiedSearchProductionFixture(container: fixture.container)
+        assembly = try searchFixture.assembly()
+        let root = MainSplitWorkspaceView(search: assembly.workspace, presentsSearchOnAppear: false)
+            .modelContainer(fixture.container).environment(fixture.prefs)
             .environment(\.locale, Locale(identifier: "zh-Hans")).preferredColorScheme(scheme)
             .transaction { $0.disablesAnimations = true }
         UserDefaults.standard.register(defaults: [
@@ -119,7 +125,7 @@ private final class WorkspaceWindowHost: NSObject, NSWindowDelegate {
 
     func search() throws -> DaybookAppKitTextField {
         let fields = ScrollNativeEvidence.views(window).compactMap { $0 as? DaybookAppKitTextField }.filter {
-            $0.placeholderString == L10n.string("workspace.search.placeholder", locale: Locale(identifier: "zh-Hans"))
+            ($0.delegate as? DaybookTextField.Coordinator)?.parent.unifiedSearch != nil
                 && !$0.isHiddenOrHasHiddenAncestor && !$0.visibleRect.isEmpty
         }
         try #require(fields.count == 1)
@@ -171,6 +177,8 @@ private final class WorkspaceWindowHost: NSObject, NSWindowDelegate {
         window.delegate = nil
         restore()
         WorkspaceNavigation.shared.updateInspectorSpace(available: true)
+        assembly.discard()
+        searchFixture.cleanup()
         fixture.cleanup()
     }
 }

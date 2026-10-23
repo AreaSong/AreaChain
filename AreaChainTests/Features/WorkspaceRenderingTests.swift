@@ -8,6 +8,8 @@ import Testing
 @MainActor
 struct WorkspaceRenderingTests {
     private static var retainedContainers: [ModelContainer] = []
+    /// 收尾批 M-7：顶栏只有统一搜索；装配的导航就是 `.shared`，结果页展示写到本工作台，页面仍按无宿主运行。
+    private static var searches: [ObjectIdentifier: (UnifiedSearchProductionFixture, UnifiedSearchProductionAssembly)] = [:]
 
     private struct RouteAppearance: Sendable {
         var scheme: ColorScheme
@@ -35,7 +37,7 @@ struct WorkspaceRenderingTests {
         NSApp.accessibilitySetValue(true, forAttribute: NSAccessibility.Attribute(rawValue: "AXEnhancedUserInterface"))
         defer { NSApp.accessibilitySetValue(previousAccessibility ?? false, forAttribute: NSAccessibility.Attribute(rawValue: "AXEnhancedUserInterface")) }
         let fixture = try makeFixture()
-        let window = makeWindow(
+        let window = try makeWindow(
             fixture,
             scheme: appearance.scheme,
             minimumSize: appearance.minimumSize,
@@ -59,12 +61,17 @@ struct WorkspaceRenderingTests {
                 )
             )
         }
-        WorkspaceNavigation.shared.searchQuery = "核对"
+        let controller = try #require(Self.searches[ObjectIdentifier(window)]?.1.workspace)
+        _ = controller.edit(.init(source: controller.buffer, text: "核对", selection: NSRange(location: 2, length: 0)))
+        for _ in 0..<100 where !WorkspaceNavigation.shared.isSearching { try await Task.sleep(for: .milliseconds(20)) }
         try await settle(view)
+        #expect(WorkspaceNavigation.shared.isSearching)
         try assertFits(view, in: window)
         try snapshot(view, name: imageName("search", scheme: appearance.scheme,
                                          minimumSize: appearance.minimumSize, localeIdentifier: appearance.language))
-        WorkspaceNavigation.shared.clearSearch()
+        _ = controller.edit(.init(source: controller.buffer, text: "", selection: NSRange(location: 0, length: 0)))
+        try await settle(view)
+        #expect(!WorkspaceNavigation.shared.isSearching)
         WorkspaceNavigation.shared.selectedTagID = fixture.tag.id
         try await settle(view)
         try assertFits(view, in: window)
@@ -85,7 +92,7 @@ struct WorkspaceRenderingTests {
         let previousAppearance = NSApp.appearance
         defer { previous.restore(); NSApp.appearance = previousAppearance }
         let fixture = try makeFixture()
-        let window = makeWindow(fixture, scheme: scheme, minimumSize: minimumSize)
+        let window = try makeWindow(fixture, scheme: scheme, minimumSize: minimumSize)
         defer { release(window) }
         let view = try #require(window.contentView)
         let nav = WorkspaceNavigation.shared
@@ -115,7 +122,7 @@ struct WorkspaceRenderingTests {
         let previousAppearance = NSApp.appearance
         defer { previous.restore(); NSApp.appearance = previousAppearance }
         let fixture = try makeFixture()
-        let window = makeWindow(fixture, scheme: .light)
+        let window = try makeWindow(fixture, scheme: .light)
         defer { release(window) }
         let view = try #require(window.contentView)
         WorkspaceNavigation.shared.revealTab(.today)
@@ -143,7 +150,7 @@ struct WorkspaceRenderingTests {
         let previousAppearance = NSApp.appearance
         defer { previous.restore(); NSApp.appearance = previousAppearance }
         let fixture = try makeFixture()
-        let window = makeWindow(fixture, scheme: .light)
+        let window = try makeWindow(fixture, scheme: .light)
         defer { release(window) }
         let view = try #require(window.contentView)
         WorkspaceNavigation.shared.revealTab(.diary)
@@ -210,7 +217,7 @@ struct WorkspaceRenderingTests {
         let previousAppearance = NSApp.appearance
         defer { previous.restore(); NSApp.appearance = previousAppearance }
         let fixture = try makeFixture()
-        let window = makeWindow(fixture, scheme: .light, minimumSize: true)
+        let window = try makeWindow(fixture, scheme: .light, minimumSize: true)
         defer { release(window) }
         let view = try #require(window.contentView)
         WorkspaceNavigation.shared.revealTab(.calendar)
@@ -275,9 +282,12 @@ struct WorkspaceRenderingTests {
         context.insert(privateNote)
     }
 
-    private func makeWindow(_ fixture: Fixture, scheme: ColorScheme, minimumSize: Bool = false, localeIdentifier: String = "zh-Hans") -> NSWindow {
+    private func makeWindow(_ fixture: Fixture, scheme: ColorScheme, minimumSize: Bool = false,
+                            localeIdentifier: String = "zh-Hans") throws -> NSWindow {
         fixture.preferences.language = localeIdentifier == "en" ? .english : .chinese
-        let content = MainSplitWorkspaceView()
+        let search = try UnifiedSearchProductionFixture(container: fixture.container, navigation: .shared)
+        let assembly = try search.assembly()
+        let content = MainSplitWorkspaceView(search: assembly.workspace, presentsSearchOnAppear: false)
             .modelContainer(fixture.container)
             .environment(fixture.preferences)
             .environment(\.locale, Locale(identifier: localeIdentifier))
@@ -295,6 +305,7 @@ struct WorkspaceRenderingTests {
         if minimumSize { window.setFrame(NSRect(origin: window.frame.origin, size: DaybookMetrics.Window.workspaceMinSize), display: true) }
         NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
+        Self.searches[ObjectIdentifier(window)] = (search, assembly)
         return window
     }
 
@@ -401,6 +412,10 @@ struct WorkspaceRenderingTests {
             window.styleMask.remove(.fullSizeContentView)
         }
         window.contentViewController = nil
+        if let entry = Self.searches.removeValue(forKey: ObjectIdentifier(window)) {
+            entry.1.discard()
+            entry.0.cleanup()
+        }
     }
 
     @MainActor

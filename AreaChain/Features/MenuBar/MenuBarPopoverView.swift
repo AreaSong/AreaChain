@@ -40,7 +40,7 @@ struct MenuBarPopoverView: View {
         self.production = production ?? .shared
     }
 
-    /// 合并批 M-6：开关开时为唯一装配的菜单栏控制器；关时 nil，浮层与改动前相同。
+    /// 唯一装配的菜单栏控制器；装配失败时为 nil，底栏显示不可用说明，浮层其余部分照常。
     var unified: UnifiedSearchController? {
         production.controller(for: UnifiedSearchProductionAssembly.menubarHost)
     }
@@ -133,14 +133,6 @@ struct MenuBarPopoverView: View {
             Group {
                 if toolbar.isSearching, let unified {
                     MenuBarUnifiedSearchContent(controller: unified)
-                } else if toolbar.isSearching {
-                    MenuBarSearchResults(
-                        query: toolbar.searchText,
-                        filter: filters.selection(for: tab),
-                        toolbar: toolbar,
-                        onClearSearch: { toolbar.clearSearch() },
-                        onClearFilter: clearCurrentFilter
-                    )
                 } else {
                     switch tab {
                     case .tasks: tasksView
@@ -274,7 +266,6 @@ struct MenuBarPopoverView: View {
 
     private func showSyntaxHelp() {
         helpContext = toolbar.isSearching || toolbar.searchIsFocused ? .search : .capture
-        toolbar.autocomplete.dismiss()
         if tab == .tasks {
             captureFocused = true
         }
@@ -309,12 +300,6 @@ struct MenuBarPopoverView: View {
         composer.tasks = draft
     }
 
-    private func clearCurrentFilter() {
-        var next = filterSession.filters
-        next.clear(tab)
-        filterSession.filters = next
-    }
-
     private func writeFilter(_ filter: BoardFilter, for tab: BoardTab) {
         var next = filterSession.filters
         next.write(filter, for: tab)
@@ -324,18 +309,12 @@ struct MenuBarPopoverView: View {
     private func handleSyntaxTokenSelection(_ token: String) {
         showingSyntaxHelp = false
         if helpContext == .search {
-            guard token == "#" || token == "!" || token == "@" else { return }
-            if let unified {
-                // 新版搜索：沿原输入事件把记号接在当前文字后面，再交回焦点；不改旧搜索框里留着的文字。
-                let text = unified.buffer.text
-                let next = text + (text.isEmpty || text.hasSuffix(" ") ? "" : " ") + token
-                _ = unified.edit(.init(source: unified.buffer, text: next,
-                                       selection: NSRange(location: next.utf16.count, length: 0)))
-                toolbar.focusSearch()
-                return
-            }
-            let prefix = toolbar.searchText.isEmpty || toolbar.searchText.hasSuffix(" ") ? "" : " "
-            toolbar.searchText += prefix + token
+            guard token == "#" || token == "!" || token == "@", let unified else { return }
+            // 沿原输入事件把记号接在当前文字后面，再交回焦点。
+            let text = unified.buffer.text
+            let next = text + (text.isEmpty || text.hasSuffix(" ") ? "" : " ") + token
+            _ = unified.edit(.init(source: unified.buffer, text: next,
+                                   selection: NSRange(location: next.utf16.count, length: 0)))
             toolbar.focusSearch()
             return
         }

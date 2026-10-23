@@ -52,7 +52,10 @@ extension MenuBarPopoverRenderingTests {
         let filters = BoardFilterSession(filters: BoardFilters(diary: BoardFilter(tagID: tags[1].id)))
         var changes: [BoardFilters] = []
         filters.onChange = { changes.append($0) }
-        let window = MenuBarFilterTestSupport.host(support, composer: composer, filters: filters, toolbar: toolbar, locale: locale)
+        let search = try MenuBarUnifiedSearchProbe(container: support.container)
+        defer { search.stop() }
+        let window = MenuBarFilterTestSupport.host(support, composer: composer, filters: filters, toolbar: toolbar,
+                                                   search: search, locale: locale)
         defer { SystemPageHost.release(window) }
         try await NativeSyntaxUI.prepareFocus(in: window)
         try await SystemPageHost.settle(window)
@@ -92,12 +95,12 @@ extension MenuBarPopoverRenderingTests {
         try await MenuBarFilterTestSupport.click(clear, in: window)
         #expect(filters.filters == BoardFilters() && changes.count == 6 && !toolbar.isFiltering)
         #expect(mutations.writes == taskWrites, "任务清除不写草稿")
-        toolbar.searchText = "Synthetic"
+        try await search.type("Synthetic")
         toolbar.focusSearch()
         try await SystemPageHost.settle(window)
         try await SurfaceEventTestSupport.click(filterTriggerPoint(in: window), in: window)
         try await SettingsButtonTestSupport.key(53, in: window)
-        #expect(!toolbar.isFiltering && toolbar.searchText == "Synthetic" && changes.count == 6)
+        #expect(try !toolbar.isFiltering && search.controller.buffer.text == "Synthetic" && changes.count == 6)
         #expect(composer.tasks.text == "Synthetic task draft" && composer.diary.text == "Synthetic diary draft")
         SurfaceEventTestSupport.note("filter host draftWrites=\(mutations.writes) saves=\(mutations.saves) dirty=\(context.hasChanges)")
         #expect(mutations.saves == 0 && !context.hasChanges)

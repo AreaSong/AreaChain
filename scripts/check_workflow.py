@@ -354,12 +354,10 @@ COMPONENT_ENTRIES = (
     ("AreaChain/Theme/TrashConfirm.swift", "PendingTrash"),
     ("AreaChain/Features/Board/BoardRowChrome.swift", "BoardRowChrome"),
     ("AreaChain/Features/Board/BoardCommandStrip.swift", "BoardCommandStrip"),
-    ("AreaChain/Features/Search/BoardSearchHitRow.swift", "BoardSearchHitGroups"),
     ("AreaChain/Features/Workspace/WorkspaceHeaderBar.swift", "WorkspaceHeaderBar"),
     ("AreaChain/Features/Workspace/WorkspaceInspectorPresentation.swift", "WorkspaceInspectorFocus"),
     ("AreaChain/Theme/DaybookScrollScope.swift", "daybookScrollTopEdge"),
     ("AreaChain/Features/Workspace/WorkspaceHeaderContent.swift", "WorkspaceHeaderAction"),
-    ("AreaChain/Features/Workspace/WorkspaceHeaderSearch.swift", "WorkspaceHeaderSearchCapsule"),
 )
 
 

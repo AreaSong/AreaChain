@@ -170,25 +170,17 @@ final class WorkspaceNavigation {
     var focusedTrashID: UUID?
 
     // MARK: - Global Search
-    var searchQuery: String = "" {
-        didSet {
-            if BoardSearch.normalized(oldValue) != BoardSearch.normalized(searchQuery) {
-                invalidateInspectorContext()
-            }
-        }
-    }
-    var isSearchFocused: Bool = false
-    var searchResultIndex: Int?
     var wantsTodayComposerFocus: Bool = false
 
-    // nil 保持生产旧搜索；仅显式统一搜索宿主控制暂挂展示。
-    var searchPresentation: Bool?
+    /// 统一搜索结果页是否盖住页面：由工作台搜索控制器按当前查询写入；nil 与 false 都显示原页面。
+    /// 进入或离开结果页时作废检查器上下文（与旧搜索改查询时相同），原页面的选中项不能带进结果页，反之亦然。
+    var searchPresentation: Bool? {
+        didSet { if (oldValue ?? false) != isSearching { invalidateInspectorContext() } }
+    }
     var navigationObject: WorkspaceObjectLocation?
     private var preservingSearchPage = false
 
-    var isSearching: Bool {
-        searchPresentation ?? !BoardSearch.normalized(searchQuery).isEmpty
-    }
+    var isSearching: Bool { searchPresentation ?? false }
 
     func revealSearchDestination(_ tab: WorkspaceTab) {
         preservingSearchPage = true
@@ -203,16 +195,6 @@ final class WorkspaceNavigation {
         selectedTagID = tag
         searchPresentation = true
         preservingSearchPage = false
-    }
-
-    func focusSearch() {
-        isSearchFocused = true
-    }
-
-    func clearSearch() {
-        searchQuery = ""
-        isSearchFocused = false
-        searchResultIndex = nil
     }
 
     // MARK: - Task Inspector & Multi-Selection
@@ -237,7 +219,7 @@ final class WorkspaceNavigation {
     private(set) var inspectorTargetIDs: Set<UUID> = []
 
     var contentIdentity: String {
-        if isSearching { return "search:" + BoardSearch.normalized(searchQuery) }
+        if isSearching { return "search" }
         if isShowingShellPreview { return "shellPreview" }
         if let selectedTagID { return "tag:" + selectedTagID.uuidString }
         return selectedTab.rawValue

@@ -27,8 +27,10 @@ struct MenuBarHelpSurfaceTests {
             let toolbar = MenuBarToolbarState()
             let filters = BoardFilterSession()
             let initialFilters = filters.filters
+            let search = try MenuBarUnifiedSearchProbe(container: support.container)
+            defer { search.stop() }
             let window = SystemPageHost.preferenceWindow(
-                MenuBarPopoverView(toolbar: toolbar, composer: composer, filterSession: filters)
+                MenuBarPopoverView(toolbar: toolbar, composer: composer, filterSession: filters, production: search.production)
                     .environment(\.locale, Locale(identifier: locale)).preferredColorScheme(scheme),
                 container: support.container, prefs: support.prefs, size: NSSize(width: width, height: 490))
             defer { SystemPageHost.release(window) }
@@ -42,8 +44,8 @@ struct MenuBarHelpSurfaceTests {
             try OverlaySurfaceTestSupport.record(window, name: "e-help-capture-\(locale)-\(scheme)-\(Int(width))")
             let mutations = MenuBarHelpMutationProbe(context: support.container.mainContext) {
                 _ = composer.tasks
-                _ = toolbar.searchText
             }
+            let searchWrites = ObservedTextChanges { (try? search.controller.buffer.text) ?? "" }
             let row = try helpButton("syntax.guide.tag", context: .capture, locale: locale, in: window)
             try await activate(row, in: window, accessibility: accessibility)
             let snippet = L10n.string("syntax.example.tag.snippet", locale: Locale(identifier: locale))
@@ -58,19 +60,21 @@ struct MenuBarHelpSurfaceTests {
             #expect(mutations.writes == 1)
             let draft = composer.tasks.text
             for prefix in ["", "query", "query "] {
-                toolbar.searchText = prefix
+                try await search.type(prefix)
                 toolbar.focusSearch()
                 try await SystemPageHost.settle(window)
                 try await openHelp(in: window, locale: locale)
                 let searchTitle = L10n.string("syntax.search.title", locale: Locale(identifier: locale))
                 #expect(SurfaceConsumerUI.strings(window).contains(searchTitle))
-                #expect(!toolbar.autocomplete.isActive)
                 try OverlaySurfaceTestSupport.record(window, name: "e-help-search-\(prefix.count)-\(locale)-\(scheme)-\(Int(width))")
                 mutations.writes = 0
+                searchWrites.reset()
                 // nil 综合回调继续无动作，不收起、不改搜索或捕获草稿。
                 let example = try helpButton("syntax.guide.example", context: .search, locale: locale, in: window)
                 try await activate(example, in: window, accessibility: accessibility)
-                #expect(toolbar.searchText == prefix && composer.tasks.text == draft && mutations.writes == 0)
+                try await SystemPageHost.settle(window)
+                #expect(try search.controller.buffer.text == prefix && composer.tasks.text == draft && mutations.writes == 0)
+                #expect(searchWrites.changes == 0)
                 #expect(SurfaceConsumerUI.strings(window).contains(searchTitle))
                 if !SurfaceConsumerUI.strings(window).contains(searchTitle) {
                     SurfaceEventTestSupport.note("nil example unexpectedly dismissed help; restore search context for independent token assertion")
@@ -80,8 +84,11 @@ struct MenuBarHelpSurfaceTests {
                 }
                 let token = try helpButton("syntax.guide.tag", context: .search, locale: locale, in: window)
                 try await activate(token, in: window, accessibility: accessibility)
-                #expect(toolbar.searchText == prefix + (prefix.isEmpty || prefix.hasSuffix(" ") ? "" : " ") + "#")
-                #expect(toolbar.searchIsFocused && composer.tasks.text == draft && mutations.writes == 1)
+                try await SystemPageHost.settle(window)
+                #expect(try search.controller.buffer.text == prefix + (prefix.isEmpty || prefix.hasSuffix(" ") ? "" : " ") + "#")
+                // 旧用例 writes == 1 记的是搜索文字那一次；现在分开计：捕获草稿 0 次、搜索文字恰好 1 次。
+                #expect(toolbar.searchIsFocused && composer.tasks.text == draft && mutations.writes == 0)
+                #expect(searchWrites.changes == 1)
                 #expect(!SurfaceConsumerUI.strings(window).contains(searchTitle))
                 #expect(MenuBarPopoverRenderingTests().searchField(in: try #require(window.contentView))?.currentEditor() != nil)
             }
@@ -134,9 +141,11 @@ struct MenuBarHelpSurfaceTests {
         let composer = BoardComposerSession()
         composer.tasks.text = "Synthetic capture"
         let toolbar = MenuBarToolbarState()
-        toolbar.searchText = "query"
+        let search = try MenuBarUnifiedSearchProbe(container: support.container)
+        defer { search.stop() }
+        try await search.type("query")
         toolbar.focusSearch()
-        let window = helpWindow(support, composer: composer, toolbar: toolbar)
+        let window = helpWindow(support, composer: composer, toolbar: toolbar, search: search)
         defer { SystemPageHost.release(window) }
         try await NativeSyntaxUI.prepareFocus(in: window)
         try await openHelp(in: window)
@@ -144,7 +153,7 @@ struct MenuBarHelpSurfaceTests {
         let rect = try SettingsButtonTestSupport.frame(row, in: window)
         try await SurfaceEventTestSupport.click(NSPoint(x: rect.midX, y: rect.midY), in: window)
         try await settledHelp(window)
-        #expect(toolbar.searchText == "query #")
+        #expect(try search.controller.buffer.text == "query #")
         #expect(composer.tasks.text == "Synthetic capture")
         #expect(!SurfaceConsumerUI.strings(window).contains(L10n.string("syntax.search.title", locale: Locale(identifier: "en"))))
         #expect(MenuBarPopoverRenderingTests().searchField(in: try #require(window.contentView))?.currentEditor() != nil)
@@ -204,7 +213,7 @@ struct MenuBarHelpSurfaceTests {
             SurfaceEventTestSupport.note("second escape help=\(helpVisible(window))")
             describeInput(window)
         }
-        #expect(composer.tasks.text == "Synthetic original" && toolbar.searchText.isEmpty)
+        #expect(composer.tasks.text == "Synthetic original" && !toolbar.isSearching)
         #expect(!support.container.mainContext.hasChanges)
     }
 
@@ -222,7 +231,7 @@ struct MenuBarHelpSurfaceTests {
         let row = try SurfaceConsumerUI.button(containing: L10n.string("syntax.guide.tag", locale: Locale(identifier: "en")), in: window)
         try await SurfaceConsumerUI.hover(row, in: window) {
             #expect(SurfaceConsumerUI.strings(window).contains { $0.contains("#life") })
-            #expect(composer.tasks.text == "Synthetic original" && toolbar.searchText.isEmpty)
+            #expect(composer.tasks.text == "Synthetic original" && !toolbar.isSearching)
             #expect(!support.container.mainContext.hasChanges)
             try OverlaySurfaceTestSupport.record(window, name: "e-help-native-hover")
         }
@@ -259,12 +268,13 @@ struct MenuBarHelpSurfaceTests {
     }
 
     func helpWindow(_ support: SettingsButtonTestSupport, composer: BoardComposerSession,
-                            toolbar: MenuBarToolbarState,
+                            toolbar: MenuBarToolbarState, search: MenuBarUnifiedSearchProbe? = nil,
                     configuration: (String, ColorScheme, CGFloat) = ("en", .light, 380)) -> NSWindow {
         // 外层 AppChrome 读取随机测试偏好；只给子视图 preferredColorScheme 不足以切换宿主。
         support.prefs.appearance = configuration.1 == .dark ? .dark : .light
         return SystemPageHost.preferenceWindow(
-            MenuBarPopoverView(toolbar: toolbar, composer: composer, filterSession: BoardFilterSession())
+            MenuBarPopoverView(toolbar: toolbar, composer: composer, filterSession: BoardFilterSession(),
+                               production: search?.production ?? UnifiedSearchProduction())
                 .environment(\.locale, Locale(identifier: configuration.0)).preferredColorScheme(configuration.1),
             container: support.container, prefs: support.prefs, size: NSSize(width: configuration.2, height: 490))
     }

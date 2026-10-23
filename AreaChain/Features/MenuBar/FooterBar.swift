@@ -2,7 +2,7 @@ import AppKit
 import SwiftData
 import SwiftUI
 
-/// 菜单栏底栏：左侧筛选抽屉入口、中间动态切换搜索框/已选胶囊流、右侧工作台与收起入口，结构稳定无抖动。
+/// 菜单栏底栏：左侧筛选抽屉入口、中间统一搜索框、右侧工作台与收起入口，结构稳定无抖动。
 struct FooterBar: View {
     var tab: BoardTab = .tasks
     @Bindable var toolbar: MenuBarToolbarState
@@ -14,7 +14,7 @@ struct FooterBar: View {
     var isFilterDrawerPresented: Binding<Bool> = .constant(false)
     var onTriggerClick: (() -> Void)? = nil
     var activeCategory: Binding<FilterCategory>? = nil
-    /// 合并批 M-6：开关开时中间换成新版搜索框；nil 时保持原搜索框。
+    /// 统一搜索的菜单栏控制器；nil 表示装配失败，中间显示不可用说明。
     var unified: UnifiedSearchController? = nil
 
     @Environment(\.locale) private var locale
@@ -23,112 +23,25 @@ struct FooterBar: View {
     @FocusState private var workspaceFocused: Bool
     @FocusState private var moreFocused: Bool
 
-    private var activeTags: [TagItem] {
-        tab == .tasks ? Catalog.liveTaskTags(tags) : Catalog.liveTags(tags)
-    }
-
-    private var currentFilter: BoardFilter {
-        filters.wrappedValue.selection(for: tab)
-    }
-
-    private var selectedTagID: UUID? {
-        currentFilter.tagID
-    }
-
     private var activeCount: Int {
         filters.wrappedValue.activeCount(for: tab)
     }
 
-    private func writeFilter(_ filter: BoardFilter) {
-        filters.wrappedValue.write(filter, for: tab)
-    }
-
     @State private var hoverTask: Task<Void, Never>? = nil
-
-    var activeTokens: [SearchFilterToken] {
-        var tokens: [SearchFilterToken] = []
-        if tab == .tasks {
-            if currentFilter.dateScope != .all {
-                tokens.append(SearchFilterToken(
-                    id: "date",
-                    title: currentFilter.dateScope.title(locale: locale),
-                    icon: "calendar",
-                    onRemove: { writeFilter(currentFilter.withDateScope(.all)) }
-                ))
-            }
-
-            if currentFilter.priorityScope != .all || currentFilter.isHighPriorityOnly {
-                let mark = BoardFilterChoices.priorityMark(currentFilter)
-                let (dotColor, icon) = (mark.dot, mark.icon)
-                tokens.append(SearchFilterToken(
-                    id: "priority",
-                    title: currentFilter.priorityTitle(locale: locale),
-                    icon: icon,
-                    dotColor: dotColor,
-                    onRemove: {
-                        var next = currentFilter.withPriorityScope(.all)
-                        next.isHighPriorityOnly = false
-                        writeFilter(next)
-                    }
-                ))
-            }
-
-            if currentFilter.reminderScope != .all {
-                tokens.append(SearchFilterToken(
-                    id: "reminder",
-                    title: currentFilter.reminderScope.title(locale: locale),
-                    icon: "bell",
-                    onRemove: { writeFilter(currentFilter.withReminderScope(.all)) }
-                ))
-            }
-
-            if let bundleID = currentFilter.bundleID {
-                tokens.append(SearchFilterToken(
-                    id: "bundle",
-                    title: BundleDisplay.name(for: bundleID),
-                    icon: "app",
-                    onRemove: { writeFilter(currentFilter.withBundle(nil)) }
-                ))
-            }
-        }
-
-        if let tid = selectedTagID {
-            if tid == BoardFilter.noneID {
-                tokens.append(SearchFilterToken(
-                    id: "tag",
-                    title: L10n.string("filter.tag.none", locale: locale),
-                    icon: "tag",
-                    onRemove: { clearTag() }
-                ))
-            } else if let tag = tags.first(where: { $0.id == tid }) {
-                tokens.append(SearchFilterToken(
-                    id: "tag",
-                    title: "#" + tag.name,
-                    dotColor: DiaryTagChrome.color(for: tag.name),
-                    onRemove: { clearTag() }
-                ))
-            }
-        }
-
-        return tokens
-    }
 
     var body: some View {
         HStack(spacing: 6) {
             // 1. 左侧筛选入口区
             filterTrigger
 
-            // 2. 中间全宽搜索框（内嵌已生效 Token 胶囊流）；新版搜索在用时换成统一输入
+            // 2. 中间全宽统一搜索框；装配失败时换成不阻塞的不可用说明
             Group {
                 if let unified {
                     MenuBarUnifiedSearchField(controller: unified)
                 } else {
-                    MenuBarSearchField(
-                        tab: tab,
-                        toolbar: toolbar,
-                        availableTags: activeTags.map(\.name),
-                        tokens: activeTokens
-                    )
+                    UnifiedSearchUnavailableField(compact: true)
+                        .frame(minWidth: DaybookMetrics.Window.popoverFooterSearchMinWidth)
+                        .accessibilityIdentifier("menubar.search.unavailable")
                 }
             }
             .accessibilityElement(children: .contain)
@@ -223,10 +136,6 @@ struct FooterBar: View {
     }
 
     // MARK: - 辅助计算
-
-    private func clearTag() {
-        writeFilter(currentFilter.withTag(nil))
-    }
 
     private var activeDescription: String {
         guard activeCount > 0 else { return L10n.string("filter.all", locale: locale) }

@@ -16,28 +16,6 @@ struct SearchMultilineDiagnosticTests {
         #expect("x" + remaining == "x/ 乙")
     }
 
-    @Test func workspaceNativeBaseline() async throws {
-        let fixture = try SettingsButtonTestSupport(isolatedPreferences: true)
-        defer { fixture.cleanup() }
-        let navigation = WorkspaceNavigation(boardSelection: BoardSelection())
-        let window = fixture.window(WorkspaceHeaderSearchCapsule(navigation: navigation, tagNames: ["工作"]),
-                                    size: NSSize(width: 600, height: 300))
-        defer { SystemPageHost.release(window) }
-        try await NativeSyntaxUI.prepareFocus(in: window)
-        let field = try #require(FormInputTestSupport.fields(in: window).first)
-        let editor = try await FormInputTestSupport.editor(field, in: window)
-        let trace = try SearchMultilineTrace(field)
-        defer { trace.restore() }
-        trace.record("before.insertText")
-        editor.insertText("甲\n乙", replacementRange: NSRange(location: 0, length: 0))
-        trace.record("after.insertText")
-        try await SystemPageHost.settle(window)
-        trace.record("settled")
-        #expect(navigation.searchQuery == "甲 乙")
-        #expect(editor.string == navigation.searchQuery)
-        #expect(field.stringValue == navigation.searchQuery)
-    }
-
     @Test(arguments: SearchMultilineConsumer.searches)
     func productionImports(kind: SearchMultilineConsumer) async throws {
         let fixture = try SearchMultilineFixture(kind)
@@ -65,8 +43,8 @@ struct SearchMultilineDiagnosticTests {
             #expect(trace.coordinator.parent.text == "甲 乙")
             #expect(field.stringValue == "甲 乙")
             #expect(editor.string == "甲 乙")
-            fixture.assertResults(space: true, slash: kind == .workspace || kind == .menu || kind == .diary || kind == .clipboard)
-            #expect(fixture.draft.commits == 0 && fixture.draft.tokenRemovals == 0)
+            fixture.assertResults(space: true, slash: kind == .diary || kind == .clipboard)
+            #expect(fixture.draft.commits == 0)
         }
     }
 }

@@ -3,20 +3,16 @@ import SwiftUI
 @Observable
 @MainActor
 final class MenuBarToolbarState {
-    var searchText = ""
     var searchIsFocused = false
-    var resultIndex: Int?
     private(set) var isFiltering = false
     private(set) var allowsFilterHover = true
-    let autocomplete = SyntaxAutocompleteState(context: .search)
-    /// 合并批 M-6：新版搜索在用且有查询／指令时为真；由 MenuBarUnifiedSearchBridge 维护，旧搜索时恒为 false。
+    /// 统一搜索有查询／指令时为真；由 MenuBarUnifiedSearchBridge 维护，装配失败时恒为 false。
     var unifiedActive = false
 
-    var isSearching: Bool { unifiedActive || !BoardSearch.normalized(searchText).isEmpty }
+    var isSearching: Bool { unifiedActive }
 
     func showFilters() {
         searchIsFocused = false
-        autocomplete.dismiss()
         isFiltering = true
     }
 
@@ -45,11 +41,5 @@ final class MenuBarToolbarState {
     func focusSearch() {
         closeFilters()
         searchIsFocused = true
-    }
-
-    func clearSearch() {
-        searchText = ""
-        resultIndex = nil
-        autocomplete.dismiss()
     }
 }

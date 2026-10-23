@@ -91,17 +91,17 @@ struct WorkspaceItemsPageTests {
         lane.choose(.upcoming)
         navigation.pendingLaneSession = lane
         navigation.pendingFilter.tagID = UUID()
-        navigation.searchQuery = "报告"
+        navigation.searchPresentation = true
         #expect(navigation.todayDraft == "还没提交")
         #expect(navigation.pendingLaneSession?.lane == .upcoming)
         #expect(navigation.pendingFilter.tagID != nil)
-        navigation.searchQuery = ""
+        navigation.searchPresentation = false
         #expect(navigation.pendingLaneSession?.lane == .upcoming)
 
         navigation.revealTab(.allItems)
         navigation.allItemsQuery.kind = .recurring
         navigation.allItemsQuery.routineStatus = .disabled
-        navigation.searchQuery = "标签"
+        navigation.searchPresentation = true
         #expect(navigation.allItemsQuery.kind == .recurring)
         #expect(navigation.pendingLaneSession == nil)
         #expect(navigation.pendingFilter == BoardFilter())

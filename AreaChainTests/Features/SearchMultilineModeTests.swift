@@ -103,7 +103,7 @@ struct SearchMultilineModeTests {
         #expect(field.stringValue == expected && trace.coordinator.parent.text == expected)
     }
 
-    @Test(arguments: [SearchMultilineConsumer.workspace, .menu, .diary, .capture])
+    @Test(arguments: [SearchMultilineConsumer.diary, .capture])
     func tagCompletionStillOwnsReturn(kind: SearchMultilineConsumer) async throws {
         let fixture = try SearchMultilineFixture(kind)
         defer { fixture.cleanup() }
@@ -120,7 +120,7 @@ struct SearchMultilineModeTests {
         try await Input.key(in: fixture.window)
         #expect(editor.string == "#工作 ")
         #expect(coordinator.parent.text == "#工作 ")
-        #expect(fixture.draft.commits == 0 && fixture.draft.diaryCommits == 0 && fixture.draft.tokenRemovals == 0)
+        #expect(fixture.draft.commits == 0 && fixture.draft.diaryCommits == 0)
         #expect(editor.selectedRange() == NSRange(location: 4, length: 0))
     }
 
