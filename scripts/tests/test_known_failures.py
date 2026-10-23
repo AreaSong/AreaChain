@@ -39,9 +39,10 @@ class KnownFailuresTests(unittest.TestCase):
 
     def test_parses_and_normalizes_failing_block(self):
         output = ("x\nFailing tests:\n\tAreaChainTests.SuiteTests.plain()\n\tSuiteTests.param(after:)\n"
-                  "\tAreaChainTests/OtherTests/legacy()\n\n** TEST EXECUTE FAILED **\n")
+                  "\tAreaChainTests/OtherTests/legacy()\n\t-[ObjcTests tagSheet(locale:scheme:)]\n"
+                  "\t-[AreaChainTests.ObjcTests plain]\n\n** TEST EXECUTE FAILED **\n")
         self.assertEqual(known_failures.failing_tests(output),
-                         {"SuiteTests.plain", "SuiteTests.param", "OtherTests.legacy"})
+                         {"SuiteTests.plain", "SuiteTests.param", "OtherTests.legacy", "ObjcTests.tagSheet", "ObjcTests.plain"})
         self.assertEqual(known_failures.failing_tests("no block"), set())
 
     def test_known_failures_are_listed_but_not_counted(self):

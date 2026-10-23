@@ -16,8 +16,11 @@ _FAILING_BLOCK = re.compile(r"^Failing tests:\n((?:\t[^\n]*\n?)+)", re.M)
 
 
 def normalize(name):
-    """`AreaChainTests.Suite.method(after:)` / `Suite/method()` → `Suite.method`。"""
-    name = name.strip().split("(", 1)[0].replace("/", ".")
+    """`AreaChainTests.Suite.method(after:)` / `Suite/method()` / `-[Suite method(args)]` → `Suite.method`。"""
+    name = name.strip()
+    if name.startswith("-[") and name.endswith("]"):
+        name = name[2:-1].replace(" ", ".", 1)
+    name = name.split("(", 1)[0].replace("/", ".")
     parts = [part for part in name.split(".") if part]
     if parts and parts[0] == "AreaChainTests":
         parts = parts[1:]

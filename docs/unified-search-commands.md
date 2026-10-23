@@ -8541,3 +8541,15 @@ Claude Code `verifier` 一轮：**通过**。四项都成立：生产取值不�
 #### D：小缺口
 
 装配失败不再无声：`UnifiedSearchProduction.assemblyFailed` 驱动设置“搜索”分节一句不阻塞的中英文说明，开关语义不变。之后任一偏好变化都会重试。现状总览新增“既有失败”，并关闭“大库读取卡顿”“未判定失败”两条缺口。
+
+#### 验证与复核
+
+- A：两条原用例＋正式版装配新用例通过，同目录隐私类 24 类 133 通过；A 补正：59 类 329 通过（DiaryQueryIntegrationTests、TrashTombstonePrivacyTests、ImageAssociationPrivacyTests 的旧格式用例恢复通过）。剩下的失败都是登记的既有失败，或桌面空闲重跑后通过的焦点前置失败。
+- B：65 类 448 次全部通过（修改后为压回 500 行重跑一次）。C：基线与 HEAD 各 111 次，焦点项空闲重跑 11＋1 次，0789245／f4ecfa4 前后对照 9 条。D：8 类全部通过，含中英、浅深、宽窄设置渲染。
+- E：`quality_gate.py --profile swift --base-ref d3fdc9b` 推导 98 类（核心文件按上限收敛），533 次中 8 次失败。其中 7 次命中登记表；另 1 次是 UnifiedSearchContentLegacyTests.existingDiaryWindowKeepsEditableDraftWhenReadonlyViewerOpens 发布后复查抛 stalePermit，单独 3 次、同组 2 次重跑都通过，基线同组 2 次也通过，记为偶发、不登记。实跑中发现 `-[类 方法(参数)]` 失败行没被解析，已修复并补反例；改用 4 条用例真实跑门禁，归类正确。本批不跑 `--profile full`。
+- 静态：`./scripts/build.sh` 通过（staticSignatureVerified=true，未安装）；check_workflow、scripts/tests 338、`--profile static --strict`（敏感日志候选 0）、全库 `swiftlint lint --strict` 0、`git diff --check` 均通过。
+
+#### 缺口
+
+- 0789245 的原界面隐私变化（组件目录写作“手记私密判定仅取决于 isPrivate 或 isPrivateDiary”，产品／使用说明仍描述 `#密码` 预置与旧密码遮罩）与 7 条既有测试冲突，需用户决定：恢复旧规则还是改测试和文档。现在搜索比原界面更保守：带 `#密码` 的手记在手记页可见，在搜索里隐藏。
+- 搜索读取仍在主线程同步执行；全量回归留到 `--single` 替换前。真实库、附件、钥匙串、输入法与 VoiceOver 仍留给用户验收。
