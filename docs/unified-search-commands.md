@@ -8462,7 +8462,7 @@ Claude Code `verifier` 一轮：**通过**。四项都成立：生产取值不�
 
 ### 9.103 合并批 M-6：接入正式版
 
-2026-10-22（Asia/Shanghai）。用户于当日确认全部决策并授权按检查点本地提交、不推送、不安装；只用合成数据与隔离 QA，不读写真实库、真实附件目录或真实钥匙串。证据在忽略目录 `build/M6/`。提交：A `d02e4c4`、B `5953fdf`、C `6ee0202`、D `e71b3c4`，E、F 与整改见下文。
+2026-10-22（Asia/Shanghai）。用户于当日确认全部决策并授权按检查点本地提交、不推送、不安装；只用合成数据与隔离 QA，不读写真实库、真实附件目录或真实钥匙串。证据在忽略目录 `build/M6/`。提交：A `d02e4c4`、B `5953fdf`、C `6ee0202`、D `e71b3c4`、E `a02b544`、F `8d573b7`；复核整改单独一次提交（见“验证与复核”）。
 
 #### 决定与入口
 
@@ -8489,10 +8489,18 @@ Claude Code `verifier` 一轮：**通过**。四项都成立：生产取值不�
 
 #### 验证与复核
 
-（集中验证与 verifier 结论见下方补记。）
+- 定向：A 13 方法／28 次；B 5／5；C 4／4；D 6／6，另 15 个隔离环境回归类 124 方法／165 次 0 失败；E 2 方法／6 次（中英文、浅深色、正常与最小窗口截图已人工查看，修了菜单栏底栏被撑宽、最小窗口搜索框盖住标题两处）。
+- 按改动推导 `--profile swift --base-ref d77da2e`：400 类，前台轮超门禁 1800 秒上限被中止、后台轮等锁超时，作废；前台轮的残余进程跑完 1588 通过／114 失败，只作参考。
+- 全量 `--profile full`：前台轮 3391 通过／223 失败（187 个是焦点前置：窗口拿不到 key，期间电脑在用或锁屏）／8 跳过／5 Expected Failure，8029 秒；后台轮 133 通过／0 失败／1 跳过。失败的 83 类单独重跑一次：94 失败（64 个焦点前置），涉及 35 类。
+- 基线：ContentQueryBodyReadTests.legacySensitivePlaintext… 与 ImageContentQueryPrivacyTests.legacyMarkers… 在 `d77da2e` 副本（持原锁）以相同断言复现，判为既有；**但它们是隐私测试，本批让这条读取路径进入正式版，影响面变大**。整树基线对照被用户叫停（`V6-baseline.log` 为中断），其余失败按用户指示标为**未判定**：非焦点类 AIPlanTemplateServiceTests、DashboardProjectionTests、DaybookScrollNativeTests、DiaryPageListModelTests、DiaryWindowLifecycleTests、ImageAssociationPrivacyTests、MenuBarPopoverRenderingTests（2）、MenuBarStatusImageTests、PasswordRetryDiagnosticTests、PrivacyAutolockPickerTests、PrivacyButtonConsumerTests、ScrollAssemblyConsumerTests、SearchMultilineDiagnosticTests、SubtaskModelTests、TrashTombstonePrivacyTests、UnifiedSearchOperationInteractionTests、UnifiedSearchSettingInteractionTests、WorkspaceInspectorSizingTests（2）、WorkspaceMenuConsumerTests、WorkspaceRenderingTests、YesterdayCardActionTests（3）、YesterdayCardConsumerTests（3），另 15 类只剩焦点前置失败。其中 MenuBarPopoverRenderingTests、WorkspaceRenderingTests 落在本批改过的宿主上，几项私密标签／“密码”相关失败表现相似，均不能排除本批引入；§9.101／§9.102 曾把其中多类记为既有，但本批未复核。
+- 静态：check_workflow、scripts/tests 325、`--profile static --strict`（敏感日志候选 0）、全库 swiftlint --strict 0、`git diff --check` 均通过；`./scripts/build.sh` 通过，staticSignatureVerified=true，描述文件至 2026-10-28，未安装。
+- 执行失误：性能采样时进程匹配错，对正在运行的日用 `/Applications/AreaChain.app` 做了一次 6 秒只读 `sample`（栈采样，不写入、不读数据），采样文件已删除，之后只匹配 `build/PrivacyQA` 下的 QA 包。
+- Claude Code `verifier` 第一轮**不通过**：代码各项符合；整改为本节缺验证补记与 E、F 提交号、未记采样失误、未判定失败未登记、status 长文一行自相矛盾、装配失败无反馈未写入缺口。整改只改文档，结果见本节下一条。
 
 #### 缺口
 
 - 大库读取卡顿（上表）；菜单栏只做搜索与写入指令；标签使用统计在正式版不出现（读取选项沿默认，与隔离宿主相同）。
+- 装配失败没有反馈：`UnifiedSearchProductionAssembly.make` 用 `try?`，失败时静默保持旧搜索，之后任一偏好变化会重试；用户与日志都看不到原因（不影响数据）。
+- 上文“未判定”的失败需在后续批次补基线定向对照后再定性。
 - 开关开时工作台带显式宿主：日历／安排／标签页的页内状态改由 `WorkspaceNavigation` 持有（页面切走再回来仍保留），这是页面指令所需的既有宿主行为。
 - 真实库、真实附件、真实钥匙串、真实通知／日历／辅助功能授权、真人输入法、VoiceOver、真实多窗口均未验证，留给用户验收；旧搜索删除留到验收通过后的下一批。
