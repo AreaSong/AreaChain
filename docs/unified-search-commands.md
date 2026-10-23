@@ -8565,16 +8565,17 @@ Claude Code `verifier` 一轮：**通过**。四项都成立：生产取值不�
 
 - `DiaryPrivacy.isSensitive`（TagItem 与名字表两种形式）恢复为 0789245 之前：`isPrivate`、关联私密标签、关联“密码”名标签（`DiaryMemoTags.isPasswordName`）、正文旧 `#密码`／`#password` 标记之一即敏感。卡片、小窗、总览、旧搜索、导出与私密备份、指令侧的敏感拒绝都经它，一并恢复。
 - `isSearchSensitive` 改为在 isSensitive 之上只补“正文写出或关键字命中的私密标签名”，搜索读取侧结果不变。
-- 手记三分类名不当作待办标签：`DayBoardMutations.addTag`／`resolveTaskTag` 与详情新建标签（`tag.preset.reserved` 提示）恢复守卫，与 TagSyntax 解析、补全、计划导入一致；AI 模板公开标签排除“密码”名标签。
+- 手记三分类名不当作待办标签：`DayBoardMutations.addTag`／`resolveTaskTag` 与详情新建标签（`tag.preset.reserved` 提示）恢复守卫，与 TagSyntax 解析、补全、计划导入一致；AI 模板公开标签排除三分类与“密码”名标签。守卫原在仓储 `SwiftDataCatalogRepository.resolveTaskTag`，现在在 Features 层的 `DayBoardMutations`（目前是仓储唯一调用方，行为等价）；以后新增直接调用仓储的入口须自带守卫。`Catalog.liveTaskTags` 与抽屉选择器不过滤三分类名的做法未恢复，已有的“密码／日记”标签仍可在待办标签选择器里勾选。
 - **刻意没恢复**：`requiresProtection` 不再加正文关键字名（它也是 `DiaryContent.read` 的完整性检查，加回去会让 0789245 之后写入的普通手记被判损坏、读不出）；内置分类种子与按关键字自动打标、`TagItem.isDiaryPreset`（标签管理的预置保护）保持 0789245 的做法，相关仓储测试不动。
 
 #### 测试
 
-- 7 条全部通过：AIPlanTemplate、DashboardProjection、DiaryButtonConsumer、DiaryPageListModel、DiaryWindowLifecycle、SubtaskModel、MenuBarPopover.noteWindow。其中 noteWindow 的长文断言自 f4ecfa4 起失败，原因是小窗加了标题框后测试助手先命中标题框；改为新助手 `noteBodyEditor` 只找正文编辑器，断言内容不变。
+- 7 条全部通过：AIPlanTemplate、DashboardProjection、DiaryButtonConsumer、DiaryPageListModel、DiaryWindowLifecycle、SubtaskModel、MenuBarPopover.noteWindow。noteWindow 的长文断言在 f4ecfa4、0789245 与 C 对照中失败，在 R 门禁里用旧助手却通过：`diaryEditor` 会先把标题框设为第一响应者、取它的字段编辑器，结果与焦点状态有关。改为新助手 `noteBodyEditor` 只找正文编辑器，去掉这种依赖，断言内容不变。
 - 0789245 按新规则改写的两条断言恢复为原来更严的期望：DiaryPrivacyTests.recognizesAuthorizedPrivateTagsAndLegacyMigrationMarkers、InputSyntaxPersistenceTests.quotedWhitespaceNamesKeepExistingDiaryClassification。
 - 登记表 40→33 条（移除这 7 条）。回归：91 类 625 次＋重跑 3 类与 9 条，除登记的既有失败外全部通过。
 
 #### 影响与缺口
 
-- 0789245 之后新建的“密码”名标签所关联的手记、正文带 `#密码` 的手记，会重新在原界面遮罩，并被排除出普通导出与指令执行（改为打开原页面）。这正是恢复的旧行为，但对用户在这期间建的数据是可见变化。
+- 0789245 之后新建的“密码”名标签所关联的手记、正文带 `#密码` 的手记，会重新在原界面遮罩，并被排除出普通导出、归入私密备份，指令执行改为打开原页面。这正是恢复的旧行为，但对用户在这期间建的数据是可见变化。
 - 真实库上的遮罩效果未验证，留给用户验收。
+- 指定复核：Claude Code `verifier` **通过**；4 条低级意见（AI 模板三分类、守卫换层与选择器、过时注释、助手说明）已按上文处理。

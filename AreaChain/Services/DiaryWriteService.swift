@@ -61,7 +61,8 @@ import SwiftData
     // MARK: - 保护判定（不读受保护正文）
 
     /// 普通手记：未加密、没有私密标记、没有挂私密标签（含已删除的私密标签）。与原卡片的敏感判定、
-    /// 小窗与 M-2／M-3 指令的受保护拒绝同一口径；只看记录字段与标签关联，不读取正文。
+    /// 小窗与 M-2／M-3 指令的受保护拒绝同一口径；看记录字段、标签关联，以及未加密正文里的旧 #密码 标记
+    /// （isSensitive 自 2026-10-23 恢复该规则），不读取受保护正文。
     static func isOrdinary(_ entry: DiaryEntry, tags: [TagItem]) -> Bool {
         !entry.hasProtectedContent && !DiaryPrivacy.isSensitive(entry.snapshot, tags: tags)
     }
