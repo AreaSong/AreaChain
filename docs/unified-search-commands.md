@@ -8579,3 +8579,39 @@ Claude Code `verifier` 一轮：**通过**。四项都成立：生产取值不�
 - 0789245 之后新建的“密码”名标签所关联的手记、正文带 `#密码` 的手记，会重新在原界面遮罩，并被排除出普通导出、归入私密备份，指令执行改为打开原页面。这正是恢复的旧行为，但对用户在这期间建的数据是可见变化。
 - 真实库上的遮罩效果未验证，留给用户验收。
 - 指定复核：Claude Code `verifier` **通过**；4 条低级意见（AI 模板三分类、守卫换层与选择器、过时注释、助手说明）已按上文处理。
+
+### 9.106 收尾批 M-7：删除旧全局搜索
+
+2026-10-23（Asia/Shanghai）。用户当日决定跳过替换前的全量回归与真实数据验收，直接删除旧全局搜索，统一搜索成为唯一入口；知悉删除后“新版搜索与指令”开关不再有退路、M-6R 与 §9.105 只跑过定向测试。授权改代码、按检查点本地提交、不推送、不安装；只用合成数据与隔离 QA。
+
+#### A：盘点与等价核对
+
+只服务旧全局搜索（以 grep 为准，B 删除）：
+
+| 位置 | 内容 |
+|---|---|
+| Features/Workspace | `WorkspaceGlobalSearchView.swift`（含 `WorkspaceAttachmentQuery`）、`WorkspaceHeaderSearch.swift`；`WorkspacePageModels` 的 `WorkspaceSearchSources`／`WorkspaceSearchPageModel`；`WorkspaceNavigation` 的 `searchQuery`／`isSearchFocused`／`searchResultIndex`／`focusSearch`／`clearSearch`；`MainSplitWorkspaceView`、`WorkspaceHeaderBar` 的旧分支 |
+| Features/Search | `SearchResultsView.swift`、`SearchResultKeys.swift`（`SearchResultOrder`／`SearchHitCommands`）、`BoardSearchHitRow.swift`（`BoardSearchHitGroups`） |
+| Features/MenuBar | `MenuBarSearchField.swift`（含 `SearchFilterToken`）、`MenuBarSearchResults.swift`；`FooterBar.activeTokens` 与旧分支；`MenuBarToolbarState` 的 `searchText`／`resultIndex`／`autocomplete`／`clearSearch`；`MenuBarPopoverView` 的旧结果与旧记号插入 |
+| 开关 | `AppPreferences.unifiedSearchEnabled`（键留在 UserDefaults，不迁移）、设置“搜索”分节、`UnifiedSearchProduction` 的开关同步、`UnifiedSearchWorkspaceRoot` 的旧入口分支；`BoardFilterSession.globalSearchFilter` |
+
+保留（共用）：`Domain/BoardSearch.swift` 全部（新搜索 ContentQuerySnapshotMatching／TodoQueryPageRules、手记列表 DiaryPageListModel／SwiftDataDiaryRepository 在用）；`daybookSearchResultSurface`（新结果行在用）；`AppWindows.openWorkspace(…opening:)`（系统指令在用）；`SyntaxAutocompleteState(context: .search)`（页面筛选在用）。页面内筛选不在本批范围，保留不动：手记页 `DiaryPage.searchChrome`、手记小窗 `DiaryWindowView`、标签页 `TagManagementPage.searchField`、剪贴板历史 `ClipboardHistoryBrowser`、附件中心 `AttachmentBrowserPage`。
+
+等价核对（§9.1 阶段 4 条件；“新”指 M-6 起默认开启的统一搜索）：
+
+| 项 | 旧 | 新 | 结论 |
+|---|---|---|---|
+| ⌘F 聚焦 | 顶栏胶囊、底栏放大镜 `.appShortcut(.search)`；浮层键盘监听 | 工作台 `UnifiedSearchFocusShortcut` 同一快捷键；浮层监听→`toolbar.focusSearch`→桥接控制器 | 等价 |
+| ⌘⇧F 筛选浮层 | 底栏筛选按钮 `.appShortcut(.openFilter)` | 同一按钮，不经搜索框 | 等价 |
+| Esc | 先清空再失焦 | 输入框按统一搜索 Esc 规则；工作台结果页交 `intent(.escape)`；浮层帮助／筛选的 Esc 判断不变 | 等价（按 M-6 规则） |
+| 菜单栏底栏位置与最小窗口 | 底栏中间 | 同一位置，最小宽 120pt，不撑宽右侧 56pt 动作区 | 等价 |
+| 结果分组与打开 | 按日分组；菜单栏打开日历检查器／手记小窗 | 按类型分组；菜单栏 `recordOpen` 先显示工作台再打开同一对象 | 有意差异（M-6 已登记） |
+| 显式范围 | 无回收站、剪贴板 | 显式 `/trash`、`/clipboard`（默认不含） | 新增 |
+| 跨日期查找 | 全部日期 | 默认全部，另有 `date:`／`on:` | 等价 |
+| 语法 | `#标签`、`!p1`～`!p4`、裸时刻（如 `9:30`、自然语言时刻） | `#标签`、`!p1`～`!p4`、`@09:30` | 裸时刻不再当提醒条件，改作文字；未补（语法属 §1 定稿） |
+| 附件文件名 | 工作台匹配可浏览附件文件名 | 默认读取含图片文件名 | 等价 |
+| 原页面草稿／滚动 | 搜索覆盖页面，页面草稿在导航里 | 同上，另有返回条 | 等价 |
+| 菜单栏筛选收窄结果、底栏筛选胶囊 | 结果受当前筛选约束；搜索框内显示可单个移除的胶囊 | M-6 起不受筛选约束、不显示胶囊；筛选仍作用于列表，按钮显示计数，可在筛选浮层移除 | 未补（属阶段 4 页面筛选双向同步） |
+| 结果上空格 | 切换完成 | 选择结果；完成走指令 | 有意差异 |
+
+未补三项只在入口 UI 层，没有旧入口就无法单独保留；对应能力的领域规则（`BoardSearch` 的时刻解析与 `BoardSearchScope`、`DayBoardMutations` 的完成切换）都保留。
