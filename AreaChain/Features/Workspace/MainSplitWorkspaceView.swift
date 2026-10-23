@@ -204,7 +204,7 @@ struct MainSplitWorkspaceView: View {
         let available = main >= required
         if visible && !available && activeInspectorFocus.releaseFocus() {
             // nil responder 会被系统布局恢复到隐藏字段；将实际详情焦点交给始终可见的统一搜索框（装配失败时没有可接的输入）。
-            search?.inputFocused = true
+            search?.requestInputFocus()
         }
         navigation.updateInspectorSpace(available: available)
     }

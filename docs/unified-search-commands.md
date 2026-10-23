@@ -8582,7 +8582,7 @@ Claude Code `verifier` 一轮：**通过**。四项都成立：生产取值不�
 
 ### 9.106 收尾批 M-7：删除旧全局搜索
 
-2026-10-23（Asia/Shanghai）。用户当日决定跳过替换前的全量回归与真实数据验收，直接删除旧全局搜索，统一搜索成为唯一入口；知悉删除后“新版搜索与指令”开关不再有退路、M-6R 与 §9.105 只跑过定向测试。授权改代码、按检查点本地提交、不推送、不安装；只用合成数据与隔离 QA，证据在忽略目录 `build/M7/`。提交：A `f18e3fc`、B `101d92d`，C、D 见“验证与复核”。
+2026-10-23（Asia/Shanghai）。用户当日决定跳过替换前的全量回归与真实数据验收，直接删除旧全局搜索，统一搜索成为唯一入口；知悉删除后“新版搜索与指令”开关不再有退路、M-6R 与 §9.105 只跑过定向测试。授权改代码、按检查点本地提交、不推送、不安装；只用合成数据与隔离 QA，证据在忽略目录 `build/M7/`。提交：A `f18e3fc`、B `101d92d`、C `fabff1b`、D `5b1d2e7`，复核整改单独一次提交。
 
 #### 删除与保留
 
@@ -8604,13 +8604,14 @@ Claude Code `verifier` 一轮：**通过**。四项都成立：生产取值不�
 | 结果分组与打开 | 按日；菜单栏开日历检查器／小窗 | 按类型；菜单栏 `recordOpen` 转工作台打开同一对象 | 有意差异（M-6 已登记） |
 | 显式范围／跨日期 | 无回收站、剪贴板；全部日期 | 显式 `/trash`、`/clipboard`（默认不含）；默认全部日期，另有 `date:`／`on:` | 新增／等价 |
 | 语法 | `#`、`!p1`～`!p4`、裸时刻 | `#`、`!p1`～`!p4`、`@09:30` | 裸时刻改作文字，未补（§1 语法） |
+| 输入候选 | `#`、`!`、`@` 向上展开候选，点选补全 | 只有 `/` 指令候选（同样向上展开、点选补全） | `#`／`!`／`@` 候选未补（M-6 起如此） |
 | 附件文件名、原页面草稿 | 工作台匹配；搜索盖住页面 | 默认读取含图片文件名；同上并有返回条 | 等价 |
 | 筛选收窄结果、底栏筛选胶囊 | 有 | M-6 起无；筛选只作用于列表，按钮显示计数 | 未补（阶段 4 双向同步） |
 | 结果上空格 | 切换完成 | 选择；完成走指令 | 有意差异 |
 | 进入／离开搜索关检查器 | 改查询即作废检查器上下文 | M-6 不作废（检查器盖在结果上） | B 补齐：`searchPresentation` 进出结果页时作废 |
 | 详情收起后的焦点、标题栏双击 | 交给顶栏搜索框；搜索锚点避开缩放 | M-6 焦点落空、新搜索框无锚点 | B 补齐 |
 
-未补三项只在入口 UI 层，没有旧入口就无法单独保留；对应领域规则（`BoardSearch` 时刻解析与 `BoardSearchScope`、`DayBoardMutations` 完成切换）都保留。
+未补各项只在入口 UI 层，没有旧入口就无法单独保留；对应领域规则（`BoardSearch` 时刻解析与 `BoardSearchScope`、`DayBoardMutations` 完成切换）都保留。
 
 #### B：代码
 
@@ -8624,6 +8625,15 @@ README、features、usage、architecture 改为统一搜索描述并删开关说
 
 #### 测试变化
 
-- 删除（对应被删代码）：WorkspaceLegacySearchRoutingTests、WorkspaceAttachmentSearchTests 整份；SearchMultiline 的 workspace／menu 两个消费者及 `workspaceNativeBaseline`、两条 workspace 撤销门槛；`globalSearchUsesTheSharedTaskFilter`、`searchUsesParentTasksAndAttachmentOwnersWithoutDiaryTargets`、`footerTokensExposeSharedReminderSourceAndNoTag`、`clickingAnUpwardSyntaxCandidateCompletesTheFocusedSearchOnly`、开关三条（偏好默认、关时不装配、关开切换）与设置“搜索”分节一条。
-- 改为针对统一搜索（断言原意不变）：菜单栏原生测试经 `MenuBarUnifiedSearchProbe`（同一装配、测试自己的内存容器）挂接；工作台尺寸／渲染／检查器／窗口测试挂接导航为 `.shared` 的控制器；状态测试以 `searchPresentation` 进入结果页；“搜索文字恰好写一次”改用只计文字变化的 `ObservedTextChanges`；第二次 Esc 断言按 M-6 规则改为查询保留。
+- 删除（对应被删代码）：WorkspaceLegacySearchRoutingTests、WorkspaceAttachmentSearchTests 整份；SearchMultiline 的 workspace／menu 两个消费者及 `workspaceNativeBaseline`、两条 workspace 撤销门槛；`globalSearchUsesTheSharedTaskFilter`、`searchUsesParentTasksAndAttachmentOwnersWithoutDiaryTargets`、`footerTokensExposeSharedReminderSourceAndNoTag`、开关三条（偏好默认、关时不装配、关开切换）与设置“搜索”分节一条。
+- 改为针对统一搜索（断言原意不变）：菜单栏原生测试经 `MenuBarUnifiedSearchProbe`（同一装配、测试自己的内存容器）挂接；工作台尺寸／渲染／检查器／窗口测试挂接导航为 `.shared` 的控制器；状态测试以 `searchPresentation` 进入结果页；“搜索文字恰好写一次”改用只计文字变化的 `ObservedTextChanges`；第二次 Esc 断言按 M-6 规则改为查询保留；底栏 `#` 候选点选用例改为点选 `/` 指令候选（`clickingAnUpwardCommandCandidateCompletesTheFooterSearchOnly`）；帮助浮层用例挂真实统一搜索并补回补全已收起的断言。
 - 新增：旧键不再读取、偏好变化不重建装配、两宿主装配失败说明（中英、浅深、正常与最小窗口）、正式版宿主系统页可操作。
+
+#### 验证与复核
+
+- 定向 `quality_gate.py --profile swift --base-ref 3e471ef`：推导 117 类（WorkspaceNavigation、AppPreferences 超过上限，只跑同名＋冒烟集）。后台轮 95 次 0 失败；前台轮在门禁 1800 秒上限被中止，结果包 482 次：456 过、23 败。其中 18 条在登记表内且失败点相同；未登记 5 条中，旧占位文字的检查器尺寸用例已改，逐字输入、标签帮助悬停、连击卡悬停三条重跑通过（未动相关代码，判为环境偶发），⌘F 用例见下。按用户决定不跑 `--profile full`。
+- 检查点 D 与整改中发现：控制器初始 `inputFocused` 为真，页面输入框先占焦点时 ⌘F 只置真不会聚焦（M-6 已有）；“先置假再置真”会在渲染前被合并，同样无效。改为 `UnifiedSearchController.requestInputFocus()`：置真并在输入框不在编辑时直接设为第一响应者；⌘F 与详情收起共用。日历嵌入页头挂统一搜索后让控制器初始不占焦点，保持这些用例考察的页面键盘。
+- 定向重跑：日历跨度／周布局／周页／检查器尺寸 25 次，8 败全在登记表内；统一搜索宿主／装配、快捷键、顶栏交互、设置 19 次 0 败；整改后浮层渲染、顶栏交互、检查器尺寸、宿主 32 次，3 败均为登记项；帮助浮层 16 次 15 过、1 败为登记项（另一轮 4 条焦点前置失败在桌面被占用时出现，空闲重跑通过）。
+- `./scripts/build.sh` 通过（staticSignatureVerified=true，未安装）；check_workflow、scripts/tests 339、`--profile static --strict`（敏感日志候选 0）、全库 `swiftlint lint --strict` 0、`git diff --check` 均通过；已删类型与 11 个文案键无残留引用。
+- 指定复核（Claude Code `verifier`）第一轮**不通过**：代码主体符合；整改 6 条——features.md／product.md 旧描述、底栏候选点选用例被删而未改写、帮助浮层用例少了补全断言且挂的是“不可用”底栏、详情收起焦点同类问题、组件目录残留旧文件名（另 1 条说明不要求改）。整改中另发现统一搜索只有 `/` 指令候选，`#`／`!`／`@` 候选属未补项，已补进上表并改正使用说明。第二轮结论见现状总览“补复核待办”。
+- 执行期间工作区出现不属于本批的 TaskRow 标签气泡改动（7 个文件），本批未修改、未提交；整改后的几轮定向测试是在含这些改动的工作区上构建的。

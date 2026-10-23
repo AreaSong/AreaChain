@@ -41,18 +41,23 @@ struct UnifiedSearchUnavailableField: View {
     }
 }
 
+extension UnifiedSearchController {
+    /// 宿主主动把焦点交给输入框（⌘F、详情收起）。控制器初始 `inputFocused` 为真；输入框若从未真正拿到焦点
+    /// （焦点被页面输入框先占），再置真不产生变化、也就不会请求焦点（先置假再置真会在渲染前被合并，同样无效）。
+    /// 所以置真之外，输入框不在编辑时直接让它成为第一响应者；已在编辑时什么也不做，不打断选区与组合文本。
+    func requestInputFocus() {
+        inputFocused = true
+        guard let field = inputReset.state?.field, field.currentEditor() == nil, let window = field.window else { return }
+        window.makeFirstResponder(field)
+    }
+}
+
 /// 搜索快捷键（默认 ⌘F，快捷键页可改或停用）聚焦统一搜索框。
-/// 控制器初始 `inputFocused` 为真；输入框若从未真正拿到焦点（焦点被页面输入框先占），再置真不产生变化、
-/// 也就不会请求焦点。所以已为真时先复位，下一轮再置真；置假本身不会让正在编辑的输入框失焦。
 struct UnifiedSearchFocusShortcut: View {
     let controller: UnifiedSearchController
 
     var body: some View {
-        Button("") {
-            guard controller.inputFocused else { controller.inputFocused = true; return }
-            controller.inputFocused = false
-            DispatchQueue.main.async { controller.inputFocused = true }
-        }
+        Button("") { controller.requestInputFocus() }
             .appShortcut(.search)
             .opacity(0)
             .accessibilityHidden(true)

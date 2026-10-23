@@ -314,6 +314,40 @@ struct MenuBarPopoverRenderingTests {
         try snapshot(darkView, name: "menubar-normal-en-dark")
     }
 
+    /// 收尾批 M-7：原用例点选底栏向上展开的 `#标签` 候选；统一搜索只给 `/` 指令候选（`#`、`!`、`@` 没有候选，
+    /// 见 §9.106 等价核对），这里改为点选同一底栏向上展开的指令候选：只补全搜索框、焦点留在原输入框、不建标签或事项。
+    @Test func clickingAnUpwardCommandCandidateCompletesTheFooterSearchOnly() async throws {
+        let container = try fixture()
+        let search = try MenuBarUnifiedSearchProbe(container: container)
+        defer { search.stop() }
+        let toolbar = MenuBarToolbarState()
+        let window = host(toolbar: toolbar, container: container, search: search)
+        defer { window.contentView = nil; window.orderOut(nil) }
+        let view = try #require(window.contentView)
+        try await settle(view)
+        let field = try await focusSearch(toolbar, in: view)
+        let editor = try #require(field.currentEditor() as? NSTextView)
+        editor.insertText("/set", replacementRange: NSRange(location: 0, length: 0))
+        try await settle(view)
+        let state = try #require((field.delegate as? DaybookTextField.Coordinator)?.parent.unifiedSearch)
+        let completion = try #require(state.completion)
+        let first = try #require(completion.result.candidates.first)
+        let expected = try #require(completion.result.accepting(first, in: "/set", hasMarkedText: false))
+        #expect(state.suggestions.isActive && searchField(in: view) === field, "切换结果区不应重建底部输入框")
+        #expect(toolbar.searchIsFocused, "key=\(window.isKeyWindow), active=\(NSApp.isActive), editing=\(field.currentEditor() != nil)")
+        try snapshot(view, name: "menubar-search-completion-zh")
+        let fieldFrame = field.convert(field.bounds, to: nil)
+        let candidatePoint = try NativeSyntaxUI.center("syntax.candidate." + first.id, in: window)
+        #expect(candidatePoint.y > fieldFrame.maxY)
+        try click(at: candidatePoint, in: window)
+        try await settle(view)
+        #expect(field.currentEditor().map { ($0 as? NSTextView)?.string } == expected.text)
+        #expect(try search.controller.buffer.text == expected.text)
+        #expect(searchField(in: view) === field && field.currentEditor() != nil)
+        #expect(try container.mainContext.fetchCount(FetchDescriptor<TagItem>()) == 5)
+        #expect(try container.mainContext.fetchCount(FetchDescriptor<TodoItem>()) == 4)
+    }
+
     @Test func commandArrowTabChangesDoNotRepublishUnchangedPresetTags() async throws {
         let container = try fixture()
         try SwiftDataCatalogRepository(container: container).ensurePresetTags()

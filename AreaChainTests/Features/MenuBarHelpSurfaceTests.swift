@@ -66,6 +66,7 @@ struct MenuBarHelpSurfaceTests {
                 try await openHelp(in: window, locale: locale)
                 let searchTitle = L10n.string("syntax.search.title", locale: Locale(identifier: locale))
                 #expect(SurfaceConsumerUI.strings(window).contains(searchTitle))
+                #expect(try unifiedSuggestionsActive(window) == false)
                 try OverlaySurfaceTestSupport.record(window, name: "e-help-search-\(prefix.count)-\(locale)-\(scheme)-\(Int(width))")
                 mutations.writes = 0
                 searchWrites.reset()
@@ -107,7 +108,10 @@ struct MenuBarHelpSurfaceTests {
         let composer = BoardComposerSession()
         composer.tasks.text = "Synthetic original"
         let toolbar = MenuBarToolbarState()
-        let window = helpWindow(support, composer: composer, toolbar: toolbar)
+        // 收尾批 M-7：底栏挂真实统一搜索（同一装配），不是装配失败的“不可用”形态。
+        let search = try MenuBarUnifiedSearchProbe(container: support.container)
+        defer { search.stop() }
+        let window = helpWindow(support, composer: composer, toolbar: toolbar, search: search)
         defer { SystemPageHost.release(window) }
         try await NativeSyntaxUI.prepareFocus(in: window)
         try await openHelp(in: window)
@@ -175,7 +179,10 @@ struct MenuBarHelpSurfaceTests {
         let composer = BoardComposerSession()
         composer.tasks.text = "Synthetic original"
         let toolbar = MenuBarToolbarState()
-        let window = helpWindow(support, composer: composer, toolbar: toolbar)
+        // 收尾批 M-7：底栏挂真实统一搜索（同一装配），不是装配失败的“不可用”形态。
+        let search = try MenuBarUnifiedSearchProbe(container: support.container)
+        defer { search.stop() }
+        let window = helpWindow(support, composer: composer, toolbar: toolbar, search: search)
         defer { SystemPageHost.release(window) }
         try await NativeSyntaxUI.prepareFocus(in: window)
         try await openHelp(in: window)
@@ -213,7 +220,7 @@ struct MenuBarHelpSurfaceTests {
             SurfaceEventTestSupport.note("second escape help=\(helpVisible(window))")
             describeInput(window)
         }
-        #expect(composer.tasks.text == "Synthetic original" && !toolbar.isSearching)
+        #expect(try composer.tasks.text == "Synthetic original" && !toolbar.isSearching && search.controller.buffer.text.isEmpty)
         #expect(!support.container.mainContext.hasChanges)
     }
 
@@ -224,14 +231,17 @@ struct MenuBarHelpSurfaceTests {
         let composer = BoardComposerSession()
         composer.tasks.text = "Synthetic original"
         let toolbar = MenuBarToolbarState()
-        let window = helpWindow(support, composer: composer, toolbar: toolbar)
+        // 收尾批 M-7：底栏挂真实统一搜索（同一装配），不是装配失败的“不可用”形态。
+        let search = try MenuBarUnifiedSearchProbe(container: support.container)
+        defer { search.stop() }
+        let window = helpWindow(support, composer: composer, toolbar: toolbar, search: search)
         defer { SystemPageHost.release(window) }
         try await NativeSyntaxUI.prepareFocus(in: window)
         try await openHelp(in: window)
         let row = try SurfaceConsumerUI.button(containing: L10n.string("syntax.guide.tag", locale: Locale(identifier: "en")), in: window)
         try await SurfaceConsumerUI.hover(row, in: window) {
             #expect(SurfaceConsumerUI.strings(window).contains { $0.contains("#life") })
-            #expect(composer.tasks.text == "Synthetic original" && !toolbar.isSearching)
+            #expect(try composer.tasks.text == "Synthetic original" && !toolbar.isSearching && search.controller.buffer.text.isEmpty)
             #expect(!support.container.mainContext.hasChanges)
             try OverlaySurfaceTestSupport.record(window, name: "e-help-native-hover")
         }
@@ -277,6 +287,12 @@ struct MenuBarHelpSurfaceTests {
                                production: search?.production ?? UnifiedSearchProduction())
                 .environment(\.locale, Locale(identifier: configuration.0)).preferredColorScheme(configuration.1),
             container: support.container, prefs: support.prefs, size: NSSize(width: configuration.2, height: 490))
+    }
+
+    /// 原断言是旧底栏补全已收起；统一搜索框的补全在 UnifiedSearchInputState.suggestions。
+    func unifiedSuggestionsActive(_ window: NSWindow) throws -> Bool? {
+        let field = MenuBarPopoverRenderingTests().searchField(in: try #require(window.contentView))
+        return (field?.delegate as? DaybookTextField.Coordinator)?.parent.unifiedSearch?.suggestions.isActive
     }
 
     func helpVisible(_ window: NSWindow) -> Bool {
