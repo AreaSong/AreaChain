@@ -17,6 +17,8 @@ final class CalendarSpanTestSupport {
     let probe = CalendarHeaderProbe()
     let restore: () -> Void
     private var saveObserver: NSObjectProtocol?
+    /// 收尾批 M-7：嵌入页头只有统一搜索；经唯一装配挂接导航为 `.shared` 的工作台控制器（页面仍按无宿主运行）。
+    private var search: (UnifiedSearchProductionFixture, UnifiedSearchProductionAssembly)?
     private(set) var saves = 0
     var context: ModelContext { fixture.container.mainContext }
     var selectedKey: String { BoardSelection.shared.inspectingDayKey }
@@ -46,8 +48,17 @@ final class CalendarSpanTestSupport {
         originalTodos = todos.map(\.snapshot)
         var calendar = Calendar(identifier: .gregorian)
         calendar.firstWeekday = 2
+        var assembled: (UnifiedSearchProductionFixture, UnifiedSearchProductionAssembly)?
+        if embedded {
+            let searchFixture = try UnifiedSearchProductionFixture(container: fixture.container, navigation: .shared)
+            let assembly = try searchFixture.assembly()
+            // 控制器默认 inputFocused 为真，挂载时会抢走日历清单的焦点；这些用例考察页面键盘，搜索框只在用例显式聚焦时取焦点。
+            assembly.workspace.inputFocused = false
+            assembled = (searchFixture, assembly)
+        }
+        search = assembled
         let root = CalendarSpanHost(page: CalendarPage(todayKey: day, routines: [], checks: [], todos: todos),
-                                    probe: probe, embedded: embedded, width: width)
+                                    probe: probe, embedded: embedded, width: width, search: assembled?.1.workspace)
             .environment(\.calendar, calendar)
         window = SystemPageHost.window(root, container: fixture.container, scheme: scheme, locale: locale,
                                        size: NSSize(width: width, height: height), embedded: embedded, prefs: fixture.prefs)
@@ -59,6 +70,7 @@ final class CalendarSpanTestSupport {
 
     func close() {
         SystemPageHost.release(window)
+        if let search { search.1.discard(); search.0.cleanup() }
         if let saveObserver { NotificationCenter.default.removeObserver(saveObserver) }
         restore()
         fixture.cleanup()
@@ -242,16 +254,18 @@ private struct CalendarSpanHost: View {
     let probe: CalendarHeaderProbe
     let embedded: Bool
     let width: CGFloat
+    var search: UnifiedSearchController?
 
     var body: some View {
         page
             .padding(.top, embedded ? WorkspaceHeaderGeometry(width: width).height : 0)
             .overlayPreferenceValue(WorkspaceHeaderContentKey.self, alignment: .top) { content in
                 if embedded {
-                    WorkspaceHeaderBar(navigation: .shared, tags: [], content: content)
+                    WorkspaceHeaderBar(navigation: .shared, tags: [], searchController: search, content: content)
                         .frame(height: WorkspaceHeaderGeometry(width: width).height)
                 }
             }
+            .unifiedSearchOverlayHost()
             .backgroundPreferenceValue(WorkspaceHeaderContentKey.self) { content in
                 observe(content)
             }

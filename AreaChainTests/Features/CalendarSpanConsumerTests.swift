@@ -134,7 +134,7 @@ struct CalendarSpanConsumerTests {
         let captureEditor = try #require(capture.currentEditor() as? NSTextView)
         captureEditor.insertText("Synthetic retained draft", replacementRange: captureEditor.selectedRange())
         let search = try #require(Native.elements(host.window.contentView).compactMap { $0 as? DaybookAppKitTextField }
-            .first { $0.placeholderString == host.text("workspace.search.placeholder") && !$0.isHiddenOrHasHiddenAncestor })
+            .first { ($0.delegate as? DaybookTextField.Coordinator)?.parent.unifiedSearch != nil && !$0.isHiddenOrHasHiddenAncestor })
         host.window.makeFirstResponder(search)
         let editor = try #require(search.currentEditor() as? NSTextView)
         editor.insertText("Synthetic native search", replacementRange: editor.selectedRange())
