@@ -94,8 +94,7 @@ enum WorkspaceReadOnlyContent {
         snapshot.text = text; snapshot.isContentAvailable = true
         let metadata = DiaryQueryMetadata(tagNames: Dictionary(uniqueKeysWithValues: tags.map { ($0.id, $0.name) }),
             privateTagIDs: DiaryContentQueryTagPrivacy.project(tags).privateTagIDs)
-        guard !DiaryPrivacy.isSensitive(snapshot, tags: tags),
-              !DiaryPrivacy.requiresProtection(text: text, tagIDs: Set(TagIDList.parse(entry.tagIDs)), tags: tags),
+        guard !DiaryPrivacy.isSearchSensitive(snapshot, text: text, tags: tags),
               DiaryQueryPrivacy(diary: snapshot, metadata: metadata).canPublishBody else {
             throw WorkspaceContentFailure.protectedContent
         }

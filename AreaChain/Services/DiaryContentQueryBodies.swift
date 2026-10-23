@@ -34,8 +34,7 @@ extension DiaryContentQueryReader {
             guard let text else { continue }
             var value = originals[index]
             value.text = text; value.isContentAvailable = true
-            let sensitive = DiaryPrivacy.isSensitive(value, tags: tags)
-                || DiaryPrivacy.requiresProtection(text: text, tagIDs: Set(TagIDList.parse(row.tagIDs)), tags: tags)
+            let sensitive = DiaryPrivacy.isSearchSensitive(value, text: text, tags: tags)
             if sensitive { continue }
             guard DiaryQueryPrivacy(diary: value, metadata: batch.facts.metadata).canPublishBody else { continue }
             facts.record(originals[index], protection: .unprotected)
@@ -93,9 +92,8 @@ extension DiaryContentQueryReader {
             var value = originals[index]
             value.text = text
             value.isContentAvailable = true
-            // 旧明文即使 API 可读也不成为搜索事实；含名称匹配的私密标签检查不可省略。
-            let sensitive = DiaryPrivacy.isSensitive(value, tags: tags)
-                || DiaryPrivacy.requiresProtection(text: text, tagIDs: Set(TagIDList.parse(value.tagIDs)), tags: tags)
+            // 旧明文即使 API 可读也不成为搜索事实；私密标签、旧 #密码 标记与“密码”名标签都不可省略。
+            let sensitive = DiaryPrivacy.isSearchSensitive(value, text: text, tags: tags)
             if imageOwners {
                 imageFacts.record(originals[index], protection: sensitive ? .protected : .unprotected)
             }

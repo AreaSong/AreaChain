@@ -75,6 +75,53 @@ import Testing
         #expect(!controller.session.hasRetainedPresentation)
     }
 
+    /// 修复批 M-6R 检查点 A：与 ContentQueryBodyReadTests／ImageContentQueryPrivacyTests 的旧格式隐私用例同一组手记，
+    /// 改走正式版唯一装配点；结果、摘要、预览与图片关联里都不能出现这些手记的正文或附件文件名。
+    @Test func legacySensitiveDiariesStayHiddenThroughProductionAssembly() async throws {
+        let fixture = try UnifiedSearchProductionFixture()
+        defer { fixture.cleanup() }
+        let day = UnifiedSearchProductionFixture.today
+        let privateTag = try fixture.insert(TagItem(name: "private-category", sortOrder: 0, isPrivateDiary: true))
+        let passwordTag = try fixture.insert(TagItem(name: "password", sortOrder: 1))
+        let secret = "M6R_SECRET_BODY"
+        let hidden = [
+            DiaryEntry(text: "needle \(secret) #password", dayKey: day),
+            DiaryEntry(text: "needle \(secret)", dayKey: day, tagIDs: privateTag.id.uuidString),
+            DiaryEntry(text: "needle \(secret) #private-category", dayKey: day),
+            DiaryEntry(text: "needle \(secret)", dayKey: day, tagIDs: passwordTag.id.uuidString),
+            DiaryEntry(text: "needle \(secret)", dayKey: day, tagIDs: UUID().uuidString),
+            DiaryEntry(text: "needle \(secret)", dayKey: day, tagIDs: "broken-tag-id"),
+            DiaryEntry(text: "needle \(secret)", dayKey: day),
+        ]
+        hidden[6].isPrivate = true
+        let visible = DiaryEntry(text: "needle M6R_PUBLIC_BODY", dayKey: day)
+        for entry in hidden + [visible] {
+            fixture.context.insert(entry)
+            fixture.context.insert(AttachmentItem(ownerKind: AttachmentOwner.diary.rawValue, ownerID: entry.id,
+                filename: entry.id == visible.id ? "m6r-public.png" : "M6R_HIDDEN.png"))
+        }
+        try fixture.context.save()
+        let assembly = try fixture.assembly()
+        defer { assembly.discard() }
+        let controller = assembly.workspace!
+        _ = Self.type(controller, "needle")
+        let content = try await Self.published(controller)
+        let hiddenIDs = Set(hidden.map(\.id))
+        // 普通手记确实走了正文读取（能命中），保护／旧格式手记一条都不作为结果出现。
+        #expect(content.pagination.snapshot.visible.contains { $0.type == .diary && $0.id == visible.id })
+        #expect(!content.pagination.snapshot.visible.contains { $0.type == .diary && hiddenIDs.contains($0.id) })
+        let strings = TrashQueryFixture.strings(content)
+        #expect(!strings.contains { $0.contains(secret) } && !strings.contains { $0.contains("M6R_HIDDEN") })
+        _ = Self.type(controller, "/images")
+        let images = try await Self.published(controller, after: content.pagination.snapshot.version)
+        let response = try SearchReadFixture.images(images)
+        #expect(response.matches.map(\.owner.id) == [visible.id])
+        for entry in hidden {
+            #expect(response.associations[.init(kind: .diary, id: entry.id)]?.presence == .protected)
+        }
+        #expect(!TrashQueryFixture.strings(images).contains { $0.contains("M6R_HIDDEN") || $0.contains(secret) })
+    }
+
     @Test func modelChangeInvalidatesShownResults() async throws {
         let fixture = try UnifiedSearchProductionFixture()
         defer { fixture.cleanup() }

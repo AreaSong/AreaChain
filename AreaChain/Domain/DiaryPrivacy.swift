@@ -53,6 +53,20 @@ enum DiaryPrivacy {
     static func hasLegacyPrivateMarker(_ text: String) -> Bool {
         text.contains("#密码") || text.localizedCaseInsensitiveContains("#password")
     }
+
+    /// 统一搜索读取侧（正文、片段、图片关联、查阅）唯一的敏感判定，失败即关闭。
+    /// 0789245 起原界面的 isSensitive 不再看旧 `#密码` 标记与“密码”名标签，但旧数据仍可能只靠它们遮罩；
+    /// 搜索按 §9.40 继续把它们当敏感，只收紧读取、不改写入与原界面展示规则（修复批 M-6R）。
+    static func isSearchSensitive(_ entry: DiarySnapshot, text: String, tags: [TagItem]) -> Bool {
+        let tagIDs = Set(TagIDList.parse(entry.tagIDs))
+        if isSensitive(entry, tags: tags) || requiresProtection(text: text, tagIDs: tagIDs, tags: tags)
+            || hasLegacyPrivateMarker(text) { return true }
+        let keywords = Set(DiaryMemoTags.autoTagNames(in: text).map(TagSyntax.normalizedName))
+        return tags.contains { tag in
+            (tagIDs.contains(tag.id) && DiaryMemoTags.isPasswordName(tag.name))
+                || (tag.isPrivateDiary && keywords.contains(TagSyntax.normalizedName(tag.name)))
+        }
+    }
 }
 
 /// 已物化列表上的拥有者存活集。重复 UUID 不能放进 live 集合，否则会比 `isSingleLive` 更宽松。
