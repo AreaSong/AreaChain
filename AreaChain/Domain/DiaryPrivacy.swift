@@ -67,6 +67,16 @@ enum DiaryPrivacy {
                 || (tag.isPrivateDiary && keywords.contains(TagSyntax.normalizedName(tag.name)))
         }
     }
+
+    /// 同一判定的元数据形式（名字表＋私密 ID 集），供不持有 TagItem 的搜索领域投影（DiaryQueryPrivacy）使用。
+    static func isSearchSensitive(_ entry: DiarySnapshot, tagNames: [UUID: String], privateTagIDs: Set<UUID>) -> Bool {
+        if isSensitive(entry, tagNames: tagNames, privateTagIDs: privateTagIDs) || hasLegacyPrivateMarker(entry.text) { return true }
+        let written = Set((TagSyntax.names(in: entry.text) + DiaryMemoTags.autoTagNames(in: entry.text)).map(TagSyntax.normalizedName))
+        return tagNames.contains { id, name in
+            (TagIDList.contains(entry.tagIDs, id) && DiaryMemoTags.isPasswordName(name))
+                || (privateTagIDs.contains(id) && written.contains(TagSyntax.normalizedName(name)))
+        }
+    }
 }
 
 /// 已物化列表上的拥有者存活集。重复 UUID 不能放进 live 集合，否则会比 `isSingleLive` 更宽松。
