@@ -8504,3 +8504,40 @@ Claude Code `verifier` 一轮：**通过**。四项都成立：生产取值不�
 - 上文“未判定”的失败需在后续批次补基线定向对照后再定性。
 - 开关开时工作台带显式宿主：日历／安排／标签页的页内状态改由 `WorkspaceNavigation` 持有（页面切走再回来仍保留），这是页面指令所需的既有宿主行为。
 - 真实库、真实附件、真实钥匙串、真实通知／日历／辅助功能授权、真人输入法、VoiceOver、真实多窗口均未验证，留给用户验收；旧搜索删除留到验收通过后的下一批。
+
+### 9.104 修复批 M-6R：接入前阻断修复
+
+2026-10-23（Asia/Shanghai）。用户授权本批改代码、按检查点本地提交、不推送、不安装；只用合成数据与隔离 QA（com.areachain.privacy-qa），不读写真实库、附件目录或钥匙串，未对任何进程做 sample 采样。证据在忽略目录 `build/M6R/`。提交：A `821b174`，A 补正 `1990638`，B `6f56bc3`，C 无代码修复（结论进 C2 登记表与现状总览），C2 `f2ea9ac`，D、E 见本节末。
+
+#### A：隐私回归
+
+- **引入提交**：`git bisect`（good a3ce001、bad d77da2e，每步只跑两条用例、持原锁、隔离 QA）定位 **0789245**（2026-10-13）。它从共享 `DiaryPrivacy.isSensitive` 去掉旧 `#密码`/`#password` 标记与“密码”名标签，从 `requiresProtection` 去掉正文关键字名，并让 `TagItem.isDiaryPreset` 恒为 false。HEAD 上失败的是：`#password` 标记手记被当作可读正文（用例 1），标记手记与“password”名标签手记的图片被当作公开（用例 2）。
+- **修复（只改读取侧）**：新增 `DiaryPrivacy.isSearchSensitive`（TagItem 与元数据两种形式）= 原 isSensitive ∪ requiresProtection ∪ 旧标记 ∪ 关联“密码”名标签 ∪ 正文关键字对应的私密标签。用在统一搜索正文读取（普通与回收站）、图片保护事实、查阅读取、`DiaryQueryPrivacy`（回收站墓碑、图片拥有者），以及旧搜索 `BoardSearch` 的标题隐藏。写入侧与原界面展示规则不动。
+- **新用例**：`UnifiedSearchProductionReadTests.legacySensitiveDiariesStayHiddenThroughProductionAssembly` 经唯一装配点（内存容器＋fake 服务）跑同一组 7 篇手记，结果、摘要、预览与 `/images` 关联里都没有正文与文件名。原两条用例断言未改。
+- **仍受 0789245 影响的原界面**（不属搜索，未修，进登记表，需用户决定是否为有意变化）：总览计数、手记页／小窗遮罩、AI 模板标签、预置名做待办标签等 7 条，见现状总览“既有失败”。
+
+#### B：正文读取性能
+
+- 原因：`permit.validate()` 每次重跑全部已登记事实（约 5 次整表重取＋每篇已读正文一条），每篇正文约 4 次 → O(n²)。
+- 做法：`validate()` 不变（上下文＋全部事实），只在读取开始与结束、准备收尾、发布（`validatePermit`）、查阅调用；逐条路径改 `validateStep()`＝宿主／失效代次／保险箱戳＋共用观察闸门（`ContentQueryReadGate.requireUnchanged`，已读正文与保护字段任一变化即永久失效），并在解密前核对本行元数据与保护戳仍是捕获值。
+- 不变式：发布前全部事实在当时状态下全量确认（准备收尾与发布各一次）；锁定、隐私代次、宿主变化每一步立即失效；中途重入修改最迟在本次读取结束被拒、整批不发布；不缓存明文、不跳过上下文校验。原生命周期用例（锁定重入、读中改标签保护、重入新任务）全部通过。
+- 数字（同一探针与合成数据，隔离 QA Debug，macOS 26.6.2 arm64，12 核 24GB，含 120ms 合并等待；前＝§9.103）：
+
+| 数据 | 前 冷／热／热同词 | 后 冷／热／热同词 |
+|---|---|---|
+| 2000 待办＋200 习惯×365 天＋500 手记 | 215.9／216.7／211.5 s | 2.03／2.04／1.98 s |
+| 仅 500 手记 | 30.6／30.3／30.4 s | 0.39／0.36／0.39 s |
+| 仅 2000 待办（对照） | 1.56／1.61／1.53 s | 1.55／1.60／1.51 s |
+| 仅 1000／2000 手记 | — | 0.63／1.12 s（冷） |
+
+#### C：35 类未判定失败
+
+在 d77da2e 工作树（持原锁、同一隔离 QA）与当前 HEAD 逐条跑 §9.103 的 93 条失败用例，另加 DashboardRenderingTests、QuadrantPreviewInteractionTests、TagHelpSurfaceConsumerTests、UnifiedSearchTrashInteractionTests 整类。结论：**没有 M-6 引入的失败**。HEAD 上 11 条焦点前置失败发生在锁屏期间，桌面空闲重跑后 8 条通过，其余 3 条与基线同样失败。两项隐私用例与 TrashTombstonePrivacyTests、ImageAssociationPrivacyTests 的旧格式用例由本批修复；TagHelpSurface 两项基线失败、当前通过；segv 未复现。其余 40 条判为既有，进登记表。
+
+#### C2：门禁提速
+
+`scripts/known_test_failures.json`＋`known_failures.py`：各轮正常跑完时，命中的失败单列“已知”、不计入失败；登记表外照常失败；登记用例通过时提示可移除；不跳过任何测试。`swift_test_scope`：核心文件直接引用超过 60 或整次推导超过 120 时，收敛为同名测试＋13 类冒烟集，并说明省略数；新增 `--plan-only`。M-6 同一范围（`--base-ref d77da2e`）从 400 类降到 24 类。全量只在 `--single` 替换日常应用前或用户要求时运行。
+
+#### D：小缺口
+
+装配失败不再无声：`UnifiedSearchProduction.assemblyFailed` 驱动设置“搜索”分节一句不阻塞的中英文说明，开关语义不变。之后任一偏好变化都会重试。现状总览新增“既有失败”，并关闭“大库读取卡顿”“未判定失败”两条缺口。

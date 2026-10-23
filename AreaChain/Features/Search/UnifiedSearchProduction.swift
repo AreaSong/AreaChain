@@ -9,10 +9,15 @@ import Observation
     private(set) var assembly: UnifiedSearchProductionAssembly?
     /// 每次重建装配都 +1；宿主用它重新挂载，避免把已 detach 的控制器留在视图里。
     private(set) var generation: UInt64 = 0
+    /// 开关开着但装配失败：宿主仍走旧搜索，设置“搜索”分节据此给一句不阻塞的说明；之后任一偏好变化会重试。
+    private(set) var assemblyFailed = false
     @ObservationIgnored private var makeServices: (() -> UnifiedSearchProductionServices)?
     @ObservationIgnored private var preferences: AppPreferences?
     @ObservationIgnored private var retained: CommandHandoffCoordinator?
     @ObservationIgnored private var observer: NSObjectProtocol?
+    /// 构造入口；只有测试替换它来模拟装配失败，正式版恒为唯一装配点。
+    @ObservationIgnored var assemble: (UnifiedSearchProductionServices, CommandHandoffCoordinator?)
+        -> Result<UnifiedSearchProductionAssembly, Error> = { UnifiedSearchProductionAssembly.attempt(services: $0, coordinator: $1) }
 
     /// 正式版由 AppDelegate 在 application 分支调用一次；测试可以构造自己的实例并注入 fake 服务。
     func start(preferences: AppPreferences, center: NotificationCenter = .default,
@@ -31,7 +36,8 @@ import Observation
         guard let preferences, let makeServices else { return }
         if preferences.unifiedSearchEnabled {
             guard assembly == nil else { return }
-            assembly = UnifiedSearchProductionAssembly.make(enabled: true, services: makeServices, coordinator: retained)
+            assembly = try? assemble(makeServices(), retained).get()
+            assemblyFailed = assembly == nil
             if let assembly {
                 retained = assembly.coordinator
                 // 工作台已打开时切到新搜索：按协调者当前查询决定是否显示结果，不把空查询当成搜索页。
@@ -41,7 +47,10 @@ import Observation
         } else if let assembly {
             assembly.discard()
             self.assembly = nil
-        } else { return }
+        } else {
+            assemblyFailed = false
+            return
+        }
         generation &+= 1
     }
 
@@ -53,6 +62,7 @@ import Observation
         observer = nil
         assembly?.discard()
         assembly = nil
+        assemblyFailed = false
         retained = nil
         preferences = nil
         makeServices = nil

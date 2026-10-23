@@ -23,6 +23,26 @@ struct SettingsSectionPresentationTests {
         try SystemPageHost.assertContained(["settings.login.needsApproval", "settings.login.openSystem"], in: window)
     }
 
+    /// 修复批 M-6R 检查点 D：装配失败时“搜索”分节给一句不阻塞的说明；开关语义不变。
+    @Test(arguments: ["zh-Hans", "en"]) func searchAssemblyFailureIsExplainedWithoutBlockingToggle(locale: String) async throws {
+        let fixture = try SettingsButtonTestSupport()
+        defer { fixture.cleanup() }
+        fixture.prefs.unifiedSearchEnabled = true
+        for (failed, size) in [(true, NSSize(width: 520, height: 900)), (false, NSSize(width: 360, height: 900))] {
+            let window = SystemPageHost.window(SearchAvailabilityProbe(prefs: fixture.prefs, failed: failed),
+                container: fixture.container, scheme: failed ? .light : .dark, locale: locale, size: size)
+            defer { SystemPageHost.release(window) }
+            try await SystemPageHost.settle(window)
+            let ids = SystemPageHost.identifiers(in: window)
+            #expect(ids.contains("settings.search.unified"))
+            #expect(ids.contains("settings.search.unified.unavailable") == failed)
+            if failed { try SystemPageHost.assertContained(["settings.search.unified.unavailable"], in: window) }
+        }
+        #expect(fixture.prefs.unifiedSearchEnabled)
+        #expect(L10n.string("settings.search.unified.unavailable", locale: Locale(identifier: "zh-Hans")).contains("旧搜索"))
+        #expect(L10n.string("settings.search.unified.unavailable", locale: Locale(identifier: "en")).contains("previous search"))
+    }
+
     @Test func notificationTestBannerIsOfferedUntilDenied() async throws {
         let fixture = try SettingsButtonTestSupport()
         defer { fixture.cleanup() }
@@ -134,6 +154,23 @@ struct SettingsSectionPresentationTests {
             .formStyle(.grouped)
             .systemPageMarkers($markers)
             .accessibilityIdentifier("settings.login.probe")
+            .accessibilityValue(markers.sorted().joined(separator: " "))
+        }
+    }
+
+    private struct SearchAvailabilityProbe: View {
+        var prefs: AppPreferences
+        var failed: Bool
+        @State private var markers: Set<String> = []
+
+        var body: some View {
+            Form {
+                GeneralSettingsSection(prefs: prefs, launchesAtLogin: .constant(false), loginNeedsApproval: false,
+                                       statusMessage: nil, onUpdateLoginItem: { _ in }, searchAssemblyFailed: failed)
+            }
+            .formStyle(.grouped)
+            .systemPageMarkers($markers)
+            .accessibilityIdentifier("settings.search.probe")
             .accessibilityValue(markers.sorted().joined(separator: " "))
         }
     }

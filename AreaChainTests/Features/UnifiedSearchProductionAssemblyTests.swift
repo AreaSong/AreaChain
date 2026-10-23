@@ -59,6 +59,29 @@ import Testing
         #expect(own.store !== AttachmentStore.shared && own.ordinaryOnly && own.root != nil)
     }
 
+    /// 修复批 M-6R 检查点 D：装配失败不再无声——记录失败供设置提示；关开关清除，偏好变化后重试成功也清除。
+    @Test func assemblyFailureIsRecordedAndClearedOnRetryOrToggleOff() throws {
+        let fixture = try UnifiedSearchProductionFixture()
+        defer { fixture.cleanup() }
+        let production = UnifiedSearchProduction()
+        defer { production.stop(center: fixture.center) }
+        var fail = true
+        production.assemble = { services, coordinator in
+            fail ? .failure(CommandHandoffError.stale) : UnifiedSearchProductionAssembly.attempt(services: services, coordinator: coordinator)
+        }
+        production.start(preferences: fixture.preferences, center: fixture.center, makeServices: { fixture.services() })
+        #expect(production.assembly == nil && production.assemblyFailed)
+        #expect(fixture.preferences.unifiedSearchEnabled)
+        fixture.preferences.unifiedSearchEnabled = false
+        fixture.center.post(name: .appPreferencesDidChange, object: nil)
+        #expect(!production.assemblyFailed)
+        fail = false
+        fixture.preferences.unifiedSearchEnabled = true
+        fixture.center.post(name: .appPreferencesDidChange, object: nil)
+        #expect(production.assembly != nil && !production.assemblyFailed)
+        #expect(fixture.probe.total == 0 && fixture.saves == 0)
+    }
+
     @Test func toggleOffRestoresOldSearchAndKeepsDrafts() throws {
         let fixture = try UnifiedSearchProductionFixture()
         defer { fixture.cleanup() }

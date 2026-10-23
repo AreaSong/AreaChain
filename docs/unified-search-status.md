@@ -2,7 +2,7 @@
 
 本文是统一搜索与指令体系的**现状总览**：只记当前状态、覆盖、缺口和每批必读入口。设计、规则与历史证据仍以[权威设计](unified-search-commands.md)为准，本文不复制。每批怎样更新本文见[技能路由的路由维护](../skill-routing.md#路由维护)。
 
-最后更新：2026-10-22，合并批 M-6 接入正式版（[§9.103](unified-search-commands.md#9103-合并批-m-6接入正式版)）。
+最后更新：2026-10-23，修复批 M-6R 接入前阻断修复（[§9.104](unified-search-commands.md#9104-修复批-m-6r接入前阻断修复)）。
 
 ## 目标与阶段
 
@@ -82,8 +82,8 @@
 - **C2B 原生接受与锁定交错**：敏感输入不开放，mutable textStorage 只能事后检测。来源：[§9.52](unified-search-commands.md#952-阶段-4a-3c2b原生接受与锁定交错的隔离可行性)、[§9.86](unified-search-commands.md#986-里程碑-c-m1命令长文原生编辑与受控组合输入)。
 - **生产接线授权**：已关闭（合并批 M-6，2026-10-22 用户授权）。唯一装配点接真实依赖；提醒授权、日历／小组件刷新、剪贴板、粘贴、窗口与退出只在执行对应指令后调用。来源：[§9.103](unified-search-commands.md#9103-合并批-m-6接入正式版)。
 - **用户验收待办（M-6 新增）**：安装前备份、安装后按 M-6 报告的验收清单逐域试用（含中文输入法、开关切换、锁定后搜索）；验收通过后另开“删除旧搜索”批次。真实库、真实附件目录、真实钥匙串与真实系统授权均未在执行会话里验证。来源：[§9.103](unified-search-commands.md#9103-合并批-m-6接入正式版)。
-- **大库读取卡顿（M-6 新增，阻断级）**：合成库（2000 待办＋200 习惯×365 天＋500 手记）上“输入到首批结果”约 212～217 秒，500 篇手记单独约 30 秒，全部在主线程。热点是手记正文逐条读取时 `ContentQueryBodyReadPermit.validateFacts` 重跑已登记的整表复查（约 O(n²)）。本批按授权只记录不改算法；手记多的用户在修复前应关闭开关。来源：[§9.103](unified-search-commands.md#9103-合并批-m-6接入正式版)。
-- **全量测试未判定失败（M-6 新增）**：全量与一次重跑后仍有 35 类失败；两项隐私测试（ContentQueryBodyReadTests、ImageContentQueryPrivacyTests）已在 d77da2e 复现为既有，但因本批进入正式版而影响变大；其余（含本批改过的 MenuBarPopoverRenderingTests、WorkspaceRenderingTests 与几项私密标签相关测试）未做基线对照，标为未判定，清单见 §9.103。另：装配失败时静默保持旧搜索、无提示。来源：[§9.103](unified-search-commands.md#9103-合并批-m-6接入正式版)。
+- **大库读取卡顿**：已修复（修复批 M-6R 检查点 B）。逐条正文读取改为 O(1) 复查、整表事实只在读取边界与发布前全量确认；同一合成库输入到首批结果约 216 秒降到约 2 秒，500 篇手记约 30 秒降到约 0.4 秒。仍在主线程同步读取。来源：[§9.104](unified-search-commands.md#9104-修复批-m-6r接入前阻断修复)。
+- **全量测试未判定失败**：已定性（修复批 M-6R 检查点 C）。35 类在 d77da2e 与当前 HEAD 逐条对照，没有 M-6 引入的失败；两项隐私测试由 0789245 引入，已在读取侧修复；其余既有失败见下节“既有失败”。装配失败已在设置“搜索”分节给出说明。来源：[§9.104](unified-search-commands.md#9104-修复批-m-6r接入前阻断修复)。
 - **菜单栏限制（M-6）**：菜单栏控制器没有工作台路由与页面指令；打开结果时先显示工作台，再用同一查询在工作台读取并打开同一对象（页面上下文不同可能找不到，只停在结果页）。导航类与页面类指令请在工作台执行。来源：[§9.103](unified-search-commands.md#9103-合并批-m-6接入正式版)。
 - **长文受控借用**：已实现，M-6 起接正式版（托管订阅装配事件中心即 default 上的保险箱锁定、隐私变化与遮罩；开关关闭时 discard）。L-M1b 按 §9.94 与 2026-10-20 用户确认实现托管、一次性借用与带键摘要，接通 todo.notes／routine.notes／routine.capture；守卫改按目录类型判定，clear 漏口已复现并堵上。只开放普通长文（受保护、required、unknown 仍拒）；（历史：M-6 之前默认未装配、托管只听隔离环境私有事件中心，M-6 已转接。）来源：[§9.95](unified-search-commands.md#995-里程碑-l-m1b长文受控借用实现)。
 - **原界面备注私密标签缺口**：已修复（合并批 M-1 检查点 A）。任务、子任务、习惯一侧从文字解析标签时照常保存文字，跳过私密与预设标签并提示；判定与指令侧 L7 共用 `InputTagResolver.protection`，差别只在结果（指令整条拒绝）；手记一侧不变。来源：[§9.96](unified-search-commands.md#996-合并批-m-1任务域收尾)。
@@ -101,6 +101,14 @@
 - **M-4 限制与生产接线前置**：diary.save／reload／discard 只作用于已打开的小窗会话（手记页卡片的编辑会话是页面私有状态，宿主没有入口）；有未保存内容的重载只前置小窗由用户确认；手记规格、页面宿主的手记会话与剪贴板依赖只在隔离夹具里注入，接正式版需逐项授权。来源：[§9.99](unified-search-commands.md#999-合并批-m-4普通手记写入)。 M-6 已接手记规格、页面宿主与托管的真实隐私锁事件；diary.save／reload／discard 只作用于已打开小窗的限制不变。
 - **现状差距**：备份未配置锁的可达性、剪贴板历史读取失败返回空、重置吞掉删除错误。来源：[§9.4](unified-search-commands.md#94-未决问题与单独授权边界)。
 - **性能基线**：新查询延迟、长文编辑、最大候选规模与内存均未建立基线。来源：[§9.3](unified-search-commands.md#93-后续回归入口与证据缺口)。
+
+## 既有失败
+
+修复批 M-6R 检查点 C 定性，逐条登记在 [`scripts/known_test_failures.json`](../scripts/known_test_failures.json)（门禁只改变归类，测试照常运行）。共 40 条，首次复现提交：
+
+- **0789245（二分与前后对照确认）**：该提交从共享 `DiaryPrivacy.isSensitive` 去掉旧 `#密码`/`#password` 标记与“密码”名标签、并让 `TagItem.isDiaryPreset` 恒为 false。搜索读取侧已在 M-6R 修复；**原界面**仍受影响、待用户决定是否为有意的产品变化：AIPlanTemplateServiceTests、DashboardProjectionTests、DiaryButtonConsumerTests、DiaryPageListModelTests、DiaryWindowLifecycleTests、SubtaskModelTests（各 1）；MenuBarPopoverRenderingTests.noteWindowRendersLongTextAndMasksPrivateEditor（长文断言 f4ecfa4 已失败，遮罩断言自 0789245）。
+- **d77da2e（M-6 之前的基线，未再向前二分）**：CalendarSpanConsumerTests（3）、CalendarWeekConsumerTests、CalendarWeekLayoutTests（2）、DashboardScrollTests、DaybookScrollNativeTests、DiaryTitleHoverTests（2）、MenuBarHelpSurfaceTests、MenuBarPopoverRenderingTests.popoutButton…、MenuBarStatusImageTests、PasswordRetryDiagnosticTests（2，诊断型）、PrivacyAutolockPickerTests（2）、PrivacyButtonConsumerTests、ScrollAssemblyConsumerTests、SearchMultilineDiagnosticTests、UnifiedSearchOperationInteractionTests、UnifiedSearchSettingInteractionTests、WeekdayConsumerBaselineTests、WorkspaceInspectorSizingTests（2）、WorkspaceMenuConsumerTests、WorkspaceRenderingTests、YesterdayCardActionTests（3）、YesterdayCardConsumerTests（3）。
+- 焦点前置失败（拿不到 key window）在桌面空闲时重跑后通过的不登记；TagHelpSurfaceConsumerTests 两项基线失败、当前通过；DashboardRenderingTests 的 segv 在两次对照中都未复现。
 
 ## 补复核待办
 

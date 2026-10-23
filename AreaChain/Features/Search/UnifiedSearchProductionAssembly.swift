@@ -74,7 +74,13 @@ import SwiftData
     static func make(enabled: Bool, services: () -> UnifiedSearchProductionServices,
                      coordinator: CommandHandoffCoordinator? = nil) -> UnifiedSearchProductionAssembly? {
         guard enabled else { return nil }
-        return try? UnifiedSearchProductionAssembly(services: services(), coordinator: coordinator)
+        return try? attempt(services: services(), coordinator: coordinator).get()
+    }
+
+    /// 与 make 相同的唯一构造，但保留失败：开关同步用它在设置里提示“未能启用”（修复批 M-6R），不改开关语义。
+    static func attempt(services: UnifiedSearchProductionServices,
+                        coordinator: CommandHandoffCoordinator? = nil) -> Result<UnifiedSearchProductionAssembly, Error> {
+        Result { try UnifiedSearchProductionAssembly(services: services, coordinator: coordinator) }
     }
 
     init(services: UnifiedSearchProductionServices, coordinator existing: CommandHandoffCoordinator? = nil) throws {

@@ -33374,6 +33374,23 @@
         }
       }
     },
+    "settings.search.unified.unavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The new search could not be started this time, so the previous search is still in use. Your data is unaffected; it will try again after you change any setting or restart the app."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新版搜索这次未能启用，暂时仍在使用旧搜索。数据不受影响；更改任一设置或重新打开应用后会再试一次。"
+          }
+        }
+      }
+    },
     "settings.workspaceShellPreview.help": {
       "extractionState": "manual",
       "localizations": {
