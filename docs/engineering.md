@@ -1662,7 +1662,7 @@ core中H及原依赖为12方法／18次：DetailDueSaveTests全部7／9（AXPres
 | 工作流文档、组件目录、Domain UI 依赖、项目技能格式与 Git 边界、单文件行数 | `python3 -B scripts/check_workflow.py` | 内联本地引用/锚点、工作流入口、稳定复用符号、显式 import、技能 frontmatter/`openai.yaml`、已共享技能和本地状态忽略边界、Features/Theme 的 theme-tokens 字面模式，以及 `AreaChain` / `AreaChainTests` 单文件不超过 500 行 |
 | 本检查器改变 | `python3 -B -m unittest discover -s scripts/tests -p test_check_workflow.py -v` | 临时夹具的正/反例、作用域、输出与退出码；不是技能决策质量 |
 | 构建/验签/管理/工作流脚本 | `python3 -B -m unittest discover -s scripts/tests -v`；改 Shell 时另做 `bash -n` | mock 外部命令和临时目录中的行为，不是真实安装、签名或恢复 |
-| Swift 业务/接口/数据 | `python3 -B scripts/quality_gate.py --profile swift`（按改动推导，或 `--only-testing AreaChainTests/具体测试类`），走隔离 QA 分前台／后台轮；全量 `--profile full` 只在批次收尾 | 实际执行且未跳过的用例；测试存在不能代替执行 |
+| Swift 业务/接口/数据 | `python3 -B scripts/quality_gate.py --profile swift`（按改动推导，或 `--only-testing AreaChainTests/具体测试类`），走隔离 QA 分前台／后台轮；全量 `--profile full` 只在替换日常应用之前或用户明确要求时 | 实际执行且未跳过的用例；测试存在不能代替执行 |
 | 编译或候选包 | 按 [签名文档](signing.md) 构建/验签 | 指定配置的产物，不证明原生运行或发行 |
 | 原生 UI / 磁盘兼容 | 按 [架构隔离命令](architecture.md#隔离验收与真实启用门禁) 选择范围并串行 | 已走到的隔离场景；不可启用普通测试之外的真实钥匙串授权 |
 

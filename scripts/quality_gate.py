@@ -14,6 +14,7 @@ import time
 # 测试经 importlib 按路径加载本脚本，sys.path 不含 scripts/，需显式加入才能导入同目录模块。
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import swift_test_scope
+import known_failures
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -423,9 +424,39 @@ SWIFT_ROUND_TIMEOUT = 1800
 FULL_SWIFT_ROUND_TIMEOUT = 3 * 3600
 
 
+# xcodebuild 用例失败（编译与运行都完成）的退出码；只有这种情况才按登记表归类，构建失败、超时照常失败。
+XCODEBUILD_TEST_FAILURE = 65
+
+
+def classify_test_failures(root, filters, codes, output):
+    """按已知既有失败登记表归类；返回 (状态覆盖或 None, 说明行, 问题行)。测试本身照常全部运行。"""
+    registry, problems = known_failures.load(root)
+    if problems:
+        return None, [], [*problems, "登记表无效，失败未归类。"]
+    completed = all(code in (0, XCODEBUILD_TEST_FAILURE) for code in codes)
+    if not completed:
+        return None, [], []
+    failing = known_failures.failing_tests(output)
+    known, unknown = known_failures.classify(failing, registry)
+    lines, issues = [], []
+    if known:
+        lines.append(f"已知既有失败 {len(known)} 项（登记表 {known_failures.REGISTRY}，不计入本次失败）：" + ", ".join(known))
+    if unknown:
+        lines.append(f"登记表外失败 {len(unknown)} 项：" + ", ".join(unknown))
+    passed = known_failures.removable(registry, failing, filters)
+    if passed:
+        issues.append("以下登记用例本次运行通过，可从登记表移除：" + ", ".join(passed))
+    if any(code == XCODEBUILD_TEST_FAILURE for code in codes) and failing and not unknown:
+        return "passed", lines, issues
+    return None, lines, issues
+
+
 def run_swift_tests(filters=None, notes=(), root=ROOT, timeout=SWIFT_ROUND_TIMEOUT):
-    """前台轮与后台轮各跑一次隔离 QA 测试；任一轮失败即失败，说明里分轮列出。"""
-    commands, details, worst, total = [], [], 0, 0.0
+    """前台轮与后台轮各跑一次隔离 QA 测试；任一轮失败即失败，说明里分轮列出。
+
+    失败全部命中已知既有失败登记表时归为通过并单列“已知”；登记表外失败照常失败。
+    """
+    commands, details, codes, outputs, worst, total = [], [], [], [], 0, 0.0
     rounds = swift_test_scope.split_rounds(root, filters)
     if not rounds:
         return gate("swift-tests", "passed", "没有需要运行的 Swift 测试。")
@@ -435,18 +466,23 @@ def run_swift_tests(filters=None, notes=(), root=ROOT, timeout=SWIFT_ROUND_TIMEO
         command = ["./scripts/build.sh", "qa", *keep, *arguments]
         code, stdout, stderr, duration = run_command(command, timeout=timeout)
         commands.append(command)
+        codes.append(code)
+        outputs.append(f"{stdout}\n{stderr}")
         total += duration
         worst = code if worst == 0 else worst
         details.append(f"{label}（{'需离开电脑' if label == '前台轮' else '可以用电脑'}）退出码 {code}，"
                        f"{duration:.0f} 秒\n{summarize_output(stdout, stderr)}".strip())
     status = "passed" if worst == 0 else ("blocked" if worst in (126, 127) else "failed")
+    override, lines, issues = classify_test_failures(root, filters, codes, "\n".join(outputs))
+    status = override or status
     if filters:
         shown = ", ".join(filters[:12]) + (f" 等 {len(filters)} 项" if len(filters) > 12 else "")
         head = [f"运行定向 Swift 测试 ({len(filters)} 项: {shown})", *notes]
     else:
         head = ["运行全量 Swift 测试"]
-    detail = "\n".join([*head, *details])
-    return gate("swift-tests", status, detail, commands[0] if len(commands) == 1 else commands, duration=total)
+    detail = "\n".join([*head, *details, *lines])
+    return gate("swift-tests", status, detail, commands[0] if len(commands) == 1 else commands,
+                issues=issues, duration=total)
 
 
 def swift_test_checks(root, paths, selected, only_testing):
@@ -522,7 +558,23 @@ def overall_status(checks, strict=False):
     return "passed"
 
 
-def run_profile(root, profile, strict=False, base_ref=None, only_testing=None, build_only=False):
+def plan_report(root, paths, selected, only_testing):
+    """只做推导预览：列出将要运行的 Swift 测试类与说明，不构建、不运行测试。"""
+    if only_testing:
+        plan = {"filters": list(only_testing), "notes": ["显式 --only-testing"], "unresolved": []}
+    elif selected in ("full", "release"):
+        plan = {"filters": None, "notes": ["全量 Swift 测试"], "unresolved": []}
+    elif needs_swift_toolchain(selected):
+        plan = swift_test_scope.plan_swift_tests(root, paths, ui_mode=selected == "ui")
+    else:
+        plan = {"filters": [], "notes": [f"profile={selected} 不运行 Swift 测试"], "unresolved": []}
+    count = "全量" if plan["filters"] is None else f"{len(plan['filters'])} 个测试类"
+    rounds = [label for label, _ in swift_test_scope.split_rounds(root, plan["filters"])] if plan["filters"] != [] else []
+    return gate("swift-test-plan", "passed", f"推导预览（未运行）：{count}；轮次：{'、'.join(rounds) or '无'}",
+                issues=[*(plan["filters"] or []), *plan["notes"], *(f"无法推导：{p}" for p in plan["unresolved"])])
+
+
+def run_profile(root, profile, strict=False, base_ref=None, only_testing=None, build_only=False, plan_only=False):
     scope_error = None
     try:
         paths = changed_files(root, base_ref)
@@ -530,6 +582,13 @@ def run_profile(root, profile, strict=False, base_ref=None, only_testing=None, b
         paths = []
         scope_error = str(error)
     selected = infer_profile(paths, root) if profile == "auto" else profile
+    if plan_only:
+        checks = [gate("change-scope", "blocked" if scope_error else "passed",
+                       scope_error or f"已确定 {len(paths)} 个变更路径。"),
+                  plan_report(root, paths, selected, only_testing)]
+        return {"schemaVersion": 1, "profile": selected, "requestedProfile": profile, "changedFiles": paths,
+                "status": overall_status(checks, strict), "checks": checks,
+                "limitations": ["--plan-only 只做推导预览，没有运行任何检查、构建或测试。"]}
     checks = [gate("change-scope", "blocked", scope_error, ["git", "diff"]) if scope_error
               else gate("change-scope", "passed",
                         f"已确定 {len(paths)} 个变更路径。" + (f" 基线：{base_ref}。" if base_ref else "")),
@@ -593,9 +652,11 @@ def main(argv=None):
                         help="限定 Swift 测试范围（可多次指定，如 AreaChainTests/DayBoardLogicTests）")
     parser.add_argument("--build-only", action="store_true",
                         help="仅编译构建并验签 Debug，跳过运行 Swift 单元测试")
+    parser.add_argument("--plan-only", action="store_true",
+                        help="只输出变更范围与定向测试推导预览，不运行任何检查、构建或测试")
     args = parser.parse_args(argv)
     report = run_profile(ROOT, args.profile, strict=args.strict, base_ref=args.base_ref,
-                         only_testing=args.only_testing, build_only=args.build_only)
+                         only_testing=args.only_testing, build_only=args.build_only, plan_only=args.plan_only)
     print_report(report, args.format)
     return 0 if report["status"] in ("passed", "warning") else 1
 

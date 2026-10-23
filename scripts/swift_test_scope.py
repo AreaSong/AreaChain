@@ -2,7 +2,8 @@
 
 改什么测什么：同名测试 → 测试里直接引用了变更文件声明的类型；只含扩展的文件按扩展里声明的成员名找，
 不把整个被扩展类型的引用都带上。找不到任何相关测试的文件列为无法推导，由调用方只编译并提示，
-不再按层目录兜底；间接影响留给批次收尾的全量回归，全量只由显式 profile 触发。
+不再按层目录兜底；核心文件与整次推导各有上限，超过时收敛到同名测试 + 冒烟集。
+间接影响留给替换日常应用前的全量回归，全量只由显式 profile 触发。
 """
 
 from pathlib import Path
@@ -11,8 +12,17 @@ import re
 
 TEST_TARGET = "AreaChainTests"
 SOURCE_ROOT = "AreaChain"
-# 一个文件的引用命中超过此数时在说明里提示“影响面大”，范围仍只是直接引用。
+# 一个文件的直接引用超过此数（核心文件）时不再跑全部引用，收敛到同名测试 + 冒烟集（修复批 M-6R）。
 REFERENCE_SUITE_LIMIT = 60
+# 整次推导的套件总数上限；超过时同样收敛到同名测试 + 冒烟集。间接与大面积影响留给替换日常应用前的全量。
+TOTAL_SUITE_LIMIT = 120
+# 冒烟集：统一搜索（正式版装配、读取、指令）、任务、手记、隐私、菜单栏各取代表类，只在收敛时追加。
+SMOKE_SUITES = (
+    "UnifiedSearchProductionAssemblyTests", "UnifiedSearchProductionReadTests", "UnifiedSearchProductionCommandTests",
+    "ContentQueryBodyReadTests", "ImageContentQueryPrivacyTests", "DiaryQueryPrivacyTests", "BoardSearchTests",
+    "TodoQueryIntegrationTests", "TaskMutationServiceTests", "DayBoardLogicTests", "DiaryWriteServiceTests",
+    "PrivacyPersistenceTests", "MenuBarPopoverRenderingTests",
+)
 # 扩展成员名出现在超过这么多测试文件里就算常见名（如 accept、operations），按名字匹配没有区分度，跳过并提示。
 MEMBER_FILE_LIMIT = 30
 # 测试支持文件（夹具）只再展开一跳：测试 → 夹具 → 被测类型。
@@ -102,6 +112,11 @@ class TestIndex:
         self.tests = {path.relative_to(self.root).as_posix(): _read(path)
                       for path in sorted(test_root.rglob("*.swift"))} if test_root.is_dir() else {}
 
+    def smoke(self):
+        """冒烟集里在当前测试目录真实存在的套件；不存在的名字不传给 xcodebuild。"""
+        existing = set().union(*(test_suites(text) for text in self.tests.values()))
+        return {name for name in SMOKE_SUITES if name in existing}
+
     def mentioning(self, file_name):
         """直接按文件名读取该资源的套件，例如读取 Localizable.xcstrings 的文案测试。"""
         return set().union(*(test_suites(text) for text in self.tests.values() if file_name in text))
@@ -174,18 +189,21 @@ def _changed_names(path, text):
 
 
 def _plan_file(index, path, ui_mode):
-    """返回 (套件集合或 None, 说明或 None)；None 表示该文件无法推导。"""
+    """返回 (套件集合或 None, 说明或 None, 直接套件)；None 表示该文件无法推导。
+
+    直接套件是同名测试或被改测试文件自己声明的套件，总数超限收敛时只保留它们与冒烟集。
+    """
     text = _read(index.root / path)
     is_test = path.startswith(TEST_TARGET + "/")
     if is_test:
         if not text:
-            return set(), None
+            return set(), None, set()
         # 改套件文件时，除自身套件外，还要跑经它的共享夹具间接受影响的套件。
         own = test_suites(text)
         shared = shared_types(text)
-        return own | (index.referencing(shared) if shared else set()), None
+        return own | (index.referencing(shared) if shared else set()), None, own
     if not path.startswith(SOURCE_ROOT + "/"):
-        return None, f"{path}：不在源码或测试目录"
+        return None, f"{path}：不在源码或测试目录", set()
     names = _changed_names(path, text)
     stem = Path(path).stem.split("+")[0]
     same = set() if is_test else index.same_name(stem)
@@ -197,13 +215,15 @@ def _plan_file(index, path, ui_mode):
     refs |= members
     skipped = f"；常见成员名未用于匹配：{', '.join(sorted(common))}" if common else ""
     if len(refs) > REFERENCE_SUITE_LIMIT:
+        omitted = len(refs - same)
         if not ui_mode:
-            # 改什么测什么：只跑直接引用的套件，不再追加整层；间接使用由批次收尾的 --profile full 兜住。
-            return same | refs, f"{path}：被 {len(refs)} 个测试类引用，只跑直接引用；间接影响留给收尾全量{skipped}"
-        return same, f"{path}：被 {len(refs)} 个测试类引用，UI 模式只跑同名测试{skipped}"
+            # 核心文件：直接引用太多（M-6 曾推出 400 类），只跑同名测试 + 冒烟集；其余留给替换前的全量。
+            return same | index.smoke(), (f"{path}：被 {len(refs)} 个测试类引用，超过上限 {REFERENCE_SUITE_LIMIT}，"
+                f"只跑同名测试与冒烟集，省略 {omitted} 个引用类；间接影响留给替换日常应用前的全量{skipped}"), same
+        return same, f"{path}：被 {len(refs)} 个测试类引用，UI 模式只跑同名测试{skipped}", same
     if same or refs:
-        return same | refs, (f"{path}：{skipped[1:]}" if skipped else None)
-    return None, f"{path}：没有同名或直接引用的测试，只编译{skipped}"
+        return same | refs, (f"{path}：{skipped[1:]}" if skipped else None), same
+    return None, f"{path}：没有同名或直接引用的测试，只编译{skipped}", set()
 
 
 def plan_swift_tests(root, paths, ui_mode=False):
@@ -215,7 +235,7 @@ def plan_swift_tests(root, paths, ui_mode=False):
     if not swift_paths and not resources:
         return {"filters": [], "notes": notes, "unresolved": unresolved}
     index = TestIndex(root)
-    suites = set()
+    suites, direct = set(), set()
     for path in resources:
         found = index.mentioning(Path(path).name)
         if found:
@@ -224,13 +244,19 @@ def plan_swift_tests(root, paths, ui_mode=False):
             unresolved.append(path)
             notes.append(f"{path}：资源变更没有按文件名读取它的测试")
     for path in swift_paths:
-        found, note = _plan_file(index, path, ui_mode)
+        found, note, own = _plan_file(index, path, ui_mode)
         if note:
             notes.append(note)
+        direct |= own
         if found is None:
             unresolved.append(path)
         else:
             suites |= found
+    if len(suites) > TOTAL_SUITE_LIMIT and not ui_mode:
+        collapsed = direct | index.smoke()
+        notes.append(f"整次推导共 {len(suites)} 个测试类，超过上限 {TOTAL_SUITE_LIMIT}，收敛为同名测试与冒烟集 "
+                     f"{len(collapsed)} 类，省略 {len(suites - collapsed)} 类；间接影响留给替换日常应用前的全量")
+        suites = collapsed
     return {"filters": [f"{TEST_TARGET}/{name}" for name in sorted(suites)],
             "notes": notes, "unresolved": unresolved}
 

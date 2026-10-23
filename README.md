@@ -69,7 +69,7 @@ AreaChain 是专为 macOS 打造的个人任务看板与习惯打卡助手：菜
 # 按改动跑定向 Swift 测试（默认）；分前台／后台两轮走隔离 QA
 python3 -B scripts/quality_gate.py --profile swift
 
-# 批次收尾或明确需要时才跑全量；前台轮期间需离开电脑
+# 只在用 --single 替换日常应用之前或明确需要时才跑全量；前台轮期间需离开电脑
 python3 -B scripts/quality_gate.py --profile full
 
 # 只读检查工作流引用、Domain 导入与项目技能共享边界；不构建/启动应用

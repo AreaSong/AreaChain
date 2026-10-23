@@ -33,7 +33,7 @@
 
 - 修改前先判断任务类型，检查工作区状态，并建立最小影响/复用表；没有完成复用检索，不先新增控件、领域规则、保存入口或平行状态。
 - 实施沿现有 `Domain → Services → Features → Theme` 责任方向进行；任务、手记、搜索、菜单栏和独立窗口的外观可以复用，提交、快捷键、隐私和草稿语义必须分别核对。
-- 修改后按影响选择验证：默认运行 `python3 -B scripts/quality_gate.py`，Swift 改动加 `--profile swift`——门禁按改动推导定向测试（改什么测什么），分前台轮／后台轮走隔离 QA；全量 `--profile full` 只在批次收尾或用户明确要求时运行，不作为每个检查点的默认动作；规则/技能/文档仍需 `python3 -B scripts/check_workflow.py`，Swift/UI 交给项目验收技能选择定向测试和构建。共享契约或跨模块行为变化只走一个复核入口：Claude Code `verifier` 子代理（见[指定只读复核入口](skill-routing.md#指定只读复核入口)）做只读核对，测试、构建和隔离原生交给 [areachain-verify](.agents/skills/areachain-verify/SKILL.md)。
+- 修改后按影响选择验证：默认运行 `python3 -B scripts/quality_gate.py`，Swift 改动加 `--profile swift`——门禁按改动推导定向测试（改什么测什么），分前台轮／后台轮走隔离 QA；全量 `--profile full` 只在用 `--single` 替换日常应用之前或用户明确要求时运行，不作为每批或每个检查点的默认动作；核心文件与整次推导超上限时收敛到同名测试＋冒烟集，已知既有失败按 `scripts/known_test_failures.json` 单列；规则/技能/文档仍需 `python3 -B scripts/check_workflow.py`，Swift/UI 交给项目验收技能选择定向测试和构建。共享契约或跨模块行为变化只走一个复核入口：Claude Code `verifier` 子代理（见[指定只读复核入口](skill-routing.md#指定只读复核入口)）做只读核对，测试、构建和隔离原生交给 [areachain-verify](.agents/skills/areachain-verify/SKILL.md)。
 - 交付时明确区分已实现、已验证、已安装、已发布、跳过、未运行和残余风险；旧测试结果、代码存在或构建成功不能单独宣称完成。
 - 新增或改变公共组件、路由、技能或验证入口时，必须同步维护 [技能路由](skill-routing.md)、[组件目录](docs/component-catalog.md)、相关文档和检查脚本测试。
 
@@ -79,7 +79,7 @@
 - 仅改文档、协作规则、技能或组件目录：检查差异、引用路径、规则冲突与适用场景，运行 `python3 -B scripts/check_workflow.py`（含技能格式），不因此运行整套应用或安装流程。
 - 文档/技能引用、Domain 显式 UI 导入或项目技能共享边界受影响时，运行 `python3 -B scripts/check_workflow.py`；修改该检查器时运行其定向测试及 `scripts/tests` 回归。该脚本不读取个人配置、不启动应用，也不证明完整依赖图、技能发现或远端 CI 通过，详见工程手册。
 - Swift 变更：先选相关测试，按真实调用方补充，不因改了共享层就默认跑整层或全量；需要编译验证时运行 `./scripts/build.sh`。此命令只构建并验签 Debug，不安装、不启动，也不替代运行验收。
-- 定向测试默认走门禁推导；需要手动指定时用 `python3 -B scripts/quality_gate.py --profile swift --only-testing AreaChainTests/DayBoardLogicTests`（自动分前台／后台轮、走隔离 QA）。全量回归用 `--profile full`，只在批次收尾或用户明确要求时运行，前台轮期间需离开电脑。直接 `./scripts/build.sh test` 使用与日用应用同一标识的开发宿主，不作为原生测试的验收结果。普通测试不得启用真实钥匙串授权。
+- 定向测试默认走门禁推导；需要手动指定时用 `python3 -B scripts/quality_gate.py --profile swift --only-testing AreaChainTests/DayBoardLogicTests`（自动分前台／后台轮、走隔离 QA）。全量回归用 `--profile full`，只在替换日常应用之前或用户明确要求时运行，前台轮期间需离开电脑。直接 `./scripts/build.sh test` 使用与日用应用同一标识的开发宿主，不作为原生测试的验收结果。普通测试不得启用真实钥匙串授权。
 - 构建、签名或应用管理脚本变更：运行 `python3 -B -m unittest discover -s scripts/tests -v`，Shell 脚本另做语法检查。这些隔离测试不代替真实安装、系统认证或恢复验收。
 - 样式与交互分别选择 [AreaChainTests/Theme](AreaChainTests/Theme) 和 [AreaChainTests/Features](AreaChainTests/Features) 的相关测试，例如 `DaybookTokenTests`、`WorkspaceLayoutTests`、`WorkspaceRenderingTests`、`InputSyntaxInteractionTests`；不能只做编译就宣布界面通过。
 - 原生窗口验证先读 [架构文档的隔离验收说明](docs/architecture.md#隔离验收与真实启用门禁)，采用独立 QA 标识、隔离构建目录和内存/临时数据，保持测试串行。`build.sh qa` 默认开启前台守护（用户空闲 5 秒以上时把 QA 应用切回前台，不用人去点测试窗口）；只选中后台套件时自动关闭，也可用 `--no-keep-front` 关闭。焦点敏感测试期间不要同时操纵其他窗口；截图查看与交互执行分开，不能用跳过焦点断言消除失败。

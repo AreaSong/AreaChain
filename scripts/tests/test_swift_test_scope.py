@@ -128,18 +128,60 @@ class SwiftTestScopeTests(unittest.TestCase):
         self.assertEqual((plan["filters"], plan["unresolved"]), ([], ["AreaChain/Domain/Lonely.swift"]))
         self.assertIn("只编译", plan["notes"][0])
 
-    def test_too_many_references_run_only_direct_references(self):
+    def test_too_many_references_collapse_to_same_name_and_smoke(self):
         self.write("AreaChain/Services/Store.swift", "final class Store {}\n")
+        self.suite("AreaChainTests/Services/StoreTests.swift", "StoreTests", "_ = Store()")
         self.suite("AreaChainTests/Services/OneTests.swift", "OneTests", "_ = Store()")
         self.suite("AreaChainTests/Services/TwoTests.swift", "TwoTests", "_ = Store()")
-        self.suite("AreaChainTests/Services/ThreeTests.swift", "ThreeTests")
-        self.suite("AreaChainTests/Domain/DomainTests.swift", "DomainTests", "_ = Store()")
-        with patch.object(scope, "REFERENCE_SUITE_LIMIT", 2):
+        self.suite("AreaChainTests/Services/SmokeTests.swift", "SmokeTests")
+        with patch.object(scope, "REFERENCE_SUITE_LIMIT", 2), \
+             patch.object(scope, "SMOKE_SUITES", ("SmokeTests", "MissingSmokeTests")):
             plan = self.plan(["AreaChain/Services/Store.swift"])
-        # 只跑直接引用（含跨层的 DomainTests）；同层但未引用的 ThreeTests 不再被整层带上。
-        self.assertEqual(plan["filters"], ["AreaChainTests/DomainTests", "AreaChainTests/OneTests",
-                                           "AreaChainTests/TwoTests"])
-        self.assertIn("被 3 个测试类引用，只跑直接引用", plan["notes"][0])
+        # 核心文件超上限：同名 + 冒烟集（不存在的冒烟名不传给 xcodebuild），直接引用不再全跑。
+        self.assertEqual(plan["filters"], ["AreaChainTests/SmokeTests", "AreaChainTests/StoreTests"])
+        self.assertIn("被 3 个测试类引用，超过上限 2，只跑同名测试与冒烟集，省略 2 个引用类", plan["notes"][0])
+        self.assertIn("替换日常应用前的全量", plan["notes"][0])
+
+    def test_references_at_the_limit_still_run_every_direct_reference(self):
+        self.write("AreaChain/Services/Store.swift", "final class Store {}\n")
+        self.suite("AreaChainTests/Services/OneTests.swift", "OneTests", "_ = Store()")
+        self.suite("AreaChainTests/Domain/DomainTests.swift", "DomainTests", "_ = Store()")
+        self.suite("AreaChainTests/Services/SmokeTests.swift", "SmokeTests")
+        with patch.object(scope, "REFERENCE_SUITE_LIMIT", 2), patch.object(scope, "SMOKE_SUITES", ("SmokeTests",)):
+            plan = self.plan(["AreaChain/Services/Store.swift"])
+        self.assertEqual(plan["filters"], ["AreaChainTests/DomainTests", "AreaChainTests/OneTests"])
+        self.assertEqual(plan["notes"], [])
+
+    def test_total_suite_limit_collapses_whole_plan(self):
+        paths = []
+        for index in range(3):
+            self.write(f"AreaChain/Domain/Part{index}.swift", f"struct Part{index} {{}}\n")
+            self.suite(f"AreaChainTests/Domain/Part{index}Tests.swift", f"Part{index}Tests", f"_ = Part{index}()")
+            self.suite(f"AreaChainTests/Domain/Use{index}Tests.swift", f"Use{index}Tests", f"_ = Part{index}()")
+            paths.append(f"AreaChain/Domain/Part{index}.swift")
+        self.suite("AreaChainTests/Domain/ChangedTests.swift", "ChangedTests")
+        self.suite("AreaChainTests/Services/SmokeTests.swift", "SmokeTests")
+        with patch.object(scope, "TOTAL_SUITE_LIMIT", 5), patch.object(scope, "SMOKE_SUITES", ("SmokeTests",)):
+            plan = self.plan([*paths, "AreaChainTests/Domain/ChangedTests.swift"])
+        # 7 类超过 5：只留同名（Part*Tests）、被改测试文件自己的套件与冒烟集。
+        self.assertEqual(plan["filters"], ["AreaChainTests/ChangedTests", "AreaChainTests/Part0Tests",
+                                           "AreaChainTests/Part1Tests", "AreaChainTests/Part2Tests",
+                                           "AreaChainTests/SmokeTests"])
+        self.assertIn("整次推导共 7 个测试类，超过上限 5，收敛为同名测试与冒烟集 5 类，省略 3 类", plan["notes"][-1])
+
+    def test_total_suite_limit_not_reached_keeps_every_suite(self):
+        self.write("AreaChain/Domain/Part.swift", "struct Part {}\n")
+        self.suite("AreaChainTests/Domain/PartTests.swift", "PartTests", "_ = Part()")
+        self.suite("AreaChainTests/Domain/UseTests.swift", "UseTests", "_ = Part()")
+        with patch.object(scope, "TOTAL_SUITE_LIMIT", 2), patch.object(scope, "SMOKE_SUITES", ("UseTests",)):
+            plan = self.plan(["AreaChain/Domain/Part.swift"])
+        self.assertEqual(plan["filters"], ["AreaChainTests/PartTests", "AreaChainTests/UseTests"])
+        self.assertEqual(plan["notes"], [])
+
+    def test_real_smoke_suites_exist_in_the_repository(self):
+        index = scope.TestIndex(SCRIPTS.parent)
+        self.assertEqual(index.smoke(), set(scope.SMOKE_SUITES))
+        self.assertTrue(10 <= len(scope.SMOKE_SUITES) <= 15)
 
     def test_ui_mode_never_widens_to_layer(self):
         self.write("AreaChain/Features/Row.swift", "struct Row {}\n")

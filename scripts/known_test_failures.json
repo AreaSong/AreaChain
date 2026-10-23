@@ -1,0 +1,246 @@
+{
+  "schemaVersion": 1,
+  "description": "已知既有失败（修复批 M-6R 检查点 C 定性）：只改变门禁对失败的归类，测试照常运行。firstSeen 为已复现的最早提交：0789245 经二分前后对照确认，d77da2e 为 M-6 之前的基线。",
+  "entries": [
+    {
+      "test": "AIPlanTemplateServiceTests.templateKitIncludesPublicTagsAndExcludesPrivateOrDeletedTags",
+      "firstSeen": "0789245",
+      "reason": "0789245 起“密码”名标签不再视为私密/预置，模板标签清单含“密码”",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "CalendarSpanConsumerTests.bothEntrancesRestoreFirstKeyAndListDay",
+      "firstSeen": "d77da2e",
+      "reason": "工作台顶栏找不到唯一 workspace.header.more 入口",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "CalendarSpanConsumerTests.embeddedHeaderKeepsMenuAndInspectorProjection",
+      "firstSeen": "d77da2e",
+      "reason": "工作台顶栏找不到唯一 workspace.header.more 入口",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "CalendarSpanConsumerTests.headerEditorSurvivesSpanChangesAndKeepsComposition",
+      "firstSeen": "d77da2e",
+      "reason": "工作台顶栏找不到唯一 workspace.header.more 入口",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "CalendarWeekConsumerTests.productionPageSelectionInspectionAndDraft",
+      "firstSeen": "d77da2e",
+      "reason": "周视图滚动宿主取证找不到原生滚动视图",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "CalendarWeekLayoutTests.realWorkspaceContentViewport",
+      "firstSeen": "d77da2e",
+      "reason": "周视图列滚动视图缺失（vertical.count=0）",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "CalendarWeekLayoutTests.viewportNavigationAndSelection",
+      "firstSeen": "d77da2e",
+      "reason": "周视图列滚动视图缺失（vertical.count=0）",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "DashboardProjectionTests.diarySourceBlanksSensitiveNotesBeforeCountsAndActivities",
+      "firstSeen": "0789245",
+      "reason": "0789245 起总览不再按旧 #密码 标记/“密码”名标签空白敏感手记",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "DashboardScrollTests.updatesResizeReopenAndPointerNavigation",
+      "firstSeen": "d77da2e",
+      "reason": "总览页导航后选中页仍为 dashboard",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "DaybookScrollNativeTests.knobDragUsesWindowDispatch",
+      "firstSeen": "d77da2e",
+      "reason": "滚动条拖动后叠层透明度为 0",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "DiaryButtonConsumerTests.tagSheetValidationFailureSuccessAndCancel",
+      "firstSeen": "0789245",
+      "reason": "0789245 起 isDiaryPreset 恒为 false，“密码”可被建成待办标签",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "DiaryPageListModelTests.emptyQueryListsLiveRowsAndProjectsPrivacyOnce",
+      "firstSeen": "0789245",
+      "reason": "0789245 起手记页不再按旧标记投影隐私",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "DiaryTitleHoverTests.rowsDoNotHoldEachOther",
+      "firstSeen": "d77da2e",
+      "reason": "手记标题悬停/⌘ 状态断言失败",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "DiaryTitleHoverTests.sensitiveCommandReplacementAndRemount",
+      "firstSeen": "d77da2e",
+      "reason": "手记标题悬停/⌘ 状态断言失败",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "DiaryWindowLifecycleTests.auxiliaryWindowSurvivesWorkspaceCleanupAndRemasksWhenLeavingIt",
+      "firstSeen": "0789245",
+      "reason": "0789245 起旧标记手记在小窗可直接显示，不再重新遮罩",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "MenuBarHelpSurfaceTests.diaryEntryHelpUsesOriginalCaptureContext",
+      "firstSeen": "d77da2e",
+      "reason": "菜单栏帮助卡打开后找不到捕获输入框",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "MenuBarPopoverRenderingTests.noteWindowRendersLongTextAndMasksPrivateEditor",
+      "firstSeen": "d77da2e",
+      "reason": "小窗长文渲染断言在 f4ecfa4 已失败，0789245 起又加上私密遮罩断言失败",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "MenuBarPopoverRenderingTests.popoutButtonTransfersDraftAndWindowPinIsOperable",
+      "firstSeen": "d77da2e",
+      "reason": "弹出小窗的置顶层级不是 floating",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "MenuBarStatusImageTests.nativeStatusItemNeverChangesSizeOrRecentersItsImage",
+      "firstSeen": "d77da2e",
+      "reason": "状态栏项宽 50 而非 24",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "PasswordRetryDiagnosticTests.fixedEntryWholeAndInPlace",
+      "firstSeen": "d77da2e",
+      "reason": "K 诊断：安全字段同值替换后残留（诊断型用例，按设计保留失败）",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "PasswordRetryDiagnosticTests.productionSheetBoundedMatrix",
+      "firstSeen": "d77da2e",
+      "reason": "K 诊断：安全字段同值替换后残留（诊断型用例，按设计保留失败）",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "PrivacyAutolockPickerTests.layoutOptionsAndEscape",
+      "firstSeen": "d77da2e",
+      "reason": "自动锁定下拉的原生框与公共框位置不符",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "PrivacyAutolockPickerTests.selectionRequiresFreshAuthenticationEvenWhenUnlocked",
+      "firstSeen": "d77da2e",
+      "reason": "空闲桌面重跑仍拿不到 key window（基线同样）",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "PrivacyButtonConsumerTests.backupButtonsAndPasswordCancelStayIsolated",
+      "firstSeen": "d77da2e",
+      "reason": "备份按钮超出窗口可见范围（rect.minY<0）",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "ScrollAssemblyConsumerTests.sidebarAndNestedTimeline",
+      "firstSeen": "d77da2e",
+      "reason": "侧栏滚动羽化叠层数量为 0",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "SearchMultilineDiagnosticTests.productionImports",
+      "firstSeen": "d77da2e",
+      "reason": "多行导入时父级文本换行保留为换行而非空格",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "SubtaskModelTests.addTagSkipsDiaryPresetNames",
+      "firstSeen": "0789245",
+      "reason": "0789245 起 isDiaryPreset 恒为 false，预置名不再被跳过",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "UnifiedSearchOperationInteractionTests.nativeBooleanWeekdaysDayAndTime",
+      "firstSeen": "d77da2e",
+      "reason": "原生日期格按钮在统一搜索测试宿主里找不到标识",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "UnifiedSearchSettingInteractionTests.unsupportedAndUnassembledNativeSubmissionRemainBlocked",
+      "firstSeen": "d77da2e",
+      "reason": "缺少原生控件 unified.setting.submit",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "WeekdayConsumerBaselineTests.productionLayouts",
+      "firstSeen": "d77da2e",
+      "reason": "星期选择布局超出窗口可见范围",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "WorkspaceInspectorSizingTests.eachWorkspaceScrollOwnsOneFeatherAndLeavesHeaderFixed",
+      "firstSeen": "d77da2e",
+      "reason": "工作台滚动羽化宿主数量/分栏祖先与预期不符",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "WorkspaceInspectorSizingTests.searchKeepsFocusAcrossSidebarResizeInspectorCollapseAndBodyReplacement",
+      "firstSeen": "d77da2e",
+      "reason": "工作台滚动羽化宿主数量/分栏祖先与预期不符",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "WorkspaceMenuConsumerTests.threeListingEntrancesKeepIndependentFilters",
+      "firstSeen": "d77da2e",
+      "reason": "三个清单入口的菜单节点找不到（nodes.count=0）",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "WorkspaceRenderingTests.diaryComposerKeepsNewlinesAndSavesOnce",
+      "firstSeen": "d77da2e",
+      "reason": "手记输入框滚动外框与输入外壳尺寸不一致",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "YesterdayCardActionTests.failedMovesKeepModelsRowsAndOriginalFeedback",
+      "firstSeen": "d77da2e",
+      "reason": "昨日卡片的原生按钮/候选项找不到",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "YesterdayCardActionTests.originalMoveActionOnlyMovesYesterdayTodos",
+      "firstSeen": "d77da2e",
+      "reason": "昨日卡片的原生按钮/候选项找不到",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "YesterdayCardActionTests.routineInspectionAndCompletionKeepYesterday",
+      "firstSeen": "d77da2e",
+      "reason": "昨日卡片的原生按钮/候选项找不到",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "YesterdayCardConsumerTests.contentMatrixAndTodayChangesKeepOriginalLayoutChoice",
+      "firstSeen": "d77da2e",
+      "reason": "昨日卡片文案矩阵、展开与悬停断言失败",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "YesterdayCardConsumerTests.productionLayoutsExpandThroughOriginalEntry",
+      "firstSeen": "d77da2e",
+      "reason": "昨日卡片文案矩阵、展开与悬停断言失败",
+      "registered": "2026-10-23"
+    },
+    {
+      "test": "YesterdayCardConsumerTests.shellHoverIsStaticWhileOriginalRowHoverStillDraws",
+      "firstSeen": "d77da2e",
+      "reason": "昨日卡片文案矩阵、展开与悬停断言失败",
+      "registered": "2026-10-23"
+    }
+  ]
+}
