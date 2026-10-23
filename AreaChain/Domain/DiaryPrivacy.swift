@@ -8,17 +8,20 @@ enum DiaryPrivacy {
         if !canReveal(isSensitive: isSensitive, isMasked: isMasked) { return .masked }
         return isEditing ? .editing : .text
     }
+    /// 卡片、小窗、总览、搜索、导出与备份共用的展示敏感判定：isPrivate、关联私密标签，
+    /// 以及旧 `#密码`／`#password` 正文标记与关联“密码”名标签（2026-10-23 用户决定恢复 0789245 之前的规则）。
     static func isSensitive(_ entry: DiarySnapshot, tags: [TagItem]) -> Bool {
-        entry.isPrivate || tags.contains {
-            $0.isPrivateDiary && TagIDList.contains(entry.tagIDs, $0.id)
+        entry.isPrivate || hasLegacyPrivateMarker(entry.text) || tags.contains {
+            ($0.isPrivateDiary || DiaryMemoTags.isPasswordName($0.name)) && TagIDList.contains(entry.tagIDs, $0.id)
         }
     }
 
     static func isSensitive(
         _ entry: DiarySnapshot, tagNames: [UUID: String], privateTagIDs: Set<UUID> = []
     ) -> Bool {
-        entry.isPrivate || tagNames.contains {
-            TagIDList.contains(entry.tagIDs, $0.key) && privateTagIDs.contains($0.key)
+        entry.isPrivate || hasLegacyPrivateMarker(entry.text) || tagNames.contains {
+            TagIDList.contains(entry.tagIDs, $0.key)
+                && (privateTagIDs.contains($0.key) || DiaryMemoTags.isPasswordName($0.value))
         }
     }
 
@@ -54,28 +57,26 @@ enum DiaryPrivacy {
         text.contains("#密码") || text.localizedCaseInsensitiveContains("#password")
     }
 
-    /// 统一搜索读取侧（正文、片段、图片关联、查阅）唯一的敏感判定，失败即关闭。
-    /// 0789245 起原界面的 isSensitive 不再看旧 `#密码` 标记与“密码”名标签，但旧数据仍可能只靠它们遮罩；
-    /// 搜索按 §9.40 继续把它们当敏感，只收紧读取、不改写入与原界面展示规则（修复批 M-6R）。
+    /// 统一搜索与旧搜索读取侧（正文、片段、图片关联、查阅）的敏感判定，失败即关闭：在 isSensitive 之上
+    /// 再把正文写出或关键字命中的私密标签名当敏感。只收紧读取，不改写入；requiresProtection 不加关键字，
+    /// 以免 0789245 之后写入的普通手记在 DiaryContent.read 上被判损坏（修复批 M-6R）。
     static func isSearchSensitive(_ entry: DiarySnapshot, text: String, tags: [TagItem]) -> Bool {
-        let tagIDs = Set(TagIDList.parse(entry.tagIDs))
-        if isSensitive(entry, tags: tags) || requiresProtection(text: text, tagIDs: tagIDs, tags: tags)
-            || hasLegacyPrivateMarker(text) { return true }
-        let keywords = Set(DiaryMemoTags.autoTagNames(in: text).map(TagSyntax.normalizedName))
-        return tags.contains { tag in
-            (tagIDs.contains(tag.id) && DiaryMemoTags.isPasswordName(tag.name))
-                || (tag.isPrivateDiary && keywords.contains(TagSyntax.normalizedName(tag.name)))
-        }
+        var readable = entry
+        readable.text = text
+        let written = writtenTagNames(text)
+        return isSensitive(readable, tags: tags)
+            || tags.contains { $0.isPrivateDiary && written.contains(TagSyntax.normalizedName($0.name)) }
     }
 
     /// 同一判定的元数据形式（名字表＋私密 ID 集），供不持有 TagItem 的搜索领域投影（DiaryQueryPrivacy）使用。
     static func isSearchSensitive(_ entry: DiarySnapshot, tagNames: [UUID: String], privateTagIDs: Set<UUID>) -> Bool {
-        if isSensitive(entry, tagNames: tagNames, privateTagIDs: privateTagIDs) || hasLegacyPrivateMarker(entry.text) { return true }
-        let written = Set((TagSyntax.names(in: entry.text) + DiaryMemoTags.autoTagNames(in: entry.text)).map(TagSyntax.normalizedName))
-        return tagNames.contains { id, name in
-            (TagIDList.contains(entry.tagIDs, id) && DiaryMemoTags.isPasswordName(name))
-                || (privateTagIDs.contains(id) && written.contains(TagSyntax.normalizedName(name)))
-        }
+        let written = writtenTagNames(entry.text)
+        return isSensitive(entry, tagNames: tagNames, privateTagIDs: privateTagIDs)
+            || tagNames.contains { privateTagIDs.contains($0.key) && written.contains(TagSyntax.normalizedName($0.value)) }
+    }
+
+    private static func writtenTagNames(_ text: String) -> Set<String> {
+        Set((TagSyntax.names(in: text) + DiaryMemoTags.autoTagNames(in: text)).map(TagSyntax.normalizedName))
     }
 }
 

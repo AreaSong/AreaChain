@@ -8556,3 +8556,25 @@ Claude Code `verifier` 一轮：**通过**。四项都成立：生产取值不�
 - 偶发 stalePermit（见上）和本批改过的核心文件（DiaryContentQueryBodies 无法推导，ContentQueryReadSession／Lifecycle 超过上限）：今后定向门禁只靠冒烟集兜底，替换前的全量里要重点看这几处。
 - 搜索读取仍在主线程同步执行；全量回归留到 `--single` 替换前。真实库、附件、钥匙串、输入法与 VoiceOver 仍留给用户验收。
 - **指定复核**：Claude Code `verifier` 结论**通过**，4 条低级意见（性能原始行、遗留工作树、偶发 stalePermit 样本少、核心文件今后主要靠冒烟集）已记入缺口或清理，未改代码。
+
+### 9.105 用户决定：恢复原界面手记隐私规则
+
+2026-10-23（Asia/Shanghai）。修复批 M-6R 交接后，用户决定“恢复 0789245 之前的原界面隐私规则：#密码/#password 标记和‘密码’名标签重新算敏感，修好那 7 条既有失败”。只用合成数据与隔离 QA，本地提交、不推送、不安装。
+
+#### 改了什么
+
+- `DiaryPrivacy.isSensitive`（TagItem 与名字表两种形式）恢复为 0789245 之前：`isPrivate`、关联私密标签、关联“密码”名标签（`DiaryMemoTags.isPasswordName`）、正文旧 `#密码`／`#password` 标记之一即敏感。卡片、小窗、总览、旧搜索、导出与私密备份、指令侧的敏感拒绝都经它，一并恢复。
+- `isSearchSensitive` 改为在 isSensitive 之上只补“正文写出或关键字命中的私密标签名”，搜索读取侧结果不变。
+- 手记三分类名不当作待办标签：`DayBoardMutations.addTag`／`resolveTaskTag` 与详情新建标签（`tag.preset.reserved` 提示）恢复守卫，与 TagSyntax 解析、补全、计划导入一致；AI 模板公开标签排除“密码”名标签。
+- **刻意没恢复**：`requiresProtection` 不再加正文关键字名（它也是 `DiaryContent.read` 的完整性检查，加回去会让 0789245 之后写入的普通手记被判损坏、读不出）；内置分类种子与按关键字自动打标、`TagItem.isDiaryPreset`（标签管理的预置保护）保持 0789245 的做法，相关仓储测试不动。
+
+#### 测试
+
+- 7 条全部通过：AIPlanTemplate、DashboardProjection、DiaryButtonConsumer、DiaryPageListModel、DiaryWindowLifecycle、SubtaskModel、MenuBarPopover.noteWindow。其中 noteWindow 的长文断言自 f4ecfa4 起失败，原因是小窗加了标题框后测试助手先命中标题框；改为新助手 `noteBodyEditor` 只找正文编辑器，断言内容不变。
+- 0789245 按新规则改写的两条断言恢复为原来更严的期望：DiaryPrivacyTests.recognizesAuthorizedPrivateTagsAndLegacyMigrationMarkers、InputSyntaxPersistenceTests.quotedWhitespaceNamesKeepExistingDiaryClassification。
+- 登记表 40→33 条（移除这 7 条）。回归：91 类 625 次＋重跑 3 类与 9 条，除登记的既有失败外全部通过。
+
+#### 影响与缺口
+
+- 0789245 之后新建的“密码”名标签所关联的手记、正文带 `#密码` 的手记，会重新在原界面遮罩，并被排除出普通导出与指令执行（改为打开原页面）。这正是恢复的旧行为，但对用户在这期间建的数据是可见变化。
+- 真实库上的遮罩效果未验证，留给用户验收。

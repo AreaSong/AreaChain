@@ -358,7 +358,7 @@ enum DayBoardMutations {
         ontoTodo todo: TodoItem? = nil, ontoRoutine routine: DailyRoutine? = nil
     ) -> Bool {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return false }
+        guard !trimmed.isEmpty, !DiaryMemoTags.isPresetName(trimmed) else { return false }
         guard let tag = resolveTaskTag(named: trimmed, context: context) else { return false }
         return ModelChanges.attempt(in: context) {
             if let todo, !TagIDList.contains(todo.tagIDs, tag.id) {
@@ -370,8 +370,10 @@ enum DayBoardMutations {
         }
     }
 
+    /// 手记三分类（密码／小巧思／日记）不当作待办标签，与 TagSyntax 解析、补全和计划导入一致。
     static func resolveTaskTag(named name: String, among existing: [TagItem] = [], context: ModelContext) -> TagItem? {
-        ModelChanges.value(in: context) { try catalogRepo(for: context).resolveTaskTag(name: name) } ?? nil
+        guard !DiaryMemoTags.isPresetName(name.trimmingCharacters(in: .whitespacesAndNewlines)) else { return nil }
+        return ModelChanges.value(in: context) { try catalogRepo(for: context).resolveTaskTag(name: name) } ?? nil
     }
 
     static func resolveTag(named name: String, among existing: [TagItem] = [], context: ModelContext) -> TagItem? {

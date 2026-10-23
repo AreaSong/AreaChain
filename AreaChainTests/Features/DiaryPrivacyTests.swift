@@ -10,16 +10,19 @@ struct DiaryPrivacyTests {
         let tag = TagItem(name: "My PASSWORD", sortOrder: 0, deletedAt: .now, isPrivateDiary: true)
         let entry = DiaryEntry(text: "测试私密正文", dayKey: "2026-09-11", tagIDs: tag.id.uuidString)
         #expect(DiaryPrivacy.isSensitive(entry.snapshot, tags: [tag]))
+        // 2026-10-23 用户决定恢复 0789245 之前的规则：“密码”名标签与旧 #密码／#password 标记本身就算敏感。
         tag.isPrivateDiary = false
-        #expect(!DiaryPrivacy.isSensitive(entry.snapshot, tags: [tag]))
+        #expect(DiaryPrivacy.isSensitive(entry.snapshot, tags: [tag]))
         entry.tagIDs = ""
         #expect(!DiaryPrivacy.isSensitive(entry.snapshot, tags: [tag]))
         entry.text = "#密码 测试"
-        #expect(!DiaryPrivacy.isSensitive(entry.snapshot, tags: []))
+        #expect(DiaryPrivacy.isSensitive(entry.snapshot, tags: []))
         #expect(DiaryPrivacy.hasLegacyPrivateMarker(entry.text))
         entry.text = "#PASSWORD 测试"
+        #expect(DiaryPrivacy.isSensitive(entry.snapshot, tags: []))
         #expect(DiaryPrivacy.hasLegacyPrivateMarker(entry.text))
         entry.text = "关于 password 的一般说明"
+        #expect(!DiaryPrivacy.isSensitive(entry.snapshot, tags: []))
         #expect(!DiaryPrivacy.hasLegacyPrivateMarker(entry.text))
     }
 

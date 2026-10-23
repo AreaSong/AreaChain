@@ -137,6 +137,13 @@ extension MenuBarPopoverRenderingTests {
         return view.subviews.lazy.compactMap { diaryField(in: $0) }.first
     }
 
+    /// 小窗正文编辑器（SyntaxTextEditor 的 NSTextView）；自 f4ecfa4 起小窗顶部多了标题输入框，
+    /// diaryEditor 会先命中标题框的字段编辑器，所以正文断言用这个只找非字段编辑器的入口。
+    func noteBodyEditor(in view: NSView) -> NSTextView? {
+        if let editor = view as? NSTextView, editor.isEditable, !editor.isFieldEditor { return editor }
+        return view.subviews.lazy.compactMap { noteBodyEditor(in: $0) }.first
+    }
+
     func diaryEditor(in view: NSView) -> NSTextView? {
         if let editor = view as? NSTextView, editor.isEditable, !editor.isFieldEditor { return editor }
         if let field = diaryField(in: view) {

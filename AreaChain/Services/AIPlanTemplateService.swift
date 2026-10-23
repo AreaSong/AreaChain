@@ -10,8 +10,9 @@ enum AIPlanTemplateService {
 
     /// 仅提取未删除、非私密、非手记预设三分类的公开标签名，供 AI 模板参考。
     static func publicTagNames(from tags: [TagItem]) -> [String] {
+        // “密码”名标签按手记隐私规则也是敏感的，不进对外模板。
         Catalog.liveTaskTags(tags)
-            .filter { !$0.isPrivateDiary }
+            .filter { !$0.isPrivateDiary && !DiaryMemoTags.isPasswordName($0.name) }
             .map(\.name)
     }
 

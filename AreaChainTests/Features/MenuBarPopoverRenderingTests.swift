@@ -242,7 +242,7 @@ struct MenuBarPopoverRenderingTests {
         defer { window.contentView = nil; window.orderOut(nil) }
         let view = try #require(window.contentView)
         try await settle(view)
-        #expect(diaryEditor(in: view)?.string == entry.text)
+        #expect(noteBodyEditor(in: view)?.string == entry.text)
         try snapshot(view, name: "note-window-\(locale)-\(scheme == .dark ? "dark" : "light")")
         window.setContentSize(NSSize(width: 360, height: 300))
         try await settle(view)

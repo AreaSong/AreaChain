@@ -1,13 +1,7 @@
 {
   "schemaVersion": 1,
-  "description": "已知既有失败（修复批 M-6R 检查点 C 定性）：只改变门禁对失败的归类，测试照常运行。firstSeen 为已复现的最早提交：0789245 经二分前后对照确认，d77da2e 为 M-6 之前的基线。",
+  "description": "已知既有失败（修复批 M-6R 检查点 C 定性）：只改变门禁对失败的归类，测试照常运行。firstSeen 为已复现的最早提交：0789245 经二分前后对照确认，d77da2e 为 M-6 之前的基线。 2026-10-23 用户决定恢复 0789245 之前的原界面隐私规则后，0789245 引起的 7 条已修复并移除。",
   "entries": [
-    {
-      "test": "AIPlanTemplateServiceTests.templateKitIncludesPublicTagsAndExcludesPrivateOrDeletedTags",
-      "firstSeen": "0789245",
-      "reason": "0789245 起“密码”名标签不再视为私密/预置，模板标签清单含“密码”",
-      "registered": "2026-10-23"
-    },
     {
       "test": "CalendarSpanConsumerTests.bothEntrancesRestoreFirstKeyAndListDay",
       "firstSeen": "d77da2e",
@@ -45,12 +39,6 @@
       "registered": "2026-10-23"
     },
     {
-      "test": "DashboardProjectionTests.diarySourceBlanksSensitiveNotesBeforeCountsAndActivities",
-      "firstSeen": "0789245",
-      "reason": "0789245 起总览不再按旧 #密码 标记/“密码”名标签空白敏感手记",
-      "registered": "2026-10-23"
-    },
-    {
       "test": "DashboardScrollTests.updatesResizeReopenAndPointerNavigation",
       "firstSeen": "d77da2e",
       "reason": "总览页导航后选中页仍为 dashboard",
@@ -60,18 +48,6 @@
       "test": "DaybookScrollNativeTests.knobDragUsesWindowDispatch",
       "firstSeen": "d77da2e",
       "reason": "滚动条拖动后叠层透明度为 0",
-      "registered": "2026-10-23"
-    },
-    {
-      "test": "DiaryButtonConsumerTests.tagSheetValidationFailureSuccessAndCancel",
-      "firstSeen": "0789245",
-      "reason": "0789245 起 isDiaryPreset 恒为 false，“密码”可被建成待办标签",
-      "registered": "2026-10-23"
-    },
-    {
-      "test": "DiaryPageListModelTests.emptyQueryListsLiveRowsAndProjectsPrivacyOnce",
-      "firstSeen": "0789245",
-      "reason": "0789245 起手记页不再按旧标记投影隐私",
       "registered": "2026-10-23"
     },
     {
@@ -87,21 +63,9 @@
       "registered": "2026-10-23"
     },
     {
-      "test": "DiaryWindowLifecycleTests.auxiliaryWindowSurvivesWorkspaceCleanupAndRemasksWhenLeavingIt",
-      "firstSeen": "0789245",
-      "reason": "0789245 起旧标记手记在小窗可直接显示，不再重新遮罩",
-      "registered": "2026-10-23"
-    },
-    {
       "test": "MenuBarHelpSurfaceTests.diaryEntryHelpUsesOriginalCaptureContext",
       "firstSeen": "d77da2e",
       "reason": "菜单栏帮助卡打开后找不到捕获输入框",
-      "registered": "2026-10-23"
-    },
-    {
-      "test": "MenuBarPopoverRenderingTests.noteWindowRendersLongTextAndMasksPrivateEditor",
-      "firstSeen": "d77da2e",
-      "reason": "小窗长文渲染断言在 f4ecfa4 已失败，0789245 起又加上私密遮罩断言失败",
       "registered": "2026-10-23"
     },
     {
@@ -156,12 +120,6 @@
       "test": "SearchMultilineDiagnosticTests.productionImports",
       "firstSeen": "d77da2e",
       "reason": "多行导入时父级文本换行保留为换行而非空格",
-      "registered": "2026-10-23"
-    },
-    {
-      "test": "SubtaskModelTests.addTagSkipsDiaryPresetNames",
-      "firstSeen": "0789245",
-      "reason": "0789245 起 isDiaryPreset 恒为 false，预置名不再被跳过",
       "registered": "2026-10-23"
     },
     {

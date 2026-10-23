@@ -2,7 +2,7 @@
 
 本文是统一搜索与指令体系的**现状总览**：只记当前状态、覆盖、缺口和每批必读入口。设计、规则与历史证据仍以[权威设计](unified-search-commands.md)为准，本文不复制。每批怎样更新本文见[技能路由的路由维护](../skill-routing.md#路由维护)。
 
-最后更新：2026-10-23，修复批 M-6R 接入前阻断修复（[§9.104](unified-search-commands.md#9104-修复批-m-6r接入前阻断修复)）。
+最后更新：2026-10-23，恢复原界面手记隐私规则（[§9.105](unified-search-commands.md#9105-用户决定恢复原界面手记隐私规则)）；修复批 M-6R 接入前阻断修复（[§9.104](unified-search-commands.md#9104-修复批-m-6r接入前阻断修复)）。
 
 ## 目标与阶段
 
@@ -104,11 +104,10 @@
 
 ## 既有失败
 
-修复批 M-6R 检查点 C 定性，逐条登记在 [`scripts/known_test_failures.json`](../scripts/known_test_failures.json)（门禁只改变归类，测试照常运行）。共 40 条，首次复现提交：
+修复批 M-6R 检查点 C 定性，逐条登记在 [`scripts/known_test_failures.json`](../scripts/known_test_failures.json)（门禁只改变归类，测试照常运行）。现存 33 条，首次复现提交都是 d77da2e（M-6 之前的基线，未再向前二分）：CalendarSpanConsumerTests（3）、CalendarWeekConsumerTests、CalendarWeekLayoutTests（2）、DashboardScrollTests、DaybookScrollNativeTests、DiaryTitleHoverTests（2）、MenuBarHelpSurfaceTests、MenuBarPopoverRenderingTests.popoutButton…、MenuBarStatusImageTests、PasswordRetryDiagnosticTests（2，诊断型）、PrivacyAutolockPickerTests（2）、PrivacyButtonConsumerTests、ScrollAssemblyConsumerTests、SearchMultilineDiagnosticTests、UnifiedSearchOperationInteractionTests、UnifiedSearchSettingInteractionTests、WeekdayConsumerBaselineTests、WorkspaceInspectorSizingTests（2）、WorkspaceMenuConsumerTests、WorkspaceRenderingTests、YesterdayCardActionTests（3）、YesterdayCardConsumerTests（3）。
 
-- **0789245（二分与前后对照确认）**：该提交从共享 `DiaryPrivacy.isSensitive` 去掉旧 `#密码`/`#password` 标记与“密码”名标签、并让 `TagItem.isDiaryPreset` 恒为 false。搜索读取侧已在 M-6R 修复；**原界面**仍受影响、待用户决定是否为有意的产品变化：AIPlanTemplateServiceTests、DashboardProjectionTests、DiaryButtonConsumerTests、DiaryPageListModelTests、DiaryWindowLifecycleTests、SubtaskModelTests（各 1）；MenuBarPopoverRenderingTests.noteWindowRendersLongTextAndMasksPrivateEditor（长文断言 f4ecfa4 已失败，遮罩断言自 0789245）。
-- **d77da2e（M-6 之前的基线，未再向前二分）**：CalendarSpanConsumerTests（3）、CalendarWeekConsumerTests、CalendarWeekLayoutTests（2）、DashboardScrollTests、DaybookScrollNativeTests、DiaryTitleHoverTests（2）、MenuBarHelpSurfaceTests、MenuBarPopoverRenderingTests.popoutButton…、MenuBarStatusImageTests、PasswordRetryDiagnosticTests（2，诊断型）、PrivacyAutolockPickerTests（2）、PrivacyButtonConsumerTests、ScrollAssemblyConsumerTests、SearchMultilineDiagnosticTests、UnifiedSearchOperationInteractionTests、UnifiedSearchSettingInteractionTests、WeekdayConsumerBaselineTests、WorkspaceInspectorSizingTests（2）、WorkspaceMenuConsumerTests、WorkspaceRenderingTests、YesterdayCardActionTests（3）、YesterdayCardConsumerTests（3）。
-- 焦点前置失败（拿不到 key window）在桌面空闲时重跑后通过的不登记；TagHelpSurfaceConsumerTests 两项基线失败、当前通过；DashboardRenderingTests 的 segv 在两次对照中都未复现。
+- 0789245 引起的 7 条原界面隐私失败已随 2026-10-23 用户决定恢复原规则而修复并移出登记表，见 [§9.105](unified-search-commands.md#9105-用户决定恢复原界面手记隐私规则)。
+- 焦点前置失败（拿不到 key window）在桌面空闲重跑后通过的不登记；TagHelpSurfaceConsumerTests 两项基线失败、当前通过；DashboardRenderingTests 的 segv 两次对照都未复现。
 
 ## 补复核待办
 
