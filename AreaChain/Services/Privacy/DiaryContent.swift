@@ -15,9 +15,10 @@ enum DiaryContent {
     /// 同批目录重载只供搜索门禁持有的许可调用；普通调用方不能传空目录绕过旧检查。
     static func read(_ entry: DiaryEntry, vault: PrivacyVault, protectionTags: [TagItem],
                      permit: ContentQueryBodyReadPermit) throws -> String {
-        try permit.validate()
+        // 逐条路径只做 O(1) 上下文与观察复查；整表事实由调用方在读取边界全量复核。
+        try permit.validateStep()
         let text = try readChecked(entry, vault: vault, protectionTags: protectionTags)
-        try permit.validate()
+        try permit.validateStep()
         return text
     }
 

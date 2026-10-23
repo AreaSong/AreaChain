@@ -18,7 +18,7 @@ extension DiaryContentQueryReader {
         let ids = Set((tags ?? []).map(\.id))
         let needsBody = batch.session.typeAnalysis.possibleTypes.contains(.diary)
         for index in rows.indices where groups[rows[index].id]?.count == 1 && complete {
-            try permit.validate()
+            try permit.validateStep()
             let row = rows[index]
             if row.hasProtectedContent {
                 facts.record(originals[index], protection: .protected)
@@ -30,7 +30,7 @@ extension DiaryContentQueryReader {
             else { continue }
             // 活行只作为图片拥有者保护核验；正文从不变成墓碑候选。
             let text = try? dependencies.readContent(row, vault: vault, tags: tags, permit: permit)
-            try permit.validate()
+            try permit.validateStep()
             guard let text else { continue }
             var value = originals[index]
             value.text = text; value.isContentAvailable = true
@@ -79,15 +79,19 @@ extension DiaryContentQueryReader {
         let needsBodies = batch.session.typeAnalysis.possibleTypes.contains(.diary)
         var values = originals
         for index in rows.indices {
-            try permit.validate()
+            // 逐条只做 O(1) 复查（M-6R）：上下文与已读字段观察，再核对本行仍是捕获时的那一行；整表事实在循环前后全量复核。
+            try permit.validateStep()
             let row = rows[index]
+            guard metadataOnly(row) == originals[index], ProtectionStamp(row) == protection[index] else {
+                throw ContentQueryReadSessionError.stalePermit
+            }
             guard groups[row.id]?.count == 1, row.deletedAt == nil,
                   DiaryQueryMetadata.hasValidTagIDs(row.tagIDs),
                   Set(TagIDList.parse(row.tagIDs)).isSubset(of: tagIDs) else { continue }
             // 锁定不能阻断可靠普通正文；保护行则必须使用当前（而非捕获的）解锁事实。
             if row.hasProtectedContent && (dependencies.ordinaryOnly || !needsBodies || !vault.isUnlocked) { continue }
             let text = try? dependencies.readContent(row, vault: vault, tags: tags, permit: permit)
-            try permit.validate()
+            try permit.validateStep()
             guard let text else { continue }
             var value = originals[index]
             value.text = text

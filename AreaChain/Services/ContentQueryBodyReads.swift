@@ -25,18 +25,15 @@ struct ContentQueryBodyReads {
     func readContent(_ entry: DiaryEntry, vault: PrivacyVault, tags: [TagItem],
                      permit: ContentQueryBodyReadPermit) throws -> String {
         try observeContent(.willRead)
-        try permit.validate()
-        let changes = ContentQueryReadGate()
+        try permit.validateStep()
+        let changes = permit.observation
         let result = withObservationTracking {
             Result { try DiaryContent.read(entry, vault: vault, protectionTags: tags, permit: permit) }
         } onChange: { changes.revoke() }
-        // 只观察实际合法读取过的字段；不为监视旧正文另取明文副本。
-        permit.retainFacts {
-            guard changes.state.epoch == 0 else { throw ContentQueryReadSessionError.stalePermit }
-        }
+        // 只观察实际合法读取过的字段；不为监视旧正文另取明文副本。变化落在许可共用闸门，逐条与全量复查都会看到。
         let value = try result.get()
         try observeContent(.didRead)
-        try permit.validate()
+        try permit.validateStep()
         return value
     }
 

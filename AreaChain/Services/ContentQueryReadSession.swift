@@ -484,17 +484,17 @@ final class ContentQueryReadSession {
 
 struct ContentQueryReadHandle: Equatable { fileprivate let id: UUID }
 
-/// 仅本文件的当前读取/查阅校验路径生成，不可由调用方拼装。
+/// 仅本文件的校验路径生成。validate：上下文＋全部登记事实（整表复查），只在读取边界、准备收尾、发布与查阅调用；validateStep：上下文＋已读字段观察闸门，O(1)，供逐条读取（修复批 M-6R，不变式见 §9.104）。
 @MainActor
 final class ContentQueryBodyReadPermit {
     private let check: () throws -> Void
     private var facts: [() throws -> Void] = []
-    fileprivate init(validate: @escaping () throws -> Void) { check = validate }
+    let observation = ContentQueryReadGate() // 已读正文与保护字段共用：任一变化即永久失效，也是第一条登记事实。
+    fileprivate init(validate: @escaping () throws -> Void) { check = validate; facts = [observation.requireUnchanged] }
     func validate() throws { try check(); try validateFacts() }
+    func validateStep() throws { try check(); try observation.requireUnchanged() }
     func retainFacts(_ check: @escaping () throws -> Void) { facts.append(check) }
     func validateFacts() throws {
-        do { for check in facts { try check() } }
-        catch let error as ContentQueryReadSessionError { throw error }
-        catch { throw ContentQueryReadSessionError.readFailed }
+        do { for check in facts { try check() } } catch { throw (error as? ContentQueryReadSessionError) ?? .readFailed }
     }
 }
