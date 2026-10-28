@@ -8661,3 +8661,36 @@ README、features、usage、architecture 改为统一搜索描述并删开关说
 - `./scripts/build.sh` 通过（development，staticSignatureVerified=true，未安装）；`--profile static --strict`（敏感日志候选 0）、scripts/tests 339、全库 `swiftlint lint --strict` 0、check_workflow、`git diff --check` 通过。
 - 缺口：`RoutineSubtaskRowView` 的失焦保存只改判断、无专门用例；导航让出 20ms 依赖一次渲染即可跑完失焦回调（用例证明当前环境成立）；菜单栏手记页签标签筛选不作用于结果；既有 N-M1 用例 `saves` 观察夹具上下文；真人输入法、VoiceOver 未做。`docs/usage.md` 在另一项任务暂存范围内，本批未改，需补的句子见交接。
 - 指定复核（Claude Code `verifier`，2026-10-28）**通过**：A／B／C、提交范围（与另一项任务的 32 个暂存文件无重叠）、未推送、全库 SwiftLint 0 均符合，复核者自行重跑新增三类与 N-M1 回归通过。四条低级意见不阻断、未改代码：菜单栏手记页签不再显示 `#标签` 胶囊（旧版有，已列遗留，待用户确认）；导航前保存靠 20ms 让出，取消或渲染慢时退回留草稿；子任务／习惯子任务 `commitEdit` 无 `retainsMarkedDraft` 守卫（导航路径已被 `validateHost` 挡住，非导航与旧界面一致）；`RoutineSubtaskRowView` 无专门用例。未覆盖：24 类全集与干净副本对照未由复核者重跑。
+
+### 9.108 修复批 M-7G：失焦恢复与指令可用性
+
+2026-10-28（Asia/Shanghai）。用户在 Debug 并存版实测：选中“切换外观”回车无反应、`/go/tags` 报 `unified.navigation.stale`、结果区一直“已隐藏”、几乎每条指令都标“暂不可用”。授权改代码、按检查点本地提交（不推送、不安装）；只跑定向测试，全量留给 Z-2。
+
+#### A 失焦遮罩恢复不了（根因，`d2e5d03`）
+
+- **根因**：窗口失去 key 时 [UnifiedSearchResults.swift](../AreaChain/Features/Search/UnifiedSearchResults.swift):68–75、[UnifiedSearchOperationPanel.swift](../AreaChain/Features/Search/UnifiedSearchOperationPanel.swift):46–53、[WorkspaceContentReturnKey.swift](../AreaChain/Features/Workspace/WorkspaceContentReturnKey.swift):19–25 调 `loseFocus(expecting:)` 设 `isMasked`（[ContentQueryReadSession.swift](../AreaChain/Services/ContentQueryReadSession.swift):346–355）；解除的 `resumeDisplay`（:357–363）在生产代码只有图片查阅与返回搜索两处调用。打字、Return、⌘F 都不恢复，`eligibleHost()`（:448）抛 `masked`：`operationVisible` 为假、`beginOperation` 静默返回 nil，导航报 stale，结果一直隐藏。菜单栏浮层每次收起都失去 key，几乎每次中招。
+- **第二个独立原因**：工作台刚打开时 `ordinaryWorkspaceVisit` 按空查询把 `searchPresentation` 设为 false，此时直接输入指令，`isNavigationPresented` 为真，`beginOperation` 同样静默挡住（与失焦无关）。
+- **以前的测试为什么没发现**：隔离测试从不切换窗口，只直接调用 `loseFocus` 后再手工 `resumeDisplay`；没有“先输入内容查询”之外的指令入口用例。
+- **复现**：新增 UnifiedSearchFocusRecoveryTests 用另一个窗口真实抢走 key 再交回（不调 `loseFocus`）。修复前工作台与菜单栏一致：切回后仍遮罩；打字后读取抛 `stalePermit`；`/setting/appearance` 回车无面板；`/go/tags` 得到 stale；门禁拒绝无说明。
+- **恢复规则**：唯一入口 `resumeForExplicitAction`（[UnifiedSearchDisplayResume.swift](../AreaChain/Features/Search/UnifiedSearchDisplayResume.swift)）。显式动作——改字（`edit`）、接受候选（`accept`）、Return／⌘Return／↑↓／空格选择（`intent`，Esc 除外）、⌘F（工作台快捷键与菜单栏键盘监听）——先解除本地遮罩、按协调者当前查询重读，读完才处理这次动作；普通文字改动由 `edit` 自己按新文字重读。窗口重新拿到 key 本身不恢复。
+- **隐私边界**：只调用 `resumeDisplay`；锁定（willLock）、认证中／更改方式中、vault 不可用、隐私代次与页面上下文仍由 `eligibleHost` 挡住。锁定按 D3 清掉的查询不恢复：`ContentQueryReducer.privacyReset` 后查询绑定为 `privacyInvalidated`，再打字被拒绝，只有重新进入页面才能重建（既有设计，见风险）。
+- **工作台原页面**：没有返回票据且 `searchPresentation` 为 false 时，输入指令即显示搜索页；从搜索导航到的目的地保留返回票据，不在这里改。
+- **不再静默**：`beginOperation`、提交入口（`requestOperationSubmit`）、读取门禁（`pageContextRequired`／`vaultBusy`／`vaultUnavailable`）在两宿主共用的反馈行给出 `unified.gate.*` 说明；“已隐藏”改为“打字、按回车或 ⌘F 重新显示”。
+
+#### B 候选接受后 Return 被占用（`1541ee5`，修正 `f64314a`）
+
+- **证据**：接受“切换外观”候选后候选仍活动，选中项仍是同一条 `command:setting.appearance`；之后每次 Return 都原地重复接受，发不出 `.open`（第一次接受已开始草稿，所以单独看不出失效）。
+- **修复**：Return 遇到选中项是“接受后文字不变”的指令级候选（complete／chooseParameter）时发 `.open`，Tab 仍接受；参数值候选照常。初版改为不列出这类候选，家族原生用例发现完整写出 `/tasks/filter` 时 Return 会接受相邻的 `tasks.kind`，故修正为候选列表不动。
+
+#### C 全目录核对与标签如实显示
+
+- **唯一判断入口**：`UnifiedSearchController.disposition(for:)`（[UnifiedSearchCommandDisposition.swift](../AreaChain/Features/Search/UnifiedSearchCommandDisposition.swift)）。导航沿 `navigationRoute(for:)`——`executeNavigation` 改为按它分派，不另写名单；操作沿 `routesAdapter`——`initialBaseline(for:)` 改为复用它，行为不变；另加 `supportsSetting` 与 `routine.create`。结果值 `CommandHostDisposition`（Domain）。
+- **四类标签**（候选行、`.help`、可访问性与状态行同源，单行截断）：可执行“Return 开始 · 预览后确认”（导航与系统动作为“Return 前往”）；打开原页面“在原页面完成 · 打开<页面名>”（帮助、详情等为“Return 打开<名称>”）；目录不可用“不可用 · <原因>”；未接上才显示“暂不可用 · 仍可填写参数”。英文同步。分组与范围标签不变。
+- **目录级用例**：UnifiedSearchCommandDispositionTests 对 247 条（除分组、范围）各走 `edit → accept → intent(.open) → 草稿 → intent(.submit)`，按实际行为归类并断言与标签一致。工作台：可执行 158、打开原页面 85、目录不可用 1（tag.unlinkGlobal）、未接上 3；菜单栏：可执行 64、目录不可用 5、未接上 178。“切换外观”“捕获附来源应用”两宿主均可执行。
+- **各家族原生端到端**：UnifiedSearchFamilyNativeTests，工作台 16 个家族各一条、菜单栏设置／任务新建／手记新建，一半先真实切走再切回。深度如实：设置（外观选深色）在原生里写入偏好；其余家族到达 ⌘Return 提交入口并得到对应适配器回应（预览、确认或具体失败），需要对象的家族不在此选对象。
+- **未接上清单**：工作台 `occurrence.inspect`、`trash.browse`、`inspector.close`；菜单栏没有工作台路由与页面指令（§9.103），全部导航、打开原页面与页面指令共 178 条“未接上”，标签如实显示。覆盖表 T6、D1、N3 补注。
+
+#### 验证与残余风险
+
+- 验证：A＋B 与 C 两次按改动推导的定向门禁（97／100 个类）：后台轮通过；前台轮超过 1800 秒上限被门禁记为超时，xcresult 显示计划内全部类已执行，失败 3 项均在已知登记表内（MenuBarHelpSurfaceTests.diaryEntryHelpUsesOriginalCaptureContext、UnifiedSearchOperationInteractionTests.nativeBooleanWeekdaysDayAndTime、UnifiedSearchSettingInteractionTests.unsupportedAndUnassembledNativeSubmissionRemainBlocked）；新增五个套件与受影响套件另行定向通过。未跑 `--profile full`。`./scripts/build.sh` 构建验签通过（描述文件 2026-10-28 12:50 UTC 到期）；check_workflow、scripts/tests 339 项、static --strict（敏感日志候选 0）、SwiftLint（AreaChain／AreaChainTests 逐文件）0、diff --check 通过。
+- 风险：锁定后菜单栏查询绑定停在 `privacyInvalidated`，据代码核对只有重新装配才能再输入（工作台需重新进入页面；未单独测试），本批只给出说明，不改隐私生命周期；菜单栏导航类未接上；家族用例多数未走到写入。
