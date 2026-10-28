@@ -20,6 +20,8 @@ struct UnifiedSearchInput: View {
     var showsStatus = true
     /// 宿主可收窄最小宽度（菜单栏底栏）；nil 沿布局默认值，候选浮层高度仍按布局。
     var minimumWidth: CGFloat?
+    /// `#` 候选可列的已有标签名；宿主按旧搜索取存活标签，不传则 `#` 不出候选。
+    var availableTags: [String] = []
     @Binding var focused: Bool
     @Environment(\.locale) private var locale
     @State private var state: UnifiedSearchInputState
@@ -28,8 +30,9 @@ struct UnifiedSearchInput: View {
          layout: UnifiedSearchInputLayout = .standard, parser: CommandPathParser = .init(),
          configuration: CommandDiscoveryConfiguration = .standard, reset: UnifiedSearchInputReset? = nil,
          parameter: UnifiedSearchParameterContext? = nil, previewBelow: Bool = false, showsStatus: Bool = true,
-         minimumWidth: CGFloat? = nil) {
+         minimumWidth: CGFloat? = nil, availableTags: [String] = []) {
         self.minimumWidth = minimumWidth
+        self.availableTags = availableTags
         self.buffer = buffer
         _focused = focused
         self.actions = actions
@@ -56,7 +59,7 @@ struct UnifiedSearchInput: View {
                     commandChord: .init(keyCode: ShortcutKey.returnKey, modifiers: ShortcutModifier.command),
                     allowsShiftNewline: false, unifiedSearch: state, searchBuffer: buffer,
                     searchConfiguration: .init(actions: actions, parser: parser, discovery: configuration,
-                                               locale: locale, parameter: parameter)
+                                               locale: locale, parameter: parameter, availableTags: availableTags)
                 )
                 .accessibilityLabel(Text("unified.input.label"))
                 .accessibilityIdentifier("unified.search.input")

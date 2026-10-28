@@ -58,12 +58,15 @@ private struct UnifiedSearchOverlay: View {
                 state: state.suggestions, growsUpward: placement.growsUpward,
                 width: placement.frame.width, maxHeight: placement.frame.height, motionDisabled: reduceMotion || motionDisabled,
                 onCommit: { item in
+                    if state.showsSyntax { _ = state.accept(syntax: item); return }
                     guard let completion, let candidate = completion.result.candidates.first(where: { $0.id == item.id }) else { return }
                     _ = state.accept(candidate, source: completion)
                 },
                 customRow: { item, selected in
-                    AnyView(UnifiedSearchCandidateRow(candidate: completion?.result.candidates.first { $0.id == item.id },
-                                                     selected: selected, locale: source.locale))
+                    state.showsSyntax
+                        ? AnyView(UnifiedSearchSyntaxRow(candidate: item, selected: selected, locale: source.locale))
+                        : AnyView(UnifiedSearchCandidateRow(candidate: completion?.result.candidates.first { $0.id == item.id },
+                                                           selected: selected, locale: source.locale))
                 }, rowHeight: 68, listMaximumHeight: source.layout.maximumSuggestionsHeight - 25
             )
             .environment(\.locale, source.locale)
@@ -106,6 +109,32 @@ private struct UnifiedSearchCandidateRow: View {
         if candidate.category == .group { return L10n.format("unified.input.browse", locale: locale) }
         if candidate.category == .scope { return L10n.format("unified.input.scope", locale: locale) }
         return L10n.format("unified.input.unavailable", locale: locale)
+    }
+}
+
+/// `#`／`!`／`@` 语法候选行：与指令候选行同一字号、内边距与选中底色，只换成候选标题与用途说明。
+private struct UnifiedSearchSyntaxRow: View {
+    let candidate: SyntaxCandidate
+    let selected: Bool
+    let locale: Locale
+
+    var body: some View {
+        let summary = candidate.subtitle.map { L10n.format($0, locale: locale) } ?? ""
+        VStack(alignment: .leading, spacing: 2) {
+            HStack {
+                Text(verbatim: candidate.title).font(DaybookType.body.weight(.medium)).lineLimit(1)
+                Spacer(minLength: 4)
+                Text(verbatim: candidate.kind.symbol).font(DaybookType.micro)
+            }
+            Text(verbatim: summary).font(DaybookType.caption).lineLimit(1)
+        }
+        .foregroundStyle(DaybookPalette.text.primary)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(4)
+        .background(RoundedRectangle(cornerRadius: DaybookRadius.xs)
+            .fill(selected ? DaybookPalette.accent.fill : .clear))
+        .help(candidate.title + "\n" + summary)
+        .accessibilityElement(children: .combine)
     }
 }
 

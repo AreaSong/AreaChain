@@ -45,6 +45,7 @@ struct UnifiedSearchTestFixture: View {
     var motionDisabled = false
     var results: UnifiedSearchController?
     var operations = false
+    var availableTags: [String] = []
 
     var body: some View {
         if let results {
@@ -53,7 +54,8 @@ struct UnifiedSearchTestFixture: View {
         } else {
         VStack {
             if !top { Spacer() }
-            UnifiedSearchInput(buffer: model.buffer, focused: $model.focused, actions: model.actions, layout: layout)
+            UnifiedSearchInput(buffer: model.buffer, focused: $model.focused, actions: model.actions, layout: layout,
+                               availableTags: availableTags)
             if top { Spacer() }
             // 下方保留宿主内容区域；没有预览编辑器或伪造结果。
             Color.clear.frame(height: 50)
@@ -73,14 +75,15 @@ final class UnifiedSearchTestHost {
 
     init(layout: UnifiedSearchInputLayout = .standard, width: CGFloat = 600,
          locale: String = "en", dark: Bool = false, top: Bool = false, text: String = "", reduceMotion: Bool = false,
-         results: UnifiedSearchController? = nil, operations: Bool = false) {
+         results: UnifiedSearchController? = nil, operations: Bool = false, availableTags: [String] = []) {
         NSApp.accessibilitySetValue(true, forAttribute: NSAccessibility.Attribute(rawValue: "AXEnhancedUserInterface"))
         model = UnifiedSearchTestModel(host: layout == .standard ? "workspace" : "menubar", text: text)
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: width, height: 480),
                           styleMask: [.titled], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
         window.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
-        let root = UnifiedSearchTestFixture(model: model, layout: layout, top: top, motionDisabled: reduceMotion, results: results, operations: operations)
+        let root = UnifiedSearchTestFixture(model: model, layout: layout, top: top, motionDisabled: reduceMotion, results: results, operations: operations,
+                                            availableTags: availableTags)
             .environment(\.locale, Locale(identifier: locale))
             .preferredColorScheme(dark ? .dark : .light)
         window.contentView = NSHostingView(rootView: root)

@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 
 /// 工作台根视图：把唯一装配的工作台控制器与宿主交给 MainSplitWorkspaceView。装配失败时仍是同一个工作台，
@@ -67,11 +68,14 @@ struct UnifiedSearchFocusShortcut: View {
 /// 菜单栏底栏中间的新搜索框；尺寸沿紧凑布局，外观仍是 Daybook 搜索外壳。
 struct MenuBarUnifiedSearchField: View {
     @Bindable var controller: UnifiedSearchController
+    @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
 
     var body: some View {
+        // `#` 候选沿旧底栏搜索：全部存活标签（Catalog.liveTaskTags 与 liveTags 同义，修复批 M-7F）。
         UnifiedSearchInput(buffer: controller.buffer, focused: $controller.inputFocused, actions: controller.actions,
                            layout: .compact, reset: controller.inputReset, showsStatus: false,
-                           minimumWidth: DaybookMetrics.Window.popoverFooterSearchMinWidth)
+                           minimumWidth: DaybookMetrics.Window.popoverFooterSearchMinWidth,
+                           availableTags: Catalog.liveTags(tags).map(\.name))
             .environment(\.daybookChromelessWhenIdle, controller.buffer.text.isEmpty)
             .accessibilityIdentifier("menubar.unified.input")
     }

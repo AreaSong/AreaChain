@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 
 struct UnifiedSearchNavigationPanel: View {
@@ -72,10 +73,12 @@ struct UnifiedSearchWorkspaceInput: View {
     @Bindable var controller: UnifiedSearchController
     /// 顶栏按窗口宽度给出搜索宽度；宿主传入其下限，避免标准布局的 420pt 在最小窗口盖住标题区。
     var minimumWidth: CGFloat?
+    @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
     var body: some View {
+        // `#` 候选沿旧顶栏搜索：全部存活标签（修复批 M-7F）。
         UnifiedSearchInput(buffer: controller.buffer, focused: $controller.inputFocused,
                            actions: controller.actions, reset: controller.inputReset, showsStatus: false,
-                           minimumWidth: minimumWidth)
+                           minimumWidth: minimumWidth, availableTags: Catalog.liveTags(tags).map(\.name))
     }
 }
 
