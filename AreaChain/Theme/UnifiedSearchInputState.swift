@@ -187,9 +187,6 @@ final class UnifiedSearchInputState {
         guard value.source == buffer, value.result.input == buffer.text,
               value.selection == lastSelection, editor?.hasMarkedText() != true,
               editor?.string == buffer.text, focused else { return false }
-        var result = value.result
-        result.candidates.removeAll { Self.dropsUnchangedCommand($0, in: buffer.text) }
-        let value = UnifiedSearchCompletion(source: value.source, selection: value.selection, result: result)
         completion = value
         showsSyntax = false
         suggestions.candidates = value.result.candidates.map {
@@ -222,9 +219,9 @@ final class UnifiedSearchInputState {
         return buffer.text == edit.text
     }
 
-    /// 修复批 M-7G：路径已完整写出的指令级候选（complete／chooseParameter）接受后文字不变，只会让 Return 反复“接受”而发不出 .open；
-    /// 不列出它们，参数值候选照常保留（setArgument 即使文字已写出也保留：接受才把参数写进草稿）。
-    static func dropsUnchangedCommand(_ candidate: CommandPathCandidate, in text: String) -> Bool {
+    /// 修复批 M-7G：路径已完整写出的指令级候选（complete／chooseParameter）接受后文字不变，Return 再“接受”只会原地重复、
+    /// 永远发不出 .open；此时 Return 改发 .open（Tab 仍接受）。参数值候选（setArgument）照常接受：接受才把参数写进草稿。
+    static func isUnchangedCommand(_ candidate: CommandPathCandidate, in text: String) -> Bool {
         switch candidate.intent {
         case .complete, .chooseParameter:
             let source = text as NSString
@@ -260,7 +257,9 @@ final class UnifiedSearchInputState {
             } else if let source = completion, suggestions.isActive,
                let selected = suggestions.selectedCandidate(),
                let candidate = source.result.candidates.first(where: { $0.id == selected.id }) {
-                _ = accept(candidate, source: source)
+                if selector == #selector(NSResponder.insertNewline(_:)), Self.isUnchangedCommand(candidate, in: buffer.text) {
+                    actions.intent(.open, buffer)
+                } else { _ = accept(candidate, source: source) }
             } else if selector == #selector(NSResponder.insertNewline(_:)) {
                 actions.intent(.open, buffer)
             } else { return false }

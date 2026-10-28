@@ -22,11 +22,14 @@ import Testing
         let afterFirst = (try host.inputState).suggestions.isActive
         let candidates = (try host.inputState).completion?.result.candidates.map(\.id) ?? []
         Attachment.record("afterFirstReturn suggestionsActive=\(afterFirst) candidates=\(candidates)", named: "m7g-b-\(kind)-keyboard.txt")
-        // 修复前证据：afterFirstReturn 候选仍活动且第一项还是同一条 command 候选，第二次 Return 只会重复接受。
-        // 修复后不再列出这条已写完的指令候选；参数值候选照常保留。
-        #expect(!candidates.contains("command:setting.appearance"))
-        #expect(!afterFirst || candidates.allSatisfy { $0.hasPrefix("argument:setting.appearance") })
+        // 证据：afterFirstReturn 候选仍活动且选中项还是同一条 command 候选（接受后文字不变）。
+        // 修复前第二次 Return 只会原地重复接受；修复后改发 .open，记录意图来源。
+        #expect(afterFirst && candidates.first == "command:setting.appearance")
+        let selected = try host.inputState.suggestions.selectedCandidate()?.id
+        #expect(selected == "command:setting.appearance")
+        let text = host.controller.buffer.text
         try await host.key(36, "\r")
+        #expect(host.controller.buffer.text == text, "第二次 Return 不改写文字、不接受别的候选")
         // 第二次 Return 进入 .open（同一草稿继续），草稿与面板都还在。
         #expect(host.controller.operations?.active?.commandID.rawValue == "setting.appearance")
         #expect(host.operationPanelShown)
@@ -62,6 +65,24 @@ import Testing
         try await host.key(36, "\r")
         #expect(host.controller.operations?.active?.commandID.rawValue == "setting.appearance")
         #expect(host.operationPanelShown)
+    }
+
+    /// 完整写出的指令路径：选中项是同一条指令候选时，Return 发 .open，不改写文字、不跳到相邻候选（如 /tasks/filter 不会变成 tasks.kind）。
+    @Test(arguments: ["/setting/appearance", "/tasks/filter"]) func returnOnFullyTypedCommandSendsOpen(path: String) async throws {
+        let host = UnifiedSearchTestHost()
+        defer { host.close() }
+        try await host.start()
+        let editor = try host.editor
+        editor.insertText(path, replacementRange: editor.selectedRange())
+        try await host.settle()
+        let state = try host.state
+        if state.suggestions.isActive, let selected = state.suggestions.selectedCandidate(),
+           let candidate = state.completion?.result.candidates.first(where: { $0.id == selected.id }) {
+            #expect(UnifiedSearchInputState.isUnchangedCommand(candidate, in: path), "选中项不是已写完的同一条指令：\(selected.id)")
+        }
+        try await host.key(36, "\r")
+        #expect(host.model.intents == [.open])
+        #expect(host.model.buffer.text == path)
     }
 
     /// 输入法组字期间 Return 只交给输入法，不接受候选、不开始操作。
