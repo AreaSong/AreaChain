@@ -45480,13 +45480,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Search results are hidden. Read again after returning."
+            "value": "Search results are hidden. Type, press Return, or press ⌘F to show them again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "搜索结果已隐藏。重新聚焦后需重新读取。"
+            "value": "搜索结果已隐藏。打字、按回车或 ⌘F 重新显示。"
           }
         }
       }
@@ -58860,6 +58860,142 @@
           "stringUnit": {
             "state": "translated",
             "value": "搜索这次未能启动。数据不受影响，其他功能照常；更改任一设置或重新打开应用后会再试一次。"
+          }
+        }
+      }
+    },
+    "unified.gate.masked": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search is hidden. Type or press Return to show it again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索已隐藏。打字或按回车重新显示。"
+          }
+        }
+      }
+    },
+    "unified.gate.vaultBusy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy is being verified or changed. Try again when it finishes."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在验证或更改隐私设置，完成后再试。"
+          }
+        }
+      }
+    },
+    "unified.gate.vaultUnavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy storage is unavailable, so this can't start."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "隐私存储不可用，暂时无法开始。"
+          }
+        }
+      }
+    },
+    "unified.gate.pending": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search is still refreshing. Try again in a moment."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索正在刷新，请稍后再试。"
+          }
+        }
+      }
+    },
+    "unified.gate.pageContext": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search was reset after locking. Enter a page again before searching."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "锁定后搜索已重置，需重新进入页面后才能搜索。"
+          }
+        }
+      }
+    },
+    "unified.gate.navigationPresented": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A result page is open. Return to search first."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在显示结果页面，请先返回搜索。"
+          }
+        }
+      }
+    },
+    "unified.gate.busy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The previous operation hasn't finished. Try again after it does."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上一个操作还没完成，完成后再试。"
+          }
+        }
+      }
+    },
+    "unified.gate.stale": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search changed. Type again to refresh, then retry."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索已变化，请重新输入刷新后再试。"
           }
         }
       }

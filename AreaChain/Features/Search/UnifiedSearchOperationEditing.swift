@@ -18,6 +18,22 @@ extension UnifiedSearchController {
         !isNavigationPresented && (try? session.validateDisplayHost(expecting: buffer.lease)) != nil
     }
 
+    var queryInputText: String {
+        guard let query = try? coordinator.host(buffer.lease.ownership.hostID).session.query,
+              case .content(let content) = query.input else { return "" }
+        return content.source
+    }
+
+    var isCommandInput: Bool {
+        if editingParameter != nil { return true }
+        let state = CommandPathParser().parse(.init(text: buffer.text, cursorLocation: buffer.text.utf16.count)).state
+        return state != .ordinaryText && state != .scope
+    }
+
+    func validates(_ source: UnifiedSearchBuffer) -> Bool {
+        source == buffer && (try? coordinator.validate(source.lease)) != nil
+    }
+
     var browsedCommand: CommandDescriptor? {
         let result = CommandPathParser().parse(.init(text: buffer.text))
         guard let command = result.command, command.category != .group, command.category != .scope else { return nil }
@@ -53,6 +69,8 @@ extension UnifiedSearchController {
 
     func accept(_ request: UnifiedSearchEdit) -> UnifiedSearchBuffer? {
         guard validates(request.source), let acceptance = request.acceptance else { return nil }
+        // 接受候选是显式动作：遮罩时先恢复（同一入口），再按原路径开始操作。
+        guard resumeForExplicitAction(source: request.source) else { return nil }
         if let command = CommandPathParser().parse(.init(text: request.text)).command, Self.routesAsNavigation(command) {
             return navigationInput(request.text)
         }
@@ -83,7 +101,13 @@ extension UnifiedSearchController {
         guard validates(source), operationVisible, let state = operations,
               let command = CommandCatalog.standard.command(id: id),
               command.category != .group, command.category != .scope, state.pending == nil, plan?.editing == nil,
-              !settingSubmitting, settingExecution == nil else { return nil }
+              !settingSubmitting, settingExecution == nil else {
+            // 不再静默：门禁拒绝时给出一句原因；分组与范围本就不开始操作，不提示。
+            if CommandCatalog.standard.command(id: id).map({ $0.category != .group && $0.category != .scope }) == true {
+                reportGate()
+            }
+            return nil
+        }
         if let active = state.active, active.commandID == id {
             operationExpanded = true
             _ = publishOperation(text: text ?? buffer.text)

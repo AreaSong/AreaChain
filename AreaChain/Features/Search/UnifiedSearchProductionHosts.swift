@@ -58,7 +58,11 @@ struct UnifiedSearchFocusShortcut: View {
     let controller: UnifiedSearchController
 
     var body: some View {
-        Button("") { controller.requestInputFocus() }
+        Button("") {
+            // ⌘F 是显式动作：遮罩时经唯一恢复入口解除并重读（修复批 M-7G）。
+            controller.resumeForExplicitAction(source: controller.buffer)
+            controller.requestInputFocus()
+        }
             .appShortcut(.search)
             .opacity(0)
             .accessibilityHidden(true)

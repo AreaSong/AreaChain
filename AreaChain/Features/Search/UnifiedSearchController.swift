@@ -85,6 +85,8 @@ final class UnifiedSearchController {
     var pageFailure: CommandPageIssue?
     /// 合并批 M-2：image.preview 先按当前查询重读结果再沿 N-M2 打开；这一步的任务。
     @ObservationIgnored var contentCommandTask: Task<Void, Never>?
+    /// 修复批 M-7G：失焦遮罩后显式恢复的重读任务（UnifiedSearchDisplayResume）。
+    @ObservationIgnored var resumeTask: Task<Void, Never>?
     var clipboardCapture = UnifiedSearchClipboardCaptureState()
     var chainCreationPreparation: CommandTaskCreatePreparation?
     var chainFailure: String?
@@ -111,7 +113,7 @@ final class UnifiedSearchController {
     // 只保存原生未完成文字，不是可提交的参数字典；合法值唯一存在 operations 或 plan。
     var parameterText: [UUID: [CommandParameterID: UnifiedSearchParameterBuffer]] = [:]
     @ObservationIgnored var syntheticBaselines: [CommandID: CommandDraftBaseline] = [:]
-    private(set) var messageKey = "unified.results.awaiting"
+    var messageKey = "unified.results.awaiting"
     private(set) var revision: UInt64 = 0
     private(set) var controlFocus: ContentQueryDisplayControl?
     private(set) var focusRevision: UInt64 = 0
@@ -189,34 +191,24 @@ final class UnifiedSearchController {
               intent: { [weak self] in self?.intent($0, source: $1) })
     }
 
-    var queryInputText: String {
-        guard let query = try? coordinator.host(buffer.lease.ownership.hostID).session.query,
-              case .content(let content) = query.input else { return "" }
-        return content.source
-    }
-
-    var isCommandInput: Bool {
-        if editingParameter != nil { return true }
-        let state = CommandPathParser().parse(.init(text: buffer.text, cursorLocation: buffer.text.utf16.count)).state
-        return state != .ordinaryText && state != .scope
-    }
-
-    func validates(_ source: UnifiedSearchBuffer) -> Bool {
-        source == buffer && (try? coordinator.validate(source.lease)) != nil
-    }
-
     func edit(_ request: UnifiedSearchEdit) -> UnifiedSearchBuffer? {
         guard validates(request.source) else { return nil }
         guard objectSelection == nil, !objectSelectionLoading, tagSelection == nil else { return nil }
-        if let context = inputParameterContext { return editParameterText(request, context: context, mainInput: true) }
         let state = CommandPathParser().parse(.init(text: request.text, cursorLocation: request.selection.location)).state
         let content = state == .ordinaryText || state == .scope
+        // 改字是显式动作：遮罩时先恢复；普通文字随后按新文字重读，指令文字按保留的查询重读。
+        guard resumeForExplicitAction(source: request.source, reread: !content || inputParameterContext != nil) else { return nil }
+        if let context = inputParameterContext { return editParameterText(request, context: context, mainInput: true) }
         if content {
             newNavigationQuery()
             do {
                 try session.modelDidChange(expecting: buffer.lease.ownership)
                 try coordinator.send(.query(.setInput(request.text)), expecting: request.source.lease)
-            } catch { return nil }
+            } catch { reportGate(); return nil }
+        } else if isNavigationPresented, returnSearch == nil {
+            // 工作台停在原页面（searchPresentation 为 false、不是从搜索导航过去）时操作面板没有宿主，Return 会被静默挡住；
+            // 输入指令即显示搜索页（修复批 M-7G）。从搜索导航到的目的地保留返回票据，不在这里改。
+            navigationRouter?.navigation.searchPresentation = true
         }
         guard let owned = try? coordinator.host(buffer.lease.ownership.hostID) else { return nil }
         buffer = .init(lease: owned.lease, version: buffer.version + 1, text: request.text,
@@ -241,6 +233,7 @@ final class UnifiedSearchController {
             } catch {
                 guard self.validates(source), !Task.isCancelled else { return }
                 self.messageKey = self.session.isMasked ? "unified.results.masked" : "unified.results.readFailed"
+                if let gate = error as? ContentQueryReadSessionError, Self.explainedGates.contains(gate) { self.reportGate(gate) }
                 self.revision &+= 1
             }
         }
@@ -248,6 +241,11 @@ final class UnifiedSearchController {
 
     func intent(_ intent: UnifiedSearchIntent, source: UnifiedSearchBuffer) {
         guard validates(source) else { return }
+        // Return、⌘Return、↑↓、空格选择是显式动作：遮罩时先恢复并重读，读完再处理这次动作；Esc 不恢复。
+        if session.isMasked, intent != .escape {
+            resumeForExplicitAction(source: source) { [weak self] in self?.intent(intent, source: source) }
+            return
+        }
         if isNavigationInput {
             if intent == .submit { return }
             if intent == .open { executeNavigation(source: source); return }
@@ -348,6 +346,8 @@ final class UnifiedSearchController {
         cancelObjectSelection(returnFocus: false)
         contentCommandTask?.cancel()
         contentCommandTask = nil
+        resumeTask?.cancel()
+        resumeTask = nil
         task?.cancel()
         if let observer { session.displayUpdates.remove(observer) }
         observer = nil

@@ -79,7 +79,10 @@ extension UnifiedSearchController {
 
     /// 点击和原生 ⌘Return 共用；最后写入门禁继续由适配器复核。
     func requestOperationSubmit(_ source: UnifiedSearchBuffer) {
-        guard !isNavigationInput, !isNavigationPresented, longTextEditing?.available != true else { return }
+        guard !isNavigationInput, !isNavigationPresented, longTextEditing?.available != true else {
+            if isNavigationPresented { reportGate() }
+            return
+        }
         if showsMultiPlan { submitMultiPlan(source); return }
         if showsRoutineCreation { submitRoutineCreation(source); return }
         if showsTaskChain { submitTaskChain(source); return }
@@ -97,7 +100,7 @@ extension UnifiedSearchController {
         if showsTaskTitle { submitTaskTitle(source); return }
         if showsTaskCreate { requestTaskCreate(source); return }
         if fileSettings != nil { requestFileSettingSubmit(source); return }
-        guard !settingSubmitting, validates(source), operationVisible, settingExecution == nil else { return }
+        guard !settingSubmitting, validates(source), operationVisible, settingExecution == nil else { reportGate(); return }
         guard hasSettingAdapter, let localSettings else {
             operationMessage = "unified.operation.submitBlocked"
             planMessage = "unified.plan.notExecutable"
