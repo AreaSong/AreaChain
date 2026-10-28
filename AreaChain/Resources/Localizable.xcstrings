@@ -27040,13 +27040,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Remove filter: %@"
+            "value": "Remove this filter"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "移除筛选：%@"
+            "value": "移除此筛选"
           }
         }
       }

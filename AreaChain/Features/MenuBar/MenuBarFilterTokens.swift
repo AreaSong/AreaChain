@@ -95,8 +95,10 @@ struct MenuBarFilterTokens: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain) // control: 芯片内的移除角标
-                .accessibilityLabel(Text(verbatim: L10n.format("filter.token.remove", locale: locale, token.title)))
-                .help(Text(verbatim: L10n.format("filter.token.remove", locale: locale, token.title)))
+                // 标签不含条件文字：否则与筛选浮层里同名选项重名，按名称找控件会不唯一；条件名放在提示里。
+                .accessibilityLabel(Text("filter.token.remove"))
+                .accessibilityHint(Text(verbatim: token.title))
+                .help(Text("filter.token.remove"))
                 .accessibilityIdentifier("menubar.filter.token.remove." + token.id)
             }
         }

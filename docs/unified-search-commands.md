@@ -8638,3 +8638,26 @@ README、features、usage、architecture 改为统一搜索描述并删开关说
 - 指定复核（Claude Code `verifier`）第一轮**不通过**：代码主体符合；整改 6 条——features.md／product.md 旧描述、底栏候选点选用例被删而未改写、帮助浮层用例少了补全断言且挂的是“不可用”底栏、详情收起焦点同类问题、组件目录残留旧文件名（另 1 条说明不要求改）。整改中另发现统一搜索只有 `/` 指令候选，`#`／`!`／`@` 候选属未补项，已补进上表并改正使用说明。第二轮结论见现状总览“补复核待办”。
 - 执行期间同一目录里有另一项任务的未提交改动（行气泡／悬停相关，到 2026-10-28 共 32 个文件，含本批也改过的 MenuBarPopoverRenderingTests、MenuBarPopoverTestHelpers、docs/usage.md，以及从 `known_test_failures.json` 删掉 popoutButton… 一条登记），本批未修改、未提交；整改后几轮定向测试与第二轮复核都是在这棵混合工作树上构建的，没有在只含已提交内容的干净树上重跑。
 - 指定复核第二轮（2026-10-28）**通过**：第一轮 6 条全部关闭；两条低级意见——本条外来改动范围已据实改写；`requestInputFocus` 的“页面输入框先占焦点”前置条件没有专门用例，记为缺口。
+
+### 9.107 修复批 M-7F：恢复三处旧行为
+
+2026-10-28（Asia/Shanghai）。M-7 删除旧搜索与开关后，§9.106 等价核对表里的差异没有退路；用户当日决定改回其中三项，裸时刻、结果上空格切换完成、Esc 清空查询保持现状。授权改代码、按检查点本地提交（不推送、不安装），只用合成数据与隔离 QA，证据在忽略目录 `build/M7F/`。提交：A `991b923`、B `f746b39`、C `312aae7`，D 为文档与复核。
+
+#### 决定与入口
+
+- **A 检查器失焦即保存**：N-M1 用 `hostContext == nil` 表示“非隔离”，为隔离宿主的导航零写入取证让标题、子任务、备注失焦只留 `EditDrafts`；M-6／M-7 后正式版恒带宿主，同一判断让正式版也不再失焦保存。改为按 `WorkspaceHostContext.isIsolated`：`TaskDetailTitleEditor`、`SubtaskRowView`、`RoutineSubtaskRowView`、`TaskDetailNotesView.flushLifecycleSave`。导航交接 `WorkspaceInspectorFocus.prepareForNavigation`：隔离宿主照旧留草稿；正式版先让详情编辑器失焦，`WorkspaceSearchRouter.commitInspectorBeforeNavigation` 让出一次渲染（20ms，与挂载轮询同间隔）等原失焦保存跑完再切页，`reveal` 与 `returnToSearch` 让出后重新核对有效性。装配按宿主设 `retainsDraftsOnNavigation`。保存失败沿各编辑器原规则留草稿、不发布；Return／Esc（含 Esc 回滚标题）与组字门禁（`validateHost` 拒绝 marked text、`retainsMarkedDraft`）未改；不改仓储与 ModelChanges。
+- **B `#`／`!`／`@` 候选**：解析器只把 `/` 开头当指令；普通文字时 `UnifiedSearchInputState` 复用 `SyntaxAutocompleteState(context: .search)` 出旧搜索候选，向上展开、点选与 Return／Tab 补全，Esc 先关候选（第二次仍交结果页）。搜索不能创建标签：`#` 只留已有标签，引擎对未命中查询的原样回显也不展示；标签来源沿旧搜索取全部存活标签（`Catalog.liveTags`，与捕获框、手记输入同规则，不放宽）。组字期间不弹、不补全。候选行 `UnifiedSearchSyntaxRow` 与指令行同字号、内边距、选中底色。
+- **C 菜单栏筛选**：根因是菜单栏今日页上下文只在装配时取一次 `filters.tasks`。`UnifiedSearchController.refreshTodayPageFilter` 在同一页面访问发 `.refreshPage`，把任务筛选派生进自动条件；筛选只有 `BoardFilterSession` 一份，不回写、不复制；查询已脱离页面时 reducer 不改写（§1）。`MenuBarPopoverView` 在任务页签派生 `filters.tasks`，手记页签派生空筛选（菜单栏搜索页面固定为今日任务）。底栏 `MenuBarFilterTokens` 沿旧 `activeTokens`／`tokenChip`，移除写回同一份筛选；新增文案 `filter.token.remove`（中英）。工作台宿主不变。控制器文件触及 500 行上限，设置后端两个访问器原样移到 `UnifiedSearchSettingEditing.swift`。
+
+#### 测试
+
+- 新增 InspectorBlurSaveTests（正式版宿主三类失焦保存、三类保存失败留草稿且不发布、焦点仍在检查器时经搜索跳页先保存、编辑备注后返回搜索再打开另一个结果）；UnifiedSearchSyntaxCandidateTests（三种点选、`#` 不出未命中与新建、键盘、组字、`/` 优先）；MenuBarSearchFilterTests（缩小、与查询取交集、恢复、工作台不变、不回写；原生胶囊逐个移除）。
+- 夹具：导航夹具加 `productionHost`；统一输入测试宿主可传标签。导航夹具的视图经内层 `.modelContainer` 写 `container.mainContext`，与夹具 `context` 不是同一上下文，新用例用新上下文读回持久化值（既有 N-M1 用例的 `saves` 计数观察的是夹具上下文，记为缺口，未改）。
+
+#### 验证
+
+- 检查点内定向：A 的 6 个新用例＋WorkspaceNotesLifecycle／SubtaskTitleEditing／UnifiedSearchNavigationBoundary（含 N-M1 隔离宿主留草稿）／UnifiedSearchProductionAssembly／WorkspaceHeaderInteraction 通过；B 的 6 个新用例＋UnifiedSearchInput／Contract／Layout／ProductionHost 与底栏 `/` 候选点选通过（布局矩阵与底栏点选首轮各一次“拿不到 key window／补全输入缺字”，单独重跑通过、未改相关代码，判为焦点环境偶发）；C 的 2 个新用例＋ProductionHost／ProductionRead／MenuBarFilterFlyout／ProductionAssembly 通过。
+- 推导门禁 `quality_gate.py --profile swift --base-ref a43f9cb`：整次推导 241 类超上限 120，收敛为同名＋冒烟集 24 类（含另一项任务暂存改动带入的 TaskRow*／Diary*／Surface 类）；后台轮 28 次全过，前台轮 168 次 165 过、3 败、0 登记项。`filterEntryWritesPreciseSelectionAndPreservesIndependentSessions` 由本批引起：胶囊移除按钮的辅助标签含条件文字，与筛选浮层同名选项重名；改为通用“移除此筛选”、条件名放提示后重跑通过。`settingsDateAndReturnUseRealWorkspace` 重跑通过（环境偶发）。`DaybookFloatingSurfaceTests.decorationDoesNotExpandPointerInterception` 在混合工作树上稳定失败，持原锁在 a43f9cb 与 312aae7 的干净副本上均通过，判为另一项任务暂存的 `DaybookSurface.swift` 等改动或其环境所致，不属本批；登记表在对方暂存范围内，未改。按用户决定不跑 `--profile full`。
+- `./scripts/build.sh` 通过（development，staticSignatureVerified=true，未安装）；`--profile static --strict`（敏感日志候选 0）、scripts/tests 339、全库 `swiftlint lint --strict` 0、check_workflow、`git diff --check` 通过。
+- 缺口：`RoutineSubtaskRowView` 的失焦保存只改判断、无专门用例；导航让出 20ms 依赖一次渲染即可跑完失焦回调（用例证明当前环境成立）；菜单栏手记页签标签筛选不作用于结果；既有 N-M1 用例 `saves` 观察夹具上下文；真人输入法、VoiceOver 未做。`docs/usage.md` 在另一项任务暂存范围内，本批未改，需补的句子见交接。
+- 指定复核（Claude Code `verifier`）：结论见下一条。
