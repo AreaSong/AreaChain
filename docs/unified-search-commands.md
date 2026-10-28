@@ -8672,10 +8672,10 @@ README、features、usage、architecture 改为统一搜索描述并删开关说
 - **第二个独立原因**：工作台刚打开时 `ordinaryWorkspaceVisit` 按空查询把 `searchPresentation` 设为 false，此时直接输入指令，`isNavigationPresented` 为真，`beginOperation` 同样静默挡住（与失焦无关）。
 - **以前的测试为什么没发现**：隔离测试从不切换窗口，只直接调用 `loseFocus` 后再手工 `resumeDisplay`；没有“先输入内容查询”之外的指令入口用例。
 - **复现**：新增 UnifiedSearchFocusRecoveryTests 用另一个窗口真实抢走 key 再交回（不调 `loseFocus`）。修复前工作台与菜单栏一致：切回后仍遮罩；打字后读取抛 `stalePermit`；`/setting/appearance` 回车无面板；`/go/tags` 得到 stale；门禁拒绝无说明。
-- **恢复规则**：唯一入口 `resumeForExplicitAction`（[UnifiedSearchDisplayResume.swift](../AreaChain/Features/Search/UnifiedSearchDisplayResume.swift)）。显式动作——改字（`edit`）、接受候选（`accept`）、Return／⌘Return／↑↓／空格选择（`intent`，Esc 除外）、⌘F（工作台快捷键与菜单栏键盘监听）——先解除本地遮罩、按协调者当前查询重读，读完才处理这次动作；普通文字改动由 `edit` 自己按新文字重读。窗口重新拿到 key 本身不恢复。
+- **恢复规则**：显式动作的唯一入口 `resumeForExplicitAction`（图片查阅与返回搜索仍按原样在导航后内部 `resumeDisplay` 并重读，不属于显式恢复）（[UnifiedSearchDisplayResume.swift](../AreaChain/Features/Search/UnifiedSearchDisplayResume.swift)）。显式动作——改字（`edit`）、接受候选（`accept`）、Return／⌘Return／↑↓／空格选择（`intent`，Esc 除外）、⌘F（工作台快捷键与菜单栏键盘监听）——先解除本地遮罩、按协调者当前查询重读（重读认同一所有权与隐私代次下的当前缓冲：改字成指令、接受候选会同步发布新缓冲，复核首轮指出初版因只认旧缓冲而丢掉这次重读），读完才处理这次动作；普通文字改动由 `edit` 自己按新文字重读。窗口重新拿到 key 本身不恢复。
 - **隐私边界**：只调用 `resumeDisplay`；锁定（willLock）、认证中／更改方式中、vault 不可用、隐私代次与页面上下文仍由 `eligibleHost` 挡住。锁定按 D3 清掉的查询不恢复：`ContentQueryReducer.privacyReset` 后查询绑定为 `privacyInvalidated`，再打字被拒绝，只有重新进入页面才能重建（既有设计，见风险）。
 - **工作台原页面**：没有返回票据且 `searchPresentation` 为 false 时，输入指令即显示搜索页；从搜索导航到的目的地保留返回票据，不在这里改。
-- **不再静默**：`beginOperation`、提交入口（`requestOperationSubmit`）、读取门禁（`pageContextRequired`／`vaultBusy`／`vaultUnavailable`）在两宿主共用的反馈行给出 `unified.gate.*` 说明；“已隐藏”改为“打字、按回车或 ⌘F 重新显示”。
+- **不再静默**：`beginOperation`、提交入口（`requestOperationSubmit`）、读取门禁（`pageContextRequired`／`vaultBusy`／`vaultUnavailable`）在两宿主共用的反馈行给出 `unified.gate.*` 说明；“已隐藏”改为“打字或按回车重新显示”（不写 ⌘F：搜索快捷键可改或停用）。
 
 #### B 候选接受后 Return 被占用（`1541ee5`，修正 `f64314a`）
 
@@ -8686,11 +8686,11 @@ README、features、usage、architecture 改为统一搜索描述并删开关说
 
 - **唯一判断入口**：`UnifiedSearchController.disposition(for:)`（[UnifiedSearchCommandDisposition.swift](../AreaChain/Features/Search/UnifiedSearchCommandDisposition.swift)）。导航沿 `navigationRoute(for:)`——`executeNavigation` 改为按它分派，不另写名单；操作沿 `routesAdapter`——`initialBaseline(for:)` 改为复用它，行为不变；另加 `supportsSetting` 与 `routine.create`。结果值 `CommandHostDisposition`（Domain）。
 - **四类标签**（候选行、`.help`、可访问性与状态行同源，单行截断）：可执行“Return 开始 · 预览后确认”（导航与系统动作为“Return 前往”）；打开原页面“在原页面完成 · 打开<页面名>”（帮助、详情等为“Return 打开<名称>”）；目录不可用“不可用 · <原因>”；未接上才显示“暂不可用 · 仍可填写参数”。英文同步。分组与范围标签不变。
-- **目录级用例**：UnifiedSearchCommandDispositionTests 对 247 条（除分组、范围）各走 `edit → accept → intent(.open) → 草稿 → intent(.submit)`，按实际行为归类并断言与标签一致。工作台：可执行 158、打开原页面 85、目录不可用 1（tag.unlinkGlobal）、未接上 3；菜单栏：可执行 64、目录不可用 5、未接上 178。“切换外观”“捕获附来源应用”两宿主均可执行。
+- **目录级用例**：UnifiedSearchCommandDispositionTests 对 247 条（除分组、范围）各走 `edit → accept → intent(.open) → 草稿 → intent(.submit)`，按实际行为归类并断言与标签一致（导航类只能观察到“已接上”：后台用例无真实窗口，“前往”与“打开原页面”的区分来自同一路由，不另作独立观察）。工作台：可执行 158、打开原页面 85、目录不可用 1（tag.unlinkGlobal）、未接上 3；菜单栏：可执行 64、目录不可用 5、未接上 178。“切换外观”“捕获附来源应用”两宿主均可执行。
 - **各家族原生端到端**：UnifiedSearchFamilyNativeTests，工作台 16 个家族各一条、菜单栏设置／任务新建／手记新建，一半先真实切走再切回。深度如实：设置（外观选深色）在原生里写入偏好；其余家族到达 ⌘Return 提交入口并得到对应适配器回应（预览、确认或具体失败），需要对象的家族不在此选对象。
 - **未接上清单**：工作台 `occurrence.inspect`、`trash.browse`、`inspector.close`；菜单栏没有工作台路由与页面指令（§9.103），全部导航、打开原页面与页面指令共 178 条“未接上”，标签如实显示。覆盖表 T6、D1、N3 补注。
 
 #### 验证与残余风险
 
 - 验证：A＋B 与 C 两次按改动推导的定向门禁（97／100 个类）：后台轮通过；前台轮超过 1800 秒上限被门禁记为超时，xcresult 显示计划内全部类已执行，失败 3 项均在已知登记表内（MenuBarHelpSurfaceTests.diaryEntryHelpUsesOriginalCaptureContext、UnifiedSearchOperationInteractionTests.nativeBooleanWeekdaysDayAndTime、UnifiedSearchSettingInteractionTests.unsupportedAndUnassembledNativeSubmissionRemainBlocked）；新增五个套件与受影响套件另行定向通过。未跑 `--profile full`。`./scripts/build.sh` 构建验签通过（描述文件 2026-10-28 12:50 UTC 到期）；check_workflow、scripts/tests 339 项、static --strict（敏感日志候选 0）、SwiftLint（AreaChain／AreaChainTests 逐文件）0、diff --check 通过。
-- 风险：锁定后菜单栏查询绑定停在 `privacyInvalidated`，据代码核对只有重新装配才能再输入（工作台需重新进入页面；未单独测试），本批只给出说明，不改隐私生命周期；菜单栏导航类未接上；家族用例多数未走到写入。
+- 风险：锁定后菜单栏查询绑定停在 `privacyInvalidated`，据代码核对只有重新装配才能再输入；工作台同样拒绝再打字并提示 `unified.gate.pageContext`（FocusRecoveryTests 两宿主均断言），需重新进入页面，本批只给出说明，不改隐私生命周期；菜单栏导航类未接上；家族用例多数未走到写入。

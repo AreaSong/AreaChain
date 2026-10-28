@@ -15,10 +15,17 @@ extension UnifiedSearchController {
         refreshOperationPresentation()
         guard reread else { action?(); return true }
         resumeTask?.cancel()
+        // edit／accept 会在本次调用里同步发布新缓冲；重读只认同一所有权与隐私代次下的当前缓冲，
+        // 不拿调用时的旧缓冲判断（否则改字成指令、接受候选后的重读会被丢掉）。action 仍只在原缓冲未变时执行。
+        let ownership = source.lease.ownership, privacy = source.privacyRevision
+        let current = { [weak self] () -> Bool in
+            guard let self else { return false }
+            return self.buffer.lease.ownership == ownership && self.buffer.privacyRevision == privacy && self.validates(self.buffer)
+        }
         resumeTask = Task { @MainActor [weak self] in
-            guard let self, self.validates(source), !Task.isCancelled else { return }
+            guard let self, current(), !Task.isCancelled else { return }
             do { _ = try await self.readObjectSource() } catch {
-                guard self.validates(source), !Task.isCancelled else { return }
+                guard current(), !Task.isCancelled else { return }
                 self.messageKey = self.session.isMasked ? "unified.results.masked" : "unified.results.readFailed"
                 self.refreshOperationPresentation()
             }

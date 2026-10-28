@@ -7,7 +7,9 @@ import Testing
 /// edit（打字）→ accept（接受候选）→ intent(.open)（Return）→ 草稿／面板 → intent(.submit)（⌘Return，提交入口）。
 /// 每条按实际行为归类，再断言与唯一判断入口 disposition(for:) 给出的类别一致（标签类别 = 实际行为）。不开窗口、不发键鼠事件。
 @Suite(.serialized, .tags(.backgroundWindow)) @MainActor struct UnifiedSearchCommandDispositionTests {
-    enum Observed: String { case executable, originalPage, notWired }
+    /// navigated：导航入口接上了（未被拒为 unsupported／unassembled）。后台用例没有真实窗口，看不到导航完成反馈，
+    /// 因此不在这里区分“前往”与“打开原页面”，只要求标签落在这两类之一；不再用 CommandOriginalPage 表自证。
+    enum Observed: String { case executable, navigated, notWired }
 
     struct Outcome { let id: String; let observed: Observed; let disposition: CommandHostDisposition }
 
@@ -39,8 +41,7 @@ import Testing
         if UnifiedSearchController.routesAsNavigation(command) {
             let refused = ["unified.navigation.unsupported", "unified.navigation.unassembled"].contains(controller.navigationMessage)
             if refused { return .init(id: command.id.rawValue, observed: .notWired, disposition: disposition) }
-            return .init(id: command.id.rawValue,
-                         observed: CommandOriginalPage.route(for: command.id) != nil ? .originalPage : .executable, disposition: disposition)
+            return .init(id: command.id.rawValue, observed: .navigated, disposition: disposition)
         }
         // 草稿必须由同一入口开始；提交入口：⌘Return。没有适配器时落到设置提交并报 unsupported 或 submitBlocked。
         try #require(controller.operations?.active?.commandID == command.id, "\(command.id.rawValue) 未开始草稿（\(host)）")
@@ -58,7 +59,9 @@ import Testing
         for outcome in outcomes {
             switch outcome.observed {
             case .executable: #expect(outcome.disposition.kind == .executable, "\(outcome.id)：可执行但标签为 \(outcome.disposition)")
-            case .originalPage: #expect(outcome.disposition.kind == .originalPage, "\(outcome.id)：打开原页面但标签为 \(outcome.disposition)")
+            case .navigated:
+                #expect([.executable, .originalPage].contains(outcome.disposition.kind), "\(outcome.id)：导航已接上但标签为 \(outcome.disposition)")
+                #expect(outcome.disposition != .executable, "\(outcome.id)：导航类不应标为“Return 开始 · 预览后确认”")
             case .notWired:
                 #expect([.catalogUnavailable, .unwired].contains(outcome.disposition.kind), "\(outcome.id)：走不通但标签为 \(outcome.disposition)")
                 if case .catalogUnavailable = outcome.disposition {
@@ -66,11 +69,10 @@ import Testing
                 }
             }
         }
-        if host == "workspace" {
-            // 用户点名的两条必须可执行。
-            for id in ["setting.appearance", "setting.captureSource"] {
-                #expect(outcomes.first { $0.id == id }?.disposition == .executable, "\(id) 应可执行")
-            }
+        // 用户点名的两条在两宿主都必须可执行（标签与实际行为同时断言）。
+        for id in ["setting.appearance", "setting.captureSource"] {
+            let outcome = outcomes.first { $0.id == id }
+            #expect(outcome?.disposition == .executable && outcome?.observed == .executable, "\(id) 应可执行（\(host)）")
         }
         let report = outcomes.map { "\($0.id)\t\($0.observed.rawValue)\t\($0.disposition.kind.rawValue)" }.joined(separator: "\n")
         Attachment.record(report, named: "m7g-c-catalog-\(host).tsv")

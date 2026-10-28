@@ -45480,13 +45480,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Search results are hidden. Type, press Return, or press ⌘F to show them again."
+            "value": "Search results are hidden. Type or press Return to show them again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "搜索结果已隐藏。打字、按回车或 ⌘F 重新显示。"
+            "value": "搜索结果已隐藏。打字或按回车重新显示。"
           }
         }
       }

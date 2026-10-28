@@ -76,10 +76,11 @@ import Testing
         editor.insertText(path, replacementRange: editor.selectedRange())
         try await host.settle()
         let state = try host.state
-        if state.suggestions.isActive, let selected = state.suggestions.selectedCandidate(),
-           let candidate = state.completion?.result.candidates.first(where: { $0.id == selected.id }) {
-            #expect(UnifiedSearchInputState.isUnchangedCommand(candidate, in: path), "选中项不是已写完的同一条指令：\(selected.id)")
-        }
+        // 候选必须活动，B 的判断才被检验到（选中项是已写完的同一条指令）。
+        try #require(state.suggestions.isActive, "\(path) 候选未活动，B 的分支没被走到")
+        let selected = try #require(state.suggestions.selectedCandidate())
+        let candidate = try #require(state.completion?.result.candidates.first(where: { $0.id == selected.id }))
+        #expect(UnifiedSearchInputState.isUnchangedCommand(candidate, in: path), "选中项不是已写完的同一条指令：\(selected.id)")
         try await host.key(36, "\r")
         #expect(host.model.intents == [.open])
         #expect(host.model.buffer.text == path)

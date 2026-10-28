@@ -41,7 +41,6 @@ import Testing
         try await host.waitPublished()
         try await host.switchAwayAndBack()
         try await host.type("/setting/appearance")
-        #expect(host.controller.session.isMasked == false || host.controller.operationVisible == false)
         try await host.pressReturnUntil { host.controller.operations?.active?.commandID.rawValue == "setting.appearance" }
         #expect(host.controller.operations?.active?.commandID.rawValue == "setting.appearance")
         #expect(host.operationPanelShown)
@@ -85,6 +84,27 @@ import Testing
         #expect(host.controller.navigationMessage == "unified.gate.pageContext")
         // 只看统一搜索的结果边界：工作台下方的原页面按原界面规则显示，不属于本断言。
         #expect(!host.resultStrings.contains { $0.contains(secret) })
+    }
+
+    /// 切回后输入指令（改字即显式动作）：解除遮罩后按保留的查询重读，结果重新可用，焦点对象类指令不会因结果为空而失败。
+    @Test(arguments: Kind.allCases) func typingCommandAfterRefocusRereadsRetainedQuery(kind: Kind) async throws {
+        let host = try UnifiedSearchFocusHost(kind)
+        defer { host.close() }
+        try host.fixture.insert(TodoItem(title: "needle 合成失焦任务", dayKey: UnifiedSearchProductionFixture.today))
+        try await host.start()
+        try await host.type("needle")
+        try await host.waitPublished()
+        try await host.switchAwayAndBack()
+        #expect((try? host.controller.session.presentation()) == nil)
+        try await host.type("/inspector/open")
+        try await host.waitPublished()
+        #expect(!host.controller.session.isMasked)
+        let visible = try host.controller.session.presentation().pagination.snapshot.visible
+        #expect(visible.contains { $0.type == .todo })
+        if kind == .workspace {
+            try await host.key(36, "\r")
+            #expect(host.controller.navigationMessage != "unified.navigation.stale")
+        }
     }
 
     /// 工作台刚打开、停在原页面（searchPresentation 为 false）时直接输入指令：输入即回到搜索页，Return 出面板，不再静默。
