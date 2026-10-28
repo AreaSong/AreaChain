@@ -127,11 +127,7 @@ extension UnifiedSearchController {
 
     /// 新草稿的初始基线：已装配适配器的指令一律空基线，其余沿合成基线（看板转交也用这一处）。
     func initialBaseline(for id: CommandID) -> CommandDraftBaseline {
-        ["todo.create", "todo.title"].contains(id.rawValue) || routesTaskField(id)
-            || routesBatch(id) || routesSubtask(id) || routesRoutine(id) || routesTrash(id) || routesTaskCopy(id) || routesConvert(id)
-            || routesSimple(id) || routesClipboardCapture(id) || routesPage(id)
-            || localSettings?.supports(id) == true
-            ? .init() : syntheticBaselines[id] ?? .init()
+        routesAdapter(id) ? .init() : syntheticBaselines[id] ?? .init()
     }
 
     @discardableResult

@@ -66,7 +66,8 @@ private struct UnifiedSearchOverlay: View {
                     state.showsSyntax
                         ? AnyView(UnifiedSearchSyntaxRow(candidate: item, selected: selected, locale: source.locale))
                         : AnyView(UnifiedSearchCandidateRow(candidate: completion?.result.candidates.first { $0.id == item.id },
-                                                           selected: selected, locale: source.locale))
+                                                           selected: selected, locale: source.locale,
+                                                           disposition: state.actions.disposition))
                 }, rowHeight: 68, listMaximumHeight: source.layout.maximumSuggestionsHeight - 25
             )
             .environment(\.locale, source.locale)
@@ -82,6 +83,7 @@ private struct UnifiedSearchCandidateRow: View {
     let candidate: CommandPathCandidate?
     let selected: Bool
     let locale: Locale
+    let disposition: (CommandID) -> CommandHostDisposition
 
     var body: some View {
         if let candidate {
@@ -108,7 +110,8 @@ private struct UnifiedSearchCandidateRow: View {
     private func availability(_ candidate: CommandPathCandidate) -> String {
         if candidate.category == .group { return L10n.format("unified.input.browse", locale: locale) }
         if candidate.category == .scope { return L10n.format("unified.input.scope", locale: locale) }
-        return L10n.format("unified.input.unavailable", locale: locale)
+        // 按宿主实际处理方式显示（修复批 M-7G）：可执行／打开原页面／目录不可用／未接上。
+        return disposition(candidate.command.id).label(locale: locale)
     }
 }
 

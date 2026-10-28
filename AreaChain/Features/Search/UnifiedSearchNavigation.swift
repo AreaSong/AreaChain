@@ -35,10 +35,11 @@ extension UnifiedSearchController {
         guard let router = navigationRouter else { navigationMessage = "unified.navigation.unassembled"; return }
         let parsed = CommandPathParser().parse(.init(text: source.text))
         guard let command = parsed.command else { return }
-        if let page = WorkspaceNavigationDestination.page(command: command.id), parsed.arguments.isEmpty,
-           parsed.state == .command {
+        // 分派与候选标签共用 navigationRoute（修复批 M-7G 唯一判断入口），不另写平行名单。
+        let route = navigationRoute(for: command)
+        if case .page(let page)? = route, parsed.arguments.isEmpty, parsed.state == .command {
             navigate(.page(page), source: source)
-        } else if command.id.rawValue == "inspector.day" {
+        } else if route == .day {
             guard parsed.state == .command,
                   case .day(let day)? = parsed.arguments.first(where: { $0.parameter == .day })?.value,
                   let date = DayKey.date(from: day, calendar: router.objects.calendar),
@@ -46,7 +47,7 @@ extension UnifiedSearchController {
                 navigationMessage = "unified.navigation.chooseDay"; return
             }
             navigate(.day(day), source: source)
-        } else if command.id.rawValue == "inspector.open" || command.id.rawValue == "go.tagList" {
+        } else if route == .focusedObject {
             guard parsed.state != .invalid, parsed.arguments.isEmpty,
                   parsed.diagnostics.allSatisfy({ $0.issue == .chooseParameter && $0.range.length == 0 }) else {
                 navigationMessage = "unified.navigation.invalidTarget"; return
@@ -62,14 +63,14 @@ extension UnifiedSearchController {
                 navigationMessage = "unified.navigation.unsupported"; return
             }
             browse(.init(version: page.snapshot.version, action: .open(inputEditing: false)), source: source)
-        } else if let pages = pageCommands, pages.supportsBoardNavigation(command.id) {
+        } else if route == .board, let pages = pageCommands {
             executeBoardNavigation(command.id, parsed: parsed, source: source, pages: pages)
-        } else if let pages = pageCommands, let window = CommandClipboardWindow(rawValue: command.id.rawValue) {
+        } else if case .clipboardWindow(let window)? = route, let pages = pageCommands {
             executeClipboardWindow(window, parsed: parsed, source: source, pages: pages)
-        } else if CommandSystemAction.commands.contains(command.id.rawValue) {
+        } else if route == .system {
             executeSystemAction(command, parsed: parsed, source: source)
-        } else if let route = CommandOriginalPage.route(for: command.id) {
-            executeOriginalPage(route, command: command, parsed: parsed, source: source)
+        } else if case .originalPage(let page)? = route {
+            executeOriginalPage(page, command: command, parsed: parsed, source: source)
         } else { navigationMessage = "unified.navigation.unsupported" }
     }
 

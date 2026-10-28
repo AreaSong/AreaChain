@@ -29,6 +29,8 @@ struct UnifiedSearchActions {
     var accept: (UnifiedSearchEdit) -> UnifiedSearchBuffer?
     var focus: (Bool) -> Void
     var intent: (UnifiedSearchIntent, UnifiedSearchBuffer) -> Void
+    /// 修复批 M-7G：宿主对一条指令的处理方式（唯一判断在控制器）；未提供时按“未接上”显示，不冒充可执行。
+    var disposition: (CommandID) -> CommandHostDisposition = { _ in .unwired }
 }
 
 struct UnifiedSearchInputConfiguration {

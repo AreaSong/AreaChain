@@ -188,7 +188,8 @@ final class UnifiedSearchController {
 
     var actions: UnifiedSearchActions {
         .init(edit: edit, accept: accept, focus: { [weak self] in self?.inputFocused = $0 },
-              intent: { [weak self] in self?.intent($0, source: $1) })
+              intent: { [weak self] in self?.intent($0, source: $1) },
+              disposition: { [weak self] in self?.disposition(for: $0) ?? .unwired })
     }
 
     func edit(_ request: UnifiedSearchEdit) -> UnifiedSearchBuffer? {

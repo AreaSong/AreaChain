@@ -20,24 +20,27 @@ enum WorkspaceTab: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    var titleKey: LocalizedStringKey {
+    var titleKey: LocalizedStringKey { LocalizedStringKey(titleKeyName) }
+
+    /// 页面标题的文案键（字符串形式），供统一搜索候选标签说明目的地（修复批 M-7G）。
+    var titleKeyName: String {
         switch self {
-        case .dashboard: return "tab.dashboard"
-        case .today: return "tab.today"
-        case .pending: return "tab.pending"
-        case .allItems: return "tab.allItems"
-        case .calendar: return "window.calendar"
-        case .quadrant: return "window.quadrant"
-        case .gantt: return "window.gantt"
-        case .diary: return "window.diary"
-        case .attachments: return "window.attachments"
-        case .clipboard: return "window.clipboard"
-        case .tags: return "tab.tags"
-        case .privacy: return "tab.privacy"
-        case .dataBackup: return "tab.dataBackup"
-        case .trash: return "window.trash"
-        case .settings: return "window.settings"
-        case .shortcuts: return "tab.shortcuts"
+        case .dashboard: "tab.dashboard"
+        case .today: "tab.today"
+        case .pending: "tab.pending"
+        case .allItems: "tab.allItems"
+        case .calendar: "window.calendar"
+        case .quadrant: "window.quadrant"
+        case .gantt: "window.gantt"
+        case .diary: "window.diary"
+        case .attachments: "window.attachments"
+        case .clipboard: "window.clipboard"
+        case .tags: "tab.tags"
+        case .privacy: "tab.privacy"
+        case .dataBackup: "tab.dataBackup"
+        case .trash: "window.trash"
+        case .settings: "window.settings"
+        case .shortcuts: "tab.shortcuts"
         }
     }
 

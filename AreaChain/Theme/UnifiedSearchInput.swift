@@ -93,7 +93,9 @@ struct UnifiedSearchInput: View {
         case .incompleteArguments: key = "unified.input.parameters"
         case .group: key = "unified.input.browse"
         case .scope: key = "unified.input.scope"
-        case .command: key = "unified.input.unavailable"
+        case .command:
+            if let command = result?.command { return actions.disposition(command.id).label(locale: locale) }
+            key = "unified.input.unavailable"
         default: key = "unified.input.hint"
         }
         return L10n.format(key, locale: locale)
