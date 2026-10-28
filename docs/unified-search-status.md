@@ -113,7 +113,7 @@
 
 ## 补复核待办
 
-- **收尾批 M-7**（2026-10-23）：Claude Code `verifier` 复核结论见 [§9.106](unified-search-commands.md#9106-收尾批-m-7删除旧全局搜索)。
+- **收尾批 M-7**（2026-10-23～28）：Claude Code `verifier` 第一轮不通过（6 条整改），整改后第二轮**通过**（2 条低级意见已记录），见 [§9.106](unified-search-commands.md#9106-收尾批-m-7删除旧全局搜索)。
 - **修复批 M-6R**（2026-10-23）：Claude Code `verifier` 复核**通过**（4 条低级意见已记录），见 [§9.104](unified-search-commands.md#9104-修复批-m-6r接入前阻断修复)。
 - **G-1a**（T-M1～T-M3）：已完成，三份结论均“通过”，见 [§9.89](unified-search-commands.md#989-补复核-g-1at-系列)。
 - **合并批 M-6**（2026-10-22～23）：Claude Code `verifier` 第一轮不通过（文档缺口），整改后第二轮通过；代码各项第一轮即符合。全量未判定失败仍是缺口，见[§9.103](unified-search-commands.md#9103-合并批-m-6接入正式版)。
