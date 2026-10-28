@@ -82,19 +82,25 @@ extension DiaryPage {
         guard !entries.isEmpty else { return }
         guard let currentID = selectedEntryID,
               let currentIndex = entries.firstIndex(where: { $0.id == currentID }) else {
-            selectedEntryID = entries.first?.id
+            let firstID = entries.first?.id
+            selectedEntryID = firstID
+            keyboardScrollTargetID = firstID
             return
         }
         let targetIndex = currentIndex + delta
         if entries.indices.contains(targetIndex) {
-            selectedEntryID = entries[targetIndex].id
+            let targetID = entries[targetIndex].id
+            selectedEntryID = targetID
+            keyboardScrollTargetID = targetID
         }
     }
 
     private func copyEntry(_ entry: DiaryEntry, isSensitive: Bool) {
         PrivacyAccess.withDiary(entry) { current in
             let text = try DiaryContent.read(current)
-            _ = PrivateClipboard.copy(text, sensitive: current.hasProtectedContent || isSensitive)
+            if PrivateClipboard.copy(text, sensitive: current.hasProtectedContent || isSensitive) {
+                DaybookStatusNoticeCenter.shared.show(.copied)
+            }
         }
     }
 }

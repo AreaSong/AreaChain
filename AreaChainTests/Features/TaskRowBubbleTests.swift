@@ -179,6 +179,65 @@ struct TaskRowBubbleTests {
         #expect(bubblesAfterFirst.count == 1, "切换到第一行后，旧行气泡必须排他关闭，屏幕上绝不能出现两个气泡并存重叠")
     }
 
+    @Test func compactTaskRowMetadataSuppressesDefaultResidentNoteAndCapsVisibleBadges() {
+        let defaultRoutineRow = TaskRow(
+            state: TaskRowState(
+                identity: TaskRowIdentityState(id: UUID(), title: "晨跑", isResident: true),
+                schedule: TaskRowScheduleState(),
+                content: TaskRowContentState(note: "每日习惯", notes: "")
+            ),
+            dispatch: { _ in }
+        )
+        #expect(defaultRoutineRow.displayNoteText == nil, "常驻习惯仅有系统默认周期说明时，不应在行内显示备注徽章")
+        #expect(defaultRoutineRow.fullNoteText == "每日习惯", "复制与导出回退仍保留完整说明")
+
+        let annotatedRoutineRow = TaskRow(
+            state: TaskRowState(
+                identity: TaskRowIdentityState(id: UUID(), title: "晨跑", isResident: true),
+                schedule: TaskRowScheduleState(),
+                content: TaskRowContentState(
+                    note: "每日习惯",
+                    notes: "配速控制在 5:30"
+                )
+            ),
+            dispatch: { _ in }
+        )
+        #expect(annotatedRoutineRow.displayNoteText == "配速控制在 5:30")
+
+        let tagID = UUID()
+        let classify = TaskClassifyContext(
+            catalog: TaskCatalogBinding(
+                tagIDs: tagID.uuidString,
+                tags: [CatalogChoice(id: tagID, name: "季度架构规划")]
+            ),
+            actions: TaskClassifyActions(onToggleTag: { _ in }, onImportant: { _ in }, onUrgent: { _ in })
+        )
+        let truncatedSingleTagRow = TaskRow(
+            state: TaskRowState(
+                identity: TaskRowIdentityState(id: UUID(), title: "整理方案"),
+                schedule: TaskRowScheduleState(),
+                content: TaskRowContentState(classify: classify)
+            ),
+            dispatch: { _ in }
+        )
+        #expect(truncatedSingleTagRow.canShowTagBubble == true, "单个超长被截断标签也应支持悬停气泡查看全称")
+
+        let ref1 = AttachmentRef(id: UUID(), filename: "a.png")
+        let ref2 = AttachmentRef(id: UUID(), filename: "b.png")
+        let thumbnails = AttachmentThumbnails(items: [ref1, ref2], maxVisibleCount: 1)
+        #expect(thumbnails.visibleItems.count == 1, "行内紧凑模式仅内联渲染首张缩略图")
+        #expect(thumbnails.items.count == 2, "点击预览走马灯仍保留全部附件列表")
+
+        let syncedBubble = RowTitleBubble(title: "测试完整长标题", growsUpward: false, isExternallyCopied: true)
+        #expect(syncedBubble.isExternallyCopied == true, "单击行内标题时，浮出的标题气泡也应同步显示已复制状态")
+
+        let highlightedTitle = ModernTaskTitle(text: "测试复制变蓝标题", isDone: false, isHighlighted: true)
+        #expect(highlightedTitle.isHighlighted == true, "单击标题复制后应标记为蓝色高亮状态而不插入占宽图标")
+
+        DaybookStatusNoticeCenter.shared.show(.copied)
+        #expect(DaybookStatusNoticeCenter.shared.current == .copied, "复制后顶部状态栏中心应收到已复制通知")
+    }
+
     private static func findTitleRegion(_ id: UUID, in view: NSView?) -> BoardRowPointerView? {
         guard let view else { return nil }
         if let region = view as? BoardRowPointerView,

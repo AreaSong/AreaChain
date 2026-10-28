@@ -281,6 +281,18 @@ final class BlankClickNSView: NSView {
     override var acceptsFirstResponder: Bool { false }
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        if let superview {
+            let windowPoint = superview.convert(point, to: nil)
+            if RowBubbleClickShieldView.containsWindowPoint(windowPoint, in: window)
+                || SyntaxOverlayEventView.containsWindowPoint(windowPoint, in: window)
+                || BoardRowPointerView.containsWindowPoint(windowPoint, in: window) {
+                return nil
+            }
+        }
+        return super.hitTest(point)
+    }
+
     override func mouseDown(with event: NSEvent) {
         onClick?()
         super.mouseDown(with: event)

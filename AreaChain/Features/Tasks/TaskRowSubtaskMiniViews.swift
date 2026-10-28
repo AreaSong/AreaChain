@@ -19,8 +19,7 @@ struct TaskRowSubtaskChip: View {
                 }
             }
         ) {
-            HStack(spacing: 3) {
-                Image(systemName: allDone ? "checkmark.circle.fill" : "checklist")
+            HStack(spacing: 2.5) {
                 Text("\(completed)/\(total)")
                 if !isFlatMode {
                     Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
@@ -177,7 +176,7 @@ struct FlatSubtaskRow: View {
 
             HStack(spacing: 4) {
                 ForEach(Array(item.tagNames.prefix(2)), id: \.self) { tagName in
-                    Text("#\(tagName)")
+                    Text(tagName)
                         .font(DaybookType.micro.weight(.semibold))
                         .foregroundStyle(DaybookPalette.Syntax.tag)
                         .lineLimit(1)

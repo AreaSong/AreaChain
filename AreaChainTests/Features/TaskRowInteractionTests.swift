@@ -105,6 +105,31 @@ struct TaskRowInteractionTests {
         #expect(editor(in: window.contentView) == nil)
     }
 
+    @Test func editingConfirmsAndSavesWhenClickingOutsideEditor() async throws {
+        let probe = RowActionProbe()
+        let window = host(row(probe: probe), size: NSSize(width: 380, height: 100))
+        defer { close(window) }
+        try await settle(window)
+        try click(NSPoint(x: 140, y: 50), in: window)
+        try click(NSPoint(x: 140, y: 50), in: window, clickCount: 2)
+        try await settle(window)
+        let textView = try #require(editor(in: window.contentView)?.currentEditor() as? NSTextView)
+        textView.selectAll(nil)
+        textView.insertText("点外部自动保存的任务", replacementRange: textView.selectedRange())
+        for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
+            let outsideEvent = try #require(NSEvent.mouseEvent(
+                with: type, location: NSPoint(x: 140, y: 6), modifierFlags: [],
+                timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber,
+                context: nil, eventNumber: 0, clickCount: 1, pressure: 1
+            ))
+            NSApp.sendEvent(outsideEvent)
+        }
+        try await settle(window)
+        #expect(probe.editedTitles == ["点外部自动保存的任务"])
+        #expect(probe.toggleCount == 0)
+        #expect(editor(in: window.contentView) == nil)
+    }
+
     @Test func selectedRowRendersInBothAppearances() async throws {
         for scheme in [ColorScheme.light, .dark] {
             let window = host(row(isSelected: true, probe: RowActionProbe()), scheme: scheme)
@@ -172,7 +197,7 @@ struct TaskRowInteractionTests {
         }
         defer { NotificationCenter.default.removeObserver(observer) }
         // 原生菜单在 mouseDown 内进入追踪循环，先排入 mouseUp 和 Escape，不能等返回后才发送。
-        let point = NSPoint(x: 361, y: 30)
+        let point = NSPoint(x: 365, y: 30)
         let mouseUp = try #require(NSEvent.mouseEvent(
             with: .leftMouseUp, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
             windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: 0

@@ -6,7 +6,7 @@ import SwiftUI
 struct DiarySummaryRow: View {
     @Environment(\.modelContext) private var context
     @Environment(\.calendar) private var calendar
-    @Environment(\.locale) private var locale
+    @Environment(\.locale) var locale
     @Environment(\.accessibilityReduceMotion) var reduceMotion
     @Environment(\.workspaceHostContext) private var hostContext
     var entry: DiaryEntry
@@ -19,13 +19,16 @@ struct DiarySummaryRow: View {
     var onDelete: () -> Void
 
     @State var chrome = BoardRowChrome()
-    @State private var hasCopied = false
+    @State var hasCopied = false
     @State var hasNoteCopied = false
     @State private var hasConvertedToTask = false
     @State private var pickingDay = false
+    @State var isTagHovered = false
     @State var growsUpward = false
     @State var bubbleShiftX: CGFloat = 0
     @State var rowMaxX: CGFloat = 0
+    @State var noteGlobalPoint: CGPoint = .zero
+    @State var noteIndicatorShield = RowBubbleClickShieldLifetime()
 
     var isHovered: Bool {
         get { chrome.isRowHovered }
@@ -86,7 +89,7 @@ struct DiarySummaryRow: View {
         return NotePresentation(mainText: parts.mainText, note: parts.note)
     }
 
-    private var assignedTags: [TagItem] {
+    var assignedTags: [TagItem] {
         allTags.filter { TagIDList.contains(entry.tagIDs, $0.id) }
     }
 
@@ -100,9 +103,8 @@ struct DiarySummaryRow: View {
             .padding(.vertical, 4)
             .frame(maxWidth: .infinity, alignment: .leading)
             .frame(minHeight: 46)
+            .background(pinnedBorderOverlay)
             .daybookSurface(.row, isHovered: isHovered, isSelected: isSelected || isHighlighted)
-            .overlay(pinnedBorderOverlay)
-            .background(pointerRegion(isTitle: false).accessibilityHidden(true))
             .background {
                 GeometryReader { proxy in
                     Color.clear
@@ -126,7 +128,7 @@ struct DiarySummaryRow: View {
             .popover(isPresented: $pickingDay) { daySchedulePopover }
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("diary.summary." + entry.id.uuidString)
-            .zIndex((shouldShowTitleBubble || shouldShowNoteBubble) ? 120 : (isHovered ? 100 : 1))
+            .zIndex((shouldShowTitleBubble || shouldShowNoteBubble || shouldShowTagBubble) ? 120 : (isHovered ? 100 : 1))
             .contextMenu { diaryMenuItems }
             .modifier(DiaryRowTaskLifecycleModifier(
                 chrome: chrome,
@@ -155,7 +157,7 @@ struct DiarySummaryRow: View {
             .allowsHitTesting(false)
     }
 
-    // MARK: - 第 1 行：主视觉行 (标题/正文首行 + 恒定 22x22 占位的设置按钮)
+    // MARK: - 第 1 行：主视觉行 (标题/正文首行 + 无视觉占位的无障碍锚点)
 
     private var headerRow: some View {
         HStack(alignment: .center, spacing: 4) {
@@ -163,7 +165,8 @@ struct DiarySummaryRow: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             actionCluster
-                .frame(width: 48, height: 22)
+                .frame(width: 14, height: 22)
+                .padding(.leading, -4)
         }
     }
 
@@ -173,12 +176,17 @@ struct DiarySummaryRow: View {
         HStack(alignment: .center, spacing: 4) {
             Text(presentation.mainText.isEmpty ? " " : presentation.mainText)
                 .font(DaybookType.body)
-                .foregroundStyle(isSensitive ? DaybookPalette.text.secondary : DaybookPalette.text.primary)
+                .foregroundStyle(hasCopied ? DaybookPalette.accent.base : (isSensitive ? DaybookPalette.text.secondary : DaybookPalette.text.primary))
                 .lineLimit(1)
                 .truncationMode(AppPreferences.shared.contentTruncation.textTruncation)
                 .multilineTextAlignment(.leading)
                 .layoutPriority(1)
-                .overlay(pointerRegion(isTitle: true).accessibilityHidden(true))
+                .animation(DaybookMotion.interactive(reduceMotion), value: hasCopied)
+                .overlay(
+                    pointerRegion(isTitle: true)
+                        .padding(.top, -4)
+                        .accessibilityHidden(true)
+                )
                 .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
                     titleBubbleOverlay(for: presentation.mainText)
                 }
@@ -192,31 +200,31 @@ struct DiarySummaryRow: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: 20)
                 .contentShape(Rectangle())
-                .overlay(pointerRegion(isTitle: false).accessibilityHidden(true))
+                .overlay(
+                    pointerRegion(isTitle: false)
+                        .padding(.top, -4)
+                        .accessibilityHidden(true)
+                )
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    // MARK: - 右侧快捷操作区 (恒定 48x22 占位：📋 复制 + ··· 更多菜单，纯透明度渐变，零抖动)
+    // MARK: - 右侧快捷操作区（日常操作走单击复制与右键菜单，仅保留无视觉像素的无障碍锚点）
 
     private var actionCluster: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 0) {
             copyButton
             moreMenu
         }
-        .frame(width: 48, height: 22)
-        .opacity((isHovered || isSelected || isHighlighted) && !isCommandPressed ? 1.0 : 0.0)
-        .animation(DaybookMotion.interactive(reduceMotion), value: isHovered)
-        .animation(DaybookMotion.interactive(reduceMotion), value: isSelected)
-        .animation(DaybookMotion.interactive(reduceMotion), value: isCommandPressed)
+        .frame(width: 14, height: 22)
     }
 
     private var copyButton: some View {
         Button(action: copy) {
-            Image(systemName: hasCopied ? "checkmark" : "doc.on.doc")
-                .font(DaybookType.caption.weight(.semibold))
+            Text("")
+                .frame(width: 4, height: 22)
         }
-        .buttonStyle(DaybookButtonStyle(hasCopied ? .iconActive : .icon, size: .compact))
+        .buttonStyle(.plain) // token-exempt: 无视觉像素的无障碍锚点
         .help(L10n.string(hasCopied ? "diary.copied" : "diary.quick.copy", locale: locale))
         .accessibilityLabel(L10n.string(hasCopied ? "diary.copied" : "diary.quick.copy", locale: locale))
         .fixedSize()
@@ -226,9 +234,8 @@ struct DiarySummaryRow: View {
         Menu {
             diaryMenuItems
         } label: {
-            Image(systemName: "ellipsis")
-                .font(DaybookType.caption.weight(.semibold))
-                .daybookMenuLabel(size: .compact)
+            Text("")
+                .frame(width: 10, height: 22)
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
@@ -306,6 +313,7 @@ struct DiarySummaryRow: View {
                     .contentShape(Rectangle())
                     .overlay(
                         pointerRegion(isTitle: false)
+                            .padding(.bottom, -4)
                             .accessibilityHidden(true)
                     )
                     .transition(.opacity)
@@ -336,24 +344,11 @@ struct DiarySummaryRow: View {
                 .foregroundStyle(DaybookPalette.text.secondary)
 
             if !assignedTags.isEmpty {
-                HStack(spacing: 3) {
-                    ForEach(assignedTags) { tag in
-                        tagPill(tag)
-                    }
-                }
-            }
-            if hasCopied {
-                Label("diary.copied", systemImage: "checkmark")
-                    .font(DaybookType.badge)
-                    .foregroundStyle(DaybookPalette.accent.base)
+                diaryTagChips
             }
             Spacer(minLength: 0)
         }
         .font(DaybookType.badge)
-    }
-
-    private func tagPill(_ tag: TagItem) -> some View {
-        DiaryTagPill(name: tag.name, colorToken: tag.colorToken)
     }
 
     private var dateLabel: String {
@@ -373,21 +368,31 @@ struct DiarySummaryRow: View {
         PrivacyAccess.withDiary(entry) { current in
             let text = try DiaryContent.read(current)
             guard PrivateClipboard.copy(text, sensitive: current.hasProtectedContent || isSensitive) else { throw PrivacyError.storageFailure }
-            hasCopied = true
+            withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                hasCopied = true
+            }
+            DaybookStatusNoticeCenter.shared.show(.copied)
         }
     }
 
     func copyTitle(_ title: String) {
         PrivacyAccess.withDiary(entry) { current in
             guard PrivateClipboard.copy(title, sensitive: current.hasProtectedContent || isSensitive) else { throw PrivacyError.storageFailure }
-            hasCopied = true
+            withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                hasCopied = true
+            }
+            DaybookStatusNoticeCenter.shared.show(.copied)
         }
     }
 
     func copyNote(_ note: String) {
+        noteIndicatorShield.view?.cancelPendingTap()
         PrivacyAccess.withDiary(entry) { current in
             guard PrivateClipboard.copy(note, sensitive: current.hasProtectedContent || isSensitive) else { throw PrivacyError.storageFailure }
-            hasCopied = true
+            withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                hasNoteCopied = true
+            }
+            DaybookStatusNoticeCenter.shared.show(.copied)
         }
     }
 

@@ -13,10 +13,13 @@ struct LiveComposerPreviewHeader: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.locale) private var locale
+    @State private var isRowHovered = false
     @State private var isTitleHovered = false
     @State private var isNoteHovered = false
     @State private var isTitleBubbleHovered = false
     @State private var isNoteBubbleHovered = false
+    @State private var hasCopied = false
+    @State private var hasNoteCopied = false
     @State private var growsUpward = false
     @State private var bubbleShiftX: CGFloat = 0
 
@@ -92,11 +95,12 @@ struct LiveComposerPreviewHeader: View {
 
     /// 单行主卡片（固定 36pt 高度，布局 100% 镜像 TaskRow 待办项）
     private var mainRow: some View {
-        HStack(alignment: .center, spacing: 6) {
+        let ringStroke = DaybookPalette.text.primary.opacity(0.24) // token-exempt: 与 ModernCheckbox 未完成圆环一致
+        return HStack(alignment: .center, spacing: 8) {
             Circle()
-                .strokeBorder(DaybookPalette.border.default.opacity(0.8), style: StrokeStyle(lineWidth: 1.2, dash: [2.5, 2])) // token-exempt: 80% 分隔线没有对应令牌
-                .frame(width: 14, height: 14)
-                .foregroundStyle(DaybookPalette.text.secondary)
+                .strokeBorder(ringStroke, lineWidth: DaybookMetrics.Completion.task.border)
+                .frame(width: DaybookMetrics.Completion.task.circle, height: DaybookMetrics.Completion.task.circle)
+                .frame(width: DaybookMetrics.Completion.task.hit, height: DaybookMetrics.Completion.task.hit)
 
             HStack(alignment: .center, spacing: 5) {
                 if !displayTitle.isEmpty {
@@ -110,92 +114,115 @@ struct LiveComposerPreviewHeader: View {
 
             trailingAttributesCluster
 
-            DaybookIconButton(systemName: "xmark", label: "common.close", size: .inline, action: onClose)
+            closeAccessibilityAnchor
+                .padding(.leading, -10)
         }
         .padding(.horizontal, 10)
         .frame(height: 36)
-        .daybookSurface(floating: .suggestions)
+        .background {
+            Color.clear
+                .daybookSurface(.row, isHovered: isRowHovered, isSelected: false)
+                .daybookSurface(floating: .smallBackground, isPresented: !showsSuggestions)
+        }
+        .onHover { hovering in
+            withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                isRowHovered = hovering
+            }
+        }
+        .task(id: hasCopied) {
+            guard hasCopied else { return }
+            try? await Task.sleep(for: .milliseconds(1200))
+            if !Task.isCancelled {
+                withAnimation(DaybookMotion.interactive(reduceMotion)) { hasCopied = false }
+            }
+        }
+        .task(id: hasNoteCopied) {
+            guard hasNoteCopied else { return }
+            try? await Task.sleep(for: .milliseconds(1200))
+            if !Task.isCancelled {
+                withAnimation(DaybookMotion.interactive(reduceMotion)) { hasNoteCopied = false }
+            }
+        }
+    }
+
+    private var closeAccessibilityAnchor: some View {
+        Button(action: onClose) {
+            Text("")
+                .frame(width: 18, height: 18)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain) // control: 无视觉占位的关闭锚点，保持与正式 TaskRow 一致的右侧视觉
+        .frame(width: 18, height: 18)
+        .help("common.close")
+        .accessibilityLabel("common.close")
     }
 
     private var trailingAttributesCluster: some View {
-        HStack(spacing: 5) {
+        HStack(spacing: 4) {
             if let prioritySlot, prioritySlot != .rest {
-                QuadrantMiniMark(slot: prioritySlot, metrics: .row)
-                    .help(priorityHelpText(prioritySlot))
-                    .accessibilityLabel(priorityHelpText(prioritySlot))
+                QuadrantBadge(slot: prioritySlot, isHighlighted: isRowHovered)
             }
 
             tagsBadgeCluster
 
             if let time = displayTime {
-                HStack(spacing: 2.5) {
-                    Image(systemName: "clock")
-                        .font(DaybookType.micro)
+                DaybookChip(tint: DaybookPalette.accent.base, isSelected: isRowHovered) {
                     Text(time)
-                        .font(.system(size: 11, weight: .medium, design: .monospaced)) // token-exempt: 时刻用等宽，kbd 是 8.5pt
                 }
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2.5)
-                .background(Capsule().fill(DaybookPalette.Syntax.timeFill))
-                .foregroundStyle(DaybookPalette.Syntax.time)
                 .help(time)
             }
         }
         .fixedSize(horizontal: true, vertical: false)
+        .opacity(isRowHovered ? 1.0 : 0.65)
+        .animation(DaybookMotion.interactive(reduceMotion), value: isRowHovered)
     }
 
     @ViewBuilder
     private var tagsBadgeCluster: some View {
-        if canFitAllTagsInline {
-            ForEach(previewTags, id: \.self) { tag in
-                Text("#\(tag)")
-                    .font(DaybookType.caption.weight(.semibold))
-                    .lineLimit(1)
-                    .padding(.horizontal, 5.5)
-                    .padding(.vertical, 2.5)
-                    .background(Capsule().fill(DaybookPalette.Syntax.tagFill))
-                    .overlay(Capsule().stroke(DaybookPalette.Syntax.tagStroke, lineWidth: 0.6))
-                    .foregroundStyle(DaybookPalette.Syntax.tag)
-                    .help("#\(tag)")
-            }
-        } else if previewTags.count == 1, let singleTag = previewTags.first {
-            Text("#\(singleTag)")
-                .font(DaybookType.caption.weight(.semibold))
-                .lineLimit(1)
-                .truncationMode(.tail)
-                .frame(maxWidth: 96, alignment: .leading)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2.5)
-                .background(Capsule().fill(DaybookPalette.Syntax.tagFill))
-                .overlay(Capsule().stroke(DaybookPalette.Syntax.tagStroke, lineWidth: 0.6))
-                .foregroundStyle(DaybookPalette.Syntax.tag)
-                .help("#\(singleTag)")
-        } else if previewTags.count > 1 {
+        if !previewTags.isEmpty {
+            let displayTags = Array(previewTags.prefix(1))
+            let overflow = previewTags.count - displayTags.count
             HStack(spacing: 2.5) {
-                Image(systemName: "number")
-                    .font(.system(size: 8.5, weight: .bold)) // token-exempt: 小于 9pt，kbd 是等宽
-                Text("\(previewTags.count)")
-                    .font(.system(size: 11, weight: .bold, design: .rounded)) // token-exempt: 标签计数用圆体
+                ForEach(displayTags, id: \.self) { tag in
+                    DiaryTagPill(name: tag)
+                }
+                if overflow > 0 {
+                    Text("+\(overflow)")
+                        .font(.system(size: 9, weight: .bold, design: .rounded)) // token-exempt: 标签溢出计数用圆体
+                        .foregroundStyle(DaybookPalette.Syntax.tag)
+                        .padding(.horizontal, 3.5)
+                        .frame(height: 18)
+                        .background(
+                            RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
+                                .fill(DaybookPalette.Syntax.tagBadgeFill)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
+                                .stroke(DaybookPalette.Syntax.tagStroke, lineWidth: 0.6)
+                        )
+                        .help(L10n.format("syntax.preview.tagCount", locale: locale, previewTags.count))
+                }
             }
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2.5)
-            .background(Capsule().fill(DaybookPalette.Syntax.tagBadgeFill))
-            .overlay(Capsule().stroke(DaybookPalette.Syntax.tagStroke, lineWidth: 0.6))
-            .foregroundStyle(DaybookPalette.Syntax.tag)
-            .help(L10n.format("syntax.preview.tagCount", locale: locale, previewTags.count))
+            .fixedSize(horizontal: true, vertical: false)
         }
     }
 
     /// 紧跟标题的纯图标备注指示器（样式 100% 对齐 TaskRow noteIndicator）
     private var noteIndicator: some View {
-        Image(systemName: "text.alignleft")
+        let iconColor = hasNoteCopied
+            ? DaybookPalette.accent.base
+            : (isNoteHovered ? DaybookPalette.accent.base : DaybookPalette.text.secondary.opacity(0.65)) // token-exempt: 65% 次要色没有对应令牌
+        let fillColor = hasNoteCopied
+            ? DaybookPalette.accent.base.opacity(0.16) // token-exempt: 16% 没有对应令牌
+            : (isNoteHovered ? DaybookPalette.accent.fill : DaybookPalette.text.primary.opacity(0.04)) // token-exempt: 4% 墨色没有对应令牌
+        return Image(systemName: "text.alignleft")
             .font(DaybookType.micro.weight(.medium))
-            .foregroundStyle(isNoteHovered ? DaybookPalette.accent.base : DaybookPalette.text.tertiary)
+            .foregroundStyle(iconColor)
             .padding(.horizontal, 3.5)
             .padding(.vertical, 1.5)
             .background(
                 RoundedRectangle(cornerRadius: DaybookRadius.xxs, style: .continuous)
-                    .fill(isNoteHovered ? DaybookPalette.accent.fill : DaybookPalette.text.primary.opacity(0.04)) // token-exempt: 4% 墨色没有对应令牌
+                    .fill(fillColor)
             )
             .background(
                 GeometryReader { proxy in
@@ -211,6 +238,9 @@ struct LiveComposerPreviewHeader: View {
                     isNoteHovered = hovering
                 }
             }
+            .onTapGesture {
+                copyPreview(parsed.notes, isNote: true)
+            }
             .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
                 noteBubbleOverlay
             }
@@ -219,7 +249,7 @@ struct LiveComposerPreviewHeader: View {
     @ViewBuilder
     private var noteBubbleOverlay: some View {
         if shouldShowNoteBubble {
-            let arrowPadding = max(8, min(186, 8 - bubbleShiftX))
+            let arrowPadding = max(8, min(194, 8 - bubbleShiftX))
             let transformAnchor = UnitPoint(
                 x: max(0.06, min(0.94, (arrowPadding + 3.5) / 210.0)),
                 y: growsUpward ? 1.0 : 0.0
@@ -228,7 +258,8 @@ struct LiveComposerPreviewHeader: View {
                 note: parsed.notes,
                 growsUpward: growsUpward,
                 bubbleShiftX: bubbleShiftX,
-                onCopy: { copyPreview(parsed.notes) },
+                isExternallyCopied: hasNoteCopied,
+                onCopy: { copyPreview(parsed.notes, isNote: true) },
                 onHover: { isNoteBubbleHovered = $0 }
             )
             .offset(x: -2.5 + bubbleShiftX, y: growsUpward ? -18 : 16)
@@ -243,10 +274,6 @@ struct LiveComposerPreviewHeader: View {
         (isNoteHovered || isNoteBubbleHovered) && !showsSuggestions && !parsed.notes.isEmpty && !isTitleHovered && !isTitleBubbleHovered
     }
 
-    private func priorityHelpText(_ slot: QuadrantSlot) -> Text {
-        Text("\(slot.badgeText) · ") + Text(LocalizedStringKey(slot.titleKeyName)) + Text(" · ") + Text(LocalizedStringKey(slot.subtitleKeyName))
-    }
-
     private func updateBubblePlacement(_ proxy: GeometryProxy) {
         let frame = proxy.frame(in: .global)
         let placement = RowBubblePlacement.calculate(
@@ -257,14 +284,23 @@ struct LiveComposerPreviewHeader: View {
         bubbleShiftX = placement.bubbleShiftX
     }
 
-    private func copyPreview(_ text: String) {
+    private func copyPreview(_ text: String, isNote: Bool = false) {
+        guard !text.isEmpty else { return }
         if let onCopy {
             onCopy(text)
-            return
+        } else {
+            let pasteboard = NSPasteboard.general
+            pasteboard.clearContents()
+            pasteboard.setString(text, forType: .string)
         }
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(text, forType: .string)
+        DaybookStatusNoticeCenter.shared.show(.copied)
+        withAnimation(DaybookMotion.interactive(reduceMotion)) {
+            if isNote {
+                hasNoteCopied = true
+            } else {
+                hasCopied = true
+            }
+        }
     }
 
     /// 浮动详细标签面板（大字号 11pt，查详细专用，输入时自动避让）
@@ -329,13 +365,16 @@ struct LiveComposerPreviewHeader: View {
 
     private var titleView: some View {
         Text(displayTitle)
-            .font(DaybookType.body.weight(.medium))
-            .foregroundStyle(DaybookPalette.text.primary)
+            .font(DaybookType.body)
+            .foregroundStyle(hasCopied ? DaybookPalette.accent.base : DaybookPalette.text.primary)
             .lineLimit(1)
             .truncationMode(AppPreferences.shared.contentTruncation.textTruncation)
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
             .help(displayTitle)
+            .onTapGesture {
+                copyPreview(displayTitle, isNote: false)
+            }
             .onHover { hovering in
                 withAnimation(DaybookMotion.interactive(reduceMotion)) {
                     isTitleHovered = hovering && isTitleTruncated
@@ -346,7 +385,8 @@ struct LiveComposerPreviewHeader: View {
                     RowTitleBubble(
                         title: displayTitle,
                         growsUpward: growsUpward,
-                        onCopy: { copyPreview(displayTitle) },
+                        isExternallyCopied: hasCopied,
+                        onCopy: { copyPreview(displayTitle, isNote: false) },
                         onHover: { isTitleBubbleHovered = $0 }
                     )
                     .offset(y: growsUpward ? -6 : 22)

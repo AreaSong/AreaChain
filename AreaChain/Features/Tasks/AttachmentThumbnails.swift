@@ -34,6 +34,7 @@ struct AttachmentThumbnails: View {
     var items: [AttachmentRef]
     var inMemoryData: [UUID: Data] = [:]
     var thumbnailSize: CGFloat = 22
+    var maxVisibleCount: Int? = nil
     var onRemove: ((AttachmentRef) -> Void)? = nil
     @Environment(\.workspaceHostContext) private var hostContext
     @State private var currentID: UUID?
@@ -42,10 +43,15 @@ struct AttachmentThumbnails: View {
 
     private var spacing: CGFloat { thumbnailSize > 28 ? 8 : 4 }
     private var cellPadding: CGFloat { onRemove != nil ? 4 : 0 }
+    var visibleItems: [AttachmentRef] {
+        guard let maxVisibleCount, maxVisibleCount > 0 else { return items }
+        return Array(items.prefix(maxVisibleCount))
+    }
 
     private var currentAnchorRect: CGRect {
-        AttachmentCarouselSelection.anchorRect(
-            for: currentID, in: items, thumbnailSize: thumbnailSize, spacing: spacing, cellPadding: cellPadding
+        let anchorID = visibleItems.contains(where: { $0.id == currentID }) ? currentID : visibleItems.last?.id
+        return AttachmentCarouselSelection.anchorRect(
+            for: anchorID, in: visibleItems, thumbnailSize: thumbnailSize, spacing: spacing, cellPadding: cellPadding
         )
     }
 
@@ -59,13 +65,13 @@ struct AttachmentThumbnails: View {
     var body: some View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: spacing) {
-                ForEach(items) { item in thumbnailCell(item) }
+                ForEach(visibleItems) { item in thumbnailCell(item) }
             }
             LazyVGrid(
                 columns: [GridItem(.adaptive(minimum: thumbnailSize + cellPadding, maximum: thumbnailSize + cellPadding), spacing: spacing)],
                 alignment: .leading, spacing: spacing
             ) {
-                ForEach(items) { item in thumbnailCell(item) }
+                ForEach(visibleItems) { item in thumbnailCell(item) }
             }
         }
         .popover(isPresented: isPopoverPresented, attachmentAnchor: .rect(.rect(currentAnchorRect))) {
@@ -136,7 +142,7 @@ struct AttachmentThumbnails: View {
     }
 
     private func thumbnail(_ item: AttachmentRef) -> some View {
-        let isSelected = currentID == item.id
+        let isSelected = currentID == item.id || (maxVisibleCount == 1 && currentID != nil)
         let isPending = inMemoryData[item.id] != nil
         let borderColor = isSelected
             ? DaybookPalette.accent.base
@@ -146,6 +152,15 @@ struct AttachmentThumbnails: View {
             image: loadedImage(item), size: thumbnailSize, smallRadius: thumbnailSize > 28,
             borderColor: borderColor, lineWidth: lineWidth, placeholderFont: DaybookType.badge
         )
+        .overlay(alignment: .bottomTrailing) {
+            if maxVisibleCount != nil && items.count > visibleItems.count && item.id == visibleItems.last?.id {
+                Text("×\(items.count)")
+                    .font(.system(size: 8.5, weight: .bold, design: .rounded)) // token-exempt: 缩略图叠加微型计数角标
+                    .foregroundStyle(DaybookPalette.text.onAccent)
+                    .padding(.horizontal, 2.5)
+                    .background(RoundedRectangle(cornerRadius: DaybookRadius.xxs, style: .continuous).fill(DaybookPalette.accent.base))
+            }
+        }
         .contentShape(Rectangle())
     }
 

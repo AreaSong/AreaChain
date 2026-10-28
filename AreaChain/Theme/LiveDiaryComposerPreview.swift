@@ -23,8 +23,12 @@ struct LiveDiaryComposerPreview: View {
     @State private var isNoteHovered = false
     @State private var isNoteBubbleHovered = false
     @State private var hasCopied = false
+    @State private var hasNoteCopied = false
     @State private var growsUpward = false
     @State private var bubbleShiftX: CGFloat = 0
+    @State private var rowMaxX: CGFloat = 0
+    @State private var noteMinX: CGFloat = 0
+    @State private var noteMinY: CGFloat = 0
 
     @MainActor
     private static let timeFormatter: DateFormatter = {
@@ -54,29 +58,42 @@ struct LiveDiaryComposerPreview: View {
         return L10n.format("diary.date.today", locale: locale, time)
     }
 
+    private var capturedPresentation: (mainText: String, note: String?) {
+        let current = parsed
+        let title = current.cleanTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        let body = current.body.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !title.isEmpty {
+            return (title, body.isEmpty ? nil : body)
+        }
+        return DiaryCopyContent.split(body)
+    }
+
     private var displayTitle: String {
         if masksContent {
             return L10n.string("diary.private.title", locale: locale)
         }
-        let current = parsed
-        let title = current.cleanTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !title.isEmpty { return title }
-        let body = current.body.trimmingCharacters(in: .whitespacesAndNewlines)
-        return body.isEmpty ? "" : body
+        return capturedPresentation.mainText
     }
 
     private var noteText: String {
         if masksContent { return "" }
-        let current = parsed
-        let title = current.cleanTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        return title.isEmpty ? "" : current.body.trimmingCharacters(in: .whitespacesAndNewlines)
+        return capturedPresentation.note ?? ""
     }
 
     private var shouldShowTitleBubble: Bool {
         !masksContent && (isTitleTextHovered || isTitleBubbleHovered) && RowTitleTruncation.isTruncated(displayTitle)
     }
 
-    private var geometryObserver: some View {
+    private var rowGeometryObserver: some View {
+        GeometryReader { proxy in
+            Color.clear
+                .onAppear { updateRowPlacement(proxy) }
+                .onChange(of: proxy.frame(in: .global).minY) { _, _ in updateRowPlacement(proxy) }
+                .onChange(of: proxy.frame(in: .global).maxX) { _, _ in updateRowPlacement(proxy) }
+        }
+    }
+
+    private var noteGeometryObserver: some View {
         GeometryReader { proxy in
             Color.clear
                 .onAppear { updateBubblePlacement(proxy) }
@@ -97,8 +114,11 @@ struct LiveDiaryComposerPreview: View {
         .padding(.vertical, 4)
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(minHeight: 46)
-        .daybookSurface(.row, isHovered: isRowHovered, isSelected: false)
-        .daybookSurface(floating: .smallBackground, isPresented: !showsSuggestions)
+        .background {
+            Color.clear
+                .daybookSurface(.row, isHovered: isRowHovered, isSelected: false)
+                .daybookSurface(floating: .smallBackground, isPresented: !showsSuggestions)
+        }
         .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
         .onHover { hovering in
             withAnimation(DaybookMotion.interactive(reduceMotion)) {
@@ -109,7 +129,7 @@ struct LiveDiaryComposerPreview: View {
                 }
             }
         }
-        .background(geometryObserver)
+        .background(rowGeometryObserver)
         .task(id: hasCopied) {
             guard hasCopied else { return }
             try? await Task.sleep(for: .milliseconds(1200))
@@ -119,11 +139,20 @@ struct LiveDiaryComposerPreview: View {
                 }
             }
         }
+        .task(id: hasNoteCopied) {
+            guard hasNoteCopied else { return }
+            try? await Task.sleep(for: .milliseconds(1200))
+            if !Task.isCancelled {
+                withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                    hasNoteCopied = false
+                }
+            }
+        }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("diary.preview.card")
     }
 
-    // MARK: - 第 1 行：主视觉行 (标题/正文首行 + 恒定 48x22 占位的悬停操作按钮)
+    // MARK: - 第 1 行：主视觉行 (标题/正文首行 + 无视觉占位的无障碍锚点)
 
     private var headerRow: some View {
         HStack(alignment: .center, spacing: 4) {
@@ -131,7 +160,8 @@ struct LiveDiaryComposerPreview: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             actionCluster
-                .frame(width: 48, height: 22)
+                .frame(width: 14, height: 22)
+                .padding(.leading, -4)
         }
     }
 
@@ -139,12 +169,14 @@ struct LiveDiaryComposerPreview: View {
         HStack(alignment: .center, spacing: 4) {
             Text(displayTitle.isEmpty ? " " : displayTitle)
                 .font(DaybookType.body)
-                .foregroundStyle(masksContent ? DaybookPalette.text.secondary : DaybookPalette.text.primary)
+                .foregroundStyle(hasCopied ? DaybookPalette.accent.base : (masksContent ? DaybookPalette.text.secondary : DaybookPalette.text.primary))
                 .lineLimit(1)
                 .truncationMode(AppPreferences.shared.contentTruncation.textTruncation)
                 .multilineTextAlignment(.leading)
                 .layoutPriority(1)
+                .animation(DaybookMotion.interactive(reduceMotion), value: hasCopied)
                 .contentShape(Rectangle())
+                .onTapGesture(perform: copyTitle)
                 .onHover { hovering in
                     withAnimation(DaybookMotion.interactive(reduceMotion)) {
                         isTitleTextHovered = hovering
@@ -168,6 +200,7 @@ struct LiveDiaryComposerPreview: View {
             RowTitleBubble(
                 title: displayTitle,
                 growsUpward: growsUpward,
+                isExternallyCopied: hasCopied,
                 onCopy: copyTitle,
                 onHover: { hovering in
                     isTitleBubbleHovered = hovering
@@ -186,24 +219,24 @@ struct LiveDiaryComposerPreview: View {
         }
     }
 
-    // MARK: - 右侧快捷操作区 (恒定 48x22 占位：📋 复制 + ··· 更多/关闭菜单，纯透明度渐变，零抖动)
+    // MARK: - 右侧快捷操作区（无视觉像素的无障碍锚点）
 
     private var actionCluster: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 0) {
             copyButton
             moreMenu
         }
-        .frame(width: 48, height: 22)
+        .frame(width: 14, height: 22)
         .opacity(isRowHovered ? 1.0 : 0.0)
         .animation(DaybookMotion.interactive(reduceMotion), value: isRowHovered)
     }
 
     private var copyButton: some View {
         Button(action: copyTitle) {
-            Image(systemName: hasCopied ? "checkmark" : "doc.on.doc")
-                .font(DaybookType.caption.weight(.medium))
+            Text("")
+                .frame(width: 4, height: 22)
         }
-        .buttonStyle(DaybookButtonStyle(hasCopied ? .iconActive : .icon, size: .compact))
+        .buttonStyle(.plain) // token-exempt: 无视觉像素的无障碍锚点
         .help("diary.copy")
         .accessibilityLabel("diary.copy")
     }
@@ -219,9 +252,8 @@ struct LiveDiaryComposerPreview: View {
                 Label(hasCopied ? "diary.copied" : "diary.copy", systemImage: "doc.on.doc")
             }
         } label: {
-            Image(systemName: "ellipsis")
-                .font(DaybookType.caption.weight(.medium))
-                .daybookMenuLabel(size: .compact)
+            Text("")
+                .frame(width: 10, height: 22)
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
@@ -230,7 +262,7 @@ struct LiveDiaryComposerPreview: View {
         .fixedSize()
     }
 
-    private func performCopy(_ text: String) {
+    private func performCopy(_ text: String, isNote: Bool = false) {
         guard !text.isEmpty else { return }
         let success: Bool
         if let onCopy {
@@ -242,13 +274,18 @@ struct LiveDiaryComposerPreview: View {
             success = true
         }
         guard success else { return }
+        DaybookStatusNoticeCenter.shared.show(.copied)
         withAnimation(DaybookMotion.interactive(reduceMotion)) {
-            hasCopied = true
+            if isNote {
+                hasNoteCopied = true
+            } else {
+                hasCopied = true
+            }
         }
     }
 
     private func copyTitle() {
-        performCopy(displayTitle)
+        performCopy(displayTitle, isNote: false)
     }
 
     // MARK: - 第 2 行：时间戳 + 真实彩色标签群（100% 镜像 DiarySummaryRow）
@@ -268,14 +305,20 @@ struct LiveDiaryComposerPreview: View {
                 .foregroundStyle(DaybookPalette.text.secondary)
 
             if !parsed.tagNames.isEmpty {
+                let displayTags = Array(parsed.tagNames.prefix(1))
+                let overflow = parsed.tagNames.count - displayTags.count
                 HStack(spacing: 3) {
-                    ForEach(parsed.tagNames, id: \.self) { tagName in
+                    ForEach(displayTags, id: \.self) { tagName in
                         tagPill(tagName)
                     }
+                    if overflow > 0 {
+                        tagOverflowBadge(overflow)
+                    }
                 }
+                .fixedSize(horizontal: true, vertical: false)
             }
 
-            if hasCopied {
+            if hasCopied, onCopy != nil {
                 Label("diary.copied", systemImage: "checkmark")
                     .font(DaybookType.badge)
                     .foregroundStyle(DaybookPalette.accent.base)
@@ -290,39 +333,55 @@ struct LiveDiaryComposerPreview: View {
     private func tagPill(_ name: String) -> some View {
         let key = TagSyntax.normalizedName(name)
         let matched = allTags.first { TagSyntax.normalizedName($0.name) == key }
-        let color = DaybookPalette.tagMark(name: name, token: matched?.colorToken ?? TagColorToken.default.rawValue)
-        return Text("#" + name)
-            .font(DaybookType.micro.weight(.medium))
-            .lineLimit(1)
-            .padding(.horizontal, 4.5)
-            .padding(.vertical, 1.5)
+        return DiaryTagPill(name: name, colorToken: matched?.colorToken ?? TagColorToken.default.rawValue)
+    }
+
+    private func tagOverflowBadge(_ overflow: Int) -> some View {
+        Text("+\(overflow)")
+            .font(.system(size: 9, weight: .bold, design: .rounded)) // token-exempt: 标签溢出计数用圆体
+            .foregroundStyle(DaybookPalette.Syntax.tag)
+            .padding(.horizontal, 3.5)
+            .frame(height: 18)
             .background(
                 RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
-                    .fill(color.opacity(0.12)) // token-exempt: 标签色 12% 底不是印章色
+                    .fill(DaybookPalette.Syntax.tagBadgeFill)
             )
-            .foregroundStyle(color)
             .overlay(
                 RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
-                    .stroke(color.opacity(0.35), lineWidth: 0.6) // token-exempt: 标签色 35% 描边不是印章色
+                    .stroke(DaybookPalette.Syntax.tagStroke, lineWidth: 0.6)
             )
     }
 
     // MARK: - 备注指示器与悬浮正文气泡
 
     private func noteIndicator(fullText: String) -> some View {
-        Image(systemName: "text.alignleft")
+        let iconColor = hasNoteCopied
+            ? DaybookPalette.accent.base
+            : (isNoteHovered ? DaybookPalette.accent.base : DaybookPalette.text.secondary.opacity(0.65)) // token-exempt: 65% 次要色没有对应令牌
+        let fillColor = hasNoteCopied
+            ? DaybookPalette.accent.base.opacity(0.16) // token-exempt: 16% 没有对应令牌
+            : (isNoteHovered ? DaybookPalette.accent.fill : DaybookPalette.text.primary.opacity(0.04)) // token-exempt: 4% 墨色没有对应令牌
+        return Image(systemName: "text.alignleft")
             .font(DaybookType.micro.weight(.medium))
-            .foregroundStyle(isNoteHovered ? DaybookPalette.accent.base : DaybookPalette.text.secondary.opacity(0.65)) // token-exempt: 65% 次要色没有对应令牌
+            .foregroundStyle(iconColor)
+            .frame(width: 11, height: 11)
             .padding(.horizontal, 3.5)
             .padding(.vertical, 1.5)
             .background(
                 RoundedRectangle(cornerRadius: DaybookRadius.xxs, style: .continuous)
-                    .fill(isNoteHovered ? DaybookPalette.accent.fill : DaybookPalette.text.primary.opacity(0.04)) // token-exempt: 4% 墨色没有对应令牌
+                    .fill(fillColor)
             )
+            .background(noteGeometryObserver)
             .contentShape(Rectangle())
             .onHover { hovering in
                 withAnimation(DaybookMotion.interactive(reduceMotion)) {
                     isNoteHovered = hovering
+                }
+            }
+            .onTapGesture {
+                copyNote(fullText)
+                withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                    hasNoteCopied = true
                 }
             }
             .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
@@ -333,7 +392,7 @@ struct LiveDiaryComposerPreview: View {
     @ViewBuilder
     private func noteBubbleOverlay(fullText: String) -> some View {
         if isNoteHovered || isNoteBubbleHovered {
-            let arrowPadding = max(8, min(186, 8 - bubbleShiftX))
+            let arrowPadding = max(8, min(194, 8 - bubbleShiftX))
             let transformAnchor = UnitPoint(
                 x: max(0.06, min(0.94, (arrowPadding + 3.5) / 210.0)),
                 y: growsUpward ? 1.0 : 0.0
@@ -343,6 +402,7 @@ struct LiveDiaryComposerPreview: View {
                 growsUpward: growsUpward,
                 bubbleShiftX: bubbleShiftX,
                 headerTitleKey: "drawer.notes.title",
+                isExternallyCopied: hasNoteCopied,
                 onCopy: { copyNote(fullText) },
                 onHover: { hovering in
                     isNoteBubbleHovered = hovering
@@ -362,12 +422,36 @@ struct LiveDiaryComposerPreview: View {
     }
 
     private func copyNote(_ note: String) {
-        performCopy(note)
+        performCopy(note, isNote: true)
+    }
+
+    private func updateRowPlacement(_ proxy: GeometryProxy) {
+        let frame = proxy.frame(in: .global)
+        if rowMaxX != frame.maxX {
+            rowMaxX = frame.maxX
+            if noteMinX > 0 {
+                recalculateBubblePlacement()
+            }
+        }
+        let newGrowsUpward = frame.minY > 260
+        if growsUpward != newGrowsUpward {
+            growsUpward = newGrowsUpward
+        }
     }
 
     private func updateBubblePlacement(_ proxy: GeometryProxy) {
         let frame = proxy.frame(in: .global)
-        let placement = RowBubblePlacement.calculate(globalPoint: CGPoint(x: frame.minX, y: frame.minY), wideHost: false)
+        noteMinX = frame.minX
+        noteMinY = frame.minY
+        recalculateBubblePlacement()
+    }
+
+    private func recalculateBubblePlacement() {
+        let placement = RowBubblePlacement.calculate(
+            globalPoint: CGPoint(x: noteMinX, y: noteMinY),
+            wideHost: false,
+            hostMaxX: rowMaxX > 0 ? (rowMaxX - 8) : nil
+        )
         growsUpward = placement.growsUpward
         bubbleShiftX = placement.bubbleShiftX
     }

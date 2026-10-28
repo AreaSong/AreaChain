@@ -116,6 +116,16 @@ struct DiarySummaryRowTests {
         let bottomPlacement = RowBubblePlacement.calculate(globalPoint: CGPoint(x: 250, y: 320), wideHost: false)
         #expect(bottomPlacement.growsUpward == true)
         #expect(bottomPlacement.bubbleShiftX < 0)
+
+        // 手记长标题将 [≡] 推到卡片最右侧（x ≈ 332）时，210pt 备注气泡必须左移至不超出 368pt 右边界
+        let farRightPlacement = RowBubblePlacement.calculate(
+            globalPoint: CGPoint(x: 332, y: 120),
+            wideHost: false,
+            hostMaxX: 368
+        )
+        let bubbleMaxX = 332 - 2.5 + farRightPlacement.bubbleShiftX + 210
+        #expect(farRightPlacement.bubbleShiftX <= -171)
+        #expect(bubbleMaxX <= 368)
     }
 
     @Test func diaryMutationsConvertMoveAndTogglePrivate() async throws {
@@ -331,6 +341,116 @@ struct DiarySummaryRowTests {
         defer { close(window) }
         try await settle(window)
         #expect(window.contentView != nil)
+    }
+
+    @Test func rowNoteBubbleReflectsExternalCopiedAndShieldYieldsPointerHitTest() async throws {
+        var tapCount = 0
+        let bubble = VStack {
+            RowNoteBubble(
+                note: "备注换行内容 123213",
+                growsUpward: false,
+                bubbleShiftX: 0,
+                isExternallyCopied: true,
+                onCopy: { tapCount += 1 }
+            )
+            .accessibilityIdentifier("diary.note.bubble.test")
+        }
+        .background(
+            BoardRowPointerRegion(
+                id: UUID(),
+                onSelect: { _, _ in },
+                onDoubleClick: {}
+            )
+        )
+
+        let window = host(bubble, size: NSSize(width: 320, height: 140))
+        defer { close(window) }
+        try await settle(window)
+
+        let center = NSPoint(x: 160, y: 70)
+        #expect(RowBubbleClickShieldView.containsWindowPoint(center, in: window))
+        // 气泡护盾生效时，底层 BoardRowPointerView 必须让出命中，避免吞掉备注气泡点击。
+        if let contentView = window.contentView {
+            let hit = contentView.hitTest(center)
+            #expect(!(hit is BoardRowPointerView))
+
+            // 预览浮窗（SyntaxOverlayEventView）覆盖区域同样屏蔽底层行的命中与悬停穿透。
+            let overlayView = SyntaxOverlayEventView(frame: NSRect(x: 0, y: 0, width: 320, height: 140))
+            overlayView.isPresenting = true
+            overlayView.panelFrame = CGRect(x: 0, y: 0, width: 320, height: 140)
+            contentView.addSubview(overlayView)
+            defer { overlayView.removeFromSuperview() }
+            #expect(SyntaxOverlayEventView.containsWindowPoint(center, in: window))
+            #expect(!(contentView.hitTest(center) is BoardRowPointerView))
+        }
+        #expect(tapCount == 0)
+    }
+
+    @Test func diaryRowTitleClickImmediatelyTriggersTopCenterCopiedNotice() async throws {
+        let container = try ModelContainer(
+            for: Schema(AreaChainSchema.models),
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        Self.retainedContainers.append(container)
+        let context = container.mainContext
+
+        let entry = DiaryEntry(text: "点击手记标题立即显示顶部已复制\n第二行备注内容", dayKey: "2026-09-21")
+        context.insert(entry)
+        try context.save()
+
+        var selectedCount = 0
+        var blankClickedCount = 0
+        let view = VStack(alignment: .leading, spacing: 0) {
+            DiarySummaryRow(
+                entry: entry,
+                onSelect: { selectedCount += 1 },
+                onDelete: {}
+            )
+        }
+        .background(BlankClickArea(onClick: { blankClickedCount += 1 }))
+
+        let window = host(view, size: NSSize(width: 380, height: 60))
+        defer { close(window) }
+        try await settle(window)
+
+        let beforeRevision = DaybookStatusNoticeCenter.shared.revision
+        let titlePoint = NSPoint(x: 42, y: 42)
+        let hitView = try #require(window.contentView?.hitTest(titlePoint) as? BoardRowPointerView)
+        let down = try #require(NSEvent.mouseEvent(
+            with: .leftMouseDown,
+            location: titlePoint,
+            modifierFlags: [],
+            timestamp: 0,
+            windowNumber: window.windowNumber,
+            context: nil,
+            eventNumber: 1,
+            clickCount: 1,
+            pressure: 1.0
+        ))
+        hitView.mouseDown(with: down)
+
+        #expect(blankClickedCount == 0)
+        #expect(selectedCount == 1)
+        #expect(DaybookStatusNoticeCenter.shared.current == .copied)
+        #expect(DaybookStatusNoticeCenter.shared.revision > beforeRevision)
+    }
+
+    @Test func diaryTagPillClampsLongNamesWithoutStretchingShortNames() async throws {
+        let view = HStack(spacing: 5) {
+            DiaryTagPill(name: "123")
+                .background(SyntaxViewAnchor("syntax.tag.short"))
+            DiaryTagPill(name: "非常长的标签名称需要截断")
+                .background(SyntaxViewAnchor("syntax.tag.long"))
+            Spacer(minLength: 0)
+        }
+        let window = host(view, size: NSSize(width: 380, height: 60))
+        defer { close(window) }
+        try await settle(window)
+        let shortFrame = try NativeSyntaxUI.frame("syntax.tag.short", in: window)
+        let longFrame = try NativeSyntaxUI.frame("syntax.tag.long", in: window)
+        #expect(shortFrame.width < 36, "短标签应紧贴文本自然宽度，不能被 Spacer 拉伸至 56pt")
+        #expect(longFrame.width <= 66 && longFrame.width > shortFrame.width)
+        #expect(shortFrame.height == 18 && longFrame.height == 18)
     }
 
     private func host<Content: View>(_ content: Content, size: NSSize = NSSize(width: 380, height: 80)) -> NSWindow {

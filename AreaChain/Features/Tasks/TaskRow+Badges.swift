@@ -3,50 +3,118 @@ import SwiftUI
 // MARK: - Task Row Badges & Chips
 
 extension TaskRow {
+    var canShowTagBubble: Bool {
+        let tags = attachedTagNames
+        let hasLongTag = (tags.first?.count ?? 0) > 4
+        return tags.count > 1 || hasLongTag
+    }
+
+    var shouldShowTagBubble: Bool {
+        isTagHovered && !editing && !pickingDay && !pickingTime && !isCommandPressed
+            && canShowTagBubble
+    }
+
     @ViewBuilder
     var tagChips: some View {
         let tags = attachedTagNames
         if !tags.isEmpty {
-            let displayTags = Array(tags.prefix(2))
+            let displayTags = Array(tags.prefix(1))
             let overflow = tags.count - displayTags.count
 
-            HStack(spacing: 3) {
+            HStack(spacing: 2.5) {
                 ForEach(displayTags, id: \.self) { tagName in
-                    Text("#\(tagName)")
-                        .font(DaybookType.micro.weight(.semibold))
-                        .foregroundStyle(DaybookPalette.Syntax.tag)
-                        .lineLimit(1)
-                        .padding(.horizontal, 4.5)
-                        .frame(height: 18)
-                        .background(
-                            RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
-                                .fill(DaybookPalette.Syntax.tagFill)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
-                                .stroke(DaybookPalette.Syntax.tagStroke, lineWidth: 0.6)
-                        )
-                        .help("#\(tagName)")
+                    tagChipItem(tagName)
                 }
 
                 if overflow > 0 {
-                    Text("+\(overflow)")
-                        .font(.system(size: 9, weight: .bold, design: .rounded)) // token-exempt: 标签溢出计数用圆体
-                        .foregroundStyle(DaybookPalette.Syntax.tag)
-                        .padding(.horizontal, 3.5)
-                        .frame(height: 18)
-                        .background(
-                            RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
-                                .fill(DaybookPalette.Syntax.tagBadgeFill)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
-                                .stroke(DaybookPalette.Syntax.tagStroke, lineWidth: 0.6)
-                        )
-                        .help(L10n.format("row.tag.overflow.help", locale: locale, overflow, tags.dropFirst(2).joined(separator: ", ")))
+                    tagOverflowBadge(overflow: overflow, tags: tags)
+                }
+            }
+            .contentShape(Rectangle())
+            .onHover { hovering in
+                withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                    isTagHovered = hovering
+                }
+            }
+            .overlay(alignment: growsUpward ? .bottomTrailing : .topTrailing) {
+                if shouldShowTagBubble {
+                    tagDetailBubble(tags)
+                        .offset(y: growsUpward ? -20 : 20)
                 }
             }
         }
+    }
+
+    private func tagChipItem(_ tagName: String) -> some View {
+        DaybookTagWidthClampLayout(maxWidth: 56) {
+            Text(tagName)
+                .font(DaybookType.micro.weight(.semibold))
+                .foregroundStyle(DaybookPalette.Syntax.tag)
+                .lineLimit(1)
+                .truncationMode(.tail)
+        }
+        .padding(.horizontal, 4.5)
+        .frame(height: 18)
+        .background(
+            RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
+                .fill(DaybookPalette.Syntax.tagFill)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
+                .stroke(DaybookPalette.Syntax.tagStroke, lineWidth: 0.6)
+        )
+        .help(tagName)
+    }
+
+    private func tagOverflowBadge(overflow: Int, tags: [String]) -> some View {
+        Text("+\(overflow)")
+            .font(.system(size: 9, weight: .bold, design: .rounded)) // token-exempt: 标签溢出计数用圆体
+            .foregroundStyle(DaybookPalette.Syntax.tag)
+            .padding(.horizontal, 3.5)
+            .frame(height: 18)
+            .background(
+                RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
+                    .fill(DaybookPalette.Syntax.tagBadgeFill)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
+                    .stroke(DaybookPalette.Syntax.tagStroke, lineWidth: 0.6)
+            )
+            .help(L10n.format("row.tag.overflow.help", locale: locale, overflow, tags.dropFirst(1).joined(separator: ", ")))
+    }
+
+    private func tagDetailBubble(_ tags: [String]) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text("syntax.preview.allTags")
+                    .font(DaybookType.badge.weight(.semibold))
+                    .foregroundStyle(DaybookPalette.text.secondary)
+                Spacer()
+                DaybookCount(count: tags.count)
+            }
+            .padding(.horizontal, 2)
+            DaybookDivider(opacity: 0.3)
+            VStack(alignment: .leading, spacing: 3) {
+                ForEach(tags, id: \.self) { tag in
+                    Text(tag)
+                        .font(DaybookType.caption.weight(.medium))
+                        .foregroundStyle(DaybookPalette.Syntax.tag)
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2.5)
+                        .background(
+                            RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
+                                .fill(DaybookPalette.Syntax.tagSubtleFill)
+                        )
+                }
+            }
+        }
+        .padding(7)
+        .frame(width: 136)
+        .daybookSurface(floating: .tagDetail)
+        .allowsHitTesting(false)
+        .zIndex(999)
     }
 
     var quadrantBadge: some View {
@@ -65,7 +133,7 @@ extension TaskRow {
 
     func streakBadge(_ streak: Int) -> some View {
         let isHighlighted = isHovered || state.isSelected
-        return HStack(spacing: 2.5) {
+        return HStack(spacing: 1.5) {
             Image(systemName: "flame.fill")
                 .font(DaybookType.micro.weight(.semibold))
                 .foregroundStyle(isHighlighted ? DaybookPalette.status.pending : DaybookPalette.text.tertiary)
@@ -78,7 +146,7 @@ extension TaskRow {
                 .offset(y: -0.6)
         }
         .fixedSize()
-        .padding(.horizontal, 4.5)
+        .padding(.horizontal, 3.5)
         .frame(height: 18)
         .background(
             RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
@@ -89,16 +157,13 @@ extension TaskRow {
     func remindBadge(_ minutes: Int) -> some View {
         let isHighlighted = isHovered || state.isSelected
         return DaybookChip(tint: DaybookPalette.accent.base, isSelected: isHighlighted, action: state.canSetRemind ? { pickingTime = true } : nil) {
-            HStack(spacing: 2.5) {
-                Image(systemName: "clock")
-                Text(RemindMinutes.label(minutes, locale: locale))
-            }
+            Text(RemindMinutes.label(minutes, locale: locale))
         }
     }
 
     @ViewBuilder
     var metadataCluster: some View {
-        HStack(spacing: 5) {
+        HStack(spacing: 4) {
             quadrantBadge
 
             tagChips
@@ -124,7 +189,7 @@ extension TaskRow {
             }
 
             if let items = state.attachments?.items, !items.isEmpty {
-                AttachmentThumbnails(items: items)
+                AttachmentThumbnails(items: items, maxVisibleCount: 1)
             }
         }
         .fixedSize(horizontal: true, vertical: false)

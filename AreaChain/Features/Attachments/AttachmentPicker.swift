@@ -104,7 +104,11 @@ enum AttachmentPicker {
                                    ownerID: owner.id, context: context, id: id)
             }
         }
-        if !saved { store.removeFile(id: id) }
+        if !saved {
+            store.removeFile(id: id)
+        } else {
+            DaybookStatusNoticeCenter.shared.show(.pastedAttachment)
+        }
         return saved
     }
 

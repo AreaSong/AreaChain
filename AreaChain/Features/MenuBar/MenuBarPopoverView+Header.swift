@@ -48,14 +48,9 @@ extension MenuBarPopoverView {
     var integratedHeader: some View {
         HStack(alignment: .center, spacing: 6) {
             VStack(alignment: .leading, spacing: 3) {
-                HStack(alignment: .center, spacing: 6) {
-                    Text(DayKey.displayName(todayKey, locale: locale))
-                        .font(DaybookType.title)
-                        .foregroundStyle(DaybookPalette.text.primary)
-                    #if DEBUG
-                    DaybookDebugBadge()
-                    #endif
-                }
+                Text(DayKey.displayName(todayKey, locale: locale))
+                    .font(DaybookType.title)
+                    .foregroundStyle(DaybookPalette.text.primary)
                 HStack(spacing: 4) {
                     headerIndicator
                         .animation(DaybookMotion.interactive(reduceMotion), value: tab)
@@ -72,7 +67,12 @@ extension MenuBarPopoverView {
                 }
             }
 
-            Spacer(minLength: 8)
+            Spacer(minLength: 4)
+
+            headerCenterStatusBar
+                .zIndex(2)
+
+            Spacer(minLength: 4)
 
             DaybookSegmentedBar(
                 selection: $tab,
@@ -81,6 +81,15 @@ extension MenuBarPopoverView {
             )
             .padding(.top, 1)
         }
+        .overlay(alignment: .topLeading) {
+            #if DEBUG
+            MenuBarHeaderDebugBadgeOverlay()
+            #endif
+        }
+    }
+
+    var headerCenterStatusBar: some View {
+        MenuBarCenterStatusBar()
     }
 
     @ViewBuilder
@@ -121,3 +130,74 @@ extension MenuBarPopoverView {
         }
     }
 }
+
+private struct MenuBarCenterStatusBar: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Bindable var noticeCenter: DaybookStatusNoticeCenter = .shared
+    @Bindable var vault: PrivacyVault = .shared
+    @State private var activeNotice: DaybookStatusNoticeCenter.Kind? = DaybookStatusNoticeCenter.shared.current
+
+    private var effectiveNotice: DaybookStatusNoticeCenter.Kind? {
+        _ = noticeCenter.revision
+        return activeNotice ?? noticeCenter.current
+    }
+
+    var body: some View {
+        Group {
+            if let notice = effectiveNotice {
+                DaybookStatusNoticePill(kind: notice)
+                    .transition(.scale(scale: 0.94).combined(with: .opacity))
+            } else if vault.isUnlocked {
+                WorkspacePrivacyUnlockedButton(vault: vault)
+                    .transition(.scale(scale: 0.94).combined(with: .opacity))
+            }
+        }
+        .animation(DaybookMotion.interactive(reduceMotion), value: effectiveNotice)
+        .animation(DaybookMotion.interactive(reduceMotion), value: vault.isUnlocked)
+        .onAppear {
+            activeNotice = noticeCenter.current
+        }
+        .onChange(of: noticeCenter.revision) { _, _ in
+            withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                activeNotice = noticeCenter.current
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .daybookStatusNoticeDidChange)) { _ in
+            withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                activeNotice = noticeCenter.current
+            }
+        }
+    }
+}
+
+#if DEBUG
+private struct MenuBarHeaderDebugBadgeOverlay: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Bindable var noticeCenter: DaybookStatusNoticeCenter = .shared
+    @Bindable var vault: PrivacyVault = .shared
+    @State private var hasNotice: Bool = DaybookStatusNoticeCenter.shared.current != nil
+
+    private var isHidden: Bool {
+        _ = noticeCenter.revision
+        return hasNotice || noticeCenter.current != nil || vault.isUnlocked
+    }
+
+    var body: some View {
+        DaybookDebugBadge()
+            .scaleEffect(0.78, anchor: .topLeading)
+            .offset(x: 92, y: -4)
+            .opacity(isHidden ? 0 : 1)
+            .allowsHitTesting(false)
+            .animation(DaybookMotion.interactive(reduceMotion), value: isHidden)
+            .onAppear {
+                hasNotice = noticeCenter.current != nil
+            }
+            .onChange(of: noticeCenter.revision) { _, _ in
+                hasNotice = noticeCenter.current != nil
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .daybookStatusNoticeDidChange)) { _ in
+                hasNotice = noticeCenter.current != nil
+            }
+    }
+}
+#endif

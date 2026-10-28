@@ -27,6 +27,20 @@ struct BoardRowPointerRegion: NSViewRepresentable {
 }
 
 final class BoardRowPointerView: NSView, NSDraggingSource {
+    private static var activeViews: NSHashTable<BoardRowPointerView> = .weakObjects()
+
+    static func containsWindowPoint(_ windowPoint: NSPoint, in window: NSWindow?) -> Bool {
+        guard let window else { return false }
+        for view in activeViews.allObjects {
+            guard view.window === window, !view.isHiddenOrHasHiddenAncestor else { continue }
+            let local = view.convert(windowPoint, from: nil)
+            if view.bounds.contains(local) {
+                return true
+            }
+        }
+        return false
+    }
+
     var plainDoubleClick = false
     var dragPayload: String?
     var onSelect: ((_ shift: Bool, _ command: Bool) -> Void)?
@@ -37,11 +51,32 @@ final class BoardRowPointerView: NSView, NSDraggingSource {
     private var dragSessionStarted = false
     private var trackingArea: NSTrackingArea?
     private var isHandlingRightMouseDown = false
+    private var isHovering = false
 
     override var acceptsFirstResponder: Bool { true }
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
     /// 工作台允许拖背景移动窗口。行本身不透明点击区不能算背景，否则排序拖动会变成拖整扇窗口。
     override var mouseDownCanMoveWindow: Bool { false }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if window != nil {
+            Self.activeViews.add(self)
+        } else {
+            Self.activeViews.remove(self)
+        }
+    }
+
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        if let superview {
+            let windowPoint = superview.convert(point, to: nil)
+            if RowBubbleClickShieldView.containsWindowPoint(windowPoint, in: window)
+                || SyntaxOverlayEventView.containsWindowPoint(windowPoint, in: window) {
+                return nil
+            }
+        }
+        return super.hitTest(point)
+    }
 
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
@@ -50,6 +85,7 @@ final class BoardRowPointerView: NSView, NSDraggingSource {
         }
         let options: NSTrackingArea.Options = [
             .mouseEnteredAndExited,
+            .mouseMoved,
             .activeInActiveApp,
             .inVisibleRect
         ]
@@ -60,12 +96,38 @@ final class BoardRowPointerView: NSView, NSDraggingSource {
 
     override func mouseEntered(with event: NSEvent) {
         super.mouseEntered(with: event)
-        onHover?(true)
+        updateHover(with: event)
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        super.mouseMoved(with: event)
+        updateHover(with: event)
     }
 
     override func mouseExited(with event: NSEvent) {
         super.mouseExited(with: event)
+        if isHovering {
+            isHovering = false
+        }
         onHover?(false)
+    }
+
+    private func updateHover(with event: NSEvent) {
+        let windowPoint = event.locationInWindow
+        if SyntaxOverlayEventView.containsWindowPoint(windowPoint, in: window) {
+            if isHovering {
+                isHovering = false
+                onHover?(false)
+            }
+            return
+        }
+        if !isHovering && RowBubbleClickShieldView.containsWindowPoint(windowPoint, in: window) {
+            return
+        }
+        if !isHovering {
+            isHovering = true
+            onHover?(true)
+        }
     }
 
     override func mouseDown(with event: NSEvent) {

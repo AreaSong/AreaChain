@@ -249,14 +249,34 @@ private struct SyntaxOverlayEventMonitor: NSViewRepresentable {
     let sourceFrame: CGRect
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
-    func makeNSView(context: Context) -> NSView {
+    func makeNSView(context: Context) -> SyntaxOverlayEventView {
         let view = SyntaxOverlayEventView()
         view.identifier = NSUserInterfaceItemIdentifier("syntax.overlay.event-monitor")
+        syncView(view)
         context.coordinator.observe(view)
         return view
     }
-    func updateNSView(_ view: NSView, context: Context) { context.coordinator.parent = self }
-    static func dismantleNSView(_ view: NSView, coordinator: Coordinator) { coordinator.stop() }
+    func updateNSView(_ view: SyntaxOverlayEventView, context: Context) {
+        context.coordinator.parent = self
+        syncView(view)
+    }
+    static func dismantleNSView(_ view: SyntaxOverlayEventView, coordinator: Coordinator) {
+        view.isPresenting = false
+        view.panelFrame = .zero
+        coordinator.stop()
+    }
+
+    private func syncView(_ view: SyntaxOverlayEventView) {
+        let active = state.hasPresentation && panelFrame.height > 0
+        view.isPresenting = active
+        view.panelFrame = panelFrame
+        if active, let window = view.window {
+            let windowPoint = window.convertPoint(fromScreen: NSEvent.mouseLocation)
+            if SyntaxOverlayEventView.containsWindowPoint(windowPoint, in: window) {
+                BoardRowChrome.dismissActiveBubbles()
+            }
+        }
+    }
 
     @MainActor
     final class Coordinator {
@@ -266,7 +286,9 @@ private struct SyntaxOverlayEventMonitor: NSViewRepresentable {
         init(_ parent: SyntaxOverlayEventMonitor) { self.parent = parent }
 
         func observe(_ view: NSView) {
-            monitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .keyDown, .scrollWheel]) { [weak self, weak view] event in
+            monitor = NSEvent.addLocalMonitorForEvents(
+                matching: [.leftMouseDown, .rightMouseDown, .mouseMoved, .mouseEntered, .keyDown, .scrollWheel]
+            ) { [weak self, weak view] event in
                 guard let self, let view else { return event }
                 let consumed = MainActor.assumeIsolated {
                     self.handleMonitoredEvent(event, view: view)
@@ -293,7 +315,14 @@ private struct SyntaxOverlayEventMonitor: NSViewRepresentable {
                 return handleKeyDownEscape(event, in: window)
             }
             let point = view.convert(event.locationInWindow, from: nil)
-            if !parent.panelFrame.contains(point), !parent.sourceFrame.contains(point) {
+            if event.type == .mouseMoved || event.type == .mouseEntered {
+                if parent.panelFrame.contains(point) {
+                    BoardRowChrome.dismissActiveBubbles()
+                }
+                return false
+            }
+            if !parent.panelFrame.contains(point), !parent.sourceFrame.contains(point),
+               !RowBubbleClickShieldView.containsWindowPoint(event.locationInWindow, in: window) {
                 parent.state.dismiss()
             }
             return false
@@ -329,7 +358,46 @@ private struct SyntaxOverlayEventMonitor: NSViewRepresentable {
     }
 }
 
-private final class SyntaxOverlayEventView: NSView {
+final class SyntaxOverlayEventView: NSView {
+    private static let activeViews = NSHashTable<SyntaxOverlayEventView>.weakObjects()
+    var isPresenting = false
+    var panelFrame: CGRect = .zero
+
     override var isFlipped: Bool { true }
     override func hitTest(_ point: NSPoint) -> NSView? { nil }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if window != nil {
+            Self.activeViews.add(self)
+        } else {
+            Self.activeViews.remove(self)
+        }
+    }
+
+    static func containsWindowPoint(_ windowPoint: NSPoint, in window: NSWindow?) -> Bool {
+        guard let window else { return false }
+        for view in activeViews.allObjects {
+            guard view.window === window, !view.isHiddenOrHasHiddenAncestor,
+                  view.isPresenting, view.panelFrame.height > 0 else { continue }
+            let local = view.convert(windowPoint, from: nil)
+            if view.panelFrame.contains(local) {
+                return true
+            }
+        }
+        return false
+    }
+
+    static func containsScreenPoint(_ screenPoint: NSPoint) -> Bool {
+        for view in activeViews.allObjects {
+            guard let window = view.window, !view.isHiddenOrHasHiddenAncestor,
+                  view.isPresenting, view.panelFrame.height > 0 else { continue }
+            let windowPoint = window.convertPoint(fromScreen: screenPoint)
+            let local = view.convert(windowPoint, from: nil)
+            if view.panelFrame.contains(local) {
+                return true
+            }
+        }
+        return false
+    }
 }

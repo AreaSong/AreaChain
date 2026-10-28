@@ -66,12 +66,16 @@ extension MenuBarPopoverRenderingTests {
         window.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
         window.contentView = hosting
         window.setContentSize(size)
+        NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
         return window
     }
 
     func settle(_ view: NSView) async throws {
+        if let window = view.window, !window.isKeyWindow {
+            try await NativeSyntaxUI.prepareFocus(in: window)
+        }
         view.layoutSubtreeIfNeeded()
         try await Task.sleep(for: .milliseconds(180))
         view.layoutSubtreeIfNeeded()
@@ -119,6 +123,9 @@ extension MenuBarPopoverRenderingTests {
     func focusSearch(
         _ toolbar: MenuBarToolbarState, in view: NSView, requestFocus: Bool = true
     ) async throws -> NSTextField {
+        if let window = view.window, !window.isKeyWindow {
+            try await NativeSyntaxUI.prepareFocus(in: window)
+        }
         if requestFocus { toolbar.focusSearch() }
         for _ in 0..<20 {
             view.layoutSubtreeIfNeeded()
@@ -173,6 +180,25 @@ extension MenuBarPopoverRenderingTests {
             ))
             window.sendEvent(event)
         }
+    }
+
+    func clickTitlebarPin(in window: NSWindow) async throws {
+        let contentView = try #require(window.contentView)
+        let frameRoot = contentView.superview ?? contentView
+        let button = try #require(SettingsButtonTestSupport.elements(frameRoot).first {
+            SettingsButtonTestSupport.value($0, "accessibilityRole") as? String == "AXButton"
+                && SettingsButtonTestSupport.value($0, "accessibilityIdentifier") as? String == "diary.window.pin"
+        })
+        let rect = try SettingsButtonTestSupport.frame(button, in: window)
+        for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
+            let event = try #require(NSEvent.mouseEvent(
+                with: type, location: NSPoint(x: rect.midX, y: rect.midY), modifierFlags: [],
+                timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber,
+                context: nil, eventNumber: 0, clickCount: 1, pressure: 1
+            ))
+            NSApp.sendEvent(event)
+        }
+        try await settle(contentView)
     }
 
     func snapshot(_ view: NSView, name: String) throws {

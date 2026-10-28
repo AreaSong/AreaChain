@@ -5,37 +5,27 @@ import SwiftUI
 extension TaskRow {
     @ViewBuilder
     var actionCluster: some View {
-        if editing {
-            HStack(spacing: 2) {
-                DaybookIconButton(systemName: "checkmark", label: "row.save", action: saveEdit)
-                DaybookIconButton(systemName: "xmark", label: "row.cancel", action: cancelEdit)
-            }
-            .frame(height: 24)
-        } else {
-            HStack(spacing: 4) {
-                copyButton
-                moreMenu
-            }
-            .frame(width: 48, height: 24) // control
-            .fixedSize()
-            .opacity((isHovered || state.isSelected) && !isCommandPressed ? 1.0 : 0.0)
-            .animation(DaybookMotion.interactive(reduceMotion), value: isHovered)
-            .animation(DaybookMotion.interactive(reduceMotion), value: state.isSelected)
-            .animation(DaybookMotion.interactive(reduceMotion), value: isCommandPressed)
+        HStack(spacing: 0) {
+            copyButton
+            moreMenu
         }
+        .frame(width: 14, height: 24, alignment: .trailing) // control
+        .fixedSize()
+        .padding(.leading, -6)
     }
 
     private var copyButton: some View {
         Button {
             copyTask()
         } label: {
-            Image(systemName: hasCopied ? "checkmark" : "doc.on.doc")
-                .font(DaybookType.caption.weight(.semibold))
+            Text("")
+                .frame(width: 4, height: 24)
+                .contentShape(Rectangle())
         }
-        .buttonStyle(DaybookButtonStyle(hasCopied ? .iconActive : .icon, size: .compact))
+        .buttonStyle(.plain) // control: 无障碍复制锚点，行内直接单击标题复制
+        .frame(width: 4, height: 24)
         .help(Text(hasCopied ? "diary.copied" : "diary.quick.copy"))
         .accessibilityLabel(Text(hasCopied ? "diary.copied" : "diary.quick.copy"))
-        .fixedSize()
     }
 
     // MARK: - 「···」 4 逻辑分区更多菜单
@@ -44,6 +34,7 @@ extension TaskRow {
         Menu {
             // 分区 1: 编辑与排程
             Button("row.edit", action: beginEdit)
+            Button("diary.quick.copy", action: copyTask)
             scheduleSection
             timeMenus
 
@@ -71,14 +62,11 @@ extension TaskRow {
                 dispatch(.delete)
             }
         } label: {
-            Image(systemName: "ellipsis")
-                .font(DaybookType.caption.weight(.semibold))
-                .daybookMenuLabel(size: .compact)
+            Text("")
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
-        .frame(width: 24, height: 24)
-        .fixedSize()
+        .frame(width: 10, height: 24)
         .help("row.more")
         .accessibilityLabel("row.more")
     }
@@ -86,6 +74,7 @@ extension TaskRow {
     @ViewBuilder
     var menus: some View {
         Button("row.edit", action: beginEdit)
+        Button("diary.quick.copy", action: copyTask)
         scheduleSection
         timeMenus
         Divider()

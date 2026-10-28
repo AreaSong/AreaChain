@@ -1,5 +1,88 @@
 import AppKit
+import Observation
 import SwiftUI
+
+public extension Notification.Name {
+    static let daybookStatusNoticeDidChange = Notification.Name("AreaChain.daybookStatusNoticeDidChange")
+}
+
+/// 顶部状态栏瞬态通知中心：统一承载复制、粘贴图片等轻量状态反馈（约 1.2s 自动渐隐）
+@Observable
+@MainActor
+public final class DaybookStatusNoticeCenter {
+    public enum Kind: Equatable {
+        case copied
+        case pastedAttachment
+
+        public var icon: String {
+            switch self {
+            case .copied, .pastedAttachment:
+                return "checkmark"
+            }
+        }
+
+        public var titleKey: LocalizedStringKey {
+            switch self {
+            case .copied:
+                return "diary.copied"
+            case .pastedAttachment:
+                return "row.attach.paste"
+            }
+        }
+    }
+
+    public static let shared = DaybookStatusNoticeCenter()
+    public private(set) var current: Kind? = nil
+    public private(set) var revision: UInt64 = 0
+    private var dismissTask: Task<Void, Never>? = nil
+
+    public init() {}
+
+    public func show(_ kind: Kind) {
+        dismissTask?.cancel()
+        revision &+= 1
+        withAnimation(.easeInOut(duration: 0.18)) {
+            current = kind
+        }
+        NotificationCenter.default.post(name: .daybookStatusNoticeDidChange, object: self)
+        dismissTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(1200))
+            guard let self, !Task.isCancelled else { return }
+            self.revision &+= 1
+            withAnimation(.easeInOut(duration: 0.22)) {
+                self.current = nil
+            }
+            NotificationCenter.default.post(name: .daybookStatusNoticeDidChange, object: self)
+        }
+    }
+}
+
+/// 顶部状态栏胶囊视图：展示复制/粘贴等瞬态提示
+public struct DaybookStatusNoticePill: View {
+    public let kind: DaybookStatusNoticeCenter.Kind
+
+    public init(kind: DaybookStatusNoticeCenter.Kind) {
+        self.kind = kind
+    }
+
+    public var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: kind.icon)
+                .font(DaybookType.micro.weight(.bold))
+            Text(kind.titleKey)
+                .font(DaybookType.caption.weight(.medium))
+                .lineLimit(1)
+        }
+        .foregroundStyle(DaybookPalette.accent.base)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 3)
+        .background(Capsule().fill(DaybookPalette.accent.base.opacity(0.14))) // token-exempt: 与解锁胶囊同级的 14% 强调底色
+        .overlay(Capsule().strokeBorder(DaybookPalette.accent.base.opacity(0.35), lineWidth: 0.8)) // token-exempt: 与解锁胶囊同级的 35% 描边
+        .fixedSize()
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("daybook.status.notice")
+    }
+}
 
 /// 统一行标题超长截断判定逻辑（加权字符长度计算）
 public enum RowTitleTruncation {
@@ -28,8 +111,8 @@ public enum RowBubblePlacement {
         let shiftX: CGFloat
         if bubbleRight > safeMaxX {
             let overflow = bubbleRight - safeMaxX
-            // 气泡宽 210pt，内部箭头最多平移至 186pt，故气泡最大左移量锁定在 178pt，确保指示箭头始终指向图标
-            let maxShift = min(178, max(0, (globalPoint.x - 2.5) - safeMinX))
+            // 气泡宽 210pt，内部箭头最多平移至 194pt，故气泡最大左移量支持到 186pt，确保指示箭头始终指向最右侧图标且气泡不贴边裁切
+            let maxShift = min(186, max(0, (globalPoint.x - 2.5) - safeMinX))
             shiftX = -min(overflow, maxShift)
         } else {
             shiftX = 0
@@ -42,25 +125,31 @@ public enum RowBubblePlacement {
 public struct RowTitleBubble: View {
     public let title: String
     public let growsUpward: Bool
+    public var isExternallyCopied: Bool = false
     public var onCopy: (() -> Void)? = nil
     public var onHover: ((Bool) -> Void)? = nil
 
     private var windowHoverInvalidation: (() -> Void)?
     private var copyResult: (() -> Bool)?
     @State private var windowHoverLifetime = RowBubbleHoverLifetime()
+    @State private var clickShieldLifetime = RowBubbleClickShieldLifetime()
 
     @State private var isCopied: Bool = false
     @State private var isHovered: Bool = false
     @Environment(\.locale) private var locale
 
+    private var effectiveCopied: Bool { isCopied || isExternallyCopied }
+
     public init(
         title: String,
         growsUpward: Bool,
+        isExternallyCopied: Bool = false,
         onCopy: (() -> Void)? = nil,
         onHover: ((Bool) -> Void)? = nil
     ) {
         self.title = title
         self.growsUpward = growsUpward
+        self.isExternallyCopied = isExternallyCopied
         self.onCopy = onCopy
         self.onHover = onHover
     }
@@ -84,7 +173,7 @@ public struct RowTitleBubble: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 5.5)
             .frame(maxWidth: 260, alignment: .leading)
-            .daybookSurface(floating: .rowBubble(isHovered: isHovered, isCopied: isCopied))
+            .daybookSurface(floating: .rowBubble(isHovered: isHovered, isCopied: effectiveCopied))
             .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
             .onHover { if windowHoverInvalidation == nil { handleHover($0) } }
             .background {
@@ -94,7 +183,20 @@ public struct RowTitleBubble: View {
                         .accessibilityHidden(true)
                 }
             }
-            .onAppear { if windowHoverInvalidation != nil { windowHoverLifetime.view?.start() } }
+            .background {
+                RowBubbleClickShield(
+                    lifetime: clickShieldLifetime,
+                    isRounded: true,
+                    managesHover: windowHoverInvalidation == nil,
+                    onHover: handleHover,
+                    onTap: handleTap
+                )
+                .accessibilityHidden(true)
+            }
+            .onAppear {
+                if windowHoverInvalidation != nil { windowHoverLifetime.view?.start() }
+                clickShieldLifetime.view?.start()
+            }
             .onDisappear(perform: handleDisappear)
             .onTapGesture(perform: handleTap)
             .task(id: isCopied) {
@@ -110,30 +212,24 @@ public struct RowTitleBubble: View {
 
     private var bubbleContent: some View {
         HStack(alignment: .top, spacing: 5) {
-            Image(systemName: isCopied ? "checkmark" : "text.alignleft")
-                .font(DaybookType.micro.weight(isCopied ? .bold : .medium))
-                .foregroundStyle(isCopied ? DaybookPalette.accent.base : DaybookPalette.text.secondary)
+            Image(systemName: "text.alignleft")
+                .font(DaybookType.micro.weight(.medium))
+                .foregroundStyle(effectiveCopied ? DaybookPalette.accent.base : DaybookPalette.text.secondary)
+                .frame(width: 11, height: 11)
                 .padding(.top, 2)
 
-            VStack(alignment: .leading, spacing: 2) {
-                if isCopied {
-                    Text(L10n.string("diary.copied", locale: locale))
-                        .font(DaybookType.micro.weight(.bold))
-                        .foregroundStyle(DaybookPalette.accent.base)
-                        .transition(.opacity)
-                }
-
-                Text(title)
-                    .font(DaybookType.caption.weight(.medium))
-                    .foregroundStyle(DaybookPalette.text.primary)
-                    .lineLimit(nil)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            Text(title)
+                .font(DaybookType.caption.weight(.medium))
+                .foregroundStyle(effectiveCopied ? DaybookPalette.accent.base : DaybookPalette.text.primary)
+                .lineLimit(nil)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityLabel(effectiveCopied ? L10n.string("diary.copied", locale: locale) : title)
         }
+        .animation(.easeInOut(duration: 0.2), value: effectiveCopied)
     }
 
     private func handleHover(_ hovering: Bool) {
-        if windowHoverInvalidation != nil && hovering == isHovered { return }
+        guard hovering != isHovered else { return }
         isHovered = hovering
         onHover?(hovering)
         if hovering {
@@ -145,12 +241,14 @@ public struct RowTitleBubble: View {
 
     private func handleDisappear() {
         if windowHoverInvalidation != nil { windowHoverLifetime.view?.stop() }
+        clickShieldLifetime.view?.stop()
         if isHovered {
             NSCursor.pop()
         }
     }
 
     private func handleTap() {
+        clickShieldLifetime.view?.cancelPendingTap()
         if let copyResult {
             // 宿主报告写入失败时不显示已复制。
             guard copyResult() else { return }
@@ -158,7 +256,8 @@ public struct RowTitleBubble: View {
             guard onCopy != nil else { return }
             onCopy?()
         }
-        withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
+        DaybookStatusNoticeCenter.shared.show(.copied)
+        withAnimation(.easeInOut(duration: 0.2)) {
             isCopied = true
         }
     }
@@ -170,19 +269,24 @@ public struct RowNoteBubble: View {
     public let growsUpward: Bool
     public let bubbleShiftX: CGFloat
     public var headerTitleKey: String = "drawer.notes.title"
+    public var isExternallyCopied: Bool = false
     public var onCopy: (() -> Void)? = nil
     public var onHover: ((Bool) -> Void)? = nil
     private var copyResult: (() -> Bool)?
+    @State private var clickShieldLifetime = RowBubbleClickShieldLifetime()
 
     @State private var isCopied: Bool = false
     @State private var isHovered: Bool = false
     @Environment(\.locale) private var locale
+
+    private var effectiveCopied: Bool { isCopied || isExternallyCopied }
 
     public init(
         note: String,
         growsUpward: Bool,
         bubbleShiftX: CGFloat,
         headerTitleKey: String = "drawer.notes.title",
+        isExternallyCopied: Bool = false,
         onCopy: (() -> Void)? = nil,
         onHover: ((Bool) -> Void)? = nil
     ) {
@@ -190,6 +294,7 @@ public struct RowNoteBubble: View {
         self.growsUpward = growsUpward
         self.bubbleShiftX = bubbleShiftX
         self.headerTitleKey = headerTitleKey
+        self.isExternallyCopied = isExternallyCopied
         self.onCopy = onCopy
         self.onHover = onHover
     }
@@ -202,7 +307,7 @@ public struct RowNoteBubble: View {
     }
 
     public var body: some View {
-        let arrowPadding = max(8, min(186, 8 - bubbleShiftX))
+        let arrowPadding = max(8, min(194, 8 - bubbleShiftX))
         VStack(alignment: .leading, spacing: 0) {
             if !growsUpward {
                 arrowIndicator(pointingUp: true, padding: arrowPadding)
@@ -217,6 +322,17 @@ public struct RowNoteBubble: View {
         .frame(width: 210, alignment: .leading)
         .fixedSize()
         .contentShape(Rectangle())
+        .background {
+            RowBubbleClickShield(
+                lifetime: clickShieldLifetime,
+                isRounded: false,
+                managesHover: true,
+                onHover: handleHover,
+                onTap: handleTap
+            )
+            .accessibilityHidden(true)
+        }
+        .onAppear { clickShieldLifetime.view?.start() }
         .onHover(perform: handleHover)
         .onDisappear(perform: handleDisappear)
         .onTapGesture(perform: handleTap)
@@ -249,7 +365,7 @@ public struct RowNoteBubble: View {
 
             Text(note)
                 .font(DaybookType.caption.weight(.regular))
-                .foregroundStyle(DaybookPalette.text.primary)
+                .foregroundStyle(effectiveCopied ? DaybookPalette.accent.base : DaybookPalette.text.primary)
                 .lineSpacing(2.5)
                 .lineLimit(8)
                 .fixedSize(horizontal: false, vertical: true)
@@ -257,22 +373,27 @@ public struct RowNoteBubble: View {
         .padding(.horizontal, 9)
         .padding(.vertical, 7)
         .frame(width: 210, alignment: .leading)
-        .daybookSurface(floating: .rowBubble(isHovered: isHovered, isCopied: isCopied))
+        .daybookSurface(floating: .rowBubble(isHovered: isHovered, isCopied: effectiveCopied))
+        .animation(.easeInOut(duration: 0.2), value: effectiveCopied)
     }
 
     private var noteCardHeader: some View {
-        HStack(spacing: 4) {
-            Image(systemName: isCopied ? "checkmark" : "text.alignleft")
-                .font(DaybookType.micro.weight(isCopied ? .bold : .semibold))
+        let titleText = L10n.string(String.LocalizationValue(stringLiteral: headerTitleKey), locale: locale)
+        return HStack(spacing: 4) {
+            Image(systemName: "text.alignleft")
+                .font(DaybookType.micro.weight(.semibold))
                 .foregroundStyle(DaybookPalette.accent.base)
-            Text(isCopied ? L10n.string("diary.copied", locale: locale) : L10n.string(String.LocalizationValue(stringLiteral: headerTitleKey), locale: locale))
+                .frame(width: 11, height: 11)
+            Text(titleText)
                 .font(DaybookType.badge.weight(.bold))
-                .foregroundStyle(isCopied ? DaybookPalette.accent.base : DaybookPalette.text.secondary)
+                .foregroundStyle(effectiveCopied ? DaybookPalette.accent.base : DaybookPalette.text.secondary)
+                .accessibilityLabel(effectiveCopied ? L10n.string("diary.copied", locale: locale) : titleText)
             Spacer(minLength: 0)
         }
     }
 
     private func handleHover(_ hovering: Bool) {
+        guard hovering != isHovered else { return }
         isHovered = hovering
         onHover?(hovering)
         if hovering {
@@ -283,12 +404,14 @@ public struct RowNoteBubble: View {
     }
 
     private func handleDisappear() {
+        clickShieldLifetime.view?.stop()
         if isHovered {
             NSCursor.pop()
         }
     }
 
     private func handleTap() {
+        clickShieldLifetime.view?.cancelPendingTap()
         if let copyResult {
             // 宿主报告写入失败时不显示已复制。
             guard copyResult() else { return }
@@ -296,7 +419,8 @@ public struct RowNoteBubble: View {
             guard onCopy != nil else { return }
             onCopy?()
         }
-        withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
+        DaybookStatusNoticeCenter.shared.show(.copied)
+        withAnimation(.easeInOut(duration: 0.2)) {
             isCopied = true
         }
     }

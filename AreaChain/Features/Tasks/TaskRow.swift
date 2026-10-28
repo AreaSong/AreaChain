@@ -3,6 +3,7 @@ import SwiftUI
 /// 任务行：只读状态快照加动作派发。
 struct TaskRow: View {
     @Environment(\.workspaceHostContext) var hostContext
+    @WorkspaceBoardContext var boardSelection
     @WorkspaceDraftContext var editDrafts
     var navigationDraftKey: String { (state.isResident ? "routine-" : "todo-") + state.id.uuidString }
     let state: TaskRowState
@@ -23,7 +24,8 @@ struct TaskRow: View {
     @State var pickingDay = false
     @State var pickingTime = false
     @State var subtaskExpansionOverride: Bool? = nil
-    @State private var growsUpward = false
+    @State var isTagHovered = false
+    @State var growsUpward = false
     @State private var bubbleShiftX: CGFloat = 0
     @State private var rowMaxX: CGFloat = 0
     @State private var renderedTitleWidth: CGFloat? = nil
@@ -62,7 +64,7 @@ struct TaskRow: View {
     }
 
     var isHovered: Bool {
-        isRowHovered || isNoteBubbleHovered || isTitleBubbleHovered || isTitleTextHovered
+        isRowHovered || isNoteBubbleHovered || isTitleBubbleHovered || isTitleTextHovered || isTagHovered
     }
 
     // MARK: - 现代标准构造器 (State + Action)
@@ -128,7 +130,7 @@ struct TaskRow: View {
             .onChange(of: state.isExternalEditing) { _, value in
                 if value && !editing { beginEdit() }
             }
-            .zIndex((shouldShowTitleBubble || shouldShowNoteBubble) ? 120 : (isHovered ? 100 : 1))
+            .zIndex((shouldShowTitleBubble || shouldShowNoteBubble || shouldShowTagBubble) ? 120 : (isHovered ? 100 : 1))
     }
 
     @ViewBuilder
@@ -185,14 +187,14 @@ struct TaskRow: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
         .frame(minHeight: DaybookMetrics.rowHeight)
-        .daybookSurface(.row, isHovered: isHovered, isSelected: state.isSelected)
-        .overlay {
+        .background {
             TaskRowSubtaskProgressBar(
                 subtasks: state.subtasks,
                 isParentDone: state.isDone,
                 reduceMotion: reduceMotion
             )
         }
+        .daybookSurface(.row, isHovered: isHovered, isSelected: state.isSelected)
         .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
         .background {
             GeometryReader { proxy in
@@ -219,6 +221,8 @@ struct TaskRow: View {
     // MARK: - Subviews
 
     var fullNoteText: String? { TaskCopyContent.notes(state.notes, fallback: state.note) }
+    /// 行内备注图标仅在存在用户备注（或非习惯的显式摘要）时展示，避免习惯默认周期说明占用行宽。
+    var displayNoteText: String? { TaskCopyContent.notes(state.notes, fallback: state.isResident ? nil : state.note) }
 
     private var isTitleTruncated: Bool {
         if let renderedTitleWidth, renderedTitleWidth > 0 {
@@ -237,7 +241,7 @@ struct TaskRow: View {
 
     private var shouldShowNoteBubble: Bool {
         !editing && !pickingDay && !pickingTime && !isCommandPressed
-            && (isNoteHovered || isNoteBubbleHovered) && fullNoteText != nil
+            && (isNoteHovered || isNoteBubbleHovered) && displayNoteText != nil
     }
 
     private func selectImmediately(_ modifiers: TaskSelectionModifiers = []) {
@@ -262,7 +266,10 @@ struct TaskRow: View {
                         id: state.id,
                         plainDoubleClick: true,
                         dragPayload: state.dragPayload,
-                        onSelect: { selectImmediately(selection(shift: $0, command: $1)) },
+                        onSelect: {
+                            selectImmediately(selection(shift: $0, command: $1))
+                            if !$0 && !$1 { copyTitleInline() }
+                        },
                         onDoubleClick: beginEdit,
                         onHover: { hovering in
                             chrome.isTitlePointerInside = hovering
@@ -294,7 +301,7 @@ struct TaskRow: View {
                     .accessibilityHidden(true)
                 )
 
-            if fullNoteText != nil {
+            if displayNoteText != nil {
                 noteIndicator
                     .fixedSize()
             }
@@ -318,8 +325,8 @@ struct TaskRow: View {
 
     @ViewBuilder
     private var noteBubbleOverlay: some View {
-        if shouldShowNoteBubble, let noteText = fullNoteText {
-            let arrowPadding = max(8, min(186, 8 - bubbleShiftX))
+        if shouldShowNoteBubble, let noteText = displayNoteText {
+            let arrowPadding = max(8, min(194, 8 - bubbleShiftX))
             let transformAnchor = UnitPoint(
                 x: max(0.06, min(0.94, (arrowPadding + 3.5) / 210.0)),
                 y: growsUpward ? 1.0 : 0.0
@@ -328,7 +335,8 @@ struct TaskRow: View {
                 note: noteText,
                 growsUpward: growsUpward,
                 bubbleShiftX: bubbleShiftX,
-                onCopy: { copy(.notes) },
+                isExternallyCopied: hasNoteCopied,
+                onCopy: { copyNoteInline() },
                 onHover: { hovering in
                     isNoteBubbleHovered = hovering
                     if !hovering && !isNoteHovered {
@@ -338,7 +346,7 @@ struct TaskRow: View {
                     }
                 }
             )
-            .reportingCopyResult { copy(.notes) }
+            .reportingCopyResult { copyNoteInline() }
             .offset(x: -2.5 + bubbleShiftX, y: growsUpward ? -18 : 16)
             .transition(.asymmetric(
                 insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: transformAnchor)),
@@ -363,9 +371,10 @@ struct TaskRow: View {
         let fillColor = hasNoteCopied
             ? DaybookPalette.accent.base.opacity(0.16) // token-exempt: 16% 没有对应令牌
             : (isNoteHovered ? DaybookPalette.accent.fill : DaybookPalette.text.primary.opacity(0.04)) // token-exempt: 4% 没有对应令牌
-        return Image(systemName: hasNoteCopied ? "checkmark" : "text.alignleft")
+        return Image(systemName: "text.alignleft")
             .font(DaybookType.micro.weight(.medium))
             .foregroundStyle(iconColor) // token-exempt: 65% 次要色没有对应令牌
+            .frame(width: 11, height: 11)
             .padding(.horizontal, 4)
             .padding(.vertical, 2)
             .background(
@@ -434,7 +443,8 @@ struct TaskRow: View {
             TaskTitleBubble(
                 title: state.title,
                 growsUpward: growsUpward,
-                onCopy: { copy(.title) },
+                isExternallyCopied: hasCopied,
+                onCopy: { copyTitleInline() },
                 onHover: { hovering in
                     isTitleBubbleHovered = hovering
                     if !hovering && !chrome.isTitlePointerInside {
@@ -442,7 +452,7 @@ struct TaskRow: View {
                     }
                 }
             )
-            .reportingCopyResult { copy(.title) }
+            .reportingCopyResult { copyTitleInline() }
             .observingWindowHover(onInvalidate: resetTitleTracking)
             .frame(width: titleBubbleWidth, alignment: .leading)
             .fixedSize()
@@ -463,7 +473,7 @@ struct TaskRow: View {
             if state.isResident {
                 residentMark
             }
-            ModernTaskTitle(text: state.title, isDone: state.isDone)
+            ModernTaskTitle(text: state.title, isDone: state.isDone, isHighlighted: hasCopied)
                 .lineLimit(1)
                 .truncationMode(textTruncation)
                 .frame(minWidth: 28)

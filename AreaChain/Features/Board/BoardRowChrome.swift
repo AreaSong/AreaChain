@@ -23,11 +23,12 @@ final class BoardRowChrome {
         rowHoverTask = nil
         BoardRowChrome.ensureScrollMonitoring()
         if hovering {
+            guard !Self.isPointerInSyntaxOverlay() else { return }
             claimActive()
             guard !BoardRowChrome.isLiveScrolling else { return }
             rowHoverTask = Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(70))
-                guard !Task.isCancelled, !BoardRowChrome.isLiveScrolling else { return }
+                guard !Task.isCancelled, !BoardRowChrome.isLiveScrolling, !Self.isPointerInSyntaxOverlay() else { return }
                 withAnimation(DaybookMotion.interactive(reduceMotion)) {
                     self.isRowHovered = true
                     self.isCommandPressed = NSEvent.modifierFlags.contains(.command)
@@ -70,7 +71,10 @@ final class BoardRowChrome {
     }
 
     func handleTitleHover(_ hovering: Bool, reduceMotion: Bool) {
-        if hovering { claimActive() }
+        if hovering {
+            guard !Self.isPointerInSyntaxOverlay() else { return }
+            claimActive()
+        }
         scheduleBubble(
             hovering,
             reduceMotion: reduceMotion,
@@ -81,7 +85,10 @@ final class BoardRowChrome {
     }
 
     func handleNoteHover(_ hovering: Bool, reduceMotion: Bool) {
-        if hovering { claimActive() }
+        if hovering {
+            guard !Self.isPointerInSyntaxOverlay() else { return }
+            claimActive()
+        }
         scheduleBubble(
             hovering,
             reduceMotion: reduceMotion,
@@ -103,6 +110,15 @@ final class BoardRowChrome {
             current.dismissBubblesImmediately()
         }
         Self.currentActiveChrome = self
+    }
+
+    static func dismissActiveBubbles() {
+        currentActiveChrome?.dismissBubblesImmediately()
+        currentActiveChrome = nil
+    }
+
+    static func isPointerInSyntaxOverlay() -> Bool {
+        SyntaxOverlayEventView.containsScreenPoint(NSEvent.mouseLocation)
     }
 
     func dismissBubblesImmediately() {
@@ -239,7 +255,7 @@ final class BoardRowChrome {
         if hovering {
             task = Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(300))
-                guard !Task.isCancelled else { return }
+                guard !Task.isCancelled, !Self.isPointerInSyntaxOverlay() else { return }
                 withAnimation(DaybookMotion.interactive(reduceMotion)) {
                     self[keyPath: isActive] = true
                 }

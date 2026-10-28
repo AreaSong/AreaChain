@@ -8,27 +8,49 @@ enum DiaryTagChrome {
     }
 }
 
+/// 限制标签文本最大宽度为 maxWidth，同时在短文本时仅占用自然宽度（不拉伸至 maxWidth），长文本时触发尾部省略号。
+struct DaybookTagWidthClampLayout: Layout {
+    var maxWidth: CGFloat = 56
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        guard let subview = subviews.first else { return .zero }
+        let limit = min(proposal.width ?? maxWidth, maxWidth)
+        return subview.sizeThatFits(ProposedViewSize(width: limit, height: proposal.height))
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        subviews.first?.place(at: bounds.origin, proposal: ProposedViewSize(bounds.size))
+    }
+}
+
 struct DiaryTagPill: View {
     var name: String
     var colorToken: String = TagColorToken.default.rawValue
 
     var body: some View {
-        let color = DiaryTagChrome.color(for: name, token: colorToken)
-        Text("#" + name)
-            .font(DaybookType.micro.weight(.medium))
-            .lineLimit(1)
-            .padding(.horizontal, 4.5)
-            .padding(.vertical, 1.5)
-            .background(
-                RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
-                    .fill(color.opacity(0.12)) // token-exempt: 标签色 12% 底不是印章色
-            )
-            .foregroundStyle(color)
-            .overlay(
-                RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
-                    .strokeBorder(color.opacity(0.25), lineWidth: 0.5) // token-exempt: 标签色 25% 描边没有对应令牌
-            )
-            .help("#" + name)
+        let isDefault = colorToken == TagColorToken.default.rawValue
+        let customColor = DiaryTagChrome.color(for: name, token: colorToken)
+        let textColor = isDefault ? DaybookPalette.Syntax.tag : customColor
+        let fillColor = isDefault ? DaybookPalette.Syntax.tagFill : customColor.opacity(0.12) // token-exempt: 自定义标签色 12% 底不是印章色
+        let strokeColor = isDefault ? DaybookPalette.Syntax.tagStroke : customColor.opacity(0.35) // token-exempt: 自定义标签色 35% 描边不是印章色
+        DaybookTagWidthClampLayout(maxWidth: 56) {
+            Text(name)
+                .font(DaybookType.micro.weight(.semibold))
+                .lineLimit(1)
+                .truncationMode(.tail)
+        }
+        .padding(.horizontal, 4.5)
+        .frame(height: 18)
+        .background(
+            RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
+                .fill(fillColor)
+        )
+        .foregroundStyle(textColor)
+        .overlay(
+            RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
+                .stroke(strokeColor, lineWidth: 0.6)
+        )
+        .help("#" + name)
     }
 }
 
@@ -263,6 +285,7 @@ struct DiaryNoteCard: View {
             guard PrivateClipboard.copy(text, sensitive: current.hasProtectedContent || isPasswordType, to: pasteboard) else {
                 throw PrivacyError.storageFailure
             }
+            DaybookStatusNoticeCenter.shared.show(.copied)
             withAnimation(.snappy) { hasCopied = true }
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
                 withAnimation(.snappy) { hasCopied = false }

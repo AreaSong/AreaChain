@@ -50,8 +50,15 @@ private struct DaybookSurfaceModifier: ViewModifier {
             .daybookElevation(elevation)
 
         if variant == .row {
-            // 行样式的悬停由外层宿主（如 BoardRowChrome）统一托管并防抖，底层不重复挂载 onHover 避免滑动风暴
-            base
+            // 行样式的悬停由外层宿主（如 BoardRowChrome）统一托管并防抖；边框置于 background 层，确保行内浮出气泡始终浮在行选中边框之上。
+            content
+                .padding(config.padding)
+                .frame(minHeight: config.minHeight)
+                .background(
+                    shape.fill(fill)
+                        .overlay(shape.strokeBorder(border, lineWidth: borderWidth))
+                )
+                .daybookElevation(elevation)
                 .animation(DaybookMotion.interactive(reduceMotion), value: isHovered)
                 .animation(DaybookMotion.interactive(reduceMotion), value: isSelected)
         } else {

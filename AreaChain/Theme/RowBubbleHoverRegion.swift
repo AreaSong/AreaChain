@@ -134,3 +134,147 @@ final class RowBubbleHoverView: NSView {
         publish(false)
     }
 }
+
+/// 保护悬浮气泡在跨出父行 contentShape 或叠在原生 NSView（BoardRowPointerView / BlankClickNSView）上方时的悬停与点击响应，同时保持 hitTest 为 nil。
+struct RowBubbleClickShield: NSViewRepresentable {
+    let lifetime: RowBubbleClickShieldLifetime
+    var isRounded: Bool
+    var managesHover: Bool
+    var onHover: (Bool) -> Void
+    var onTap: () -> Void
+
+    func makeNSView(context: Context) -> RowBubbleClickShieldView {
+        let view = RowBubbleClickShieldView()
+        lifetime.view = view
+        updateNSView(view, context: context)
+        return view
+    }
+
+    func updateNSView(_ view: RowBubbleClickShieldView, context: Context) {
+        view.isRounded = isRounded
+        view.managesHover = managesHover
+        view.onHover = onHover
+        view.onTap = onTap
+    }
+
+    static func dismantleNSView(_ view: RowBubbleClickShieldView, coordinator: ()) {
+        view.stop()
+    }
+}
+
+final class RowBubbleClickShieldLifetime {
+    weak var view: RowBubbleClickShieldView?
+}
+
+final class RowBubbleClickShieldView: NSView {
+    private static let activeViews = NSHashTable<RowBubbleClickShieldView>.weakObjects()
+
+    var isRounded = false
+    var managesHover = true
+    var onHover: ((Bool) -> Void)?
+    var onTap: (() -> Void)?
+
+    private var monitor: Any?
+    private var hovered = false
+    private var pressedInside = false
+    private var pendingTapToken: UUID?
+
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
+
+    static func containsWindowPoint(_ windowPoint: NSPoint, in window: NSWindow?) -> Bool {
+        guard let window else { return false }
+        for view in activeViews.allObjects where view.window === window {
+            if view.contains(windowPoint: windowPoint) {
+                return true
+            }
+        }
+        return false
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if window != nil {
+            start()
+        } else {
+            stop()
+        }
+    }
+
+    func start() {
+        stop()
+        guard let window else { return }
+        Self.activeViews.add(self)
+        monitor = NSEvent.addLocalMonitorForEvents(matching: [
+            .mouseMoved, .mouseEntered, .mouseExited, .leftMouseDown, .leftMouseUp
+        ]) { [weak self, weak window] event in
+            MainActor.assumeIsolated {
+                guard let self, let window, event.window === window else { return }
+                self.handle(event)
+            }
+            return event
+        }
+    }
+
+    func cancelPendingTap() {
+        pendingTapToken = nil
+    }
+
+    private func handle(_ event: NSEvent) {
+        let inside = contains(windowPoint: event.locationInWindow)
+        switch event.type {
+        case .mouseMoved, .mouseEntered, .mouseExited:
+            if managesHover, inside != hovered {
+                hovered = inside
+                onHover?(inside)
+            }
+        case .leftMouseDown:
+            pressedInside = inside
+        case .leftMouseUp:
+            let shouldTap = pressedInside && inside && !event.modifierFlags.contains(.control)
+            pressedInside = false
+            guard shouldTap else { return }
+            let token = UUID()
+            pendingTapToken = token
+            DispatchQueue.main.async { [weak self] in
+                guard let self, self.pendingTapToken == token else { return }
+                self.pendingTapToken = nil
+                self.onTap?()
+            }
+        default:
+            break
+        }
+    }
+
+    func contains(windowPoint: NSPoint) -> Bool {
+        guard let window, window.isKeyWindow, !isHiddenOrHasHiddenAncestor,
+              let root = window.contentView,
+              root.convert(root.bounds, to: nil).contains(windowPoint) else {
+            return false
+        }
+        var ancestor = superview
+        while let view = ancestor {
+            if let clip = view as? NSClipView, !clip.convert(clip.bounds, to: nil).contains(windowPoint) {
+                return false
+            }
+            ancestor = view.superview
+        }
+        let local = convert(windowPoint, from: nil)
+        if isRounded {
+            let shape = RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+            return shape.path(in: bounds).contains(local)
+        }
+        return bounds.contains(local)
+    }
+
+    func stop() {
+        pendingTapToken = nil
+        pressedInside = false
+        if hovered {
+            hovered = false
+            if managesHover { onHover?(false) }
+        }
+        Self.activeViews.remove(self)
+        if let monitor { NSEvent.removeMonitor(monitor) }
+        monitor = nil
+    }
+}

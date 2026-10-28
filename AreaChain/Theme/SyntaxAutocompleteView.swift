@@ -237,6 +237,7 @@ struct SyntaxAutocompletePopup: View {
             VStack(alignment: .leading, spacing: 0) {
                 if showsPreview {
                     previewHeader(showsSuggestions: showsSuggestions)
+                        .zIndex(10)
                 }
 
                 if showsPreview && showsSuggestions {
@@ -250,7 +251,10 @@ struct SyntaxAutocompletePopup: View {
                 }
             }
             .frame(width: width)
-            .daybookSurface(floating: .suggestions, isPresented: !isStandalonePreview)
+            .background {
+                Color.clear
+                    .daybookSurface(floating: .suggestions, isPresented: !isStandalonePreview)
+            }
             .transition((reduceMotion || motionDisabled) ? .identity : .opacity.combined(with: .scale(
                 scale: 0.96, anchor: growsUpward ? .bottomLeading : .topLeading
             )))

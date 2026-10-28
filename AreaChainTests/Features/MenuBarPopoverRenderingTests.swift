@@ -235,7 +235,7 @@ struct MenuBarPopoverRenderingTests {
         #expect(controller.session.text == "把这条记录放在旁边，边工作边参照。")
         #expect(diaryEditor(in: view)?.string == "")
         #expect(try container.mainContext.fetchCount(FetchDescriptor<DiaryEntry>()) == 2)
-        try await clickAndSettle(at: NSPoint(x: childView.bounds.width - 60, y: childView.bounds.height - 28), in: child)
+        try await clickTitlebarPin(in: child)
         #expect(child.level == .floating && controller.session.isWindowPinned)
         #expect(controller.session.save())
         #expect(controller.session.record?.isPinned == false)

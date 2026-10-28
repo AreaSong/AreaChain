@@ -69,12 +69,6 @@
       "registered": "2026-10-23"
     },
     {
-      "test": "MenuBarPopoverRenderingTests.popoutButtonTransfersDraftAndWindowPinIsOperable",
-      "firstSeen": "d77da2e",
-      "reason": "弹出小窗的置顶层级不是 floating",
-      "registered": "2026-10-23"
-    },
-    {
       "test": "MenuBarStatusImageTests.nativeStatusItemNeverChangesSizeOrRecentersItsImage",
       "firstSeen": "d77da2e",
       "reason": "状态栏项宽 50 而非 24",

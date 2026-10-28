@@ -158,15 +158,23 @@ struct ModernCheckbox: View {
 struct ModernTaskTitle: View {
     var text: String
     var isDone: Bool
+    var isHighlighted: Bool = false
     var font: Font = DaybookType.body
     var truncationMode: Text.TruncationMode? = nil
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    private var textColor: Color {
+        if isHighlighted {
+            return DaybookPalette.accent.base
+        }
+        return isDone ? DaybookPalette.text.done : DaybookPalette.text.primary
+    }
+
     var body: some View {
         Text(text)
             .font(font)
-            .foregroundStyle(isDone ? DaybookPalette.text.done : DaybookPalette.text.primary)
+            .foregroundStyle(textColor)
             .truncationMode(truncationMode ?? AppPreferences.shared.contentTruncation.textTruncation)
             .overlay {
                 ModernStrikethroughShape(progress: isDone ? 1 : 0)
@@ -178,6 +186,7 @@ struct ModernTaskTitle: View {
             }
             .strikethrough(reduceMotion && isDone, color: DaybookPalette.text.done.opacity(0.85))
             .animation(DaybookMotion.interactive(reduceMotion), value: isDone)
+            .animation(DaybookMotion.interactive(reduceMotion), value: isHighlighted)
             .animation(DaybookMotion.strikethrough(reduceMotion), value: isDone)
     }
 }

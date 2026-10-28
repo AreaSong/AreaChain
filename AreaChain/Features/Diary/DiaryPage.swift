@@ -41,6 +41,7 @@ struct DiaryPage: View {
     @State var hostWindow: NSWindow?
     @WorkspaceBoardContext private var boardSelection
     @State var selectedEntryID: UUID? = nil
+    @State var keyboardScrollTargetID: UUID? = nil
     @State var keyMonitor: Any? = nil
 
     init(
@@ -280,15 +281,13 @@ struct DiaryPage: View {
 
                         if !showsPageHeader && list.rows.count <= 5 {
                             quietEmptyWatermark
+                        } else if !showsPageHeader {
+                            blankClickArea
                         }
-                    }
-
-                    if !showsPageHeader {
-                        blankClickArea
                     }
                 }
                 .padding(.top, 4)
-                .padding(.bottom, 24) // control: 预留底部安全距离，确保滚动到底部时卡片及阴影完整展现
+                .padding(.bottom, showsPageHeader ? 24 : 8) // control: 预留底部安全距离，菜单栏紧凑态避免少量条目产生多余滚动偏移
                 .padding(.trailing, 2) // control: 预留右侧微间隙，避免右边框与悬浮滚动条重叠
                 .frame(maxWidth: .infinity, alignment: .topLeading)
                 .background(
@@ -302,10 +301,10 @@ struct DiaryPage: View {
                 BlankClickArea(onClick: clearSelection)
             )
             .onAppear { scrollToInspected(proxy) }
-            .onChange(of: selectedEntryID) { _, id in
+            .onChange(of: keyboardScrollTargetID) { _, id in
                 if let id {
                     withAnimation(DaybookMotion.interactive) {
-                        proxy.scrollTo(id, anchor: .center)
+                        proxy.scrollTo(id)
                     }
                 }
             }
