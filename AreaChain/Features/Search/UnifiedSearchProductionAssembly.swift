@@ -92,6 +92,7 @@ import SwiftData
                                         vault: services.vault, clipboard: services.clipboard, shortcuts: services.shortcuts,
                                         attachments: services.attachments)
         host.sharesProductionStorage = services.productionAttachments
+        router.inspectorFocus.retainsDraftsOnNavigation = host.isIsolated
         hostContext = host
         reads = ContentQueryProductionReads(context: services.context, clipboard: services.clipboardStore,
                                             calendar: services.calendar, now: services.now)

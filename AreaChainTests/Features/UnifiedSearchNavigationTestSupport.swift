@@ -33,7 +33,9 @@ import Testing
     let day = "2026-10-07"
 
     /// 合并批 M-2：可注入隔离剪贴板会话（私有命名剪贴板与 fake 门），工作台剪贴板页与剪贴板指令读同一份。
-    init(handoff provided: HandoffFixture? = nil, clipboard injected: ClipboardHistorySession? = nil) throws {
+    /// 修复批 M-7F：`productionHost` 模拟正式版宿主——检查器失焦即保存、导航前先失焦保存；缺省仍为隔离宿主（N-M1 零写入）。
+    init(handoff provided: HandoffFixture? = nil, clipboard injected: ClipboardHistorySession? = nil,
+         productionHost: Bool = false) throws {
         data = try TaskContentQueryFixture()
         Self.retainedContainers.append(data.container)
         todo = data.todo("needle parent")
@@ -56,10 +58,13 @@ import Testing
             gate: .init(isTrusted: { false }, prompt: {}, sendCommandV: {}))
         let shortcuts = ShortcutStore(defaults: defaults, center: HotKeyCenter(defaults: defaults,
             registration: .init(register: { _, _ in false }, unregister: { _ in })))
-        hostContext = .init(navigation: navigation, drafts: drafts, filters: BoardFilterSession(),
-                            vault: vault, clipboard: clipboard, shortcuts: shortcuts)
+        var host = WorkspaceHostContext(navigation: navigation, drafts: drafts, filters: BoardFilterSession(),
+                                        vault: vault, clipboard: clipboard, shortcuts: shortcuts)
+        host.sharesProductionStorage = productionHost
+        hostContext = host
         router = WorkspaceSearchRouter(navigation: navigation,
             objects: WorkspaceObjectNavigation(context: data.context, calendar: .current, allows: { _ in true }))
+        router.inspectorFocus.retainsDraftsOnNavigation = host.isIsolated
         controller = UnifiedSearchController(session: session, coordinator: handoff.coordinator,
             buffer: .init(lease: try handoff.owned().lease, version: 0, text: "needle"),
             read: { [weak self] in

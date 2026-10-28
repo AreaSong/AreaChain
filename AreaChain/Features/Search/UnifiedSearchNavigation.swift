@@ -233,7 +233,9 @@ extension UnifiedSearchController {
         navigationTask?.cancel()
         navigationTask = nil
         navigationRequestID = nil
-        router.inspectorFocus.retainForNavigation()
+        if await router.commitInspectorBeforeNavigation() {
+            guard returnSearch?.id == id, validReturn(ticket) else { return }
+        }
         router.clearDestination()
         router.navigation.restoreSearchPage(ticket.tab, tag: ticket.tag)
         restoreQueryInput()

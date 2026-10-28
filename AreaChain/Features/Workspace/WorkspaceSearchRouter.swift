@@ -71,12 +71,14 @@ enum WorkspaceNavigationOutcome: Equatable {
     func reveal(_ target: WorkspaceNavigationDestination, valid: () -> Bool) async -> WorkspaceNavigationOutcome {
         do { try validateHost() } catch { return .rejected(error as? WorkspaceOpenFailure ?? .unavailable) }
         guard valid() else { return .rejected(.stale) }
+        // 隔离宿主：导航卸载只留 EditDrafts；正式版：先失焦，让检查器按原失焦规则保存后再切页。
+        if await commitInspectorBeforeNavigation() {
+            guard valid() else { return .rejected(.stale) }
+        }
         switch target {
         case .content: break
         default: contents?.clear()
         }
-        // 导航卸载与普通失焦不同：原 EditDrafts 保留文字，不能依赖失焦提交。
-        inspectorFocus.retainForNavigation()
         navigation.revealSearchDestination(target.tab)
         navigation.navigationObject = nil
         switch target {
@@ -119,6 +121,14 @@ enum WorkspaceNavigationOutcome: Equatable {
         }
         outcome = .rejected(.unavailable)
         return .rejected(.unavailable)
+    }
+
+    /// 失焦只改焦点 Binding，编辑器的 onChange 要到下一次视图更新才保存；同一轮里切页会先卸载编辑器而跳过保存。
+    /// 让出一次渲染（与挂载轮询同一间隔）后再切页。返回 true 表示确实让出过，调用方需重新核对有效性。
+    func commitInspectorBeforeNavigation() async -> Bool {
+        guard inspectorFocus.prepareForNavigation() else { return false }
+        try? await Task.sleep(for: .milliseconds(20))
+        return true
     }
 
     func mount(_ view: NSView, key: String) { mounts[key] = WeakMount(view) }

@@ -22,8 +22,19 @@ final class WorkspaceInspectorFocus {
     weak var marker: NSView?
     private(set) var retainsMarkedDraft = false
     private(set) var retainsNavigationDraft = false
+    /// 隔离宿主沿 N-M1 的“导航零写入”取证：导航卸载只把编辑留在 EditDrafts。正式版宿主为 false（M-7F），
+    /// 与删开关前的旧界面一致——跳转前先按失焦规则保存，保存失败仍由各编辑器留草稿。
+    var retainsDraftsOnNavigation = true
 
-    func retainForNavigation() { retainsNavigationDraft = true }
+    /// 导航收起检查器前调用；返回 true 表示已让检查器编辑器失焦，调用方需让出一次渲染，等失焦保存跑完再切页。
+    @discardableResult
+    func prepareForNavigation() -> Bool {
+        guard !retainsDraftsOnNavigation else {
+            retainsNavigationDraft = true
+            return false
+        }
+        return releaseFocus()
+    }
 
     func beginPresentation() { retainsMarkedDraft = false; retainsNavigationDraft = false }
 
