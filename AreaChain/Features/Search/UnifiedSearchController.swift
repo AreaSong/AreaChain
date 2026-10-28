@@ -489,10 +489,9 @@ final class UnifiedSearchController {
 }
 
 extension UnifiedSearchController {
-    var localSettings: LocalSettingCommandAdapter? {
-        if case .legacy(let adapter) = settingBackend { return adapter }; return nil
-    }
-    var fileSettings: FileLocalSettingCommandAdapter? {
-        if case .file(let adapter) = settingBackend { return adapter }; return nil
+    /// 页面事件推进了 lease：沿原文字与草稿戳重新发布显示缓冲，旧缓冲上的事件随之失效（修复批 M-7F 菜单栏筛选派生）。
+    func renewBuffer(_ lease: CommandHostLease) {
+        buffer = .init(lease: lease, version: buffer.version + 1, text: buffer.text, privacyRevision: buffer.privacyRevision,
+            operation: buffer.operation, selectingObjects: buffer.selectingObjects, plan: buffer.plan, planItem: buffer.planItem)
     }
 }

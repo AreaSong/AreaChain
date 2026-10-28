@@ -191,3 +191,13 @@ extension UnifiedSearchController {
         refreshOperationPresentation()
     }
 }
+
+/// 设置指令的两种后端（原 UnifiedSearchController.swift 末尾，因该文件触及 500 行上限移到此处，内容未改）。
+extension UnifiedSearchController {
+    var localSettings: LocalSettingCommandAdapter? {
+        if case .legacy(let adapter) = settingBackend { return adapter }; return nil
+    }
+    var fileSettings: FileLocalSettingCommandAdapter? {
+        if case .file(let adapter) = settingBackend { return adapter }; return nil
+    }
+}

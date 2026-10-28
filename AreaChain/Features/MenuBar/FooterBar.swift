@@ -37,7 +37,11 @@ struct FooterBar: View {
             // 2. 中间全宽统一搜索框；装配失败时换成不阻塞的不可用说明
             Group {
                 if let unified {
-                    MenuBarUnifiedSearchField(controller: unified)
+                    HStack(spacing: 4) {
+                        // 已生效的任务筛选胶囊；只在任务页签显示，因为只有它作用于菜单栏搜索结果（修复批 M-7F）。
+                        if tab == .tasks { MenuBarFilterTokens(filters: filters, tags: tags) }
+                        MenuBarUnifiedSearchField(controller: unified)
+                    }
                 } else {
                     UnifiedSearchUnavailableField(compact: true)
                         .frame(minWidth: DaybookMetrics.Window.popoverFooterSearchMinWidth)

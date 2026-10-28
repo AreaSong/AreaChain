@@ -27034,6 +27034,23 @@
         }
       }
     },
+    "filter.token.remove": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove filter: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移除筛选：%@"
+          }
+        }
+      }
+    },
     "filtered.add.tag": {
       "extractionState": "manual",
       "localizations": {
