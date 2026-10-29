@@ -58,13 +58,57 @@ import Testing
         }
     }
 
-    @Test(arguments: Kind.allCases) func lockedQueryNeverReturnsAfterRefocus(kind: Kind) async throws {
+    /// 锁定按 D3 清掉查询后：切回窗口本身不重建；显式动作由宿主可信当前页面重建，只按这次新文字读取，旧文字与条件不回来；
+    /// 仍锁定时受保护内容不出现在结果、摘要与候选里；解锁后再打字照常。
+    @Test(arguments: Kind.allCases) func lockedQueryRebuildsFromTrustedPageOnNewInput(kind: Kind) async throws {
         let host = try UnifiedSearchFocusHost(kind)
         defer { host.close() }
         let secret = "M7G_SECRET_BODY"
         let privateTag = try host.fixture.insert(TagItem(name: "m7g-private", sortOrder: 0, isPrivateDiary: true))
         try host.fixture.insert(DiaryEntry(text: "needle \(secret)", dayKey: UnifiedSearchProductionFixture.today,
                                            tagIDs: privateTag.id.uuidString))
+        let old = try host.fixture.insert(TodoItem(title: "needle 合成旧查询任务", dayKey: UnifiedSearchProductionFixture.today))
+        let fresh = try host.fixture.insert(TodoItem(title: "fresh 合成新查询任务", dayKey: UnifiedSearchProductionFixture.today))
+        try await host.fixture.vault.create(password: UnifiedSearchFocusHost.password, systemUnlock: false)
+        host.forwardPrivacyEvents()
+        try await host.start()
+        try await host.type("needle")
+        try await host.waitPublished()
+        try await host.switchAway()
+        host.fixture.vault.lock()
+        try await host.settle()
+        try await host.switchBack()
+        // 被清掉的查询不恢复；重新拿到 key 本身不重建。
+        #expect(host.controller.buffer.text.isEmpty && host.controller.queryInputText.isEmpty)
+        #expect(host.controller.queryAwaitsTrustedPage, "切回窗口不应重建查询")
+        try await host.type("fresh")
+        try await host.waitPublished()
+        #expect(!host.controller.queryAwaitsTrustedPage)
+        #expect(host.controller.queryInputText == "fresh")
+        let query = try host.controller.coordinator.host(host.controller.buffer.lease.ownership.hostID).session.query
+        #expect(query.page.location.hostID == host.controller.buffer.lease.ownership.hostID)
+        #expect(query.page.todayKey != "1970-01-01", "重建用宿主给出的可信页面，不用占位日期")
+        let visible = try host.controller.session.presentation().pagination.snapshot.visible
+        #expect(visible.contains(.init(type: .todo, id: fresh.id)))
+        #expect(!visible.contains(.init(type: .todo, id: old.id)), "旧查询文字不回来")
+        // 仍锁定：再搜旧词只能读到锁定可见范围，受保护正文不出现在任何结果、摘要与候选里。
+        try await host.type("needle")
+        try await host.waitPublished()
+        #expect(try host.controller.session.presentation().pagination.snapshot.visible.contains(.init(type: .todo, id: old.id)))
+        #expect(!host.allStrings.contains { $0.contains(secret) })
+        // 解锁后照常再打字。
+        try await host.fixture.vault.unlockWithPassword(UnifiedSearchFocusHost.password)
+        try await host.settle()
+        try await host.type("fresh 合成")
+        try await host.waitPublished()
+        #expect(host.controller.queryInputText == "fresh 合成")
+        #expect(try host.controller.session.presentation().pagination.snapshot.visible.contains(.init(type: .todo, id: fresh.id)))
+    }
+
+    /// 锁定后 Return 也是显式动作：重建页面但只得到空查询，不读回旧文字。
+    @Test(arguments: Kind.allCases) func returnAfterLockRebuildsEmptyQuery(kind: Kind) async throws {
+        let host = try UnifiedSearchFocusHost(kind)
+        defer { host.close() }
         try host.fixture.insert(TodoItem(title: "needle 合成公开任务", dayKey: UnifiedSearchProductionFixture.today))
         try await host.start()
         try await host.type("needle")
@@ -73,17 +117,34 @@ import Testing
         host.fixture.center.post(name: .privacyWillLock, object: host.fixture.vault)
         try await host.settle()
         try await host.switchBack()
-        // D3：锁定清掉的查询不因恢复回来；按 Return 只得到空查询，不会重读旧文字。
-        #expect(host.controller.buffer.text.isEmpty && host.controller.queryInputText.isEmpty)
+        #expect(host.controller.queryAwaitsTrustedPage)
         try await host.key(36, "\r")
+        #expect(!host.controller.queryAwaitsTrustedPage)
         #expect(host.controller.buffer.text.isEmpty && host.controller.queryInputText.isEmpty)
-        // 锁定后查询只能从可信页面重建（ContentQueryReducer.privacyReset）：再打字被拒绝，不露出任何结果，且给出可见原因。
+    }
+
+    /// 认证中／更改方式中：重建不绕过 eligibleHost，仍拒绝并说明；门禁解除后打字照常重建。
+    @Test(arguments: Kind.allCases) func rebuildStillHonorsVaultGates(kind: Kind) async throws {
+        let host = try UnifiedSearchFocusHost(kind)
+        defer { host.close() }
+        try host.fixture.insert(TodoItem(title: "needle 合成公开任务", dayKey: UnifiedSearchProductionFixture.today))
+        try await host.start()
         try await host.type("needle")
+        try await host.waitPublished()
+        host.fixture.center.post(name: .privacyWillLock, object: host.fixture.vault)
+        try await host.settle()
+        try host.fixture.vault.beginMethodChange()
+        try await host.settle()
+        try await host.type("needle")
+        #expect(host.controller.queryAwaitsTrustedPage, "门禁拒绝时不重建")
         #expect(host.controller.queryInputText.isEmpty)
         #expect((try? host.controller.session.presentation()) == nil)
-        #expect(host.controller.navigationMessage == "unified.gate.pageContext")
-        // 只看统一搜索的结果边界：工作台下方的原页面按原界面规则显示，不属于本断言。
-        #expect(!host.resultStrings.contains { $0.contains(secret) })
+        #expect(host.controller.navigationMessage == "unified.gate.vaultBusy")
+        host.fixture.vault.endMethodChange()
+        try await host.settle()
+        try await host.type("needle 合成")
+        try await host.waitPublished()
+        #expect(!host.controller.queryAwaitsTrustedPage && host.controller.queryInputText == "needle 合成")
     }
 
     /// 切回后输入指令（改字即显式动作）：解除遮罩后按保留的查询重读，结果重新可用，焦点对象类指令不会因结果为空而失败。
@@ -249,6 +310,8 @@ import Testing
     var window: NSWindow!
     let away: NSWindow
 
+    private var forwarders: [NSObjectProtocol] = []
+
     init(_ kind: UnifiedSearchFocusRecoveryTests.Kind) throws {
         self.kind = kind
         fixture = try UnifiedSearchProductionFixture()
@@ -405,9 +468,29 @@ import Testing
         return NativeSyntaxUI.identifiers(in: window).contains(id)
     }
 
+    static let password = "synthetic-rebuild-password"
+
+    /// 保险箱把锁定与隐私变化发到 default；正式版装配也听 default，这里同步转到夹具的私有中心，时序与正式版一致（锁定前先发 willLock）。
+    func forwardPrivacyEvents() {
+        for name in [Notification.Name.privacyWillLock, .privacyDidChange] {
+            forwarders.append(NotificationCenter.default.addObserver(forName: name, object: fixture.vault, queue: nil) { [fixture] note in
+                MainActor.assumeIsolated { fixture.center.post(name: note.name, object: note.object) }
+            })
+        }
+    }
+
+    /// 应用所有窗口（含候选浮层）里可见的无障碍文字，用来断言受保护正文没有从任何地方露出。
+    var allStrings: [String] {
+        NSApp.windows.filter(\.isVisible).flatMap { SettingsButtonTestSupport.elements($0.contentView) }.flatMap { element in
+            ["accessibilityLabel", "accessibilityValue", "accessibilityTitle"].compactMap { SettingsButtonTestSupport.value(element, $0) as? String }
+        }
+    }
+
     func settle() async throws { if let window { try await SystemPageHost.settle(window) } }
 
     func close() {
+        for forwarder in forwarders { NotificationCenter.default.removeObserver(forwarder) }
+        forwarders = []
         away.orderOut(nil)
         away.close()
         if let window { SystemPageHost.release(window) }

@@ -2,18 +2,23 @@ import Foundation
 
 /// 修复批 M-7G：窗口失焦遮罩后的唯一显式恢复入口。设计规则（§9.39、D3）：重新拿到 key 本身不恢复，
 /// 须由用户在搜索框里的显式动作（改字、Return、⌘Return、↑↓、⌘F）解除本地遮罩并按宿主保留的查询重读，再处理这次动作。
-/// 这里只调用 `resumeDisplay`：锁定、认证中、隐私代次与页面上下文仍由 ReadSession 的 eligibleHost 挡住；
-/// 锁定已按 D3 清掉的查询不在这里恢复（重读的是协调者里当前的查询，不是旧文字）。
+/// 这里只调用 `resumeDisplay` 与（锁定清查询后的）可信页面 enterPage：认证中、更改方式中、vault 不可用与隐私代次
+/// 仍由 ReadSession 的 eligibleHost 挡住；锁定已按 D3 清掉的查询不恢复（重读的是协调者里当前的查询，不是旧文字）。
 extension UnifiedSearchController {
-    /// 未遮罩时立即执行 action。遮罩时先解除遮罩：reread 为真则按当前查询重读，读完（成功或失败）且缓冲未变才执行 action；
-    /// reread 为假（调用方自己会按新文字重读）则解除后立即执行。宿主已变不能恢复时不执行 action，给出可见原因。
+    /// 返回继续这次动作要用的缓冲：通常就是 source；锁定清掉查询后经可信页面重建时是重建后的新缓冲（lease 已推进）。
+    /// 遮罩时先解除遮罩：reread 为真则按当前查询重读，读完（成功或失败）且缓冲未变才执行 action；
+    /// reread 为假（调用方自己会按新文字重读）则解除后立即执行。宿主已变、门禁拒绝或不能重建时返回 nil，不执行 action，给出可见原因。
     @discardableResult
-    func resumeForExplicitAction(source: UnifiedSearchBuffer, reread: Bool = true, then action: (() -> Void)? = nil) -> Bool {
-        guard session.isMasked else { action?(); return true }
-        do { try session.resumeDisplay(expecting: source.lease) } catch { reportGate(error); return false }
-        messageKey = "unified.results.awaiting"
-        refreshOperationPresentation()
-        guard reread else { action?(); return true }
+    func resumeForExplicitAction(source: UnifiedSearchBuffer, reread: Bool = true,
+                                 then action: ((UnifiedSearchBuffer) -> Void)? = nil) -> UnifiedSearchBuffer? {
+        let masked = session.isMasked
+        if masked {
+            do { try session.resumeDisplay(expecting: source.lease) } catch { reportGate(error); return nil }
+            messageKey = "unified.results.awaiting"
+            refreshOperationPresentation()
+        }
+        guard let source = rebuildAfterPrivacyReset(source) else { return nil }
+        guard masked, reread else { action?(source); return source }
         resumeTask?.cancel()
         // edit／accept 会在本次调用里同步发布新缓冲；重读只认同一所有权与隐私代次下的当前缓冲，
         // 不拿调用时的旧缓冲判断（否则改字成指令、接受候选后的重读会被丢掉）。action 仍只在原缓冲未变时执行。
@@ -30,9 +35,39 @@ extension UnifiedSearchController {
                 self.refreshOperationPresentation()
             }
             guard self.validates(source), !Task.isCancelled else { return }
-            action?()
+            action?(source)
         }
-        return true
+        return source
+    }
+
+    /// edit／accept 用：经显式恢复入口后换上可继续使用的来源缓冲（重建后 lease 已推进，旧来源不能再发事件）。
+    func resumedRequest(_ request: UnifiedSearchEdit, reread: Bool = true) -> UnifiedSearchEdit? {
+        resumeForExplicitAction(source: request.source, reread: reread).map {
+            UnifiedSearchEdit(source: $0, text: request.text, selection: request.selection, acceptance: request.acceptance)
+        }
+    }
+
+    /// 锁定按 D3 清掉查询后（ContentQueryReducer.privacyReset），查询绑定停在 privacyInvalidated，只能由宿主明确传入
+    /// 可信当前页面（enterPage）重建。只在显式动作里做，重新拿到 key 不会走到这里。先过 eligibleHost 的其余门禁：
+    /// 认证中、更改方式中、vault 不可用照常拒绝并说明，不因重建绕过。重建只换页面上下文——旧查询文字与条件已被清空，
+    /// 不恢复；之后的读取仍按当时的保险箱状态取可见范围（仍锁定时受保护内容照旧不出现）。
+    private func rebuildAfterPrivacyReset(_ source: UnifiedSearchBuffer) -> UnifiedSearchBuffer? {
+        // 没有注入可信页面的宿主（隔离夹具）照旧：不重建，由后续读取门禁给出 pageContextRequired。
+        guard queryAwaitsTrustedPage, let trustedPage else { return source }
+        do { try session.validateDisplayHost(expecting: source.lease) }
+        catch ContentQueryReadSessionError.pageContextRequired {}
+        catch { reportGate(error); return nil }
+        do { try coordinator.send(.query(.enterPage(trustedPage())), expecting: source.lease) } catch { reportGate(); return nil }
+        guard !queryAwaitsTrustedPage, let owned = try? coordinator.host(source.lease.ownership.hostID) else {
+            reportGate(ContentQueryReadSessionError.pageContextRequired); return nil
+        }
+        renewBuffer(owned.lease)
+        return buffer
+    }
+
+    /// 查询是否仍在等宿主给可信页面（锁定清查询之后、显式动作重建之前）。
+    var queryAwaitsTrustedPage: Bool {
+        (try? coordinator.host(buffer.lease.ownership.hostID).session.query.binding) == .independent(.privacyInvalidated)
     }
 
     /// 门禁拒绝不再静默：在两宿主共用的反馈行里给一句不阻塞的原因（中英文）。

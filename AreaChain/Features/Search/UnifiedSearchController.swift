@@ -83,6 +83,7 @@ final class UnifiedSearchController {
     /// 合并批 M-1 C 页面指令；默认未装配（nil），生产没有构造点。
     @ObservationIgnored var pageCommands: WorkspacePageCommands?
     @ObservationIgnored var workspaceHandoff: UnifiedSearchWorkspaceHandoff? // 只有菜单栏装配；工作台为 nil
+    @ObservationIgnored var trustedPage: (() -> ContentQueryPageContext)? // 宿主当前页面，锁定清查询后重建用
     var pagePreview: WorkspacePagePreview?
     var pageReceipt: WorkspacePageReceipt?
     var pageFailure: CommandPageIssue?
@@ -201,7 +202,7 @@ final class UnifiedSearchController {
         let state = CommandPathParser().parse(.init(text: request.text, cursorLocation: request.selection.location)).state
         let content = state == .ordinaryText || state == .scope
         // 改字是显式动作：遮罩时先恢复；普通文字随后按新文字重读，指令文字按保留的查询重读。
-        guard resumeForExplicitAction(source: request.source, reread: !content || inputParameterContext != nil) else { return nil }
+        guard let request = resumedRequest(request, reread: !content || inputParameterContext != nil) else { return nil }
         if let context = inputParameterContext { return editParameterText(request, context: context, mainInput: true) }
         if content {
             newNavigationQuery()
@@ -242,8 +243,8 @@ final class UnifiedSearchController {
     func intent(_ intent: UnifiedSearchIntent, source: UnifiedSearchBuffer) {
         guard validates(source) else { return }
         // Return、⌘Return、↑↓、空格选择是显式动作：遮罩时先恢复并重读，读完再处理这次动作；Esc 不恢复。
-        if session.isMasked, intent != .escape {
-            resumeForExplicitAction(source: source) { [weak self] in self?.intent(intent, source: source) }
+        if session.isMasked || (trustedPage != nil && queryAwaitsTrustedPage), intent != .escape {
+            resumeForExplicitAction(source: source) { [weak self] renewed in self?.intent(intent, source: renewed) }
             return
         }
         if intent == .open, handOffToWorkspace(source) { return }
@@ -318,13 +319,6 @@ final class UnifiedSearchController {
     func load(_ event: ContentQueryPaginationEvent, source: UnifiedSearchBuffer) {
         guard validates(source), let effect = try? session.loadMore(event), effect.didPublish else { return }
         applyFocus(effect.browse.focus)
-    }
-
-    func focusChanged(_ control: ContentQueryDisplayControl?, version: UUID, source: UnifiedSearchBuffer) {
-        guard validates(source), let browse = try? session.presentation().pagination.browse,
-              browse.snapshot.version == version,
-              control.map({ browse.reachableControls.contains($0) }) ?? true else { return }
-        session.displayUpdates.focusedControl = control
     }
 
     func detach() {

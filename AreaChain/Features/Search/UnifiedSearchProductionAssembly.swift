@@ -103,6 +103,13 @@ import SwiftData
         }
         workspace = try makeController(Self.workspaceHost)
         menubar = try makeController(Self.menubarHost)
+        // 锁定清查询后的重建页面只由宿主给出：工作台是当前显示的页面（与普通页签访问同一取法），菜单栏是今日页与当前任务筛选。
+        let services = services, router = router
+        workspace.trustedPage = {
+            services.navigation.queryContext(hostID: Self.workspaceHost, filters: services.filters.filters,
+                                             calendar: router.objects.calendar, pendingLane: .overdue)
+        }
+        menubar.trustedPage = { Self.menubarPage(services) }
         menubar.workspaceHandoff = .init(
             disposition: { [weak self] in self?.workspace?.disposition(for: $0) ?? .unwired },
             open: { [weak self] text in self?.continueCommandInWorkspace(text) })

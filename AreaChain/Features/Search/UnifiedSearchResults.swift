@@ -176,3 +176,13 @@ final class UnifiedSearchResultsBoundary: NSView {
         removePresentation()
     }
 }
+
+extension UnifiedSearchController {
+    /// 结果区里键盘焦点所在的控件；只认当前显示版本里可达的控件。
+    func focusChanged(_ control: ContentQueryDisplayControl?, version: UUID, source: UnifiedSearchBuffer) {
+        guard validates(source), let browse = try? session.presentation().pagination.browse,
+              browse.snapshot.version == version,
+              control.map({ browse.reachableControls.contains($0) }) ?? true else { return }
+        session.displayUpdates.focusedControl = control
+    }
+}
