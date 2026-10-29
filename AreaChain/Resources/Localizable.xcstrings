@@ -57572,6 +57572,23 @@
         }
       }
     },
+    "unified.system.workspace.closeRefused": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The workspace stayed open. Discard the draft above, or go back to finish it."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有关闭工作台。请先放弃上面的草稿，或回到草稿完成它。"
+          }
+        }
+      }
+    },
     "unified.system.workspace.closed": {
       "extractionState": "manual",
       "localizations": {
@@ -59251,6 +59268,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Return 打开%@"
+          }
+        }
+      }
+    },
+    "unified.candidate.blockedByUnsavedWork": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Return unavailable · Finish or discard the draft first"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Return 暂不可用 · 先处理未完成的草稿"
           }
         }
       }

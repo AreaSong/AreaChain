@@ -67,14 +67,17 @@ import Testing
         #expect(fixture.controller.operations?.active != nil)
         _ = fixture.controller.navigationInput("/window/workspace/close")
         #expect(fixture.controller.systemActionBlocked && fixture.controller.hidesResultsForCommand)
-        let before = fixture.controller.navigationMessage
+        // 被挡时候选标签不再写“Return 前往”；Return 不关工作台，但要给一句明确的拒绝反馈。
+        #expect(fixture.controller.disposition(for: .init(rawValue: "workspace.close")) == .blockedByUnsavedWork)
         fixture.controller.executeNavigation(source: fixture.controller.buffer)
-        // 面板常驻说明原因，被挡时不再写一遍同样的反馈。
-        #expect(fixture.controller.navigationMessage == before, "\(fixture.controller.navigationMessage)")
+        #expect(fixture.controller.navigationMessage == UnifiedSearchController.closeRefusedKey)
+        #expect(fixture.controller.showsNavigationMessage)
         #expect(fakes.closes == 1)
         // 就地放弃草稿后解除阻挡，输入仍是关闭指令。
         fixture.controller.discardActiveOperation(source: fixture.controller.buffer)
         #expect(fixture.controller.operations?.active == nil && !fixture.controller.systemActionBlocked)
+        #expect(fixture.controller.disposition(for: .init(rawValue: "workspace.close")) == .navigates)
+        #expect(!fixture.controller.showsNavigationMessage, "放弃草稿后不再留着“没有关闭”")
         #expect(fixture.controller.buffer.text == "/window/workspace/close")
         fixture.controller.executeNavigation(source: fixture.controller.buffer)
         #expect(fakes.closes == 2)

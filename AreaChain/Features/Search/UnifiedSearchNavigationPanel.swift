@@ -35,7 +35,7 @@ struct UnifiedSearchNavigationPanel: View {
                     }
             }
             // 默认提示已由上方说明块给出，只在有执行反馈时再显示一行。
-            if controller.navigationMessage != "unified.navigation.hint" {
+            if controller.showsNavigationMessage {
                 Text(LocalizedStringKey(controller.navigationMessage)).font(DaybookType.caption)
                     .accessibilityIdentifier("unified.navigation.message")
             }

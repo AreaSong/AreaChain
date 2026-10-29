@@ -37,6 +37,7 @@ extension UnifiedSearchController {
 
     func disposition(for id: CommandID) -> CommandHostDisposition {
         let own = hostDisposition(for: id)
+        if own == .navigates, id.rawValue == "workspace.close", hasUnsavedCommandWork { return .blockedByUnsavedWork }
         // 本宿主没接上、工作台能处理的（判断用工作台控制器的同一入口）交给工作台完成；目录不可用的不转交。
         guard own == .unwired, let handoff = workspaceHandoff,
               [.executable, .originalPage].contains(handoff.disposition(id).kind) else { return own }

@@ -19,6 +19,13 @@ extension UnifiedSearchController {
     /// 关闭工作台在有未完成指令工作时不可执行；面板常驻说明原因，执行按钮随之禁用。
     var systemActionBlocked: Bool { systemAction == .workspaceClose && hasUnsavedCommandWork }
 
+    static let closeRefusedKey = "unified.system.workspace.closeRefused"
+
+    /// 拒绝反馈只在仍被挡时显示：放弃或完成草稿后不再留着“没有关闭”这句。
+    var showsNavigationMessage: Bool {
+        navigationMessage != "unified.navigation.hint" && (navigationMessage != Self.closeRefusedKey || systemActionBlocked)
+    }
+
     func executeSystemAction(_ command: CommandDescriptor, parsed: CommandPathResult, source: UnifiedSearchBuffer) {
         do {
             guard let pages = pageCommands else { throw CommandPageIssue.unassembled }
@@ -33,7 +40,8 @@ extension UnifiedSearchController {
                 AppWindows.revealWorkspace(opening: system.opening)
                 navigationMessage = "unified.system.workspace.revealed"
             case .workspaceClose:
-                guard !hasUnsavedCommandWork else { return }
+                // 面板已常驻说明原因；Return 仍要有一句明确反馈，不能看起来像没反应。
+                guard !hasUnsavedCommandWork else { navigationMessage = Self.closeRefusedKey; return }
                 system.closeWorkspace()
                 navigationMessage = "unified.system.workspace.closed"
             case .overlayToggle:

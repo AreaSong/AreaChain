@@ -96,7 +96,7 @@ import Testing
 
     /// 五类标签中英文都有文案，且不同类别文字不同（未接上才写“暂不可用”）。
     @Test func labelsAreLocalizedPerKind() {
-        let samples: [CommandHostDisposition] = [.executable, .navigates, .originalPage(pageKey: "tab.tags", finishesOnPage: true),
+        let samples: [CommandHostDisposition] = [.executable, .navigates, .blockedByUnsavedWork, .originalPage(pageKey: "tab.tags", finishesOnPage: true),
             .originalPage(pageKey: "unified.candidate.page.help", finishesOnPage: false),
             .workspaceHandoff, .catalogUnavailable(reasonKey: "command.reason.globalUnlink"), .unwired]
         for locale in [Locale(identifier: "en"), Locale(identifier: "zh-Hans")] {

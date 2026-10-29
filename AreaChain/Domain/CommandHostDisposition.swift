@@ -7,6 +7,8 @@ enum CommandHostDisposition: Equatable, Sendable {
     case executable
     /// Return 直接前往或执行（导航、系统动作，不建草稿）。
     case navigates
+    /// 平时可以直接执行，此刻被未完成的指令草稿或待执行列表挡住（例如关闭工作台）：Return 不执行，标签说明要先处理什么。
+    case blockedByUnsavedWork
     /// 在原页面完成：只导航，由原页面操作（CommandOriginalPage 有对照）；pageKey 是目的地名称的文案键。
     case originalPage(pageKey: String, finishesOnPage: Bool)
     /// 当前宿主没有接上、工作台能处理（菜单栏没有工作台路由与页面指令）：Return 显示工作台，同一文字交给工作台完成。
@@ -20,7 +22,7 @@ enum CommandHostDisposition: Equatable, Sendable {
 
     var kind: Kind {
         switch self {
-        case .executable, .navigates: .executable
+        case .executable, .navigates, .blockedByUnsavedWork: .executable
         case .originalPage: .originalPage
         case .workspaceHandoff: .workspaceHandoff
         case .catalogUnavailable: .catalogUnavailable
@@ -33,6 +35,7 @@ enum CommandHostDisposition: Equatable, Sendable {
         switch self {
         case .executable: return L10n.format("unified.candidate.executable", locale: locale)
         case .navigates: return L10n.format("unified.candidate.navigates", locale: locale)
+        case .blockedByUnsavedWork: return L10n.format("unified.candidate.blockedByUnsavedWork", locale: locale)
         case .originalPage(let page, let finishes):
             return L10n.format(finishes ? "unified.candidate.originalPage" : "unified.candidate.opens", locale: locale,
                                L10n.format(page, locale: locale))
