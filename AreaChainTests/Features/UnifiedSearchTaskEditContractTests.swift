@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-@Suite(.serialized) @MainActor struct UnifiedSearchTM1ContractTests {
+@Suite(.serialized) @MainActor struct UnifiedSearchTaskEditContractTests {
     @Test(arguments: [0, 1, 2, 3]) func fieldControllerSavesOnlySelectedOperation(kind: Int) async throws {
         let fixture = try UnifiedSearchTaskFieldFixture()
         defer { fixture.results.stop() }

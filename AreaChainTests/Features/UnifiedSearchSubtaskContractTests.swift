@@ -9,7 +9,7 @@ import Testing
         defer { fixture.results.stop() }
         let commands = SubtaskCommandTransactionTests.commands
         let arguments = kind < 2 ? [SubtaskCommandFixture.title("Modified #New #恢复")]
-            : kind == 2 ? [TaskTM2Fixture.completion(true)] : [TaskTM2Fixture.tags(.clear)]
+            : kind == 2 ? [TaskCompletionTagsDueFixture.completion(true)] : [TaskCompletionTagsDueFixture.tags(.clear)]
         try await fixture.start(commands[kind], arguments: arguments)
         let draft = try #require(fixture.controller.editingDraft)
         fixture.controller.prepareSubtask(fixture.controller.buffer)
@@ -87,7 +87,7 @@ import Testing
     @Test func independentSubtaskProofIsRequiredEvenForVisibleCandidate() async throws {
         let fixture = try UnifiedSearchSubtaskFixture()
         defer { fixture.results.stop() }
-        try await fixture.start("subtask.completion", arguments: [TaskTM2Fixture.completion(true)])
+        try await fixture.start("subtask.completion", arguments: [TaskCompletionTagsDueFixture.completion(true)])
         #expect(fixture.controller.objectPreview(fixture.child) != nil)
         fixture.service.childProtection = .unknown
         fixture.controller.prepareSubtask(fixture.controller.buffer)

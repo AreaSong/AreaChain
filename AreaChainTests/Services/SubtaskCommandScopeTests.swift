@@ -10,7 +10,7 @@ import Testing
     func explicitCreationTagsComposeWithoutReparsingTitle(mode: CommandFieldOperation) throws {
         let fixture = try Fixture()
         let accepted = try fixture.accept("subtask.create", fixture.createArguments("标题 #Work #New",
-            tags: TaskTM2Fixture.tags(mode, [fixture.base.live.id])))
+            tags: TaskCompletionTagsDueFixture.tags(mode, [fixture.base.live.id])))
         let facts = try fixture.submit(accepted)
         let created = try fixture.storedChild(accepted.object.id)
         let expected: [UUID]
@@ -29,7 +29,7 @@ import Testing
         let fixture = try Fixture()
         let text = protected ? "#密码" : "#New"
         try fixture.queue("subtask.create", fixture.createArguments(text,
-            tags: protected ? TaskTM2Fixture.tags(.clear) : nil))
+            tags: protected ? TaskCompletionTagsDueFixture.tags(.clear) : nil))
         if protected { #expect(throws: (any Error).self) { try fixture.preview() } }
         else {
             let accepted = try fixture.adapter.accept(fixture.preview(), expecting: fixture.handoff.owned().lease)

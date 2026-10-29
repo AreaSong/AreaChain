@@ -100,7 +100,7 @@ import Testing
     @Test func retryNeedsLoanForNewAttempt() throws {
         let f = try TaskSimpleFixture(longText: true)
         let todo = try f.insert(TodoItem(title: "重试", dayKey: TaskSimpleFixture.today))
-        f.tasks = { TaskTM6FailureRepository($0, failOn: 1) }
+        f.tasks = { TaskSimpleCommandFailureRepository($0, failOn: 1) }
         let (accepted, first) = try f.run("todo.notes", targets: [.init(type: .todo, id: todo.id)],
                                           arguments: [f.notes(.replace, "重试正文")])
         #expect(first.state == .notSubmitted && todo.notes.isEmpty)

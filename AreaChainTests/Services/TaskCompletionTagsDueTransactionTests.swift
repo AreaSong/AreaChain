@@ -3,8 +3,8 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-@Suite(.serialized) @MainActor struct TaskTM2TransactionTests {
-    typealias Fixture = TaskTM2Fixture
+@Suite(.serialized) @MainActor struct TaskCompletionTagsDueTransactionTests {
+    typealias Fixture = TaskCompletionTagsDueFixture
 
     @Test(arguments: [0, 1, 2]) func mutationFailureRollsBackParentsChildrenAndTagsTogether(kind: Int) throws {
         let fixture = try Fixture(failingRepository: true)

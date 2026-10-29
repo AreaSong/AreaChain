@@ -3,8 +3,8 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-@Suite(.serialized) @MainActor struct TaskTM2BoundaryTests {
-    typealias Fixture = TaskTM2Fixture
+@Suite(.serialized) @MainActor struct TaskCompletionTagsDueBoundaryTests {
+    typealias Fixture = TaskCompletionTagsDueFixture
 
     @Test(arguments: 0..<7) func childChangesInvalidateAcceptedCascade(kind: Int) throws {
         let fixture = try Fixture()

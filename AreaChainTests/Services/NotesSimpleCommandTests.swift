@@ -61,9 +61,9 @@ import Testing
     func sharedEntryMatchesPreExtractionAlgorithm(_ notes: String) throws {
         let legacy = try Scenario()
         let shared = try Scenario()
-        #expect(TaskTM6LegacyRules.saveNotes(notes, for: try legacy.todo(), context: legacy.context,
+        #expect(TaskSimpleCommandLegacyRules.saveNotes(notes, for: try legacy.todo(), context: legacy.context,
                                              boundary: legacy.fixture.boundary, attachments: legacy.attachments) { legacy.requests.append($0) })
-        #expect(TaskTM6LegacyRules.saveNotes(notes, for: try legacy.routine(), context: legacy.context,
+        #expect(TaskSimpleCommandLegacyRules.saveNotes(notes, for: try legacy.routine(), context: legacy.context,
                                              boundary: legacy.fixture.boundary, attachments: legacy.attachments) { legacy.requests.append($0) })
         for owner in [true, false] {
             var remind: Int?
@@ -86,7 +86,7 @@ import Testing
         let legacy = try Scenario()
         let shared = try Scenario()
         let text = "界面保存 #工作 #新标签 !p2"
-        #expect(TaskTM6LegacyRules.saveNotes(text, for: try legacy.todo(), context: legacy.context,
+        #expect(TaskSimpleCommandLegacyRules.saveNotes(text, for: try legacy.todo(), context: legacy.context,
                                              boundary: .init(), attachments: legacy.attachments) { legacy.requests.append($0) })
         #expect(TaskNotesService.save(text, for: try shared.todo(), in: shared.context,
                                       repository: SwiftDataTaskRepository(context: shared.context)) { shared.requests.append($0) })
@@ -176,7 +176,7 @@ import Testing
         #expect(after.rows.filter { [first.id.uuidString, second.id.uuidString].contains($0.key) }.count == 2)
         #expect(after.rows.filter { $0.key.hasPrefix("tag:") }.count == 1)
         // 同一个失败仓储贯穿两次写入：第二个目标写入后抛错，一次借用、一次事务整体回滚。
-        let failing = TaskTM6FailureRepository(f.context, failOn: 2)
+        let failing = TaskSimpleCommandFailureRepository(f.context, failOn: 2)
         f.tasks = { _ in failing }
         let (_, failed) = try f.run("todo.notes", targets: targets, single: false, arguments: [f.notes(.replace, "共同 #共享新标签")])
         #expect(failed.state == .notSubmitted && failing.calls == 2)

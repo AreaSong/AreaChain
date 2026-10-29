@@ -5,7 +5,7 @@ import Testing
 @testable import AreaChain
 
 @MainActor
-struct MilestoneM3AdversarialTests {
+struct TaskRowAdversarialTests {
     private func makeContainer() throws -> (ModelContainer, ModelContext) {
         let schema = Schema(AreaChainSchema.models)
         let container = try ModelContainer(

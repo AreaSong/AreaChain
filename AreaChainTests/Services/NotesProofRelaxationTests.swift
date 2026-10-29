@@ -16,13 +16,13 @@ import Testing
         case 0: return ("todo.move", TaskFieldCommandFixture.argument(0))
         case 1: return ("todo.priority", TaskFieldCommandFixture.argument(1))
         case 2: return ("todo.reminder", TaskFieldCommandFixture.argument(2))
-        case 3: return ("todo.tags", TaskTM2Fixture.tags(.remove, [TaskTitleFixture.liveID]))
-        default: return ("todo.due", TaskTM2Fixture.due(720))
+        case 3: return ("todo.tags", TaskCompletionTagsDueFixture.tags(.remove, [TaskTitleFixture.liveID]))
+        default: return ("todo.due", TaskCompletionTagsDueFixture.due(720))
         }
     }
 
-    private func fieldFixture() throws -> TaskTM2Fixture {
-        let f = try TaskTM2Fixture()
+    private func fieldFixture() throws -> TaskCompletionTagsDueFixture {
+        let f = try TaskCompletionTagsDueFixture()
         f.base.todo.notes = Self.notes
         try f.context.save()
         return f
@@ -50,7 +50,7 @@ import Testing
     /// 完成与建标签本批未放宽，仍要求无备注。
     @Test func completionStillRequiresNoNotes() throws {
         let f = try fieldFixture()
-        #expect(throws: TaskTitleCommandIssue.notesNotSupported) { try f.accept("todo.completion", TaskTM2Fixture.completion(false)) }
+        #expect(throws: TaskTitleCommandIssue.notesNotSupported) { try f.accept("todo.completion", TaskCompletionTagsDueFixture.completion(false)) }
         #expect(f.count("save") == 0)
     }
 
@@ -85,7 +85,7 @@ import Testing
         let f = try BatchCommandFixture()
         f.todos[1].notes = Self.notes
         try f.context.save()
-        try f.queue("batch.completion", argument: TaskTM2Fixture.completion(true))
+        try f.queue("batch.completion", argument: TaskCompletionTagsDueFixture.completion(true))
         #expect(throws: CommandBatchIssue.self) { try f.preview() }
     }
 

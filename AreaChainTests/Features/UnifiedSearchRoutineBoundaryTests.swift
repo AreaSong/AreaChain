@@ -127,7 +127,7 @@ import Testing
     @Test func staleCandidatesAndTagCancelKeepOneDraft() async throws {
         let fixture = try UnifiedSearchRoutineFixture()
         defer { fixture.results.stop() }
-        try await fixture.start("routine.tags", arguments: [TaskTM2Fixture.tags(.clear)])
+        try await fixture.start("routine.tags", arguments: [TaskCompletionTagsDueFixture.tags(.clear)])
         let host = try await fixture.host(3)
         defer { host.close() }
         try await host.clickCompositionControl("unified.objects.choose.target")

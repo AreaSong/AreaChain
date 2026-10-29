@@ -42,7 +42,7 @@ import Testing
         let attachments = TaskNotesService.Attachments(store: AttachmentStore(root: root), root: root)
         var legacyRequests: [Int?] = []
         var sharedRequests: [Int?] = []
-        let legacySaved = TaskTM6LegacyRules.addCapturedRoutine(text: text, sortOrder: 5, context: legacy.context,
+        let legacySaved = TaskSimpleCommandLegacyRules.addCapturedRoutine(text: text, sortOrder: 5, context: legacy.context,
             boundary: legacy.boundary, createdDayKey: "2026-10-19", attachments: attachments) { legacyRequests.append($0) }
         var remind: Int?
         let sharedSaved = RoutineCaptureService.trimmed(text) != nil && ModelChanges.perform(in: shared.context, boundary: shared.boundary) {
@@ -62,7 +62,7 @@ import Testing
         try seed(legacy)
         try seed(ui)
         let attachments = TaskNotesService.Attachments()
-        #expect(TaskTM6LegacyRules.addCapturedRoutine(text: "面板新增 #Work !p2", sortOrder: 9, context: legacy.context,
+        #expect(TaskSimpleCommandLegacyRules.addCapturedRoutine(text: "面板新增 #Work !p2", sortOrder: 9, context: legacy.context,
                                                       boundary: .init(), createdDayKey: DayKey.today(), attachments: attachments) { _ in })
         DayBoardMutations.routineRepositoryProvider = { _ in SwiftDataRoutineRepository(context: ui.context) }
         defer { DayBoardMutations.routineRepositoryProvider = nil }

@@ -3,9 +3,9 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-@Suite(.serialized) @MainActor struct UnifiedSearchTM2InteractionTests {
+@Suite(.serialized) @MainActor struct UnifiedSearchTaskCompletionTagsDueInteractionTests {
     @Test(arguments: [false, true]) func completionAndReopeningUseRealControls(reopen: Bool) async throws {
-        let fixture = try UnifiedSearchTM2Fixture(done: reopen)
+        let fixture = try UnifiedSearchTaskCompletionTagsDueFixture(done: reopen)
         defer { fixture.results.stop() }
         let host = try await fixture.host(reopen ? 1 : 2)
         defer { host.close() }
@@ -29,7 +29,7 @@ import Testing
 
     @Test(arguments: [CommandFieldOperation.add, .remove, .replaceAll, .clear])
     func tagSetModesUseConfirmedTemporarySelection(mode: CommandFieldOperation) async throws {
-        let fixture = try UnifiedSearchTM2Fixture()
+        let fixture = try UnifiedSearchTaskCompletionTagsDueFixture()
         defer { fixture.results.stop() }
         let host = try await fixture.host(mode == .add ? 3 : 0)
         defer { host.close() }
@@ -56,7 +56,7 @@ import Testing
     }
 
     @Test(arguments: [false, true]) func createAndRestoreAreExplicitlyAccepted(restore: Bool) async throws {
-        let fixture = try UnifiedSearchTM2Fixture()
+        let fixture = try UnifiedSearchTaskCompletionTagsDueFixture()
         defer { fixture.results.stop() }
         let host = try await fixture.host(restore ? 2 : 1)
         defer { host.close() }
@@ -82,7 +82,7 @@ import Testing
     }
 
     @Test(arguments: [false, true]) func dueAssignAndClearUseTimeControl(clear: Bool) async throws {
-        let fixture = try UnifiedSearchTM2Fixture()
+        let fixture = try UnifiedSearchTaskCompletionTagsDueFixture()
         defer { fixture.results.stop() }
         let host = try await fixture.host(clear ? 3 : 0)
         defer { host.close() }

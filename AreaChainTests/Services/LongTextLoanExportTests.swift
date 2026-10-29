@@ -71,7 +71,7 @@ import Testing
         #expect(try !Self.surfaces([accepted, facts, run, try f.handoff.state()]).contains(Self.sentinel))
         let g = try TaskSimpleFixture(longText: true)
         let other = try g.insert(TodoItem(title: "失败哨兵", dayKey: TaskSimpleFixture.today))
-        g.tasks = { TaskTM6FailureRepository($0, failOn: 1) }
+        g.tasks = { TaskSimpleCommandFailureRepository($0, failOn: 1) }
         let (failedAccepted, failed) = try g.run("todo.notes", targets: [.init(type: .todo, id: other.id)],
                                                  arguments: [g.notes(.replace, Self.sentinel)])
         #expect(try failed.state == .notSubmitted && !Self.surfaces([failedAccepted, failed, try g.execution()]).contains(Self.sentinel))

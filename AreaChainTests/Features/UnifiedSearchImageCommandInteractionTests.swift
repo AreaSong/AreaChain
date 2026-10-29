@@ -13,7 +13,7 @@ import Testing
         return f
     }
 
-    @Test(arguments: [0, 3]) func previewOpensTheOrdinaryImageThroughNM2(style: Int) async throws {
+    @Test(arguments: [0, 3]) func previewOpensTheOrdinaryImageThroughImageViewing(style: Int) async throws {
         let f = try fixture()
         defer { f.stop() }
         try await f.start(style: style)

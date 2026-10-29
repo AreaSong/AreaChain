@@ -5,7 +5,7 @@ import SwiftData
 /// 抽取前算法的逐字副本（只把系统依赖换成参数）：不调用新共享入口，防止新旧两个委托互相比对的伪等价。
 /// 来源：InputTagResolver.resolve／merging、InputAttachmentResolver.linkIfPresent、DayBoardMutations.saveNotes、
 /// addCapturedRoutine、applyManualOrder（均为 a3c81b6 时的实现）。
-@MainActor enum TaskTM6LegacyRules {
+@MainActor enum TaskSimpleCommandLegacyRules {
     static func resolve(_ names: [String], in context: ModelContext) throws -> [UUID] {
         var tags = try context.fetch(FetchDescriptor<TagItem>(sortBy: [SortDescriptor(\.sortOrder)]))
         var byName: [String: [TagItem]] = [:]

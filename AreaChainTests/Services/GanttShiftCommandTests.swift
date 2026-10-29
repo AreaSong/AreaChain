@@ -72,7 +72,7 @@ import Testing
         let f = try TaskSimpleFixture(board: true)
         let a = try f.insert(TodoItem(title: "第一项", dayKey: "2026-10-03"))
         let b = try f.insert(TodoItem(title: "第二项", dayKey: "2026-10-07"))
-        let failing = TaskTM6FailureRepository(f.context, failOn: 2)
+        let failing = TaskSimpleCommandFailureRepository(f.context, failOn: 2)
         f.tasks = { _ in failing }
         let (_, facts) = try f.run("gantt.shift", targets: refs([a, b]), single: false, arguments: [offset(3), f.day("2026-10-01")])
         #expect(facts.state == .notSubmitted && failing.calls == 2 && f.count("save") == 0 && f.count("ui") == 0)

@@ -67,7 +67,7 @@
 
 骨架消费者（[TaskCommandSpecs](../AreaChain/Services/TaskCommandSpecs.swift)）：`all` 装配 [OrderCommandSpecs](../AreaChain/Services/OrderCommandSpecs.swift) 的 subtask.order／routine.order／tasks.order 与 [CaptureCommandSpecs](../AreaChain/Services/CaptureCommandSpecs.swift) 的 tasks.postponeYesterday；`longText` 的 [NotesCommandSpec](../AreaChain/Services/NotesCommandSpec.swift)（todo.notes／routine.notes）与 [RoutineCaptureSpec](../AreaChain/Services/RoutineCaptureCommandSpec.swift)（routine.capture）只经长文受控借用执行（见下节 L-M1b），默认不装配；派生行（标签、附件、L7 私密／预置标签说明）见 [TaskDerivedRows](../AreaChain/Services/TaskDerivedRows.swift)。依赖全部注入 `TaskCommandDependencies`，生产没有构造点。骨架本批的通用扩展（`singleAny`、`CommandSimpleCall` 新建身份与冻结行、`afterSave`、`notices`、变化清单计数与抽样、目录状态准入）见上节入口文件。
 
-非骨架：[ClipboardCaptureCommandAdapter](../AreaChain/Services/ClipboardCaptureCommandAdapter.swift)（capture.clipboard，沿 todo.copy 的无 Run 模式；领域值 [CommandClipboardCapture](../AreaChain/Domain/CommandClipboardCapture.swift)；界面 [UnifiedSearchClipboardCaptureEditing／Submission](../AreaChain/Features/Search/UnifiedSearchClipboardCaptureSubmission.swift)；控制器参数 `clipboard` 默认 nil）。验证入口：NotesSimpleCommandTests、OrderSimpleCommandTests、PostponeYesterdayCommandTests、RoutineCaptureCommandTests、ClipboardCaptureCommandTests、SimpleCommandSkeletonTests、UnifiedSearchTM6InteractionTests；规则、实测与缺口只见[权威 T-M6](unified-search-commands.md#993-里程碑-t-m6任务类修改收尾)。
+非骨架：[ClipboardCaptureCommandAdapter](../AreaChain/Services/ClipboardCaptureCommandAdapter.swift)（capture.clipboard，沿 todo.copy 的无 Run 模式；领域值 [CommandClipboardCapture](../AreaChain/Domain/CommandClipboardCapture.swift)；界面 [UnifiedSearchClipboardCaptureEditing／Submission](../AreaChain/Features/Search/UnifiedSearchClipboardCaptureSubmission.swift)；控制器参数 `clipboard` 默认 nil）。验证入口：NotesSimpleCommandTests、OrderSimpleCommandTests、PostponeYesterdayCommandTests、RoutineCaptureCommandTests、ClipboardCaptureCommandTests、SimpleCommandSkeletonTests、UnifiedSearchTaskSimpleCommandInteractionTests；规则、实测与缺口只见[权威 T-M6](unified-search-commands.md#993-里程碑-t-m6任务类修改收尾)。
 
 ## T-M5 待办与重复事项互转
 
@@ -1056,7 +1056,7 @@ UnifiedSearchController 的 UnifiedSearchSettingBackend 互斥选择未装配、
 - [TaskFieldCommandAdapter](../AreaChain/Services/TaskFieldCommandAdapter.swift) 的 prepare / accept / submit / verifyUnknown 只显式装配单目标 todo.move、todo.priority、todo.reminder；[TaskMutationService.editField](../AreaChain/Services/TaskMutationService+Fields.swift) 调用旧 UI 共用的仓储字段入口。原标题环境的内存库、普通无备注来源证明、私有事件与 fake 消费者供两种修改适配共用；旧 UI 同值行为不变。
 - [CommandTaskChainIdentity](../AreaChain/Domain/CommandTaskChain.swift) 覆盖完整 create→title 两项计划；[TaskChainCommandAdapter](../AreaChain/Services/TaskChainCommandAdapter.swift) 调用原创建/标题适配，真实 savedID 输出后重新读取并确认消费者影响。原单项 claim 及其他计划形状仍保持原守卫，无跨两步共同事务或自动重放。
 - [prepareTaskField](../AreaChain/Features/Search/UnifiedSearchTaskFieldEditing.swift) 与 [UnifiedSearchTaskChainSubmission](../AreaChain/Features/Search/UnifiedSearchTaskChainSubmission.swift) 复用原参数、对象、PlanList、标题影响与本地/外部反馈。唯一输入仍属 Draft / Plan / Run；点击与 ⌘Return 共用提交入口，默认未装配关闭。
-- 消费者仅显式隔离 Controller 与 TaskFieldCommand / TaskChainCommand / UnifiedSearchTM1ContractTests 及原生夹具。生产搜索、真实用户库、系统服务不接入。执行边界、真实证据和剩余验收统一维护在[权威 T-M1](unified-search-commands.md#973-里程碑-t-m1普通任务修改与受限依赖执行)。
+- 消费者仅显式隔离 Controller 与 TaskFieldCommand / TaskChainCommand / UnifiedSearchTaskEditContractTests 及原生夹具。生产搜索、真实用户库、系统服务不接入。执行边界、真实证据和剩余验收统一维护在[权威 T-M1](unified-search-commands.md#973-里程碑-t-m1普通任务修改与受限依赖执行)。
 
 ## T-M2 完成、标签与截止时间
 
@@ -1064,7 +1064,7 @@ UnifiedSearchController 的 UnifiedSearchSettingBackend 互斥选择未装配、
 - [CommandTaskTagMutation](../AreaChain/Domain/CommandTaskTagMutation.swift) 从当前真实关联计算 add/remove/replaceAll/clear 或名称解析；复用 TitleTags、TagLookup、TagIDList 与 TagPlan。最终集合与需写标签效果分开，未触及的墓碑不会因其他关联操作恢复。[TaskMutationService.editField](../AreaChain/Services/TaskMutationService+Fields.swift) 复用 InputTagResolver.apply 和仓储 replaceTagIDs，在一次事务内完成标签实体及关联。
 - 同文件的 `assignDue` 是旧 DayBoardMutations.setDue 与新命令的共同赋值入口；旧 UI 继续原保存/范围归一化，新命令严格检查 assign/clear，只改 dueMinutes。
 - TaskFieldCommandAdapter 的默认 basic 能力保持 T-M1；只有显式 `milestone2` 开放本批四命令，仍要求普通无备注来源证明、单个活 todo、单项计划。新标签身份由原 FieldRegistry 接受记录持有，Run.taskField 保存实际标签/子项事实；不扩展创建输出或两步链。
-- [TaskFieldCommandTagCandidates](../AreaChain/Services/TaskFieldCommandTagCandidates.swift) 的 `tagCandidates` 扩展原普通标签集合；[UnifiedSearchTaskFieldImpact](../AreaChain/Features/Search/UnifiedSearchTaskFieldImpact.swift) 只消费影响值，复用 TagSummary/TagEffects。新名字仍是 name 文本参数，临时选择只在确认后写入唯一 Draft。实际消费者为显式隔离 Controller 和 TaskTM2 / UnifiedSearchTM2 测试，生产不装配。
+- [TaskFieldCommandTagCandidates](../AreaChain/Services/TaskFieldCommandTagCandidates.swift) 的 `tagCandidates` 扩展原普通标签集合；[UnifiedSearchTaskFieldImpact](../AreaChain/Features/Search/UnifiedSearchTaskFieldImpact.swift) 只消费影响值，复用 TagSummary/TagEffects。新名字仍是 name 文本参数，临时选择只在确认后写入唯一 Draft。实际消费者为显式隔离 Controller 和 TaskCompletionTagsDue* / UnifiedSearchTaskCompletionTagsDue* 测试，生产不装配。
 - 唯一支持范围、失败边界、验证与未完成项见[权威 T-M2](unified-search-commands.md#974-里程碑-t-m2完成标签与截止时间的隔离闭环)。
 
 ## T-M3 普通子任务隔离闭环

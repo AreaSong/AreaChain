@@ -53,7 +53,7 @@ import Testing
 
     @Test(arguments: 0..<9) func parentChildAndInputNeedIndependentCurrentProof(kind: Int) throws {
         let fixture = try Fixture()
-        let accepted = try fixture.accept("subtask.completion", [TaskTM2Fixture.completion(true)])
+        let accepted = try fixture.accept("subtask.completion", [TaskCompletionTagsDueFixture.completion(true)])
         switch kind {
         case 0: fixture.parentProtection = .unknown
         case 1: fixture.childProtection = .unknown
@@ -73,7 +73,7 @@ import Testing
     @Test(arguments: 0..<7, [CommandFieldOperation.clear, .remove])
     func protectedUnknownOrChangedTagsCannotBeRemoved(kind: Int, mode: CommandFieldOperation) throws {
         let fixture = try Fixture()
-        let accepted = try fixture.accept("subtask.tags", [TaskTM2Fixture.tags(mode, [fixture.base.live.id])])
+        let accepted = try fixture.accept("subtask.tags", [TaskCompletionTagsDueFixture.tags(mode, [fixture.base.live.id])])
         switch kind {
         case 0: fixture.base.live.isPrivateDiary = true
         case 1: fixture.context.delete(fixture.base.live)
@@ -100,7 +100,7 @@ import Testing
 
     @Test func dirtyAndNestedContextsDoNotPreSave() throws {
         let fixture = try Fixture()
-        try fixture.queue("subtask.completion", [TaskTM2Fixture.completion(true)])
+        try fixture.queue("subtask.completion", [TaskCompletionTagsDueFixture.completion(true)])
         fixture.base.todo.title = "唯一未保存编辑"
         #expect(throws: TaskTitleCommandIssue.dirtyContext) { try fixture.preview() }
         #expect(fixture.context.hasChanges && fixture.base.todo.title == "唯一未保存编辑")

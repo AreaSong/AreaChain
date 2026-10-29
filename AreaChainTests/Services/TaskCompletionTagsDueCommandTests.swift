@@ -3,8 +3,8 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-@Suite(.serialized) @MainActor struct TaskTM2CommandTests {
-    typealias Fixture = TaskTM2Fixture
+@Suite(.serialized) @MainActor struct TaskCompletionTagsDueCommandTests {
+    typealias Fixture = TaskCompletionTagsDueFixture
 
     @Test(arguments: [0, 1, 2]) func completionUsesExplicitSingleTargetSemantics(kind: Int) throws {
         let fixture = try Fixture()

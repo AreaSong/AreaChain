@@ -6,7 +6,7 @@ import Testing
 @testable import AreaChain
 
 @MainActor
-struct MilestoneM2AdversarialTests {
+struct SeederAndShellAdversarialTests {
 
     private func makeInMemoryContainer() throws -> ModelContainer {
         try ModelContainer(

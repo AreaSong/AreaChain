@@ -68,7 +68,7 @@ import Testing
         #expect(f.count("save") == 0 && children.map(\.sortOrder) == [0, 5, 9])
         let g = try TaskSimpleFixture()
         let (gTodo, gChildren, _) = try family(g)
-        let failing = TaskTM6FailureRepository(g.context, failOn: 1)
+        let failing = TaskSimpleCommandFailureRepository(g.context, failOn: 1)
         g.tasks = { _ in failing }
         let (_, facts) = try g.run("subtask.order", targets: [.init(type: .subtask, id: gChildren[0].id)],
                                    arguments: [g.parent(gTodo), g.position(3)])
@@ -117,7 +117,7 @@ import Testing
         let entries = [ManualOrderEntry(id: a.id, dayKey: day, sortOrder: 0), .init(id: r.id, dayKey: day, sortOrder: 2),
                        .init(id: b.id, dayKey: day, sortOrder: 4)]
         let moved = try #require(ManualOrder.reordered(entries, moving: r.id, before: a.id))
-        #expect(TaskTM6LegacyRules.applyManualOrder(moved, context: legacy.context, boundary: legacy.io.boundary))
+        #expect(TaskSimpleCommandLegacyRules.applyManualOrder(moved, context: legacy.context, boundary: legacy.io.boundary))
         let legacyOrders: [Int] = [r.sortOrder, a.sortOrder, b.sortOrder]
         let commandOrders: [Int] = [routine.sortOrder, first.sortOrder, second.sortOrder]
         #expect(legacyOrders == commandOrders)

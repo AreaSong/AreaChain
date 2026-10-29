@@ -1,5 +1,35 @@
 # 工程与维护
 
+## 测试命名对照（2026-10-29 代码清理）
+
+测试文件、类型和函数改成按被测功能命名，内容不变。历史记录（本手册下文和统一搜索主文档的交接段落）里仍是旧名，按下表对照；本表是旧名的唯一对照处。
+
+| 旧名 | 新名 |
+| --- | --- |
+| `UnifiedSearchTM1ContractTests` | `UnifiedSearchTaskEditContractTests` |
+| `UnifiedSearchTM2BoundaryTests` | `UnifiedSearchTaskCompletionTagsDueBoundaryTests` |
+| `UnifiedSearchTM2InteractionTests` | `UnifiedSearchTaskCompletionTagsDueInteractionTests` |
+| `UnifiedSearchTM2TestSupport` | `UnifiedSearchTaskCompletionTagsDueTestSupport` |
+| `UnifiedSearchTM2Fixture` | `UnifiedSearchTaskCompletionTagsDueFixture` |
+| `UnifiedSearchTM6InteractionTests` | `UnifiedSearchTaskSimpleCommandInteractionTests` |
+| `UnifiedSearchTM6TestSupport` | `UnifiedSearchTaskSimpleCommandTestSupport` |
+| `UnifiedSearchTM6Fixture` | `UnifiedSearchTaskSimpleCommandFixture` |
+| `TaskTM2BoundaryTests` | `TaskCompletionTagsDueBoundaryTests` |
+| `TaskTM2CommandTests` | `TaskCompletionTagsDueCommandTests` |
+| `TaskTM2FailureRepository` | `TaskCompletionTagsDueFailureRepository` |
+| `TaskTM2TestSupport` | `TaskCompletionTagsDueTestSupport` |
+| `TaskTM2Fixture` | `TaskCompletionTagsDueFixture` |
+| `TaskTM2TransactionTests` | `TaskCompletionTagsDueTransactionTests` |
+| `TaskTM6FailureRepository` | `TaskSimpleCommandFailureRepository` |
+| `TaskTM6LegacyRules` | `TaskSimpleCommandLegacyRules` |
+| `MilestoneM2AdversarialTests` | `SeederAndShellAdversarialTests` |
+| `MilestoneM3AdversarialTests` | `TaskRowAdversarialTests` |
+| `MilestoneM3Iteration2DTOStressTests` | `TaskRowStateForwardingStressTests` |
+| `MilestoneM3Iteration2ViewAdversarialTests` | `TasksPageViewAdversarialTests` |
+| `previewOpensTheOrdinaryImageThroughNM2` | `previewOpensTheOrdinaryImageThroughImageViewing` |
+
+不改的名字：`Phase1*` 性能套件（被 `scripts/quality_gate.py`、`scripts/build.sh` 与 `docs/performance-baselines.json` 引用，改名会动性能基线和门禁配置）；环境变量 `AREACHAIN_CM1_*`、`AREACHAIN_CM2_*`（主文档历史交接里的复现命令引用它们）；`CommandTextPerformancePhases`（"Phases" 指性能阶段，不是里程碑）；测试里的附件名、临时目录名和日志前缀（如 `CM1R-geometry.json`、`tmp/CM1Runner/`、`NM2_SCREENSHOT`）以及失败提示、合成数据里的同类字样，它们是字符串，属于可执行内容。
+
 ## 第十阶段 O：控件收口最终整合验收与总交接
 
 ### 最终工程收口（2026-10-08）

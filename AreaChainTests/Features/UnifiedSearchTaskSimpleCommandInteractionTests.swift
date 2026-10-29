@@ -4,14 +4,14 @@ import Testing
 @testable import AreaChain
 
 /// 任务类修改原生交互：排序位置数字输入、昨天全部延至今日预览、剪贴板加今天的读取提示。只发合成原生事件、只用合成数据。
-@Suite(.serialized) @MainActor struct UnifiedSearchTM6InteractionTests {
+@Suite(.serialized) @MainActor struct UnifiedSearchTaskSimpleCommandInteractionTests {
     private static func localized(_ key: String, style: Int) -> String {
         L10n.format(key, locale: Locale(identifier: style < 2 ? "en" : "zh-Hans"))
     }
 
     /// 排序用 position 数字参数表达新位置，不依赖选择器登记顺序；预览逐项列出位置变化。
     @Test(arguments: [0, 1, 2, 3]) func routineOrderTakesTypedPosition(style: Int) async throws {
-        let f = try UnifiedSearchTM6Fixture()
+        let f = try UnifiedSearchTaskSimpleCommandFixture()
         defer { f.results.stop() }
         let host = try await f.host(style)
         defer { host.close() }
@@ -33,7 +33,7 @@ import Testing
 
     /// 越界位置在准备时就被拒绝，显示原因，不写入。
     @Test func outOfRangePositionShowsReason() async throws {
-        let f = try UnifiedSearchTM6Fixture()
+        let f = try UnifiedSearchTaskSimpleCommandFixture()
         defer { f.results.stop() }
         let host = try await f.host(2)
         defer { host.close() }
@@ -48,7 +48,7 @@ import Testing
 
     /// 预览列出目标数量与每项日期变化；一次保存全部延至今天。
     @Test(arguments: [0, 1, 2, 3]) func postponeYesterdayPreviewsCountAndTitles(style: Int) async throws {
-        let f = try UnifiedSearchTM6Fixture()
+        let f = try UnifiedSearchTaskSimpleCommandFixture()
         defer { f.results.stop() }
         let host = try await f.host(style)
         defer { host.close() }
@@ -70,7 +70,7 @@ import Testing
 
     /// 准备阶段只提示“将读取当前剪贴板”，不读取；提交后才读一次并加到今天。
     @Test(arguments: [0, 1, 2, 3]) func clipboardCaptureReadsOnlyAfterSubmit(style: Int) async throws {
-        let f = try UnifiedSearchTM6Fixture()
+        let f = try UnifiedSearchTaskSimpleCommandFixture()
         defer { f.results.stop() }
         f.clipboard.text = "剪贴板文字 · Clip #标签"
         let host = try await f.host(style)

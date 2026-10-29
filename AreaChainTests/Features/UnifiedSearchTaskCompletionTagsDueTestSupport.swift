@@ -3,15 +3,15 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-@MainActor final class UnifiedSearchTM2Fixture {
-    let service: TaskTM2Fixture
+@MainActor final class UnifiedSearchTaskCompletionTagsDueFixture {
+    let service: TaskCompletionTagsDueFixture
     let results: UnifiedSearchResultsFixture
     let privacy = NotificationCenter()
     var controller: UnifiedSearchController { results.controller }
     var target: CommandObjectReference { .init(type: .todo, id: service.base.todo.id) }
 
     init(done: Bool = true) throws {
-        service = try TaskTM2Fixture()
+        service = try TaskCompletionTagsDueFixture()
         service.base.todo.isDone = done
         _ = try service.child("Synthetic child · 合成子任务")
         _ = try service.child("Completed child", done: true)

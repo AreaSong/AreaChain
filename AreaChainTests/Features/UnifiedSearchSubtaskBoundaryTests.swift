@@ -106,7 +106,7 @@ import Testing
     @Test(arguments: [false, true]) func focusLossAndLockRevokeAcceptance(locked: Bool) async throws {
         let fixture = try UnifiedSearchSubtaskFixture()
         defer { fixture.results.stop() }
-        try await fixture.start("subtask.completion", arguments: [TaskTM2Fixture.completion(true)])
+        try await fixture.start("subtask.completion", arguments: [TaskCompletionTagsDueFixture.completion(true)])
         let host = try await fixture.host()
         defer { host.close() }
         let accepted = try await fixture.prepare(host, name: locked ? "lock" : "focus")
@@ -132,7 +132,7 @@ import Testing
     @Test func staleCandidatesAndTagCancelKeepOneDraft() async throws {
         let fixture = try UnifiedSearchSubtaskFixture()
         defer { fixture.results.stop() }
-        try await fixture.start("subtask.tags", arguments: [TaskTM2Fixture.tags(.clear)])
+        try await fixture.start("subtask.tags", arguments: [TaskCompletionTagsDueFixture.tags(.clear)])
         let host = try await fixture.host(3)
         defer { host.close() }
         try await host.clickCompositionControl("unified.objects.choose.target")

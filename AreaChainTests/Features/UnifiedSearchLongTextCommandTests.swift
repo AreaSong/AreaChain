@@ -200,7 +200,7 @@ import Testing
         let text = "失败后返回\n第二行"
         try await f.type(text, into: .notes, host: host)
         _ = try await f.prepareAndAccept(host, name: "return")
-        f.service.tasks = { TaskTM6FailureRepository($0, failOn: 1) }
+        f.service.tasks = { TaskSimpleCommandFailureRepository($0, failOn: 1) }
         let failed = try #require(try await f.save(host, chord: false))
         #expect(failed.state == .notSubmitted && f.todo.notes == "原备注")
         try await host.revealSettingControlInsidePanel("unified.simple.return")

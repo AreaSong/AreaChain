@@ -3,11 +3,11 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-@Suite(.serialized) @MainActor struct UnifiedSearchTM2BoundaryTests {
+@Suite(.serialized) @MainActor struct UnifiedSearchTaskCompletionTagsDueBoundaryTests {
     @Test(arguments: [false, true]) func noChangeOrStaleCascadeKeepsInput(conflict: Bool) async throws {
-        let fixture = try UnifiedSearchTM2Fixture(done: !conflict)
+        let fixture = try UnifiedSearchTaskCompletionTagsDueFixture(done: !conflict)
         defer { fixture.results.stop() }
-        try await fixture.start("todo.completion", argument: TaskTM2Fixture.completion(true))
+        try await fixture.start("todo.completion", argument: TaskCompletionTagsDueFixture.completion(true))
         let host = try await fixture.host()
         defer { host.close() }
         let accepted = try await fixture.prepare(host, name: conflict ? "conflict-before" : "noChange-before")
@@ -25,9 +25,9 @@ import Testing
     }
 
     @Test(arguments: [false, true]) func unknownAndPublicationFailureShowActualFacts(unknown: Bool) async throws {
-        let fixture = try UnifiedSearchTM2Fixture()
+        let fixture = try UnifiedSearchTaskCompletionTagsDueFixture()
         defer { fixture.results.stop() }
-        try await fixture.start("todo.createTag", argument: TaskTM2Fixture.name("New"))
+        try await fixture.start("todo.createTag", argument: TaskCompletionTagsDueFixture.name("New"))
         let host = try await fixture.host(1)
         defer { host.close() }
         let accepted = try await fixture.prepare(host, name: unknown ? "unknown-before" : "publication-before")
@@ -51,9 +51,9 @@ import Testing
     }
 
     @Test func newNameMarkedTextDoesNotPrepareOrSubmit() async throws {
-        let fixture = try UnifiedSearchTM2Fixture()
+        let fixture = try UnifiedSearchTaskCompletionTagsDueFixture()
         defer { fixture.results.stop() }
-        try await fixture.start("todo.createTag", argument: TaskTM2Fixture.name("Original"))
+        try await fixture.start("todo.createTag", argument: TaskCompletionTagsDueFixture.name("Original"))
         let host = try await fixture.host()
         defer { host.close() }
         let editor = try await host.focusParameter(.name)
@@ -80,9 +80,9 @@ import Testing
     }
 
     @Test(arguments: [false, true]) func focusLossOrLockRevokesAcceptance(locked: Bool) async throws {
-        let fixture = try UnifiedSearchTM2Fixture()
+        let fixture = try UnifiedSearchTaskCompletionTagsDueFixture()
         defer { fixture.results.stop() }
-        try await fixture.start("todo.due", argument: TaskTM2Fixture.due(nil))
+        try await fixture.start("todo.due", argument: TaskCompletionTagsDueFixture.due(nil))
         let host = try await fixture.host()
         defer { host.close() }
         let accepted = try await fixture.prepare(host, name: locked ? "lock-before" : "focus-before")
@@ -106,9 +106,9 @@ import Testing
     }
 
     @Test func parameterEditingRevokesAndTagCancelDoesNotChangeDraft() async throws {
-        let fixture = try UnifiedSearchTM2Fixture()
+        let fixture = try UnifiedSearchTaskCompletionTagsDueFixture()
         defer { fixture.results.stop() }
-        try await fixture.start("todo.tags", argument: TaskTM2Fixture.tags(.clear))
+        try await fixture.start("todo.tags", argument: TaskCompletionTagsDueFixture.tags(.clear))
         let host = try await fixture.host(3)
         defer { host.close() }
         try await fixture.mode(.tags, .add, host: host)

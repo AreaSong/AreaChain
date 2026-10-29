@@ -12,7 +12,7 @@ import Testing
         try fixture.context.save()
         let before = fixture.base.todo.snapshot
         let accepted = try fixture.accept("subtask.create", fixture.createArguments("新子项 !p1 @10:00 #恢复 #New",
-            tags: TaskTM2Fixture.tags(.add, [fixture.base.live.id])))
+            tags: TaskCompletionTagsDueFixture.tags(.add, [fixture.base.live.id])))
         #expect(accepted.object.type == .subtask && accepted.object.id != fixture.base.todo.id)
         #expect(accepted.preview.input.parent?.id == fixture.base.todo.id && accepted.preview.input.target == nil)
         let other = SubtaskCommandAdapter(coordinator: fixture.handoff.coordinator, environment: fixture.environment)
@@ -68,7 +68,7 @@ import Testing
         let parent = fixture.base.todo.snapshot
         let sibling = fixture.sibling.snapshot
         let target = kind != 1
-        let accepted = try fixture.accept("subtask.completion", [TaskTM2Fixture.completion(target)])
+        let accepted = try fixture.accept("subtask.completion", [TaskCompletionTagsDueFixture.completion(target)])
         let facts = try fixture.submit(accepted)
         #expect(try fixture.storedChild().isDone == target)
         #expect(try fixture.storedChild(fixture.sibling.id).snapshot == sibling)
@@ -82,7 +82,7 @@ import Testing
         let fixture = try Fixture()
         let before = fixture.base.todo.snapshot
         let selected = mode == .remove ? [fixture.base.live.id] : [fixture.base.deleted.id]
-        let accepted = try fixture.accept("subtask.tags", [TaskTM2Fixture.tags(mode, selected)])
+        let accepted = try fixture.accept("subtask.tags", [TaskCompletionTagsDueFixture.tags(mode, selected)])
         let facts = try fixture.submit(accepted)
         let expected = mode == .add ? [fixture.base.live.id, fixture.base.deleted.id]
             : mode == .replaceAll ? [fixture.base.deleted.id] : []
@@ -97,12 +97,12 @@ import Testing
         let fixture = try Fixture()
         let argument: CommandArgument
         switch kind {
-        case 0: argument = TaskTM2Fixture.tags(.add, [fixture.base.live.id])
-        case 1: argument = TaskTM2Fixture.tags(.remove, [fixture.base.deleted.id])
-        case 2: fixture.child.tagIDs = ""; argument = TaskTM2Fixture.tags(.clear)
+        case 0: argument = TaskCompletionTagsDueFixture.tags(.add, [fixture.base.live.id])
+        case 1: argument = TaskCompletionTagsDueFixture.tags(.remove, [fixture.base.deleted.id])
+        case 2: fixture.child.tagIDs = ""; argument = TaskCompletionTagsDueFixture.tags(.clear)
         default:
             fixture.child.tagIDs = TagIDList.encode([fixture.base.live.id, fixture.base.deleted.id])
-            argument = TaskTM2Fixture.tags(.remove, [fixture.base.live.id])
+            argument = TaskCompletionTagsDueFixture.tags(.remove, [fixture.base.live.id])
         }
         try fixture.context.save()
         let accepted = try fixture.accept("subtask.tags", [argument])

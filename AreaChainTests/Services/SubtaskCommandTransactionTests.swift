@@ -10,8 +10,8 @@ import Testing
         switch kind {
         case 0: return fixture.createArguments("新子项 #恢复 #New")
         case 1: return [Fixture.title("新标题 #恢复 #New")]
-        case 2: return [TaskTM2Fixture.completion(true)]
-        default: return [TaskTM2Fixture.tags(.add, [fixture.base.deleted.id])]
+        case 2: return [TaskCompletionTagsDueFixture.completion(true)]
+        default: return [TaskCompletionTagsDueFixture.tags(.add, [fixture.base.deleted.id])]
         }
     }
 

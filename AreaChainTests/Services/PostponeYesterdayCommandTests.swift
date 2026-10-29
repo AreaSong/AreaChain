@@ -74,7 +74,7 @@ import Testing
     @Test func failureInsideTransactionRollsBackEveryMove() throws {
         let f = try TaskSimpleFixture()
         let b = try board(f)
-        let failing = TaskTM6FailureRepository(f.context, failOn: 2)
+        let failing = TaskSimpleCommandFailureRepository(f.context, failOn: 2)
         f.tasks = { _ in failing }
         let (_, facts) = try f.run("tasks.postponeYesterday", arguments: [f.day(TaskSimpleFixture.today)])
         #expect(facts.state == .notSubmitted && failing.calls == 2 && f.count("save") == 0 && f.count("ui") == 0)

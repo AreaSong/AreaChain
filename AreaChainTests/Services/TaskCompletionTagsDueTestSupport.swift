@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-@MainActor final class TaskTM2Fixture {
+@MainActor final class TaskCompletionTagsDueFixture {
     let io: TaskTitleCommandIO
     let environment: TaskTitleCommandEnvironment
     let adapter: TaskFieldCommandAdapter
@@ -16,7 +16,7 @@ import Testing
         let original = try io.environment()
         if failingRepository {
             var dependencies = original.dependencies
-            dependencies.repository = { TaskTM2FailureRepository($0) }
+            dependencies.repository = { TaskCompletionTagsDueFailureRepository($0) }
             environment = try .init(context: original.context, center: original.center, dependencies: dependencies,
                 source: original.source, refresh: original.refresh, requestAuthorization: original.requestAuthorization)
         } else { environment = original }

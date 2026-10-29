@@ -67,7 +67,7 @@ import Testing
         #expect(try order.service.live().map(\.id) == [before[2], before[0], before[1]].map(\.id))
     }
 
-    /// 同 UnifiedSearchTM6Fixture.type：聚焦参数框、输入、回车确认。
+    /// 同 UnifiedSearchTaskSimpleCommandFixture.type：聚焦参数框、输入、回车确认。
     private func typePosition(_ text: String, host: UnifiedSearchTestHost) async throws {
         let editor = try await host.focusParameter(.position)
         editor.insertText(text, replacementRange: editor.selectedRange())
