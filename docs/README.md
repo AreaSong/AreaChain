@@ -1,7 +1,6 @@
 # 文档索引
 
-- [产品定位](product.md)：这是什么、不是什么
-- [功能清单](features.md)：当前已实现的能力，以及刻意不做的产品边界
+- [产品与功能](features.md)：这是什么、已实现的能力，以及刻意不做的边界
 - [统一搜索与指令体系](unified-search-commands.md)：权威目标设计、功能覆盖映射与仍有效的决定；当前状态见[统一搜索现状总览](unified-search-status.md)
 - [架构与目录](architecture.md)：代码怎么放、数据怎么存、窗口如何路由
 - [技能路由](../skill-routing.md)：新对话如何冷启动、选择技能、复用和交接

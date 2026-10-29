@@ -43,7 +43,7 @@
 ### 2. 读取最小上下文
 
 - 所有任务先读 [AGENTS.md](AGENTS.md) 和本文件。
-- 产品行为读 `docs/product.md`、`docs/features.md`、`docs/usage.md`。
+- 产品行为读 `docs/features.md`、`docs/usage.md`。
 - 模块、状态、窗口和数据契约读 `docs/architecture.md` 的相关章节。
 - 生命周期质量、注释、安全、性能、测试、交付和维护读 [质量门禁](docs/quality-gates.md)；性能数字再读 [`docs/performance-baselines.json`](docs/performance-baselines.json)。
 - 构建、脚本、签名、恢复或交付读 `docs/engineering.md` 的相关章节，必要时再读 `docs/signing.md`。

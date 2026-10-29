@@ -16,7 +16,7 @@
 ## 按任务读取上下文
 
 - 所有新对话先读 [技能路由](skill-routing.md)；新增控件、公共规则或界面时再读 [共享组件与复用目录](docs/component-catalog.md)，并沿实际调用方核对，不只按名称猜测。
-- 入口、环境要求和命令见 [README.md](README.md)；产品范围见 [docs/product.md](docs/product.md) 与 [docs/features.md](docs/features.md)。
+- 入口、环境要求和命令见 [README.md](README.md)；产品定位、功能与边界见 [docs/features.md](docs/features.md)。
 - 界面、快捷键和保存行为见 [docs/usage.md](docs/usage.md)；分层、数据与隔离验收见 [docs/architecture.md](docs/architecture.md)。
 - 开发全生命周期的覆盖状态、工程环境、质量门禁、发行准备及恢复/维护方法见 [docs/engineering.md](docs/engineering.md) 与 [docs/quality-gates.md](docs/quality-gates.md)；通用标准由全局规则按需引用，项目手册只保存本项目证据、入口和缺口。
 - 触及构建、签名、安装或系统解锁时先读 [docs/signing.md](docs/signing.md)。不要把安装、启动或真实认证当作普通检查的隐含步骤。
