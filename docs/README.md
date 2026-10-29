@@ -1,7 +1,7 @@
 # 文档索引
 
 - [产品与功能](features.md)：这是什么、已实现的能力，以及刻意不做的边界
-- [统一搜索与指令体系](unified-search-commands.md)：权威目标设计、功能覆盖映射与仍有效的决定；当前状态见[统一搜索现状总览](unified-search-status.md)
+- [统一搜索与指令体系](unified-search-commands.md)：权威目标设计、功能覆盖映射与仍有效的决定，§10 是当前状态与覆盖
 - [架构与目录](architecture.md)：代码怎么放、数据怎么存、窗口如何路由
 - [技能路由](../skill-routing.md)：新对话如何冷启动、选择技能、复用和交接
 - [共享组件与复用目录](component-catalog.md)：新增功能如何寻找并复用现有控件、规则和事务入口
