@@ -17,13 +17,13 @@ DaybookFloatingSurface.rowBubble 只消费外部悬停与复制反馈值，在�
 RowTitleBubble 与 RowNoteBubble 独占原事件、反馈和 Task 生命周期；公共层没有回调、计时器、悬停处理或状态镜像。备注仅 noteCardContent 被装饰，箭头仍在卡片外，圆角标题与矩形备注点击区各自保持。三消费者的显隐、敏感判断和偏移不下沉，Void 复制回调不能证明系统写入成功。接口、合理差异及验证入口见[组件目录](component-catalog.md#第八阶段-f标题与备注气泡动态外壳)，实际证据见[工程记录](engineering.md#第八阶段-f标题与备注气泡动态外壳)。
 
 
-普通设置 3A-2 在原 UnifiedSearchController 显式注入 LocalSettingCommandAdapter；仅四项能力开放到隔离 UI。Features 只衔接原事件及投影实际 report，prepare 将真实标量基线写入原 draft，enqueue / seal / attempt 继续唯一移交。ReadSession 负责显示资格；最后写入也核对同一显示会话，写入后撤显示不撤销原 Run 事实。成功/noChange 仅通过原 releaseExecution 显式释放，未知/已提交失败不退回草稿；结果和证据只维护在[权威 §9.56](unified-search-commands.md#956-阶段-3a-2四类普通设置的原生提交冲突和反馈)。生产搜索、其他命令、多项与安全撤销仍关闭。
+普通设置 3A-2 在原 UnifiedSearchController 显式注入 LocalSettingCommandAdapter；仅四项能力开放到隔离 UI。Features 只衔接原事件及投影实际 report，prepare 将真实标量基线写入原 draft，enqueue / seal / attempt 继续唯一移交。ReadSession 负责显示资格；最后写入也核对同一显示会话，写入后撤显示不撤销原 Run 事实。成功/noChange 仅通过原 releaseExecution 显式释放，未知/已提交失败不退回草稿；结果和证据只维护在权威 §9.56。生产搜索、其他命令、多项与安全撤销仍关闭。
 
 ### 普通设置单项运行（3A-1B）
 
 Services 的 LocalSettingCommandAdapter 仅显式组合现有 AppPreferences 和 CommandHandoffCoordinator。CommandPreferenceBaseline 是无平台标量证据，挂在原 CommandDraftBaseline；适配器的私有签发登记防止合成值成为执行依据，不建立偏好镜像。当前 operation/attempt 在协调者先占用，再由共享偏好入口重新读回原值、核验最后 lease 并同步写入；可信完成可跨同一 ownership 的展示修订，不能跨运行或转交代次。
 
-Run 保留 noChange、写调用/读回以及独立 preferencePresentation 结果。未知不重试；只允许确实未提交的单项经受限转移返回原计划并推进版本。多项不封存、不逐键部分执行；生产搜索、敏感输入、多项事务及撤销继续关闭。完整接口、冲突确认和证据以[权威 §9.55](unified-search-commands.md#955-阶段-3a-1b普通设置单项真实适配与隔离验证)为准。
+Run 保留 noChange、写调用/读回以及独立 preferencePresentation 结果。未知不重试；只允许确实未提交的单项经受限转移返回原计划并推进版本。多项不封存、不逐键部分执行；生产搜索、敏感输入、多项事务及撤销继续关闭。完整接口、冲突确认和证据以权威 §9.55为准。
 
 ### 第八阶段 E 标签详情与语法帮助外壳
 
@@ -47,7 +47,7 @@ SyntaxOverlay / UnifiedSearchOverlay 保留唯一定位与来源选择；内容�
 
 UnifiedSearchController 只从 CommandHandoffCoordinator 读取唯一 CommandHostSession.plan；UnifiedSearchBuffer 的 plan/item stamp 与原 draft/lease/display 版本绑定编辑位置。OperationEditing 和 ObjectSelection 共用 editingDraft，经 PlanEditing 转为原计划事件，不复制计划草稿到 active。参数拼写仅供原生输入恢复，没有独立提交能力。计划列表与草稿同在原 OperationBoundary，失焦/锁定卸载明细而保留运行内内容；隐藏不是敏感封存。
 
-合并只经 CommandPlanSemantics，输出候选只经目录声明与 CommandPlanValidation；移除仍退回 retained。领域 link 支持逐项修复既有过期引用，整图门禁未放宽。无 handler、封存或协议执行接线；接口、证据、人工与指定复核缺口见[权威交接 §9.49](unified-search-commands.md#949-阶段-4a-3b2待执行计划与就地编辑)。
+合并只经 CommandPlanSemantics，输出候选只经目录声明与 CommandPlanValidation；移除仍退回 retained。领域 link 支持逐项修复既有过期引用，整图门禁未放宽。无 handler、封存或协议执行接线；接口、证据、人工与指定复核缺口见权威交接 §9.49。
 
 ### 隐私设置安全输入呈现（第七阶段 D）
 
@@ -80,39 +80,39 @@ CalendarWeekBoard 只将日期按钮转交 DaybookDateCell.weekHeader(shortStamp
 
 列顺序、整列选中表面、列表/滚动/焦点、检查目标及所属日、周导航、拖放接收与保存继续归原 Feature。原 dropDestination 仍覆盖整列，不下移到按钮；公共层不接模型、查询、导航或第二份业务状态。接口、剩余范围与运行缺口见[组件目录](component-catalog.md#第六阶段-e周视图日期列头接入)和[工程记录](engineering.md#第六阶段-e周视图日期列头接入)。
 
-统一搜索 2K-8 在受控 Session 内按需读取全来源标签使用元数据，复用原全枚举依赖、同批实体及 TagUsage 的唯一计数规则。真实统计与 injected 来源分开；公开 TagQueryUsageSummary 仅含次数，最近排序不外传精确时间。既有来源/隐私/宿主门禁约束全部发布；性能、生产监听、指定复核和完整接口见[权威设计 §9.44](unified-search-commands.md#944-阶段-2k-8全来源标签使用统计的只读存储适配与受门禁发布)。
+统一搜索 2K-8 在受控 Session 内按需读取全来源标签使用元数据，复用原全枚举依赖、同批实体及 TagUsage 的唯一计数规则。真实统计与 injected 来源分开；公开 TagQueryUsageSummary 仅含次数，最近排序不外传精确时间。既有来源/隐私/宿主门禁约束全部发布；性能、生产监听、指定复核和完整接口见权威设计 §9.44。
 
-统一搜索 2K-5 在 Services 显式注入 ClipboardHistoryStore，单次全文件读取后按原 ClipboardHistoryFile 解码；缺失、解码成功与读取/格式失败分开表达。ClipboardContentQueryReader 原样装入 Batch，ReadSession.prepareClipboard 复用当前查询、隐私失效、冻结和发布门禁，宿主不持有底层 owner。磁盘值快照不代表未保存运行内历史或 SwiftData 跨存储事务；成本、失败、临时文件证据及 partial 交接见[权威设计 §9.41](unified-search-commands.md#941-阶段-2k-5剪贴板历史文件只读适配与受门禁发布)。
+统一搜索 2K-5 在 Services 显式注入 ClipboardHistoryStore，单次全文件读取后按原 ClipboardHistoryFile 解码；缺失、解码成功与读取/格式失败分开表达。ClipboardContentQueryReader 原样装入 Batch，ReadSession.prepareClipboard 复用当前查询、隐私失效、冻结和发布门禁，宿主不持有底层 owner。磁盘值快照不代表未保存运行内历史或 SwiftData 跨存储事务；成本、失败、临时文件证据及 partial 交接见权威设计 §9.41。
 
-统一搜索 2K-4D 沿 areachain-workflow → 架构治理 → areachain-verify；ContentQueryBodyReads、ContentQueryReadSession.prepareBodies 和 DiaryContentQueryReader 共同将正文留在内部许可与唯一冻结所有者中，复用 DiaryContent.read 同批目录校验。外部 Batch 仍仅 metadataOnly；无生产接线。实际接口、授权、生命周期、性能/内存限制和 partial 验证状态统一见[权威设计 §9.40](unified-search-commands.md#940-阶段-2k-4d受搜索生命周期门禁约束的手记正文读取)。
+统一搜索 2K-4D 沿 areachain-workflow → 架构治理 → areachain-verify；ContentQueryBodyReads、ContentQueryReadSession.prepareBodies 和 DiaryContentQueryReader 共同将正文留在内部许可与唯一冻结所有者中，复用 DiaryContent.read 同批目录校验。外部 Batch 仍仅 metadataOnly；无生产接线。实际接口、授权、生命周期、性能/内存限制和 partial 验证状态统一见权威设计 §9.40。
 
-统一搜索 2K-4C 的 Services ContentQueryReadSession 独占注入 ReadOwner，并以固定宿主 ownership、当前 lease、本地失效代次、vault 实际状态和 source/task 约束读取及发布。willLock 同步撤权与只清搜索；Observation 重订阅期间门禁关闭；失焦保留查询但撤显示。只通过协调者系统失效入口改 query，不改草稿/计划/执行或 PrivacyVault 规则。完整事件、线程、外部副本、生产接线责任与 partial 证据见[权威设计 §9.39](unified-search-commands.md#939-阶段-2k-4c搜索隐私失效查询清理与结果发布门禁)。
+统一搜索 2K-4C 的 Services ContentQueryReadSession 独占注入 ReadOwner，并以固定宿主 ownership、当前 lease、本地失效代次、vault 实际状态和 source/task 约束读取及发布。willLock 同步撤权与只清搜索；Observation 重订阅期间门禁关闭；失焦保留查询但撤显示。只通过协调者系统失效入口改 query，不改草稿/计划/执行或 PrivacyVault 规则。完整事件、线程、外部副本、生产接线责任与 partial 证据见权威设计 §9.39。
 
-统一搜索 2K-4B 在 Services 显式启用 DiaryContentQueryReader 的 metadataOnly 读取能力；仓储无实例全枚举避免全局 vault 初始化，快照无正文且不可读，同批 metadata 最后唯一装配。保护标签目录与名字投影独立诊断，不提升图片/回收站隐私覆盖，不生成统计；只用注入上下文与合成库，无生产失效或宿主接线。实际 API、D1～D3 状态、验证及 2K-4C 前置见[权威设计 §9.38](unified-search-commands.md#938-阶段-2k-4b手记元数据只读适配同批标签装配与隔离回归)。
+统一搜索 2K-4B 在 Services 显式启用 DiaryContentQueryReader 的 metadataOnly 读取能力；仓储无实例全枚举避免全局 vault 初始化，快照无正文且不可读，同批 metadata 最后唯一装配。保护标签目录与名字投影独立诊断，不提升图片/回收站隐私覆盖，不生成统计；只用注入上下文与合成库，无生产失效或宿主接线。实际 API、D1～D3 状态、验证及 2K-4C 前置见权威设计 §9.38。
 
-统一搜索 2K-3 在同一 Services 装配链增加 TagContentQueryReader：标签内容由原目录仓储全量只读枚举，关联名字由 ContentQueryTagNames 对同批实体分别投影；完整目录不提升 privateTagIDs 或 diaryPrivacy 覆盖。TaskFamilyContentQueryReader 原上下文入口同步装配所有已接来源，统计只接受明确注入并记录来源，不读取手记补齐统计。纯值冻结、失败及指定复核 partial 的唯一交接见[权威设计第 9.36 节](unified-search-commands.md#936-阶段-2k-3标签目录的-swiftdata-只读适配与同批装配)。
+统一搜索 2K-3 在同一 Services 装配链增加 TagContentQueryReader：标签内容由原目录仓储全量只读枚举，关联名字由 ContentQueryTagNames 对同批实体分别投影；完整目录不提升 privateTagIDs 或 diaryPrivacy 覆盖。TaskFamilyContentQueryReader 原上下文入口同步装配所有已接来源，统计只接受明确注入并记录来源，不读取手记补齐统计。纯值冻结、失败及指定复核 partial 的唯一交接见权威设计第 9.36 节。
 
-统一搜索 2K-2 的 TaskFamilyContentQueryReader 在 Services 共用 2K-1 任务快照读取、独立习惯读取和关联标签装配，一份 Batch 流入既有 ReadOwner。观察时刻是读取调用的明确依赖，Calendar 必须与证据解释环境一致；冻结查询 today 不充当时钟。BatchRoutineFacts.checkSourceProblem 跨过空定义集保留无法归属的记录缺口，普通局部缺口仍由按习惯/日期覆盖表达。没有模型/仓储写入或生产接线，范围、全记录读取成本及 partial 复核见[权威设计第 9.35 节](unified-search-commands.md#935-阶段-2k-2习惯与打卡的-swiftdata-只读适配及任务类同批装配)。
+统一搜索 2K-2 的 TaskFamilyContentQueryReader 在 Services 共用 2K-1 任务快照读取、独立习惯读取和关联标签装配，一份 Batch 流入既有 ReadOwner。观察时刻是读取调用的明确依赖，Calendar 必须与证据解释环境一致；冻结查询 today 不充当时钟。BatchRoutineFacts.checkSourceProblem 跨过空定义集保留无法归属的记录缺口，普通局部缺口仍由按习惯/日期覆盖表达。没有模型/仓储写入或生产接线，范围、全记录读取成本及 partial 复核见权威设计第 9.35 节。
 
-统一搜索 2K-1 的 Services `TaskContentQueryReader` 同步读取调用方注入的上下文，输出纯值 Batch；Domain 与生产 UI 未修改。实体只在 MainActor 使用，来源代次仍由原 ReadOwner.begin 管理。任务/子任务之外保持未提供，完整性不等同磁盘事务原子性。接口、未保存变化、失败和指定复核 partial 见[权威设计第 9.34 节](unified-search-commands.md#934-阶段-2k-1任务与子任务的-swiftdata-只读快照适配)。
+统一搜索 2K-1 的 Services `TaskContentQueryReader` 同步读取调用方注入的上下文，输出纯值 Batch；Domain 与生产 UI 未修改。实体只在 MainActor 使用，来源代次仍由原 ReadOwner.begin 管理。任务/子任务之外保持未提供，完整性不等同磁盘事务原子性。接口、未保存变化、失败和指定复核 partial 见权威设计第 9.34 节。
 
-统一搜索 2J-3C 的 ContentQueryReadOwner 在 Domain 单独保留一份冻结 Batch 值与读取来源代次，任务只含身份和预算；同步求值产生不可外部拼装的候选票据，核验来源与当前任务后才完整发布。发布结果仅沿原 Pagination/Browse 保留一条安全展示来源链；来源代次、任务身份、提供者预算、展示 sourceID 和 revision 独立。无进展、失败和普通取消保留最后完整结果；保护失效入口丢弃本所有者引用并拒绝旧票据，但未接真实锁定/宿主缓存清理。接口与同步取消限制只见[权威设计第 9.33 节](unified-search-commands.md#933-阶段-2j-3c预算续读同快照重新求值与结果发布协调)，指定复核及历史缺口保持 partial。
+统一搜索 2J-3C 的 ContentQueryReadOwner 在 Domain 单独保留一份冻结 Batch 值与读取来源代次，任务只含身份和预算；同步求值产生不可外部拼装的候选票据，核验来源与当前任务后才完整发布。发布结果仅沿原 Pagination/Browse 保留一条安全展示来源链；来源代次、任务身份、提供者预算、展示 sourceID 和 revision 独立。无进展、失败和普通取消保留最后完整结果；保护失效入口丢弃本所有者引用并拒绝旧票据，但未接真实锁定/宿主缓存清理。接口与同步取消限制只见权威设计第 9.33 节，指定复核及历史缺口保持 partial。
 
-统一搜索 2J-3B 在纯 Domain 中组合既有 Display/Browse。DisplaySnapshot 以不可变引用持有安全来源，sourceID 绑定结果集与排序，version 绑定单次可见性修订；分页只持有三类前缀进度及身份，浏览选择/展开仍唯一属于 BrowseState。每次加载复用来源并经原 publish 发布；新来源 reset 重建首段并返回稳定身份锚点，未引入查询、排序、片段或读取调度。接口、计数/保护与指定复核 partial 唯一见[权威设计第 9.32 节](unified-search-commands.md#932-阶段-2j-3b展示分页组内分段与浏览状态接续)，无生产 UI 或真实焦点/滚动验收。
+统一搜索 2J-3B 在纯 Domain 中组合既有 Display/Browse。DisplaySnapshot 以不可变引用持有安全来源，sourceID 绑定结果集与排序，version 绑定单次可见性修订；分页只持有三类前缀进度及身份，浏览选择/展开仍唯一属于 BrowseState。每次加载复用来源并经原 publish 发布；新来源 reset 重建首段并返回稳定身份锚点，未引入查询、排序、片段或读取调度。接口、计数/保护与指定复核 partial 唯一见权威设计第 9.32 节，无生产 UI 或真实焦点/滚动验收。
 
-统一搜索 2J-3A 新增纯 Domain 展示分组与浏览状态层，位于 Presenter 之后；顶层保存同批安全来源，单位及选择仅引用类型化身份。DisplayBuilder 不重新匹配/排序，BrowseState 不触及 CommandDraftTargets 或系统焦点。稳定组、显式可见成员、版本拒绝和打开/焦点意图的唯一契约及验收见[权威设计第 9.31 节](unified-search-commands.md#931-阶段-2j-3a展示分组可见命中序列与键盘选择)；尚无生产接线，指定复核及历史缺口保留。
+统一搜索 2J-3A 新增纯 Domain 展示分组与浏览状态层，位于 Presenter 之后；顶层保存同批安全来源，单位及选择仅引用类型化身份。DisplayBuilder 不重新匹配/排序，BrowseState 不触及 CommandDraftTargets 或系统焦点。稳定组、显式可见成员、版本拒绝和打开/焦点意图的唯一契约及验收见权威设计第 9.31 节；尚无生产接线，指定复核及历史缺口保留。
 
-统一搜索 2J-2B 的 ContentQueryPresenter.project 在 Domain 消费 ContentQuerySortedResponse，按完整 ordered.id 输出纯文本、结构化元数据/所属关系和字素高亮映射。顶层保留一次原来源，行内只含展示值与公开字段展开引用；SortFields 与排序共享提取，SortContext 绑定同批条件形状以核验证据。当前消费者仅领域测试，无 UI/IO/缓存/执行；安全边界、预算、原生两行未验及指定复核 partial 见[权威设计第 9.30 节](unified-search-commands.md#930-阶段-2j-2b安全摘要命中片段与高亮映射)。
+统一搜索 2J-2B 的 ContentQueryPresenter.project 在 Domain 消费 ContentQuerySortedResponse，按完整 ordered.id 输出纯文本、结构化元数据/所属关系和字素高亮映射。顶层保留一次原来源，行内只含展示值与公开字段展开引用；SortFields 与排序共享提取，SortContext 绑定同批条件形状以核验证据。当前消费者仅领域测试，无 UI/IO/缓存/执行；安全边界、预算、原生两行未验及指定复核 partial 见权威设计第 9.30 节。
 
-统一搜索 2J-2A 在 Domain 增加 ContentQuerySorter.sort，消费原批次响应及同次构造的最小不可变 ContentQuerySortContext。上下文只保留条件 ID、原文字条件、显式模式标记与日期环境，不保存 Session、宿主状态或原始对象；排序 API 不接受替换查询。安全投影只用于校验证据、分档与真实时间，输出身份序列与解释，source 原样保留保护/完整性/诊断和墓碑 groups。生产消费者、片段、UI、分页与缓存均未接入；规则和指定复核 partial 见[权威设计第 9.29 节](unified-search-commands.md#929-阶段-2j-2a安全聚合结果的相关性与最近排序)。
+统一搜索 2J-2A 在 Domain 增加 ContentQuerySorter.sort，消费原批次响应及同次构造的最小不可变 ContentQuerySortContext。上下文只保留条件 ID、原文字条件、显式模式标记与日期环境，不保存 Session、宿主状态或原始对象；排序 API 不接受替换查询。安全投影只用于校验证据、分档与真实时间，输出身份序列与解释，source 原样保留保护/完整性/诊断和墓碑 groups。生产消费者、片段、UI、分页与缓存均未接入；规则和指定复核 partial 见权威设计第 9.29 节。
 
-统一搜索 2J-1 的 ContentQueryBatchReader 在 Domain 同步装配九个原提供者。批次是唯一 Session、主快照、日期环境与辅助事实的值输入边界；共享任务嵌套视图只装配一次，墓碑保留平面子项，原匹配/安全投影继续由各提供者负责。类型化结果与来源反馈不持有原批次、实体或操作能力；完整性按类型、来源、未知、保护、历史/记录和枚举分层。真实仓储事务、异步代次、隐私失效、UI、排序/片段/分页及执行均未接入；接口、当前测试消费者与指定复核 partial 见[权威设计第 9.28 节](unified-search-commands.md#928-阶段-2j-1同步批次跨提供者类型化结果与完整性汇总)。
+统一搜索 2J-1 的 ContentQueryBatchReader 在 Domain 同步装配九个原提供者。批次是唯一 Session、主快照、日期环境与辅助事实的值输入边界；共享任务嵌套视图只装配一次，墓碑保留平面子项，原匹配/安全投影继续由各提供者负责。类型化结果与来源反馈不持有原批次、实体或操作能力；完整性按类型、来源、未知、保护、历史/记录和枚举分层。真实仓储事务、异步代次、隐私失效、UI、排序/片段/分页及执行均未接入；接口、当前测试消费者与指定复核 partial 见权威设计第 9.28 节。
 
-统一搜索 2I 的 RoutineOccurrenceQueryProvider 在 Domain 同步消费完整 Session、定义/记录快照、按习惯限定的记录覆盖、带来源的排程证据及显式窗口。记录归并与历史判断仍属于 2C-1；仅开放 History.segments 的既有分段，新增层负责有界枚举、独立每日结果和覆盖反馈。派生 open 不创建 CheckSnapshot 或数据库行；所属标题只用于上下文，读取引用不授予操作权限。当前仅合成领域测试消费，真实仓储、生产 UI、聚合与写入未接线；接口、预算、状态分类和指定复核缺口见[权威设计第 9.27 节](unified-search-commands.md#927-阶段-2i显式日期窗口内的习惯执行情况只读提供者)。
+统一搜索 2I 的 RoutineOccurrenceQueryProvider 在 Domain 同步消费完整 Session、定义/记录快照、按习惯限定的记录覆盖、带来源的排程证据及显式窗口。记录归并与历史判断仍属于 2C-1；仅开放 History.segments 的既有分段，新增层负责有界枚举、独立每日结果和覆盖反馈。派生 open 不创建 CheckSnapshot 或数据库行；所属标题只用于上下文，读取引用不授予操作权限。当前仅合成领域测试消费，真实仓储、生产 UI、聚合与写入未接线；接口、预算、状态分类和指定复核缺口见权威设计第 9.27 节。
 
-统一搜索 2H-1 的 TrashTombstoneReader 只消费注入快照与范围完整性，按类型化身份隔离重复后调用 SoftDelete 的原同戳规则，输出安全对象及引用式分组。墓碑读取与 ImageAssociationReader / AttachmentBrowseFacts 的 live-only 边界分离；恢复条件没有执行资格或闭包。TodoItem.snapshot 过滤已删子任务，真实适配不得据此声明墓碑完整。当前消费者仅四套合成墓碑测试；接口、保护计数限制与指定复核缺口统一见[权威设计第 9.25 节](unified-search-commands.md#925-阶段-2h-1回收站墓碑删除关联与恢复条件的只读契约)。
+统一搜索 2H-1 的 TrashTombstoneReader 只消费注入快照与范围完整性，按类型化身份隔离重复后调用 SoftDelete 的原同戳规则，输出安全对象及引用式分组。墓碑读取与 ImageAssociationReader / AttachmentBrowseFacts 的 live-only 边界分离；恢复条件没有执行资格或闭包。TodoItem.snapshot 过滤已删子任务，真实适配不得据此声明墓碑完整。当前消费者仅四套合成墓碑测试；接口、保护计数限制与指定复核缺口统一见权威设计第 9.25 节。
 
-统一搜索 2G 的 ClipboardQueryProvider 同步消费注入 ClipboardHistoryRecord；统一 Session 与显式模式原文加只读筛选 Session 互斥。ClipboardTextMatching 复用旧三模式语义并将正则编译移到单次请求；ClipboardHistorySession 的偏好、监听、保存和历史读取不变。结果仅含必要纯文本/元数据、字段依据与负载类别，类型覆盖、历史读取覆盖、未知对象及排序完整性分别表达。显式 clipboard 范围之外不求值；来源沿既有类型化条件，图片自身引用不经过任务附件关联。当前仅合成领域测试消费；契约及指定复核缺口见[权威设计第 9.24 节](unified-search-commands.md#924-阶段-2g显式剪贴板历史的只读搜索提供者)。
+统一搜索 2G 的 ClipboardQueryProvider 同步消费注入 ClipboardHistoryRecord；统一 Session 与显式模式原文加只读筛选 Session 互斥。ClipboardTextMatching 复用旧三模式语义并将正则编译移到单次请求；ClipboardHistorySession 的偏好、监听、保存和历史读取不变。结果仅含必要纯文本/元数据、字段依据与负载类别，类型覆盖、历史读取覆盖、未知对象及排序完整性分别表达。显式 clipboard 范围之外不求值；来源沿既有类型化条件，图片自身引用不经过任务附件关联。当前仅合成领域测试消费；契约及指定复核缺口见权威设计第 9.24 节。
 
 工程采用 Xcode 文件系统同步组：往对应文件夹添加 `.swift` 即可纳入编译，无需频繁改 `project.pbxproj`。
 
@@ -295,7 +295,7 @@ AreaChain/
 
 该入口统一传递 [Config/QA.xcconfig](../Config/QA.xcconfig) 与 `AREACHAIN_QA_IDENTIFIER`，在原 `build/.build.lock` 单次最多900秒的同一锁内先 `build-for-testing`、核验精确身份／沙盒／无受限钥匙串权限，再串行 `test-without-building`，结束后重新验包。六项真实钥匙串授权（含 `TEST_RUNNER_` 形式）均清除；不修改个人签名。省略批次时仍为原 PrivacyQA 目录与标识。源码全集前／锁后／执行后核对仍由调用方完成；性能期限、进程身份与测试命中需本批外层记录，不因 build.sh 返回零就推断运行验收。
 
-`AreaChainEntry.main` 在 SwiftUI App 及其属性包装器构造、持久化之前调用 `AppStartup.requireAllowed()`；App.init、Delegate 和 Commands 复用同一冻结决策。编译符号与签名 plist 的 schema／role／QA identifier 必须一致；合法 XCTest 要求标志存在（允许空值）且 dyld 已加载测试注入库。拒绝为无内容类别诊断及退出码78，不退生产依赖；合法测试仅建立无自动保存的内存容器。正常 application 身份保持默认生产路径，用注入工厂验证兼容，不能启动日用应用验证该分支。旧包不能追认；该门禁防止 QA 启动偏离，不是抗恶意代码注入的认证机制。证据与限制见 [C-M2](unified-search-commands.md#987-里程碑-c-m2qa-启动门禁与两种有界排版原型)。
+`AreaChainEntry.main` 在 SwiftUI App 及其属性包装器构造、持久化之前调用 `AppStartup.requireAllowed()`；App.init、Delegate 和 Commands 复用同一冻结决策。编译符号与签名 plist 的 schema／role／QA identifier 必须一致；合法 XCTest 要求标志存在（允许空值）且 dyld 已加载测试注入库。拒绝为无内容类别诊断及退出码78，不退生产依赖；合法测试仅建立无自动保存的内存容器。正常 application 身份保持默认生产路径，用注入工厂验证兼容，不能启动日用应用验证该分支。旧包不能追认；该门禁防止 QA 启动偏离，不是抗恶意代码注入的认证机制。证据与限制见 C-M2。
 
 自动化系统探测只查询随机不存在的钥匙串条目，禁止提示和写入；它不是实际创建、读取、撤销的证明。QA 使用 `AreaChain.entitlements`，不具备受限钥匙串访问组，因此上述命令只适合非钥匙串 PrivacyQA。隔离真实钥匙串须走开发签名注入的 `AreaChain.SystemUnlock.entitlements`，见工程手册 PHASE-6 补证。真实启用前应另行确认系统密钥、取消、重启／重编译与签名兼容，再确认真实数据迁移；不得为通过验收改变访问控制或默默改签名／权限。上述命令不安装应用，普通 `build.sh` 仍只构建验签；安装入口另见签名说明。
 
@@ -323,31 +323,31 @@ AreaChain/
 
 `ContentQueryParser` 在 Domain 分离内容查询与现有 `CommandPathResult`；词法、原子条件、矛盾检查、日期、范围与字段适用性分别实现。原始文本和 UTF-16 范围不被规范化覆盖。查询输出不访问 SwiftData、附件拥有者、打卡或剪贴板，也没有执行入口。消费者为原 ContentQuery 领域测试及下述 1B-2B reducer 与测试；旧 BoardSearch 保持原生产语义。`/tasks` 目录 inclusion 的未决状态改为 ordinaryContent，具体组成与停用选择由 `ContentQueryScopeContract` 声明。
 
-日期输出民事日闭区间；习惯定义按区间内存在应执行日且每个定义只返回一次的提供者契约映射，不在本阶段实现命中或去重。`ContentQueryApplicability` 返回真实字段、所属记录/排程投影要求、不适用或需要具体执行日；不得忽略不适用条件扩大结果。语法和日期语义、后续页面绑定要求及 partial 验收见[权威设计第 9.8 节](unified-search-commands.md#98-阶段-1b-2a内容查询语法范围与日期契约)。
+日期输出民事日闭区间；习惯定义按区间内存在应执行日且每个定义只返回一次的提供者契约映射，不在本阶段实现命中或去重。`ContentQueryApplicability` 返回真实字段、所属记录/排程投影要求、不适用或需要具体执行日；不得忽略不适用条件扩大结果。语法和日期语义、后续页面绑定要求及 partial 验收见权威设计第 9.8 节。
 
 ### 页面查询状态契约（1B-2B）
 
 `ContentQuerySession` 是宿主独立持有的 Domain 值；`ContentQueryReducer` 接收显式访问/编辑/刷新/回声事件，输出新状态及页面同步/返回意图。页面由调用方传入 `ContentQueryPageContext`，没有反向依赖 WorkspaceNavigation、共享偏好或系统 IO。来源与稳定条件 ID 不从文字推断；自动条件没有伪造 NSRange。页面快照仅供默认映射，完整查询是有效条件的权威来源，`ContentQueryPageProjection` 只读派生可表达字段与扩展条件身份，不能用旧 BoardFilter 覆盖完整 AST。
 
-原 ContentQueryValidation 的可满足性算法增加无位置语义入口，保留原文本诊断 API。新状态当前仅由 Domain 测试消费；操作草稿不在其字段和副作用类型中，滚动由宿主持有，生产页面和提供者未接线。生命周期、映射现状差异、日期/标签适配及实际证据统一见[权威设计第 9.9 节](unified-search-commands.md#99-阶段-1b-2b页面查询上下文与纯状态转移)。
+原 ContentQueryValidation 的可满足性算法增加无位置语义入口，保留原文本诊断 API。新状态当前仅由 Domain 测试消费；操作草稿不在其字段和副作用类型中，滚动由宿主持有，生产页面和提供者未接线。生命周期、映射现状差异、日期/标签适配及实际证据统一见权威设计第 9.9 节。
 
 ### 操作草稿领域契约（1C-1）
 
 `CommandDraftSession` 由宿主持有当前与保留草稿，`CommandDraftReducer` 只做显式事件的纯转移。`CommandDraft` 用身份/版本守住类型化参数与编辑基线，`CommandDraftTargets` 固定具体对象集合；目标参数只派生生成，正文不进入查询真值。`CommandHostSession` 并列组合查询和操作，查询转移委托原 `ContentQueryReducer`，返回/同步与展示信号不清草稿。当前消费者只有领域测试，没有生产服务或 UI 接线。
 
-保留集合不承担队列和执行；外部值不会自动更新基线，重载/放弃须匹配版本。没有持久化或私密保护实现，后续编辑器接线仍需原隐私机制。完整契约、1C-2/1C-3 边界和 partial 验证只维护在[权威设计第 9.10 节](unified-search-commands.md#910-阶段-1c-1操作草稿固定目标与编辑保护)。
+保留集合不承担队列和执行；外部值不会自动更新基线，重载/放弃须匹配版本。没有持久化或私密保护实现，后续编辑器接线仍需原隐私机制。完整契约、1C-2/1C-3 边界和 partial 验证只维护在权威设计第 9.10 节。
 
 ### 待执行计划与纯生命周期（1C-2）
 
 `CommandHostSession` 增加 `CommandPlan` 与可选 `CommandExecutionRun`。显式入计划通过原 DraftSession 的窄入口移交草稿；计划项持有唯一参数，返回编辑就地进行，移除退回 retained。封存按计划修订版将内容移入不可编辑快照，新计划与旧运行没有可分别提交的正文副本。查询 reducer 和展示信号没有修改这些所有者的权限。运行内身份防重用，不建立持久化任务系统。
 
-`CommandPlanValidation` 复用参数/目标检查，新增依赖图与类型化创建输出引用；`CommandPlanSemantics` 只处理已核实赋值白名单。`CommandExecutionRun` 接收纯结果协议，区分 local 提交确定性、external 效果、依赖阻塞和原子组；没有 handler、IO、真实事务、重试或撤销实现。目录全部 unwired；协议 ready 不等于可执行。新接口只由宿主组合和 Domain 测试消费。详细身份/所有权、合并限制、适配边界、1C-3 接续及 partial 证据只维护在[权威设计第 9.11 节](unified-search-commands.md#911-阶段-1c-2待执行计划依赖与纯生命周期协议)。
+`CommandPlanValidation` 复用参数/目标检查，新增依赖图与类型化创建输出引用；`CommandPlanSemantics` 只处理已核实赋值白名单。`CommandExecutionRun` 接收纯结果协议，区分 local 提交确定性、external 效果、依赖阻塞和原子组；没有 handler、IO、真实事务、重试或撤销实现。目录全部 unwired；协议 ready 不等于可执行。新接口只由宿主组合和 Domain 测试消费。详细身份/所有权、合并限制、适配边界、1C-3 接续及 partial 证据只维护在权威设计第 9.11 节。
 
 ### 主动转交与运行内所有权（1C-3）
 
 `CommandHandoffCoordinator` 是注入的 MainActor 引用对象，唯一登记参与转交的指令宿主、当前 lease（协调者/宿主/所有权代次/修订）及票据状态；不作为全局单例或窗口管理器。`CommandHostEvent` 委托原 HostSession，原会话值仅作快照/纯计算。未来两个入口必须共用此协调者，不能从旧值副本取得执行所有权；所有延迟事件保留产生时的 lease。
 
-准备与确认不移动内容；提交重新检查双方、在局部候选中更新草稿/计划与引用，单次发布同时完成目标接管和源撤权。任何未释放 execution、未决草稿确认、非空目标操作或旧修订都拒绝。查询冻结来源页语义与日期上下文，目标持有自己的导航返回位置；重新绑定须显式请求。原生句柄需适配确认接续，认证/隐私保护不继承；运行不迁移、没有业务执行或磁盘写入。资格、状态机、身份映射、后续适配门禁与 partial 证据只维护在[权威设计第 9.12 节](unified-search-commands.md#912-阶段-1c-3跨入口主动转交与唯一所有权)。
+准备与确认不移动内容；提交重新检查双方、在局部候选中更新草稿/计划与引用，单次发布同时完成目标接管和源撤权。任何未释放 execution、未决草稿确认、非空目标操作或旧修订都拒绝。查询冻结来源页语义与日期上下文，目标持有自己的导航返回位置；重新绑定须显式请求。原生句柄需适配确认接续，认证/隐私保护不继承；运行不迁移、没有业务执行或磁盘写入。资格、状态机、身份映射、后续适配门禁与 partial 证据只维护在权威设计第 9.12 节。
 
 ### 公共启用开关（第三阶段 A）
 
@@ -361,32 +361,32 @@ AreaChain/
 
 `TodoQueryProvider.read` 位于 Domain，同步消费调用方注入的 TodoSnapshot 和 ContentQuerySession 有效条件，返回只读类型化结果、字段命中依据、覆盖和诊断。请求没有仓储、文件、偏好、系统时间或写入能力；结果身份沿 CommandObjectReference，requestID 只关联本次请求，不授予操作或过期校验能力。未知辅助数据、重复身份与坏日期显式处理；新接口只由领域测试消费。
 
-页面日期分别调用 Classification / AgendaProjection / ItemsListing；真实共同标签关联抽为 ItemsListing.hasTag，原列表继续使用。Classification.matchesDate 增加默认兼容的 Calendar 注入，ItemsListing 传递自身日历。文本沿 BoardSearch 的本地化匹配，不改旧搜索入口；完整契约、测试和指定复核缺口见[权威设计第 9.14 节](unified-search-commands.md#914-阶段-2atodo-只读快照提供者与类型化结果)。
+页面日期分别调用 Classification / AgendaProjection / ItemsListing；真实共同标签关联抽为 ItemsListing.hasTag，原列表继续使用。Classification.matchesDate 增加默认兼容的 Calendar 注入，ItemsListing 传递自身日历。文本沿 BoardSearch 的本地化匹配，不改旧搜索入口；完整契约、测试和指定复核缺口见权威设计第 9.14 节。
 
 ### 子任务快照查询提供者（统一搜索 2B）
 
-`SubtaskQueryProvider.read` 同步消费原 TodoSnapshot 内嵌的 SubtaskSnapshot 与 Session 有效条件，返回独立子身份、父引用及最小值投影。父子身份歧义与数据缺失显式诊断；自身文字/标签/完成/创建时间不能被父字段替代。父安排日和已确认页面约束分别附 parent 字段依据，不先调用 TodoQueryProvider 筛整份父查询。两提供者共用窄值匹配/校验与父级页面规则，公共结果证据类型保留原文件；没有全类型引擎或新的状态所有者。当前仅领域测试消费，真实仓储/UI/聚合/执行未接入；字段对照、条件限制、2A 回归和 partial 复核状态统一维护在[权威设计第 9.15 节](unified-search-commands.md#915-阶段-2b活子任务独立结果的只读快照提供者)。
+`SubtaskQueryProvider.read` 同步消费原 TodoSnapshot 内嵌的 SubtaskSnapshot 与 Session 有效条件，返回独立子身份、父引用及最小值投影。父子身份歧义与数据缺失显式诊断；自身文字/标签/完成/创建时间不能被父字段替代。父安排日和已确认页面约束分别附 parent 字段依据，不先调用 TodoQueryProvider 筛整份父查询。两提供者共用窄值匹配/校验与父级页面规则，公共结果证据类型保留原文件；没有全类型引擎或新的状态所有者。当前仅领域测试消费，真实仓储/UI/聚合/执行未接入；字段对照、条件限制、2A 回归和 partial 复核状态统一维护在权威设计第 9.15 节。
 
 ### 习惯单日读取与历史证据（统一搜索 2C-1）
 
-`ContentQueryOccurrenceDay` 从既有条件读取唯一 on，`ContentQueryDateWindow` 只计算 date 窗口；没有新的可变查询状态或持久化字段。`RoutineCheckReading` 使用 CheckSnapshot 和限定习惯/区间的完整性声明，返回单个业务身份的读取状态、输入下标与重复/冲突诊断。`RoutineScheduleHistory` 只解释调用方注明来源及适用区间的证据，当前定义仅证明明确观察日；`RoutineOccurrenceEvaluation` 组合排程与记录状态，不能把完整无记录单独当 open。它们不接旧 DayBoard/Agenda 索引，不修改七张表、排程写入或历史数据。完整协议和 2C-2 真实来源映射缺口只见[权威设计第 9.17 节](unified-search-commands.md#917-阶段-2c-1习惯执行日历史证据与只读状态契约)。
+`ContentQueryOccurrenceDay` 从既有条件读取唯一 on，`ContentQueryDateWindow` 只计算 date 窗口；没有新的可变查询状态或持久化字段。`RoutineCheckReading` 使用 CheckSnapshot 和限定习惯/区间的完整性声明，返回单个业务身份的读取状态、输入下标与重复/冲突诊断。`RoutineScheduleHistory` 只解释调用方注明来源及适用区间的证据，当前定义仅证明明确观察日；`RoutineOccurrenceEvaluation` 组合排程与记录状态，不能把完整无记录单独当 open。它们不接旧 DayBoard/Agenda 索引，不修改七张表、排程写入或历史数据。完整协议和 2C-2 真实来源映射缺口只见权威设计第 9.17 节。
 
-统一搜索 2C-2 的 `RoutineQueryProvider` 仍为 Domain 注入快照纯函数，唯一实际消费者是四套 RoutineQuery Domain 测试。Session 是全部有效条件的权威来源；历史、记录完整性和来源声明由请求提供，结果只含一次定义投影、见证日/显式执行日及对象诊断，不持有 SwiftData 实体或操作能力。旧页面适配与新状态读取分离，真实历史转换与持久化仍未接线；详见[权威设计第 9.18 节](unified-search-commands.md#918-阶段-2c-2习惯定义只读快照提供者)。
+统一搜索 2C-2 的 `RoutineQueryProvider` 仍为 Domain 注入快照纯函数，唯一实际消费者是四套 RoutineQuery Domain 测试。Session 是全部有效条件的权威来源；历史、记录完整性和来源声明由请求提供，结果只含一次定义投影、见证日/显式执行日及对象诊断，不持有 SwiftData 实体或操作能力。旧页面适配与新状态读取分离，真实历史转换与持久化仍未接线；详见权威设计第 9.18 节。
 
-统一搜索 2D 的 `DiaryQueryProvider` 只消费注入 DiarySnapshot、完整查询与标签/敏感判定事实，沿 DiaryPrivacy 和既有文字/标签/日期规则求值。正文不可读采用三态，身份和安全诊断不受布尔短路遮蔽；DiaryQueryPresentation 的隐藏分支没有正文或正文证据字段。contentTypes 仅扩展 diary 合法组成，原生产页与其他提供者不接手记隐私模型。当前消费者只有合成 Domain 测试，没有 DiaryContent/vault、仓储、UI 或执行调用；来源完整性、锁定缓存失效和异步代次均留在后续真实适配，具体契约及 partial 验收见[权威设计第 9.19 节](unified-search-commands.md#919-阶段-2d手记只读快照提供者)。
+统一搜索 2D 的 `DiaryQueryProvider` 只消费注入 DiarySnapshot、完整查询与标签/敏感判定事实，沿 DiaryPrivacy 和既有文字/标签/日期规则求值。正文不可读采用三态，身份和安全诊断不受布尔短路遮蔽；DiaryQueryPresentation 的隐藏分支没有正文或正文证据字段。contentTypes 仅扩展 diary 合法组成，原生产页与其他提供者不接手记隐私模型。当前消费者只有合成 Domain 测试，没有 DiaryContent/vault、仓储、UI 或执行调用；来源完整性、锁定缓存失效和异步代次均留在后续真实适配，具体契约及 partial 验收见权威设计第 9.19 节。
 
 ### 图片关联只读基础（2E-1）
 
-`ImageAssociationReader` 只消费注入图片纯值元数据、三个拥有者快照、保护资料和有范围的完整性声明。拥有者身份、图片身份、关联枚举及手记保护资料分别检查；墓碑参与唯一性，未知不变成没有图片。`AttachmentBrowseFacts` 承载原 `AttachmentAccess.canBrowse` 的纯条件，旧实体入口委托并保留行为；新读取器复用 `DiaryQueryPrivacy`，公开结果不存整份拥有者或敏感图片明细。当前只有合成领域测试消费，没有仓储、文件、查询匹配、生产 UI 或权限接线。类型化所属属性、受保护状态及 2E-2 接入限制以[权威设计第 9.20 节](unified-search-commands.md#920-阶段-2e-1类型化图片拥有者关联完整性与只读可浏览投影)为准。
+`ImageAssociationReader` 只消费注入图片纯值元数据、三个拥有者快照、保护资料和有范围的完整性声明。拥有者身份、图片身份、关联枚举及手记保护资料分别检查；墓碑参与唯一性，未知不变成没有图片。`AttachmentBrowseFacts` 承载原 `AttachmentAccess.canBrowse` 的纯条件，旧实体入口委托并保留行为；新读取器复用 `DiaryQueryPrivacy`，公开结果不存整份拥有者或敏感图片明细。当前只有合成领域测试消费，没有仓储、文件、查询匹配、生产 UI 或权限接线。类型化所属属性、受保护状态及 2E-2 接入限制以权威设计第 9.20 节为准。
 
 第三阶段 G 的 ModernCheckbox 仅承载外部完成态、共享图形与一次点击反馈；TaskRow 管理 PendingCompletionManager，行内子任务沿原 UUID 动作链直接提交，四象限保留显式展示值。集中几何、紧凑表现与验收入口见[组件目录](component-catalog.md#第三阶段-g公共任务完成控件与行内子任务)，Theme 不持有模型、保存或反悔计时；ModernTaskTitle 保持原实现。详情子任务后续 H 仅以明确表现接入公共完成控件，原行编辑/保存及模型边界不变，见[组件目录](component-catalog.md#第三阶段-h详情子任务完成控件接入)。
 
-统一搜索 2E-2A 的 `ImageQueryProvider` 在一次同步读取中消费上述关联接口，只匹配公开 ImageBrowseProjection 和共用 ImageOwnerProjection。静态类型分析保留三类拥有者分支，实例匹配明确所属字段；RoutineScheduleHistory 增加公开身份/创建日标量入口，旧快照入口兼容。图片结果覆盖、对象未知与关联保护状态独立，生产数据库、文件访问、UI 与指令执行仍未接线。唯一接口、支持矩阵、验证及 2E-2B 边界见[权威设计第 9.21 节](unified-search-commands.md#921-阶段-2e-2a公开图片元数据的只读搜索提供者)。
+统一搜索 2E-2A 的 `ImageQueryProvider` 在一次同步读取中消费上述关联接口，只匹配公开 ImageBrowseProjection 和共用 ImageOwnerProjection。静态类型分析保留三类拥有者分支，实例匹配明确所属字段；RoutineScheduleHistory 增加公开身份/创建日标量入口，旧快照入口兼容。图片结果覆盖、对象未知与关联保护状态独立，生产数据库、文件访问、UI 与指令执行仍未接线。唯一接口、支持矩阵、验证及 2E-2B 边界见权威设计第 9.21 节。
 
 
-统一搜索 2E-2B 在三个记录提供者的读取边界构建 ContentQueryImageRead，原始图片资料只通过 ContentQueryImageInput 注入；拥有者和 Diary metadata 始终来自当前主请求，预计算响应不作为输入。has:image 共用 ImageAssociationReader 的四态与类型化 ownerKey，再适配各自三态/诊断；Todo 增加对象未知及确定性标记。该纯值上下文每次 read 重建，没有持久缓存、授权票据或真实数据访问；无图片条件不读取附件资料。核心接口、保护边界与 partial 证据见[权威设计第 9.22 节](unified-search-commands.md#922-阶段-2e-2b三类记录的图片存在性查询)。
+统一搜索 2E-2B 在三个记录提供者的读取边界构建 ContentQueryImageRead，原始图片资料只通过 ContentQueryImageInput 注入；拥有者和 Diary metadata 始终来自当前主请求，预计算响应不作为输入。has:image 共用 ImageAssociationReader 的四态与类型化 ownerKey，再适配各自三态/诊断；Todo 增加对象未知及确定性标记。该纯值上下文每次 read 重建，没有持久缓存、授权票据或真实数据访问；无图片条件不读取附件资料。核心接口、保护边界与 partial 证据见权威设计第 9.22 节。
 
-统一搜索 2F 的 TagQueryProvider 只消费 TagQuerySnapshot、完整 Session、显式页面视图选项与可选 TagUsageRecord/覆盖声明，不持有 SwiftData 或关联内容。TagUsage.filteredValues 是原目录与新提供者的纯值共用规则；统计读取、计数口径、生产页和写入责任不变。类型覆盖、使用完整性与排序完成分开表达，默认保持输入顺序，不形成全局评分或查询副本。接口、测试及指定复核缺口只见[权威设计第 9.23 节](unified-search-commands.md#923-阶段-2f活标签只读快照搜索提供者)。
+统一搜索 2F 的 TagQueryProvider 只消费 TagQuerySnapshot、完整 Session、显式页面视图选项与可选 TagUsageRecord/覆盖声明，不持有 SwiftData 或关联内容。TagUsage.filteredValues 是原目录与新提供者的纯值共用规则；统计读取、计数口径、生产页和写入责任不变。类型覆盖、使用完整性与排序完成分开表达，默认保持输入顺序，不形成全局评分或查询副本。接口、测试及指定复核缺口只见权威设计第 9.23 节。
 
 ### 公共下拉选择器（第四阶段 A）
 
@@ -413,7 +413,7 @@ DaybookDateCell 以 picker / monthGrid 两种语义呈现共享日期基础，Da
 
 ### 统一搜索原生输入边界（4A-1）
 
-UnifiedSearchInput 只消费宿主发布的 UnifiedSearchBuffer，并把原 lease、版本和编辑/提交意图回交宿主；CommandHandoffCoordinator 仍是 lease 资格的最终验证者。专用 field editor 仅拥有光标、选区、组合文本和本控件撤销，派生候选不能成为业务参数真值。隐私清理使用宿主递增的 privacyRevision 与已清空的显示缓冲，不替代 ContentQueryReadSession 的业务失效，也不涉及敏感操作草稿。当前只有两种合成 QA 宿主，生产搜索仍保留旧实现；接口、证据和缺口统一见[权威设计 §9.45](unified-search-commands.md#945-阶段-4a-1公共原生搜索输入与斜杠补全)。
+UnifiedSearchInput 只消费宿主发布的 UnifiedSearchBuffer，并把原 lease、版本和编辑/提交意图回交宿主；CommandHandoffCoordinator 仍是 lease 资格的最终验证者。专用 field editor 仅拥有光标、选区、组合文本和本控件撤销，派生候选不能成为业务参数真值。隐私清理使用宿主递增的 privacyRevision 与已清空的显示缓冲，不替代 ContentQueryReadSession 的业务失效，也不涉及敏感操作草稿。当前只有两种合成 QA 宿主，生产搜索仍保留旧实现；接口、证据和缺口统一见权威设计 §9.45。
 
 
 ### 习惯月历公共呈现（第六阶段 C）
@@ -430,15 +430,15 @@ Theme 的 DaybookWeekdayPicker 只持外部掩码值和更新回调；排序、�
 
 ### 统一搜索原生结果边界（4A-2）
 
-Features 的 UnifiedSearchController 组合原输入和 ReadSession；UnifiedSearchResults 的原生边界只呈现重新通过门禁的 publication，失效通知同步移除 hosting 子树、公开展开 storage 和本输入的原生缓冲。ContentQueryDisplayUpdates 只广播修订，不拥有资格；ContentQueryExpansionIndex 只保留同批安全身份的位置，不存正文。Domain 的排序、分组、分页与选择保持原实现。标准/紧凑的隔离宿主消费同一结果组件，生产入口、真实打开及操作预览未接线，证据与保留缺口统一见[权威设计 §9.46](unified-search-commands.md#946-阶段-4a-2公共原生搜索结果列表与输入导航)。
+Features 的 UnifiedSearchController 组合原输入和 ReadSession；UnifiedSearchResults 的原生边界只呈现重新通过门禁的 publication，失效通知同步移除 hosting 子树、公开展开 storage 和本输入的原生缓冲。ContentQueryDisplayUpdates 只广播修订，不拥有资格；ContentQueryExpansionIndex 只保留同批安全身份的位置，不存正文。Domain 的排序、分组、分页与选择保持原实现。标准/紧凑的隔离宿主消费同一结果组件，生产入口、真实打开及操作预览未接线，证据与保留缺口统一见权威设计 §9.46。
 
 ### 统一搜索普通操作预览（4A-3A）
 
-UnifiedSearchController 的操作扩展直接读写原协调者 operations，不保存第二份可提交参数。UnifiedSearchBuffer 带可选 CommandDraftStamp，普通字段拼写缓冲只保存原文与产生版本；原生事件必须核验原 lease、草稿和缓冲版本。DaybookPicker 的可选 eventVersion 隔离旧菜单身份，原消费者默认兼容。面板复用 ReadSession.validateDisplayHost 的既有宿主展示门禁，失焦/锁定同步清原生编辑器并卸载树；普通草稿留在协调者，这不是敏感草稿封存。实际链路、支持类型、测试与指定复核缺口见[权威设计 §9.47](unified-search-commands.md#947-阶段-4a-3a普通参数编辑与操作即时预览)。
+UnifiedSearchController 的操作扩展直接读写原协调者 operations，不保存第二份可提交参数。UnifiedSearchBuffer 带可选 CommandDraftStamp，普通字段拼写缓冲只保存原文与产生版本；原生事件必须核验原 lease、草稿和缓冲版本。DaybookPicker 的可选 eventVersion 隔离旧菜单身份，原消费者默认兼容。面板复用 ReadSession.validateDisplayHost 的既有宿主展示门禁，失焦/锁定同步清原生编辑器并卸载树；普通草稿留在协调者，这不是敏感草稿封存。实际链路、支持类型、测试与指定复核缺口见权威设计 §9.47。
 
 ### 统一搜索对象选择边界（4A-3B1）
 
-对象选择只在原 Controller 暂存 Browse 交互；目标身份继续是 CommandObjectReference。操作目标唯一写入 draft.targets，普通 object / objects 参数写入 draft.arguments。候选与目标预览均由 ReadSession 当前发布核验，固定集合不随分页或查询扩张。选择接受带原 lease、草稿 stamp、位置和候选版本，原子草稿事件成功后重新读取展示；没有沿旧许可补发新事件。目标变更缺少新证据时清旧 baseline，arguments 保留。转交后 ownershipRevision 接入既有只读失效观察，撤去旧宿主候选与预览。普通合成草稿仍保留；这不是敏感草稿封存、加密或零化。接口与证据见[权威设计 §9.48](unified-search-commands.md#948-阶段-4a-3b1对象参数选择与操作固定目标的原生接线)。
+对象选择只在原 Controller 暂存 Browse 交互；目标身份继续是 CommandObjectReference。操作目标唯一写入 draft.targets，普通 object / objects 参数写入 draft.arguments。候选与目标预览均由 ReadSession 当前发布核验，固定集合不随分页或查询扩张。选择接受带原 lease、草稿 stamp、位置和候选版本，原子草稿事件成功后重新读取展示；没有沿旧许可补发新事件。目标变更缺少新证据时清旧 baseline，arguments 保留。转交后 ownershipRevision 接入既有只读失效观察，撤去旧宿主候选与预览。普通合成草稿仍保留；这不是敏感草稿封存、加密或零化。接口与证据见权威设计 §9.48。
 
 ### 第八阶段 B 公共滚动装配
 
@@ -447,109 +447,109 @@ Theme 的 `daybookScrollAssembly` 组合指示器策略、Configurator 与原羽
 
 ### 命令草稿隔离保护边界（4A-3C2A）
 
-命令正文采用独立 CommandDraftPayload / SealedCommandDraft v1，复用既有 VaultKeyAccess。CommandDraftContentSession 只拥有内存密文资源和可撤销的同步明文借用；宿主所有权仍唯一归 CommandHandoffCoordinator，成功封存后的一次性 CommandDraftCheckpoint 才可提交引用。Domain 不执行加密/认证，普通快照没有自动解封能力；原 DiaryDraftText 与磁盘格式不变。服务只由合成测试装配，敏感原生编辑、IME/撤销、执行及完整敏感转交未接线。契约、实际消费者、回退和验证缺口见[权威 §9.51](unified-search-commands.md#951-阶段-4a-3c2a命令保护载荷与显式恢复)，不将单测/构建解释为生产安全入口验收。
+命令正文采用独立 CommandDraftPayload / SealedCommandDraft v1，复用既有 VaultKeyAccess。CommandDraftContentSession 只拥有内存密文资源和可撤销的同步明文借用；宿主所有权仍唯一归 CommandHandoffCoordinator，成功封存后的一次性 CommandDraftCheckpoint 才可提交引用。Domain 不执行加密/认证，普通快照没有自动解封能力；原 DiaryDraftText 与磁盘格式不变。服务只由合成测试装配，敏感原生编辑、IME/撤销、执行及完整敏感转交未接线。契约、实际消费者、回退和验证缺口见权威 §9.51，不将单测/构建解释为生产安全入口验收。
 
 ### 命令原生暂持边界（4A-3C2B）
 
-ContentSession 的同步借用仍禁止调用者任意缓存。唯一原生暂持由 CommandDraftNativeOwner 登记，专用 CommandProtectedTextView 只收当前字段/选区，基线及其他参数留原服务。原生成功接受前必须先有同版本密文；连续编辑只在同次已核验提交后签发新 access，旧 access 过期。独立 UndoManager 只留密文，撤销旧正文也重新保护；撤权同步清本控件。系统 IME 与外部 mutable textStorage 不能由该探针提供完整保全，生产入口关闭；具体状态关系、反例、active/planItem 与验证限制见[权威 §9.52](unified-search-commands.md#952-阶段-4a-3c2b原生接受与锁定交错的隔离可行性)。
+ContentSession 的同步借用仍禁止调用者任意缓存。唯一原生暂持由 CommandDraftNativeOwner 登记，专用 CommandProtectedTextView 只收当前字段/选区，基线及其他参数留原服务。原生成功接受前必须先有同版本密文；连续编辑只在同次已核验提交后签发新 access，旧 access 过期。独立 UndoManager 只留密文，撤销旧正文也重新保护；撤权同步清本控件。系统 IME 与外部 mutable textStorage 不能由该探针提供完整保全，生产入口关闭；具体状态关系、反例、active/planItem 与验证限制见权威 §9.52。
 
 
 ### 普通偏好权威入口（3A-1A）
 
-AppPreferences 保留唯一四值及原 UserDefaults 键；兼容可写属性和后续适配共用 readLocalSetting / applyLocalSetting。逐字段修订只计本入口调用，raw 是注入存储当前搜索域可见原值，不能检测外部全部 ABA 或承诺物理落盘。普通事件带实例/存储句柄身份，不含正文或其他设置；PreferenceObservation 按身份/字段路由展示，CalendarSync 仅旧事件，手记普通事件不刷新正文。完整结果、旧页同值兼容、失败边界和验证状态只维护在[权威 §9.54](unified-search-commands.md#954-阶段-3a-1a普通偏好共享读写与事件拆分)。
+AppPreferences 保留唯一四值及原 UserDefaults 键；兼容可写属性和后续适配共用 readLocalSetting / applyLocalSetting。逐字段修订只计本入口调用，raw 是注入存储当前搜索域可见原值，不能检测外部全部 ABA 或承诺物理落盘。普通事件带实例/存储句柄身份，不含正文或其他设置；PreferenceObservation 按身份/字段路由展示，CalendarSync 仅旧事件，手记普通事件不刷新正文。完整结果、旧页同值兼容、失败边界和验证状态只维护在权威 §9.54。
 
 
 ### 普通偏好文件权威（3A-3B1）
 
-Services 的 LocalPreferenceFileStore 只在显式临时 root 内保存独立完整记录，不依赖 SwiftData。current 为唯一权威，pending 只绑定基/目标身份与摘要；协作锁覆盖锁内读取、比较、整体替换和完整核实。后端不发布内存、事件或展示副作用，AppPreferences 与旧单项链不变。读取/未知关闭写入口，显式核验不重放、不恢复 CommandPlan。接口、原子性及耐久限制、恢复与未接线边界统一见[权威 §9.58](unified-search-commands.md#958-阶段-3a-3b1版本化聚合文件后端与提交恢复)。
+Services 的 LocalPreferenceFileStore 只在显式临时 root 内保存独立完整记录，不依赖 SwiftData。current 为唯一权威，pending 只绑定基/目标身份与摘要；协作锁覆盖锁内读取、比较、整体替换和完整核实。后端不发布内存、事件或展示副作用，AppPreferences 与旧单项链不变。读取/未知关闭写入口，显式核验不重放、不恢复 CommandPlan。接口、原子性及耐久限制、恢复与未接线边界统一见权威 §9.58。
 
 
 ### 普通偏好隔离迁移（3A-3B2A）
 
-Services 的 LocalPreferenceLegacySource 只接受受控测试域的显式逐键读取证据；来源判定与旧应用宽松装载分离。LocalPreferenceMigrationEvidence 不是第二份可编辑状态；FileStore 沿原锁/一次提交/恢复路径建立带 migrationID 的完整 current，重开先核验新来源，不重新读取旧键或重放命令。唯一格式、恢复判定、保证限制及 3B2B 输入见[§9.59](unified-search-commands.md#959-阶段-3a-3b2a旧四键隔离迁移重开与恢复判定)。AppPreferences 生产后端及 SwiftData schema 保持不变。
+Services 的 LocalPreferenceLegacySource 只接受受控测试域的显式逐键读取证据；来源判定与旧应用宽松装载分离。LocalPreferenceMigrationEvidence 不是第二份可编辑状态；FileStore 沿原锁/一次提交/恢复路径建立带 migrationID 的完整 current，重开先核验新来源，不重新读取旧键或重放命令。唯一格式、恢复判定、保证限制及 3B2B 输入见§9.59。AppPreferences 生产后端及 SwiftData schema 保持不变。
 
 
 ### 普通偏好整份发布（3A-3B2B）
 
 AppPreferences 显式文件模式将四项及持久修订保存在唯一 LocalPreferencePublishedState.committed(record) 中；候选只在文件后端局部构造。提交事实先登记，再一次赋值发布，之后独立调用外观与普通组事件。后端健康状态与展示事实不是另一份可编辑偏好。共享实例与原 defaults 初始化仍使用旧后端，文件模式不建立旧四键存储依赖；其他偏好仍走注入 defaults。
 
-启动 ready 必须与注入 store 的身份、格式和当前权威状态重新核对；不可靠状态保留最后完整显示或只读默认，写入关闭。显式 verifyAndReload 复用原核验/清理，不提交或迁移；同源已知修订倒退也拒绝连续发布。普通消费者只刷新当前 chrome，旧单项指令接口拒绝新后端证据；外部修改发现范围、提交/展示/恢复的区别及 3B3 前置见[权威 §9.60](unified-search-commands.md#960-阶段-3a-3b2bapppreferences-聚合后端整份发布与展示事件)。
+启动 ready 必须与注入 store 的身份、格式和当前权威状态重新核对；不可靠状态保留最后完整显示或只读默认，写入关闭。显式 verifyAndReload 复用原核验/清理，不提交或迁移；同源已知修订倒退也拒绝连续发布。普通消费者只刷新当前 chrome，旧单项指令接口拒绝新后端证据；外部修改发现范围、提交/展示/恢复的区别及 3B3 前置见权威 §9.60。
 
 ### 普通偏好组执行边界（3A-3B3A）
 
-FileLocalSettingCommandAdapter 显式选择文件后端，与旧单项适配互斥。原 Plan 保有唯一参数；签发登记只保存不可编辑的完整证据。Coordinator 一次安装所有成员基线，按 groupID、有序 member stamps、run/attempt 占用；AppPreferences 在完整发布前经 recordCommit / recordRecovery 将可信提交事实记入原运行，再复用原展示 ledger。Run 只为已核实的四类普通偏好支持独立展示阶段，通用 atomicGroup 外部效果限制不变。冲突/确定未提交才能整组返回；unknown 只接受原目标精确身份核验，永不重放。接口与实际范围见[权威 §9.61](unified-search-commands.md#961-阶段-3a-3b3a普通设置组准备共同执行与回执)，多项 UI 与生产装配仍关闭。
+FileLocalSettingCommandAdapter 显式选择文件后端，与旧单项适配互斥。原 Plan 保有唯一参数；签发登记只保存不可编辑的完整证据。Coordinator 一次安装所有成员基线，按 groupID、有序 member stamps、run/attempt 占用；AppPreferences 在完整发布前经 recordCommit / recordRecovery 将可信提交事实记入原运行，再复用原展示 ledger。Run 只为已核实的四类普通偏好支持独立展示阶段，通用 atomicGroup 外部效果限制不变。冲突/确定未提交才能整组返回；unknown 只接受原目标精确身份核验，永不重放。接口与实际范围见权威 §9.61，多项 UI 与生产装配仍关闭。
 
 
 ### 普通设置组原生装配（3A-3B3B）
 
-UnifiedSearchController 的单一 UnifiedSearchSettingBackend 枚举负责显式选择旧单项或文件适配。原 Plan 保有唯一参数，PlanLinks 发送原 atomicGroup 事件，FileLocalSettingCommandAdapter 准备整组证据并绑定准备后的 plan stamp；UI 只消费 readiness 和类型化本地/核验/展示回执。失焦 invalidated 推进显示缓冲版本，不更换 lease。隔离原生接线扩展了上节的测试消费者，生产默认仍旧后端；实现、验收与历史缺口只维护在[权威 §9.62](unified-search-commands.md#962-阶段-3a-3b3b普通设置共同提交的原生接线)。
+UnifiedSearchController 的单一 UnifiedSearchSettingBackend 枚举负责显式选择旧单项或文件适配。原 Plan 保有唯一参数，PlanLinks 发送原 atomicGroup 事件，FileLocalSettingCommandAdapter 准备整组证据并绑定准备后的 plan stamp；UI 只消费 readiness 和类型化本地/核验/展示回执。失焦 invalidated 推进显示缓冲版本，不更换 lease。隔离原生接线扩展了上节的测试消费者，生产默认仍旧后端；实现、验收与历史缺口只维护在权威 §9.62。
 
 
 ### 普通捕获新增的局部事务边界（3T-1A）
 
-TaskMutationService 只接原 addCapturedTodo 的单段业务链。ModelChanges 以同 context 最外层同步事务保留显式 Boundary，嵌套继承、结束清理；Creation 只在最终 save 返回后登记 savedID，再发布 BoardEvents。预保存不撤销、未知提交不重试、changedLocally 不发日历请求等限制及实际验证统一见[权威 §9.64](unified-search-commands.md#964-阶段-3t-1a普通捕获共享新增与事务局部边界)。本轮未建立命令身份/回执、通用容器、并发事务或真实系统完成保证。
+TaskMutationService 只接原 addCapturedTodo 的单段业务链。ModelChanges 以同 context 最外层同步事务保留显式 Boundary，嵌套继承、结束清理；Creation 只在最终 save 返回后登记 savedID，再发布 BoardEvents。预保存不撤销、未知提交不重试、changedLocally 不发日历请求等限制及实际验证统一见权威 §9.64。本轮未建立命令身份/回执、通用容器、并发事务或真实系统完成保证。
 
 ### 最小普通创建隔离适配（3T-1B）
 
-TaskCreateCommandAdapter 仅组合原 Coordinator、隔离环境与共享 createCaptured。准备及固定 UUID 属于协调者运行内登记，参数仍由原 Draft/Plan/Run 拥有；保存后、事件前登记真实输出，未知与外部步骤不转成重放。显式 ID 查询包含墓碑/重复行，旧随机默认和预保存政策保留。完整资格、串行保证范围、输出协议及未接生产边界见[权威 §9.65](unified-search-commands.md#965-阶段-3t-1b最小普通-todocreate-的隔离真实适配)。
+TaskCreateCommandAdapter 仅组合原 Coordinator、隔离环境与共享 createCaptured。准备及固定 UUID 属于协调者运行内登记，参数仍由原 Draft/Plan/Run 拥有；保存后、事件前登记真实输出，未知与外部步骤不转成重放。显式 ID 查询包含墓碑/重复行，旧随机默认和预保存政策保留。完整资格、串行保证范围、输出协议及未接生产边界见权威 §9.65。
 
 
 ### 最小任务创建原生桥接（3T-4A）
 
-Controller 的可选 taskCreate 注入不改变目录资格或其他命令装配。UI 只交原计划给 TaskCreateCommandAdapter，提交增加可选 ReadSession 门禁并在最后事务前复核；保存后的事实不因显示撤销而消失。原运行唯一保留失败/未知内容，不创建可重放副本。契约与隔离验收见[权威 §9.66](unified-search-commands.md#966-阶段-3t-4a最小-todocreate-原生提交与隔离验收)。
+Controller 的可选 taskCreate 注入不改变目录资格或其他命令装配。UI 只交原计划给 TaskCreateCommandAdapter，提交增加可选 ReadSession 门禁并在最后事务前复核；保存后的事实不因显示撤销而消失。原运行唯一保留失败/未知内容，不创建可重放副本。契约与隔离验收见权威 §9.66。
 
 
 ### 普通新增扩展事务（3T-2A2）
 
-普通新增的显式能力复用原 Coordinator 创建登记和调用占用；只读目录 owner 管理读取身份/修订，accept 核验原预览后绑定任务及内部新标签 UUID。TaskMutationService 的结构化和旧捕获入口共用最外层保存、登记、发布及反馈，InputTagResolver 的计划入口不再按原文重解析。旧 UI 仍走最小适配，原生扩展预览/notes 未接线；接口、共同回滚、unknown、隔离保证与复核缺口只维护在[权威 §9.68](unified-search-commands.md#968-阶段-3t-2a2普通新增的显式扩展事务与隔离适配)。
+普通新增的显式能力复用原 Coordinator 创建登记和调用占用；只读目录 owner 管理读取身份/修订，accept 核验原预览后绑定任务及内部新标签 UUID。TaskMutationService 的结构化和旧捕获入口共用最外层保存、登记、发布及反馈，InputTagResolver 的计划入口不再按原文重解析。旧 UI 仍走最小适配，原生扩展预览/notes 未接线；接口、共同回滚、unknown、隔离保证与复核缺口只维护在权威 §9.68。
 
 
 ### 普通新增扩展原生接受（3T-4B）
 
-标签集合临时选择仅持有原 buffer/lease/草稿/计划位置和经资格过滤的候选 evidence，确认后经 Coordinator.edit 写 arguments；不写 targets 或平行参数真值。扩展预览/接受/提交复用原 Composition/TagPlan/adapter，ReadSession 贯穿显示和最后写前门禁，参数或显示撤销时撤旧接受。共同事务 afterCommit 的标签效果进入原 Facts，UI 不以预览推断保存。隔离、兼容与验收见[权威 §9.69](unified-search-commands.md#969-阶段-3t-4b普通新增扩展参数最终效果与明确提交)。
+标签集合临时选择仅持有原 buffer/lease/草稿/计划位置和经资格过滤的候选 evidence，确认后经 Coordinator.edit 写 arguments；不写 targets 或平行参数真值。扩展预览/接受/提交复用原 Composition/TagPlan/adapter，ReadSession 贯穿显示和最后写前门禁，参数或显示撤销时撤旧接受。共同事务 afterCommit 的标签效果进入原 Facts，UI 不以预览推断保存。隔离、兼容与验收见权威 §9.69。
 
 
 ### 标题修改与只读影响（3T-2B1）
 
-TaskMutationService.editTitle 以独立 TitleModification 复用 ModelChanges 提交事实，原标题 UI 只委托。TaskTitleCommandPreviewReader 只接受显式来源和 context，按类型/UUID 全查询唯一活目标；CommandTaskTitleImpact 保留精确原字段和标签顺序，CommandDraftBaseline 为同一证据的展示投影。后续提醒/日历上下文不作全对象冲突，预览不签发执行授权。没有标题 handler 或 UI 能力变化，完整边界与验收见[权威 §9.70](unified-search-commands.md#970-阶段-3t-2b1标题共享修改与普通命令只读影响预览)。
+TaskMutationService.editTitle 以独立 TitleModification 复用 ModelChanges 提交事实，原标题 UI 只委托。TaskTitleCommandPreviewReader 只接受显式来源和 context，按类型/UUID 全查询唯一活目标；CommandTaskTitleImpact 保留精确原字段和标签顺序，CommandDraftBaseline 为同一证据的展示投影。后续提醒/日历上下文不作全对象冲突，预览不签发执行授权。没有标题 handler 或 UI 能力变化，完整边界与验收见权威 §9.70。
 
 ### 普通标题单目标执行（3T-2B2A）
 
-显式 TaskTitleCommandEnvironment 复用只读 Reader 和严格标签计划，以来源所有者的版本化普通无备注证明限定输入。接受与调用登记由 Coordinator 独占；冻结核验比对真实 Run，事务沿 TaskMutationService.editTitle / ModelChanges，提交先记 Run.taskTitle 再发布，修改不生成创建输出。完整 noChange 不进入事务；unknown 只核验当前事实，不自动重放。无原生/生产装配、无多步执行；首次锁忙后经用户明确要求续验，195 方法 / 379 次隔离执行与正常 Debug 构建/验签通过；指定复核仍缺失，唯一交接见[权威 §9.71](unified-search-commands.md#971-阶段-3t-2b2a普通无备注单目标-todotitle-隔离执行适配)。
+显式 TaskTitleCommandEnvironment 复用只读 Reader 和严格标签计划，以来源所有者的版本化普通无备注证明限定输入。接受与调用登记由 Coordinator 独占；冻结核验比对真实 Run，事务沿 TaskMutationService.editTitle / ModelChanges，提交先记 Run.taskTitle 再发布，修改不生成创建输出。完整 noChange 不进入事务；unknown 只核验当前事实，不自动重放。无原生/生产装配、无多步执行；首次锁忙后经用户明确要求续验，195 方法 / 379 次隔离执行与正常 Debug 构建/验签通过；指定复核仍缺失，唯一交接见权威 §9.71。
 
 
 ### 单目标标题原生适配（3T-4C）
 
-Controller 的可选 taskTitle 仅用于显式隔离宿主，ObjectSelection 和 ParameterField 不持有第二份目标/参数。prepare/accept/submit 复用原标题适配；新增只读 validatePreview 使用既有 Reader.validateAccepted。可选 ReadSession 显示门禁贯穿回调与最终写入前，保存后只保留原 Facts/Run。CommandTaskTitleTags.original/associations 负责原关联与真实附带效果投影；View 不重算合成或 noChange。共享效果呈现只由新增与标题消费，原标题行/检查器的 rawInput 入口不变。完整契约、隔离证据与未开放范围见[权威 §9.72](unified-search-commands.md#972-阶段-3t-4c单目标-todotitle-原生-ui-与隔离验收)。
+Controller 的可选 taskTitle 仅用于显式隔离宿主，ObjectSelection 和 ParameterField 不持有第二份目标/参数。prepare/accept/submit 复用原标题适配；新增只读 validatePreview 使用既有 Reader.validateAccepted。可选 ReadSession 显示门禁贯穿回调与最终写入前，保存后只保留原 Facts/Run。CommandTaskTitleTags.original/associations 负责原关联与真实附带效果投影；View 不重算合成或 noChange。共享效果呈现只由新增与标题消费，原标题行/检查器的 rawInput 入口不变。完整契约、隔离证据与未开放范围见权威 §9.72。
 
 ### T-M1 隔离任务修改与两步依赖
 
-普通字段适配调用 TaskMutationService.editField，再进入旧 UI 共用的仓储字段入口；预览读取真实影响字段，接受绑定来源、目录、目标和版本，Coordinator 在任何可重入写调用前独占占用。CommandTaskChainIdentity 只允许最小普通 todo.create→todo.title；生产者真实保存输出一次固定，消费者在原 Run 上读取实际对象并重新接受，不创建临时单项 Host 或跨步骤共同事务。各成员事实和外部步骤分开，unknown 不重放，未释放 Run 仍阻止转交。生产装配不变；能力、限制和验收见[权威 T-M1](unified-search-commands.md#973-里程碑-t-m1普通任务修改与受限依赖执行)。
+普通字段适配调用 TaskMutationService.editField，再进入旧 UI 共用的仓储字段入口；预览读取真实影响字段，接受绑定来源、目录、目标和版本，Coordinator 在任何可重入写调用前独占占用。CommandTaskChainIdentity 只允许最小普通 todo.create→todo.title；生产者真实保存输出一次固定，消费者在原 Run 上读取实际对象并重新接受，不创建临时单项 Host 或跨步骤共同事务。各成员事实和外部步骤分开，unknown 不重放，未释放 Run 仍阻止转交。生产装配不变；能力、限制和验收见权威 T-M1。
 
 ### T-M2 子项影响与标签共同事务
 
 FieldAdapter 的 milestone2 能力在原单项执行协议内增加完成、标签集合、新建并关联标签及截止时间。完成预览包括父状态、完整子项身份/关系/完成/删除状态，最后写前重新读取；仅实际级联项通过普通标签资格后展示标题。已完成父项再完成是 noChange，重开不重开子项；命令不进入 CompletionUndo.shared。
 
-标签从原关联出发，领域计划先核对原关联 D3，再计算最终集合和显式创建/恢复效果。原协调者接受记录保留新标签 UUID；InputTagResolver.apply 与任务关联共用 ModelChanges 的一次事务，保存后才登记实际标签与子项事实。目录/原关联变化撤销旧接受；unknown 保留原运行和身份，不据当前值推定历史成功。截止时间共享原赋值表示，严格命令参数与旧 UI 归一化政策分开，日期、提醒及其他字段不变。全部仅显式隔离装配，边界与验收见[权威 T-M2](unified-search-commands.md#974-里程碑-t-m2完成标签与截止时间的隔离闭环)。
+标签从原关联出发，领域计划先核对原关联 D3，再计算最终集合和显式创建/恢复效果。原协调者接受记录保留新标签 UUID；InputTagResolver.apply 与任务关联共用 ModelChanges 的一次事务，保存后才登记实际标签与子项事实。目录/原关联变化撤销旧接受；unknown 保留原运行和身份，不据当前值推定历史成功。截止时间共享原赋值表示，严格命令参数与旧 UI 归一化政策分开，日期、提醒及其他字段不变。全部仅显式隔离装配，边界与验收见权威 T-M2。
 
 ### T-M3 普通子任务的执行与身份
 
 SubtaskTitleEdit / SubtaskFields 只承载旧子任务标签解析与字段赋值；结构化仓储新增接受固定 ID，排序仍取实际活兄弟项末尾，创建时间/初始完成态沿原模型。普通新增和标题不解释父任务的优先级或时间语法，纯标签标题沿 TagSyntax 保留原文。TaskFamilyCommandIdentity 为完成影响与子任务命令共用完整身份、真实父关系及平铺一致性核验，不替代安全查询发布。
 
-SubtaskCommandEnvironment 分开父普通无备注、子项和本次输入的证明，不读父 notes 推导资格。接受绑定原 lease/plan/item/draft、父子实际记录、相关字段、目录/来源修订及创建排序事实；占用仍归原 Coordinator。子项与所需标签共用原 ModelChanges，保存后先登记子任务事实再发布；unknown 保留原身份、不重放。CommandSubtaskFacts.createdObject 是 .subtask 保存事实，不扩展 Run.outputs 或原 todo create→title 资格。Controller 只在显式装配时开放四条原生链；参数、标签暂存和计划仍写同一草稿。接口、隔离结果和治理缺口统一见[权威 T-M3](unified-search-commands.md#975-里程碑-t-m3普通子任务的隔离闭环)。
+SubtaskCommandEnvironment 分开父普通无备注、子项和本次输入的证明，不读父 notes 推导资格。接受绑定原 lease/plan/item/draft、父子实际记录、相关字段、目录/来源修订及创建排序事实；占用仍归原 Coordinator。子项与所需标签共用原 ModelChanges，保存后先登记子任务事实再发布；unknown 保留原身份、不重放。CommandSubtaskFacts.createdObject 是 .subtask 保存事实，不扩展 Run.outputs 或原 todo create→title 资格。Controller 只在显式装配时开放四条原生链；参数、标签暂存和计划仍写同一草稿。接口、隔离结果和治理缺口统一见权威 T-M3。
 
 ### 习惯定义修改隔离边界（R-M1）
 
-RoutineCommandEnvironment/Reader/Adapter 使用独立类型化目标、来源、影响和事实，仅显式装配单普通无备注活定义。完整 UUID 查询含停用与墓碑；`.routineOccurrence` 不代替定义。RoutineMutationService 复用原习惯仓储及原标题解析，旧 UI 同值保存保持；旧标题 Bool 读取同步调用正常返回的 callSucceeded，命令 saved 仍只由 afterCommit 完成；星期同时比较原始 weekdayMask/weekdaysOnly，空草稿不转为每天。标题/标签实体共同事务，所有五字段均不调用启停桥接、不改 RoutineCheck、暂停状态或创建信息。准备/接受零写入，原 Coordinator 占用与 Run.routine 登记分开保存、发布及 fake 系统结果，unknown 不自动重放。原生对象来源继续沿 RoutineContentQueryReader 与安全发布链，生产未装配。支持范围与实际证据见[权威 R-M1](unified-search-commands.md#976-里程碑-r-m1习惯定义五字段的隔离闭环)。
+RoutineCommandEnvironment/Reader/Adapter 使用独立类型化目标、来源、影响和事实，仅显式装配单普通无备注活定义。完整 UUID 查询含停用与墓碑；`.routineOccurrence` 不代替定义。RoutineMutationService 复用原习惯仓储及原标题解析，旧 UI 同值保存保持；旧标题 Bool 读取同步调用正常返回的 callSucceeded，命令 saved 仍只由 afterCommit 完成；星期同时比较原始 weekdayMask/weekdaysOnly，空草稿不转为每天。标题/标签实体共同事务，所有五字段均不调用启停桥接、不改 RoutineCheck、暂停状态或创建信息。准备/接受零写入，原 Coordinator 占用与 Run.routine 登记分开保存、发布及 fake 系统结果，unknown 不自动重放。原生对象来源继续沿 RoutineContentQueryReader 与安全发布链，生产未装配。支持范围与实际证据见权威 R-M1。
 
 ### R-M2 普通习惯创建边界
 
-RoutineCommandEnvironment 的可选 Creation 仅为显式隔离宿主提供 now/calendar 与输入／创建环境资格，默认五字段接口不扩权。RoutineCreateCommandReader 独立绑定无目标的新建参数、D3目录、所有定义的排序依据和创建日；原 CommandTaskCreateRegistry 与 Coordinator 占用保持唯一身份责任。RoutineMutationService.create 将已接受字段和标签交给原仓储／ModelChanges，CreateRoutineParams 的可选身份／时刻保留旧默认。CommandRoutineCreateFacts 在原 Run 中提供实际保存的 `.routine`，不进入可依赖输出。原新增 UI、启停／打卡存储与新读取归并均保持；兼容建议和验收只见[权威 R-M2](unified-search-commands.md#977-里程碑-r-m2普通习惯结构化新增与状态兼容核验)。
+RoutineCommandEnvironment 的可选 Creation 仅为显式隔离宿主提供 now/calendar 与输入／创建环境资格，默认五字段接口不扩权。RoutineCreateCommandReader 独立绑定无目标的新建参数、D3目录、所有定义的排序依据和创建日；原 CommandTaskCreateRegistry 与 Coordinator 占用保持唯一身份责任。RoutineMutationService.create 将已接受字段和标签交给原仓储／ModelChanges，CreateRoutineParams 的可选身份／时刻保留旧默认。CommandRoutineCreateFacts 在原 Run 中提供实际保存的 `.routine`，不进入可依赖输出。原新增 UI、启停／打卡存储与新读取归并均保持；兼容建议和验收只见权威 R-M2。
 
 
 ### R-M3 习惯状态隔离边界
 
-StateOperations 显式扩展原 RoutineCommandEnvironment，RoutineCommandStateReader 复用独立全表读取和关系完整性投影；Domain 的 CommandRoutineStatePlanning 只生成已批准当前星期桥接与明确单日状态效果。原 Registry 固定新增记录 UUID，Preview 和 Run.routine 保留完整物理写集；applyRoutineState 在原 ModelChanges 中共同提交定义与记录，unknown 不凭当前存在性推导历史成功。新读取逻辑 skipped 兼容不抹除物理证据，也不替换旧 UI／月历／连击算法。原生日期仍是原草稿目标的一部分，影响列表不持有业务状态。支持范围与实际证据见[权威 R-M3](unified-search-commands.md#978-里程碑-r-m3兼容跳过习惯启停与指定执行日状态)。
+StateOperations 显式扩展原 RoutineCommandEnvironment，RoutineCommandStateReader 复用独立全表读取和关系完整性投影；Domain 的 CommandRoutineStatePlanning 只生成已批准当前星期桥接与明确单日状态效果。原 Registry 固定新增记录 UUID，Preview 和 Run.routine 保留完整物理写集；applyRoutineState 在原 ModelChanges 中共同提交定义与记录，unknown 不凭当前存在性推导历史成功。新读取逻辑 skipped 兼容不抹除物理证据，也不替换旧 UI／月历／连击算法。原生日期仍是原草稿目标的一部分，影响列表不持有业务状态。支持范围与实际证据见权威 R-M3。
 
 ### B-M1 固定多目标与共同事务
 
@@ -557,50 +557,50 @@ StateOperations 显式扩展原 RoutineCommandEnvironment，RoutineCommandStateR
 
 BatchCommandReader 独占同隔离 context 的有界目标读取与一份目录索引，真实来源、记录身份、raw tagIDs 和影响字段逐项绑定接受。混合类型拆成明确的仓储调用，禁止共享 Set<UUID> 同时选择两类实体。BatchCommandTransaction 复用原仓储字段规则和一次 ModelChanges；任何应用失败共同回滚，全部 noChange 不进入事务。保存返回先登记整份 CommandBatchFacts，再一次私有广播；fake 外部结果逐目标保留，不将一次刷新当成全部同步成功。
 
-Run 在 unknown 时保留原目标、参数、影响写集和接受／调用身份，不重试或拆成单项；当前值符合预期也不产生历史提交证明。新装配只允许干净内存库、相同仓储 context 和私有事件。旧批量 UI／单项命令和全局单项计划守卫保持；完整契约和验证见[权威 B-M1](unified-search-commands.md#979-里程碑-b-m1固定多目标改期与混合标签共同提交)。
+Run 在 unknown 时保留原目标、参数、影响写集和接受／调用身份，不重试或拆成单项；当前值符合预期也不产生历史提交证明。新装配只允许干净内存库、相同仓储 context 和私有事件。旧批量 UI／单项命令和全局单项计划守卫保持；完整契约和验证见权威 B-M1。
 
 
 ### B-M2 批量状态实体计划
 
-CommandBatchWriteSet 是原接受和运行事实的不可编辑部分，按类型化物理身份／创建身份合并真实变化实体；只有显式状态装配使用4000实体上限。RoutineCommandStateSnapshot 与 T-M2 完成投影共用原读取规则，观察日及每定义历史固定，目标日期各自保留。RoutineStateApplication 在原单项仓储与批量事务之间复用物理应用；批量先统一核验所有成员再开始一次 ModelChanges，所有 noChange 零保存，unknown 保留整份身份，不按单项恢复。定义候选＋明确日期仅是本批原生选择的显式转换，临时候选票据不替代最终服务资格。范围、旧单项差异及证据见[权威 B-M2](unified-search-commands.md#980-里程碑-b-m2批量状态级联与补录总量控制)。
+CommandBatchWriteSet 是原接受和运行事实的不可编辑部分，按类型化物理身份／创建身份合并真实变化实体；只有显式状态装配使用4000实体上限。RoutineCommandStateSnapshot 与 T-M2 完成投影共用原读取规则，观察日及每定义历史固定，目标日期各自保留。RoutineStateApplication 在原单项仓储与批量事务之间复用物理应用；批量先统一核验所有成员再开始一次 ModelChanges，所有 noChange 零保存，unknown 保留整份身份，不按单项恢复。定义候选＋明确日期仅是本批原生选择的显式转换，临时候选票据不替代最终服务资格。范围、旧单项差异及证据见权威 B-M2。
 
 ### P-M1 普通多项运行边界
 
 原 CommandPlan 只封存一次，CommandExecutionRun 持有唯一冻结参数和各执行单元事实。CommandMultiPlanIdentity 与协调者的装配／attempt接受登记提供显式多项资格；各 Reader 的按成员准备入口不拥有保存能力，真正调用继续进入原 Adapter、Registry 与 ModelChanges。普通单项、批量集合、文件设置组各自提交，计划不包裹跨存储事务。
 
-本地unknown在Run调度／重试、协调者占用和实际适配入口暂停全计划；已保存后的外部unknown分开处理。CommandAttemptRecord保留历史，安全重试在原Run／单元建立新attempt并保留预留身份；文件后端只沿原精确核验恢复。原PlanList消费这些事实，单元间让出主线程并复核ReadSession；没有第二份可提交草稿或跨重启队列。组件与消费者见[目录](component-catalog.md#p-m1-普通多项计划与运行内恢复)，支持范围、批准规则与验收只见[权威P-M1](unified-search-commands.md#981-里程碑-p-m1普通多项计划顺序提交与运行内恢复)。
+本地unknown在Run调度／重试、协调者占用和实际适配入口暂停全计划；已保存后的外部unknown分开处理。CommandAttemptRecord保留历史，安全重试在原Run／单元建立新attempt并保留预留身份；文件后端只沿原精确核验恢复。原PlanList消费这些事实，单元间让出主线程并复核ReadSession；没有第二份可提交草稿或跨重启队列。组件与消费者见[目录](component-catalog.md#p-m1-普通多项计划与运行内恢复)，支持范围、批准规则与验收只见权威P-M1。
 
 ### P-M2 创建输出身份与消费投影
 
 显式 typedCreation 只扩展原多项装配。三类创建在各自原 afterCommit／Facts 留存真实 UUID 与 PersistentIdentifier；协调者结合原接受／调用／Run 身份签发 CommandCreationOutput，原 Run.outputs 与 bindings 继续唯一保存输出和解析位置。CommandCreationConsumption 只描述不可编辑投影；parent 与 targets 严格区分。新建记录重新物化不等同新存储记录，不能用内存地址作为跨预览的唯一身份。
 
-创建前没有目标读取或虚构基线；真实输出满足原依赖后，原 Reader 核验当前来源、目录、关系和影响，并在原面板再次接受。确定失败、外部未完成、unknown 全计划暂停、原 UUID 重试与迟到回执仍走原调度／占用入口。接口与实际消费者见[组件目录](component-catalog.md#p-m2-类型化输出与消费绑定)，范围及证据见[权威 P-M2](unified-search-commands.md#982-里程碑-p-m2类型化创建输出受限分支与多级创建链)。
+创建前没有目标读取或虚构基线；真实输出满足原依赖后，原 Reader 核验当前来源、目录、关系和影响，并在原面板再次接受。确定失败、外部未完成、unknown 全计划暂停、原 UUID 重试与迟到回执仍走原调度／占用入口。接口与实际消费者见[组件目录](component-catalog.md#p-m2-类型化输出与消费绑定)，范围及证据见权威 P-M2。
 
 ### P-M3 运行内编辑修订
 
 显式支持修订的 MultiPlanCommandAdapter 仍使用原 CommandPlan／CommandExecutionRun。协调者先核验完整剩余单元和真实尝试事实，在无调用／准备占用、无本地 unknown、无本地已保存外部待处理时，原子撤销源运行执行权并交付唯一可编辑计划。原 Run 以不可变记录保留在同宿主修订链；新 Run 不复制成功单元。返回票据绑定原 lease、Run、计划及完整单元成员，旧票据／回执不能进入新接收窗口。
 
-未执行生产者编辑按拓扑传播所有消费者引用版本，迁移前后均验证图。已成功生产者的 CommandCreationOutput 保留原 Run、attempt、savedID、PersistentIdentifier、装配和存储身份，完成顺序边单独保留只读来源。原事务及当前资格仍由各 Reader／Adapter 核验；返回后重新读取和接受全部剩余影响。仅本次运行内有效，不写普通历史或磁盘队列；可合并、可返回范围及验证结果以[权威 P-M3](unified-search-commands.md#983-里程碑-p-m3合法赋值合并与运行内编辑修订)为准。
+未执行生产者编辑按拓扑传播所有消费者引用版本，迁移前后均验证图。已成功生产者的 CommandCreationOutput 保留原 Run、attempt、savedID、PersistentIdentifier、装配和存储身份，完成顺序边单独保留只读来源。原事务及当前资格仍由各 Reader／Adapter 核验；返回后重新读取和接受全部剩余影响。仅本次运行内有效，不写普通历史或磁盘队列；可合并、可返回范围及验证结果以权威 P-M3为准。
 
 
 ### N-M2 普通内容查阅与文件依赖
 
 显式 WorkspaceSearchRouter.contents 与原 ReadSession 来源／lease／显示版本共同约束查阅。WorkspaceContentSession 只持有可撤销的展示值，WorkspaceContentSource 无正文／图像；新查询、失效、锁定和返回释放展示，不进入 CommandDraft／Plan／Run 或返回票据。普通正文沿 DiaryContent 的内部许可入口与完整目录／旧标记政策；保护字段先行拒绝，隔离查询可显式 ordinaryOnly，默认旧读取政策保持。
 
-AttachmentStore.readOrdinary 仅接受与显式实例一致的 root 和无保护引用，拒绝保护格式，不经过私密解码。拥有者按类型和唯一身份核验；手记拥有者需完成同一普通读取判定。纯展示与旧编辑／附件操作分离，隔离旧附件消费者从 WorkspaceHostContext 取得存储，无依赖不回退。实施、实际验证及剩余边界见[权威 N-M2](unified-search-commands.md#985-里程碑-n-m2标签导航普通手记全文与普通图片查阅)。
+AttachmentStore.readOrdinary 仅接受与显式实例一致的 root 和无保护引用，拒绝保护格式，不经过私密解码。拥有者按类型和唯一身份核验；手记拥有者需完成同一普通读取判定。纯展示与旧编辑／附件操作分离，隔离旧附件消费者从 WorkspaceHostContext 取得存储，无依赖不回退。实施、实际验证及剩余边界见权威 N-M2。
 
 ### N-M1 工作台暂挂展示与只读打开
 
 显式统一搜索宿主通过WorkspaceHostContext向实际页面、目标登记、日期和草稿消费者传递同一依赖。WorkspaceNavigation.searchPresentation只覆盖搜索／目的地呈现，nil保留生产旧规则；明确导航跳过原页签离开的记忆释放，普通页签仍沿原页面默认条件和原查询reducer建立访问。返回不复制Query／ReadSession／Plan／Run，失效和锁定也不从票据恢复文字。
 
-WorkspaceSearchRouter只访问自己的真实窗口与挂载标记；它没有保存和系统动作依赖。普通对象先检查当前ReadSession候选，再由WorkspaceObjectNavigation读取当前唯一活对象、父关系和业务日；子项的UUID与routineOccurrence.dayKey一路保留。原检查器空间门禁独立于定位成功，恢复空间不自动重开。隔离初始化与草稿保留边界见[组件目录](component-catalog.md#n-m1-页面日期普通结果导航与返回搜索)，实际证据和限制见[权威N-M1](unified-search-commands.md#984-里程碑-n-m1导航与返回搜索)。
+WorkspaceSearchRouter只访问自己的真实窗口与挂载标记；它没有保存和系统动作依赖。普通对象先检查当前ReadSession候选，再由WorkspaceObjectNavigation读取当前唯一活对象、父关系和业务日；子项的UUID与routineOccurrence.dayKey一路保留。原检查器空间门禁独立于定位成功，恢复空间不自动重开。隔离初始化与草稿保留边界见[组件目录](component-catalog.md#n-m1-页面日期普通结果导航与返回搜索)，实际证据和限制见权威N-M1。
 
 
 ### C-M1 命令长文所有权
 
 普通已确认正文唯一属于原 draft.arguments，textPositions 只保存组合缓冲与选区；受保护态只发布原密文引用，完整 v2 恢复点继续由 ContentSession／VaultKeyAccess 管理。CommandNativeTextOwners 在原 Coordinator 范围限制唯一原生 owner，外部宿主事件同步撤权；受控编辑才能把新 lease／draft／plan 版本交还当前控件。原生快照必须验证组合与已确认正文一致，不能作为第二份业务提交来源。
 
-原 ParameterField 的显式 assembleLongText 支持 notes／body 与当前 active／明确 planItem；正文不放入 UnifiedSearchBuffer、parameterText、摘要或返回票据。失焦／导航／卸载保留原稿或密文，恢复组合为待确认状态。载荷、取消／撤销、系统旁路和授权边界见[权威 C-M1](unified-search-commands.md#986-里程碑-c-m1命令长文原生编辑与受控组合输入)；旧认证／锁定顺序、业务保存和持久化格式不变。
+原 ParameterField 的显式 assembleLongText 支持 notes／body 与当前 active／明确 planItem；正文不放入 UnifiedSearchBuffer、parameterText、摘要或返回票据。失焦／导航／卸载保留原稿或密文，恢复组合为待确认状态。载荷、取消／撤销、系统旁路和授权边界见权威 C-M1；旧认证／锁定顺序、业务保存和持久化格式不变。
 
 
-C-M1-R 的原生安装只替换文字差量，原参数/组合/密文所有权与先保护后显示顺序不变。UTF-16 差量边界不能共同对齐时扩大替换区间，保持准确正文并避免区域指示符配对的反复扫描；纵向 maxSize 修复保证长文末尾能滚动和提供候选锚点。测试侧窗口身份由实际 XCTest Bundle、nonce、外部 runner 的内核 PID/启动身份和本窗心跳组成，不授予桌面启动能力，也不等同产品启动隔离。历史磁盘元数据支持与不可追溯项、冷排版/完整宿主限制及后续方案见[§9.86 续验](unified-search-commands.md#c-m1-r事件有界核查测试启动约束与长段性能续验)。
+C-M1-R 的原生安装只替换文字差量，原参数/组合/密文所有权与先保护后显示顺序不变。UTF-16 差量边界不能共同对齐时扩大替换区间，保持准确正文并避免区域指示符配对的反复扫描；纵向 maxSize 修复保证长文末尾能滚动和提供候选锚点。测试侧窗口身份由实际 XCTest Bundle、nonce、外部 runner 的内核 PID/启动身份和本窗心跳组成，不授予桌面启动能力，也不等同产品启动隔离。历史磁盘元数据支持与不可追溯项、冷排版/完整宿主限制及后续方案见§9.86 续验。

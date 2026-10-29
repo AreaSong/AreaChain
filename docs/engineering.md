@@ -93,7 +93,7 @@ Features/Theme 共36个变化文件，其中16个直接声明 View；其余为�
 
 2026-10-06 至 2026-10-07。本节是控件收口的总交接入口，详细过程继续保留在原阶段记录。**2026-10-07 O 补验已将最后两个方法定位为测试装配／契约问题；本轮有效复验103方法／264次通过，按源码影响与实际方法重新去重为315方法／770次所选自动回归通过。人工、平台及指定复核仍有缺口，整体 partial；证据与边界见本节末的 O 补验记录。** 以下先封存原 O 结果：**接入闭环；所选自动回归未全部通过；整体 partial。** 第九阶段四类重复/漏接及第十阶段两处后补入口均有当前生产调用；总扫描未发现新增确定漏接。最终 A 留有第八阶段的两个历史失败方法／三次失败，B/C/D 通过；没有新确认的生产阻断。人工、平台和指定复核未完成，不能宣称全部运行验收完成。
 
-**2026-10-08 当前兼容阻断收尾**：旧习惯标题嵌套事务Bool回归已最小修复，原失败断言及针对性回归严格通过；当前完整QA编译/验签通过，CommandExecutionRun为494行。唯一契约、源码身份、静态结果与指定Cursor材料见[习惯命令权威修复记录](unified-search-commands.md#旧习惯标题-bool-嵌套兼容修复2026-10-08)。[前批H收尾](#h-当前工作树收尾验证2026-10-08)的b5d4b2bc、旧504行和失败包保留历史效力；本轮不重验或关闭H两项嵌套AX，也不累加O315／770或P174。指定Cursor未执行，整体partial、用户未接受交付。
+**2026-10-08 当前兼容阻断收尾**：旧习惯标题嵌套事务Bool回归已最小修复，原失败断言及针对性回归严格通过；当前完整QA编译/验签通过，CommandExecutionRun为494行。唯一契约、源码身份、静态结果与指定Cursor材料见习惯命令权威修复记录。[前批H收尾](#h-当前工作树收尾验证2026-10-08)的b5d4b2bc、旧504行和失败包保留历史效力；本轮不重验或关闭H两项嵌套AX，也不累加O315／770或P174。指定Cursor未执行，整体partial、用户未接受交付。
 
 ### 权威入口与当前消费者
 
@@ -1097,7 +1097,7 @@ core中H及原依赖为12方法／18次：DetailDueSaveTests全部7／9（AXPres
 
 **并发消费者新增回归**：`TaskTitleMutationTests/routineAndNotesConsumersRetainTheirOriginalSemantics()` 在TaskTitleMutationTests.swift:101:13的旧editRoutineWithSyntax Bool要求失败，其他断言无新增issue。源码原因可核验：DayBoardMutations+Capture.swift:99改为返回Modification.saved；RoutineMutationService.swift:25–31在外层尚未提交时为pending，afterCommit才置savedLocally，而测试在外层ModelChanges.transaction内部调用旧入口。旧工作已执行的Bool与新saved含义不同；不据此推断最终数据未保存。该项属于并发习惯入口兼容回归，不归入H普通恢复／Stepper或两项AX豁免，不修改命令业务或测试。remaining的xcodebuild=65来自这一断言，不能称编译或签名失败。
 
-**后续兼容修复引用（2026-10-08）**：上述Bool阻断及旧504行门禁状态已由[习惯命令权威修复记录](unified-search-commands.md#旧习惯标题-bool-嵌套兼容修复2026-10-08)更新：原断言严格通过，当前494行及完整QA编译/验签通过。具体新证据只维护在该记录；本节旧包、两项AX与指定复核缺口不改，不扩大H／Stepper通过范围。
+**后续兼容修复引用（2026-10-08）**：上述Bool阻断及旧504行门禁状态已由习惯命令权威修复记录更新：原断言严格通过，当前494行及完整QA编译/验签通过。具体新证据只维护在该记录；本节旧包、两项AX与指定复核缺口不改，不扩大H／Stepper通过范围。
 
 **源码有效性**：shared结束882d9b8f…737d4b，随后修正缺try并新增UnifiedSearchRoutineBoundaryTests／TestSupport，resumed稳定于b3b696…版本但编译失败。修正now后，remaining申请／锁后／运行后均为 `b5d4b2bc39d482b5818bc6980a7bfd427d9fcf599e3707a81e305ad6b9b2d0f6`，完整目标已编译并运行。这些新增／修正仅在独立习惯命令测试和支持，H／Stepper及本轮旧消费者、事务、仓储源码相对core前未变。因此core18／28对应当前局部路径；remaining对应当前完整编译及所选运行，旧编译错误不再是当前阻断。原H／Stepper未选中矩阵只保留各自历史效力，不称本轮全部重验、不累加成全应用总数。
 
@@ -1219,7 +1219,7 @@ core中H及原依赖为12方法／18次：DetailDueSaveTests全部7／9（AXPres
 
 2026-10-05。本次只修订 [UnifiedSearchResultsInteractionTests](../AreaChainTests/Features/UnifiedSearchResultsInteractionTests.swift) 及本工程记录；上文的失败、旧桥接对照和当时停止结论保留为历史。本次未修改生产搜索、滚动、输入、许可、隐私或统一搜索规范，也未修改共享测试 helper。
 
-**契约核对与复现**：当前 [UnifiedSearchController.changed](../AreaChain/Features/Search/UnifiedSearchController.swift) 与[权威 §9.62](unified-search-commands.md#962-阶段-3a-3b3b普通设置共同提交的原生接线) 一致：仅 `invalidated && session.isMasked` 推进输入 buffer 版本，不换 lease、不清文本、不增加 privacyRevision；未遮罩模型重读不推进输入版本，privacyInvalidated 另走清空及隐私修订路径。[ReadSession](../AreaChain/Services/ContentQueryReadSession.swift) 的 receive / loseFocus 在 revokeReferences 已发送撤显示通知时不补发；resumeDisplay 只解除遮罩，必须重新 prepare / evaluate / publish。`closure-blur-baseline.xcresult` 在当前完整正常目标中单独复现原失败：只有 version 0→1 与旧整值相等断言不符，其余字段相同，确认是过时测试契约，未回退滚动修复。
+**契约核对与复现**：当前 [UnifiedSearchController.changed](../AreaChain/Features/Search/UnifiedSearchController.swift) 与权威 §9.62 一致：仅 `invalidated && session.isMasked` 推进输入 buffer 版本，不换 lease、不清文本、不增加 privacyRevision；未遮罩模型重读不推进输入版本，privacyInvalidated 另走清空及隐私修订路径。[ReadSession](../AreaChain/Services/ContentQueryReadSession.swift) 的 receive / loseFocus 在 revokeReferences 已发送撤显示通知时不补发；resumeDisplay 只解除遮罩，必须重新 prepare / evaluate / publish。`closure-blur-baseline.xcresult` 在当前完整正常目标中单独复现原失败：只有 version 0→1 与旧整值相等断言不符，其余字段相同，确认是过时测试契约，未回退滚动修复。
 
 **新增保护**：保留原隔离宿主、focus 通知和 session；以完整期望 buffer 断言 version 精确 +1，lease、text、privacyRevision、operation、selectingObjects、plan、planItem 均不变，并观察到恰好一次 `.invalidated`。遮罩后和 resumeDisplay 后均无保留结果，presentation 精确拒绝 `stalePermit`；恢复没有旧许可、自动读取、提交或查询修改。失焦前捕获 source 和有效结果版本，通过原 browse / actions.intent / actions.edit 入口验证旧请求被拒绝，原 reads / opens 计数和完整 CommandOwnedHost（含 query / operations / plan / execution）保持。重新发布后额外用“旧 source＋当前结果版本”排除仅结果版本过期的偶然拒绝；当前 source＋旧结果版本仍拒绝，当前双版本可选择并只记录一次合成 open intent，不打开真实记录。新增 `unmaskedModelInvalidationKeepsInputVersion()` 沿 `.boardDidChange` → refresh 验证普通模型失效及重读保持完整 buffer，只更新结果版本；原隐私锁定清空输入、撤结果、privacyRevision 增加的用例继续回归。
 
@@ -1636,7 +1636,7 @@ core中H及原依赖为12方法／18次：DetailDueSaveTests全部7／9（AXPres
 
 **整体 partial**：指定 Cursor verifier 缺失，未认证或替换复核机制。周布局越界/标题挤压/切周焦点、D 的 Tab 激活、真实拖放、人工 VoiceOver、输入法/撤销、低版本系统及其他历史缺口继续登记。第六阶段接入范围已列于组件目录，不代表全面验收；建议后续单独界定历史周问题及补证任务。到 E 停止，不提交、推送、安装、发布或修改真实数据、系统偏好、签名配置及权限。
 
-统一搜索 2J-2A 的纯排序已实现并完成本地定向验证：72 套 Swift 回归 504 passed / 0 failed / 0 skipped（其中 27 项新增排序测试），Debug 构建/验签、严格局部 lint、工作流与静态门禁通过，静态含当前 179 项原脚本回归。Domain 与其测试在最终回归前后摘要一致；证据位于忽略目录 build/ContentQuerySortQA。唯一规则、接口和完整交接见[权威设计第 9.29 节](unified-search-commands.md#929-阶段-2j-2a安全聚合结果的相关性与最近排序)。指定 Cursor verifier 未执行，整体 partial，历史验收缺口保留；未接片段/UI/分页/缓存/真实读取，未提交、推送、安装或启动生产应用，停在 2J-2A。
+统一搜索 2J-2A 的纯排序已实现并完成本地定向验证：72 套 Swift 回归 504 passed / 0 failed / 0 skipped（其中 27 项新增排序测试），Debug 构建/验签、严格局部 lint、工作流与静态门禁通过，静态含当前 179 项原脚本回归。Domain 与其测试在最终回归前后摘要一致；证据位于忽略目录 build/ContentQuerySortQA。唯一规则、接口和完整交接见权威设计第 9.29 节。指定 Cursor verifier 未执行，整体 partial，历史验收缺口保留；未接片段/UI/分页/缓存/真实读取，未提交、推送、安装或启动生产应用，停在 2J-2A。
 
 这是 AreaChain 的开发协作与交付手册，不是应用使用说明，也不表示各阶段已全部验收。产品边界见 [product.md](product.md)，运行行为见 [usage.md](usage.md)，架构/数据及隔离要求见 [architecture.md](architecture.md)，签名/安装操作以 [signing.md](signing.md) 为准。本页只维护工程入口、证据状态和实际缺口，不复制上述规范。
 
@@ -2492,45 +2492,45 @@ E 的展示补验：随后只调整测试取证，给紧凑长标题宿主补 Da
 
 ## 普通偏好聚合后端（3A-3B1）
 
-本阶段仅显式临时目录的文件后端与提交核验；没有迁移、生产后端切换或指令/UI 接线。实际命令、最终证据、故障注入与真实进程中断的区别，以及指定 Cursor verifier 的 partial 缺口只维护在[权威 §9.58](unified-search-commands.md#958-阶段-3a-3b1版本化聚合文件后端与提交恢复)。后端 writer.lock 和 build/.build.lock 各自独立，正常非等待取锁不抢占其他验收。
+本阶段仅显式临时目录的文件后端与提交核验；没有迁移、生产后端切换或指令/UI 接线。实际命令、最终证据、故障注入与真实进程中断的区别，以及指定 Cursor verifier 的 partial 缺口只维护在权威 §9.58。后端 writer.lock 和 build/.build.lock 各自独立，正常非等待取锁不抢占其他验收。
 
 
 ## 普通偏好隔离迁移（3A-3B2A）
 
-独立 suite、逐键来源注入及显式临时目录用于迁移、故障和同进程重开；原 FileStore 锁/提交/noChange 测试继续回归。唯一命令、结果和未覆盖项见[权威 §9.59](unified-search-commands.md#959-阶段-3a-3b2a旧四键隔离迁移重开与恢复判定)。指定 Cursor verifier、真实进程中断、跨进程竞争和掉电实验分别报告；不由故障注入替代，不接生产迁移或整份内存发布。
+独立 suite、逐键来源注入及显式临时目录用于迁移、故障和同进程重开；原 FileStore 锁/提交/noChange 测试继续回归。唯一命令、结果和未覆盖项见权威 §9.59。指定 Cursor verifier、真实进程中断、跨进程竞争和掉电实验分别报告；不由故障注入替代，不接生产迁移或整份内存发布。
 
 
 ## 普通偏好聚合发布（3A-3B2B）
 
-临时文件后端、隔离 suite 与注入外观/事件用于 AppPreferences 的启动、整份发布、Binding、失败与显式核验回归。复用完整正常 QA 目标和原构建锁，静态 profile 配定向隔离测试，不启用真实系统授权。唯一实际命令、结果、并行编译阻塞、指定 Cursor verifier 与历史验收缺口见[权威 §9.60](unified-search-commands.md#960-阶段-3a-3b2bapppreferences-聚合后端整份发布与展示事件)。生产后端、用户迁移、指令组执行、安装和发布均未接线。
+临时文件后端、隔离 suite 与注入外观/事件用于 AppPreferences 的启动、整份发布、Binding、失败与显式核验回归。复用完整正常 QA 目标和原构建锁，静态 profile 配定向隔离测试，不启用真实系统授权。唯一实际命令、结果、并行编译阻塞、指定 Cursor verifier 与历史验收缺口见权威 §9.60。生产后端、用户迁移、指令组执行、安装和发布均未接线。
 
 ### 普通偏好组执行验收（3A-3B3A）
 
-本轮仅显式临时文件后端和注入展示效果。FileSettingCommand 五套测试串行验证真实 Parser→Draft→Plan→文件提交→Run，使用后端实际入口/替换计数、原四键快照、文件清单及 Observation 观察完整组；同时回归后端、AppPreferences、原子组和旧单项。完整正常 QA 目标、独立标识/DerivedData、六项真实钥匙串变量清除、原 build/.build.lock 非等待申请；静态门禁与运行证据分开。实际结果及剩余缺口统一记于[权威 §9.61](unified-search-commands.md#961-阶段-3a-3b3a普通设置组准备共同执行与回执)，指定 Cursor verifier 缺口保留，无生产窗口/迁移/安装/发布。
+本轮仅显式临时文件后端和注入展示效果。FileSettingCommand 五套测试串行验证真实 Parser→Draft→Plan→文件提交→Run，使用后端实际入口/替换计数、原四键快照、文件清单及 Observation 观察完整组；同时回归后端、AppPreferences、原子组和旧单项。完整正常 QA 目标、独立标识/DerivedData、六项真实钥匙串变量清除、原 build/.build.lock 非等待申请；静态门禁与运行证据分开。实际结果及剩余缺口统一记于权威 §9.61，指定 Cursor verifier 缺口保留，无生产窗口/迁移/安装/发布。
 
 
 ### 普通设置组原生验收（3A-3B3B）
 
-采用正常完整目标、显式临时文件与随机 suite、注入展示、独立 QA 标识和 DerivedData，原测试锁非等待申请并保持串行；六项真实钥匙串授权清除。服务/控制器、原生行为、截图、最终 Debug/验签与静态证据分别登记，计数和缺口以[权威 §9.62](unified-search-commands.md#962-阶段-3a-3b3b普通设置共同提交的原生接线)为准。不迁移用户设置、不切换生产默认后端；指定 Cursor、人工、C2B 和历史外观缺口不因本轮通过而关闭。
+采用正常完整目标、显式临时文件与随机 suite、注入展示、独立 QA 标识和 DerivedData，原测试锁非等待申请并保持串行；六项真实钥匙串授权清除。服务/控制器、原生行为、截图、最终 Debug/验签与静态证据分别登记，计数和缺口以权威 §9.62为准。不迁移用户设置、不切换生产默认后端；指定 Cursor、人工、C2B 和历史外观缺口不因本轮通过而关闭。
 
 
 ### 普通捕获 3T-1A 的验证交接
 
-[权威 §9.64](unified-search-commands.md#964-阶段-3t-1a普通捕获共享新增与事务局部边界) 保存本轮完整证据：正常 PrivacyQA 中 57 方法／74 次运行通过；随后最终回滚事实与发布辅助函数补充的重验因原测试锁占用停止。最终静态/脚本通过，最终 Swift 重验、独立 Debug 构建及指定 Cursor verifier 保留缺口，状态 partial；不重试锁、不接 handler、不进入 3T-1B。
+权威 §9.64 保存本轮完整证据：正常 PrivacyQA 中 57 方法／74 次运行通过；随后最终回滚事实与发布辅助函数补充的重验因原测试锁占用停止。最终静态/脚本通过，最终 Swift 重验、独立 Debug 构建及指定 Cursor verifier 保留缺口，状态 partial；不重试锁、不接 handler、不进入 3T-1B。
 
 
-3T-1A 最终验收续轮：原遗留增量已在正常 PrivacyQA 中通过 23 方法／37 次运行；随后发现并窄修正“原始 ModelRecoveryError 被误认为本次恢复失败”的事实分类，新增一项必要回归。修正后原锁忙，立即停止；最终新增修正、正常 Debug 构建/验签仍未完成，保持 partial。分版本证据只见[权威 §9.64 E1](unified-search-commands.md#e1-最终验收续轮已验证内容与新发现2026-10-05)。
+3T-1A 最终验收续轮：原遗留增量已在正常 PrivacyQA 中通过 23 方法／37 次运行；随后发现并窄修正“原始 ModelRecoveryError 被误认为本次恢复失败”的事实分类，新增一项必要回归。修正后原锁忙，立即停止；最终新增修正、正常 Debug 构建/验签仍未完成，保持 partial。分版本证据只见权威 §9.64 E1。
 
 
-3T-1A 再次续验已通过最终源码 24 方法／38 次运行（含回滚事实新回归），受验源码哈希一致；随后正常 Debug 构建因原锁忙退出 3，未执行独立静态验签，不重试。当前测试缺口已补齐，构建/验签与指定复核等缺口保留；唯一当前证据见[权威 §9.64 E2](unified-search-commands.md#e2-最终源码定向测试通过debug-构建仍受锁阻塞2026-10-05)。
+3T-1A 再次续验已通过最终源码 24 方法／38 次运行（含回滚事实新回归），受验源码哈希一致；随后正常 Debug 构建因原锁忙退出 3，未执行独立静态验签，不重试。当前测试缺口已补齐，构建/验签与指定复核等缺口保留；唯一当前证据见权威 §9.64 E2。
 
 
-3T-1A 本地验收收口：最终受验源码哈希保持一致，沿用最终 24 方法／38 次执行通过证据；`./scripts/build.sh --no-wait` 正常 Debug 构建退出 0，静态验签 staticSignatureVerified=true。前述本地构建/验签缺口已补齐，指定 Cursor、C2B、人工与历史缺口不变；当前结论只维护于[权威 §9.64 E3](unified-search-commands.md#e3-本地最终验收收口2026-10-05)。未安装、发布或进入 3T-1B。
+3T-1A 本地验收收口：最终受验源码哈希保持一致，沿用最终 24 方法／38 次执行通过证据；`./scripts/build.sh --no-wait` 正常 Debug 构建退出 0，静态验签 staticSignatureVerified=true。前述本地构建/验签缺口已补齐，指定 Cursor、C2B、人工与历史缺口不变；当前结论只维护于权威 §9.64 E3。未安装、发布或进入 3T-1B。
 
 
 ### 最小普通创建指令隔离执行（3T-1B）
 
-单个 title＋day 的 TaskCreateCommandAdapter 复用原捕获与 SwiftData 事务，固定 UUID、原运行占用、私有事件/fake 消费者及最终证据统一见[权威 §9.65](unified-search-commands.md#965-阶段-3t-1b最小普通-todocreate-的隔离真实适配)。完整正常 PrivacyQA、原锁非等待申请、独立标识/目录及六项授权清除保持；指定 Cursor、C2B、人工和历史缺口独立保留。不接生产、其他参数或原生执行 UI，完成后停止。
+单个 title＋day 的 TaskCreateCommandAdapter 复用原捕获与 SwiftData 事务，固定 UUID、原运行占用、私有事件/fake 消费者及最终证据统一见权威 §9.65。完整正常 PrivacyQA、原锁非等待申请、独立标识/目录及六项授权清除保持；指定 Cursor、C2B、人工和历史缺口独立保留。不接生产、其他参数或原生执行 UI，完成后停止。
 
 
 ## 设置控件预览（2026-10-08）
