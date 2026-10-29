@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// X-1 简单指令的隔离夹具：内存库、私有事件、计数 fake 刷新；标签指令只在这里显式打开。
+/// 简单指令的隔离夹具：内存库、私有事件、计数 fake 刷新；标签指令只在这里显式打开。
 @MainActor final class SimpleCommandFixture {
     let io: TaskCaptureFixture
     let handoff: HandoffFixture
@@ -18,7 +18,7 @@ import Testing
     private(set) var adapter: SimpleCommandAdapter!
     var context: ModelContext { io.context }
 
-    /// 合并批 M-2：organize 为真时另装配标签整理规格；手记仓储用隔离保险箱与临时附件目录，来源证明可逐对象改为受保护。
+    /// organize 为真时另装配标签整理规格；手记仓储用隔离保险箱与临时附件目录，来源证明可逐对象改为受保护。
     var protected: Set<UUID> = []
     let vault = PrivacyVault(store: MemoryVaultConfigurationStore(), systemKeys: FakeSystemVaultKeys())
     let root = FileManager.default.temporaryDirectory.appending(path: "areachain-m2-tags-\(UUID().uuidString)", directoryHint: .isDirectory)

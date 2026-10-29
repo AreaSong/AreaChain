@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-2 A：gantt.shift 沿安排页拖动的同一平移规则与写入入口；一次事务、保留间隔、越出当月整组拒绝。
+/// gantt.shift 沿安排页拖动的同一平移规则与写入入口；一次事务、保留间隔、越出当月整组拒绝。
 @Suite(.serialized) @MainActor struct GanttShiftCommandTests {
     private func offset(_ value: Double) -> CommandArgument { .init(parameter: .offset, operation: .assign, value: .number(value)) }
     private func refs(_ todos: [TodoItem]) -> [CommandObjectReference] { todos.map { .init(type: .todo, id: $0.id) } }

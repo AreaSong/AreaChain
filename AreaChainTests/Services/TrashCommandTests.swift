@@ -117,7 +117,7 @@ import Testing
         #expect(f.base.refreshTargets == targets)
     }
 
-    /// 保存已调用后失败沿 B-M1：一律 unknown、不发布、不重放；以新 context 读出真实落盘结果。
+    /// 保存已调用后失败沿批量改期的规则：一律 unknown、不发布、不重放；以新 context 读出真实落盘结果。
     @Test(arguments: [TaskCreateCommandIO.SaveMode.throwBefore, .throwAfter])
     func saveFailureNeverReportsSuccess(mode: TaskCreateCommandIO.SaveMode) throws {
         let f = try TrashCommandFixture()

@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 @testable import AreaChain
 
-/// 合并批 M-1 B：适配器改为自读备注、取带键摘要（L8）。夹具原来靠“来源所有者声明”切换备注资格，
+/// 适配器改为自读备注、取带键摘要。夹具原来靠“来源所有者声明”切换备注资格，
 /// 现在在来源回调里落成真实状态：present 写入并保存合成备注，absent 清掉合成备注，unknown 撤走协调者密钥（无法证明）。
 /// 来源回调总在适配读备注之前、事务之外调用，因此在这里写库不会落进被测事务。
 enum SyntheticNotes: Equatable {

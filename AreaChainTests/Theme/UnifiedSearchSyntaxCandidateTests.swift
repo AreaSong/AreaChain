@@ -3,7 +3,7 @@ import SwiftUI
 import Testing
 @testable import AreaChain
 
-/// 修复批 M-7F：统一搜索恢复旧搜索的 `#`／`!`／`@` 候选（向上展开、点选补全）；`/` 开头仍只走指令候选。
+/// 统一搜索恢复旧搜索的 `#`／`!`／`@` 候选（向上展开、点选补全）；`/` 开头仍只走指令候选。
 /// 搜索不能创建标签：`#` 只列已有标签。只用合成标签名，不接仓储。
 @Suite(.serialized) @MainActor
 struct UnifiedSearchSyntaxCandidateTests {
@@ -62,7 +62,7 @@ struct UnifiedSearchSyntaxCandidateTests {
         #expect(!state.suggestions.isActive)
     }
 
-    /// 上下选择、Return 补全、Esc 先关候选（第二次 Esc 才交给结果页，沿 M-6 规则不清空查询）。
+    /// 上下选择、Return 补全、Esc 先关候选（第二次 Esc 才交给结果页，统一搜索的规则是不清空查询）。
     @Test func keyboardSelectsCompletesAndEscapeClosesCandidatesFirst() async throws {
         let host = UnifiedSearchTestHost(availableTags: Self.tags)
         defer { host.close() }

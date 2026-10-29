@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// M-5G：隔离宿主中附件的写入与删除只落宿主注入的存储；没有存储时写入与清除入口禁用。
+/// 隔离宿主中附件的写入与删除只落宿主注入的存储；没有存储时写入与清除入口禁用。
 /// 只用内存库、临时目录和私有命名剪贴板；不读写共享附件目录。界面用例纯程序化渲染，走后台轮。
 @Suite(.serialized, .tags(.backgroundWindow)) @MainActor struct UnifiedSearchContentAttachmentWriteHostTests {
     private func nodes(_ window: NSWindow?) -> [NSObject] { SettingsButtonTestSupport.elements(window?.contentView) }

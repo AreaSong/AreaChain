@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-3 C：两个直接执行的安全小动作。trash.restore 经共用独立确认面板、只能单项；
+/// 两个直接执行的安全小动作。trash.restore 经共用独立确认面板、只能单项；
 /// privacy.lock 沿“立即锁定”，锁定事件撤销结果展示、返回票据与托管借用。
 @Suite(.serialized, .tags(.backgroundWindow)) @MainActor struct UnifiedSearchPrivacyRestoreTests {
     @Test func lockRevokesPresentationTicketAndPostsLockEvent() async throws {
@@ -32,7 +32,7 @@ import Testing
         try await fixture.enter("/privacy/lock")
         fixture.controller.intent(.open, source: fixture.controller.buffer)
         try await fixture.settle()
-        // 长文托管（CommandLongTextEscrow）只订阅这个隔离隐私中心的 privacyWillLock；该事件撤销借用由 L-M1b 的
+        // 长文托管（CommandLongTextEscrow）只订阅这个隔离隐私中心的 privacyWillLock；该事件撤销借用由
         // LongTextLoanTests 证明，这里证明 privacy.lock 确实把锁定事件发到了同一个中心，且只发一次。
         #expect(!fixture.vault.isUnlocked && locks == 1)
         #expect(fixture.controller.returnSearch == nil, "锁定撤返回票据")

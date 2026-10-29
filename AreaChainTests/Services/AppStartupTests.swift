@@ -86,7 +86,7 @@ struct AppStartupTests {
                           named: "startup-runtime.json")
     }
 
-    /// M-5F（C-M2 整改）：QA 包同样注册 areachain scheme，测试分支收到 URL 时不能打开浮窗、工作台或改共享导航。
+    /// QA 包同样注册 areachain scheme，测试分支收到 URL 时不能打开浮窗、工作台或改共享导航。
     @Test func testingBranchIgnoresURLOpens() throws {
         #expect(AppStartup.policy == .testing)
         let activate = AppWindows.activateForOpening, show = AppWindows.showWorkspaceWindow

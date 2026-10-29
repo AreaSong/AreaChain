@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// T-M6：第 failOn 次备注／改期／子任务排序调用先真实写入再抛错，检验多目标共同事务整体回滚。
+/// 第 failOn 次备注／改期／子任务排序调用先真实写入再抛错，检验多目标共同事务整体回滚。
 @MainActor final class TaskTM6FailureRepository: TaskRepositoryProtocol {
     let context: ModelContext
     let failOn: Int

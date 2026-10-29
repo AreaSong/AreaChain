@@ -53,7 +53,7 @@ struct UnifiedSearchOperationInteractionTests {
         let fixture = try UnifiedSearchResultsFixture()
         defer { fixture.stop() }
         _ = try await fixture.publish()
-        // 合并批 M-3：clipboard.limit 改为“打开原页面”，数字参数样例换成同为整数的 tag.order 位置。
+        // clipboard.limit 改为“打开原页面”，数字参数样例换成同为整数的 tag.order 位置。
         try fixture.startOperation("tag.order")
         try fixture.typeParameter(.position, text: "25")
         let host = UnifiedSearchTestHost(results: fixture.controller, operations: true)
@@ -90,7 +90,7 @@ struct UnifiedSearchOperationInteractionTests {
         let fixture = try UnifiedSearchResultsFixture()
         defer { fixture.stop() }
         _ = try await fixture.publish()
-        // 合并批 M-3：clipboard.ignoreApp 改为“打开原页面”，短文本样例换成 tag.create 的名称。
+        // clipboard.ignoreApp 改为“打开原页面”，短文本样例换成 tag.create 的名称。
         try fixture.startOperation("tag.create")
         let host = UnifiedSearchTestHost(results: fixture.controller, operations: true)
         defer { host.close() }

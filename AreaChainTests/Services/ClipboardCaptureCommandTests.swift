@@ -24,7 +24,7 @@ final class FailingAttachmentStorage: AttachmentStorageProtocol, @unchecked Send
     func resetDirectory(fileManager: FileManager) throws { try base.resetDirectory(fileManager: fileManager) }
 }
 
-/// 检查点 E：剪贴板加今天的共享入口与抽取前算法逐字等价；capture.clipboard 预览不读剪贴板、提交只读一次。
+/// 剪贴板加今天的共享入口与抽取前算法逐字等价；capture.clipboard 预览不读剪贴板、提交只读一次。
 @Suite(.serialized) @MainActor struct ClipboardCaptureCommandTests {
     @MainActor final class Fixture {
         let io: TaskCaptureFixture
@@ -172,7 +172,7 @@ final class FailingAttachmentStorage: AttachmentStorageProtocol, @unchecked Send
     }
 
     /// 原签名入口仍读传入的剪贴板；菜单栏调用不变。这里用私有剪贴板与临时附件目录，不碰系统剪贴板。
-    /// 合并批 M-1 复核整改：指令按 L7 遇到私密标签整条不写，并逐个说明；原界面入口（同一 ClipboardCapture.apply）仍跳过标签照常保存。
+    /// 指令遇到私密标签整条不写，并逐个说明；原界面入口（同一 ClipboardCapture.apply）仍跳过标签照常保存。
     @Test func commandRejectsPrivateTagWhileSharedEntrySkipsIt() throws {
         let f = try Fixture()
         f.io.context.insert(TagItem(name: "私账", sortOrder: 0, isPrivateDiary: true))

@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-3 C：trash.restore 与回收站页同一写入（TrashRestoreService）；必须经共用独立确认、只能单项；
+/// trash.restore 与回收站页同一写入（TrashRestoreService）；必须经共用独立确认、只能单项；
 /// 受保护手记及其图片、加密图片拒绝；拥有者也在回收站的图片不能单独恢复。
 @Suite(.serialized) @MainActor struct TrashRestoreCommandTests {
     @MainActor final class Fixture {

@@ -4,7 +4,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// L-M1b 检查点 C：备注摘要改为协调者随机内存密钥的 HMAC-SHA256（L6）；冲突基线与未知核对的三摘要规则。
+/// 备注摘要改为协调者随机内存密钥的 HMAC-SHA256；冲突基线与未知核对的三摘要规则。
 @Suite(.serialized) @MainActor struct LongTextDigestTests {
     /// 同一协调者同文同摘要；换协调者（换密钥）同文不同摘要；都不是可被字典猜出的纯 SHA-256。
     @Test func notesDigestIsKeyedPerCoordinator() throws {

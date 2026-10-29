@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-3 B 的隔离 fake：激活、显示、浮层、关闭、退出全部只计数，绝不真的退出测试宿主。
+/// 系统指令的隔离 fake：激活、显示、浮层、关闭、退出全部只计数，绝不真的退出测试宿主。
 @MainActor final class SystemCommandFakes {
     var dismisses = 0, activations = 0, shows = 0, closes = 0, toggles = 0, modes: [BoardTab] = []
     var quitAlerts: [String] = [], diaryConfirms = 0, terminations = 0

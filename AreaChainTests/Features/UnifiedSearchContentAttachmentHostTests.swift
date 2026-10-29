@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// M-5F（N-M2 整改）：隔离宿主没有显式附件存储时，附件页与回收站不得退回共享附件目录；
+/// 隔离宿主没有显式附件存储时，附件页与回收站不得退回共享附件目录；
 /// 只用内存库与临时目录。不装配统一搜索控制器，让工作台直接渲染目标页；纯程序化渲染，不发键鼠事件，走后台轮。
 @Suite(.serialized, .tags(.backgroundWindow)) @MainActor struct UnifiedSearchContentAttachmentHostTests {
     private func nodes(_ window: NSWindow?) -> [NSObject] { SettingsButtonTestSupport.elements(window?.contentView) }

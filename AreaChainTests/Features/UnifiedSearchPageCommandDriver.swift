@@ -3,8 +3,8 @@ import SwiftUI
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-2 原生页面指令的共用操作：与参数确认、对象选择发出的事件相同；面板按钮先滚进操作面板，
-/// 再用 AXPress 触发同一入口（工作台窗口里合成鼠标到不了操作面板，见 §9.96 缺口）。
+/// 原生页面指令的共用操作：与参数确认、对象选择发出的事件相同；面板按钮先滚进操作面板，
+/// 再用 AXPress 触发同一入口（工作台窗口里合成鼠标到不了操作面板，原因未判定）。
 extension UnifiedSearchNavigationFixture {
     func begin(_ command: String) async throws {
         try #require(controller.beginOperation(.init(rawValue: command), source: controller.buffer) != nil)

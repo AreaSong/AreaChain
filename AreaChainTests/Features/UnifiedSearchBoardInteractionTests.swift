@@ -4,7 +4,7 @@ import SwiftUI
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-2 A（原生）：真实工作台宿主里的看板指令。导航沿 N-M1 显示当前页、只写页面那一份状态；
+/// 原生：真实工作台宿主里的看板指令。经导航显示当前页、只写页面那一份状态；
 /// 页面不对时说明且不切页；月／周与安排页选择走页面指令面板；修改指令转交给已有指令。
 /// 0 标准英文浅色、1 标准英文深色、2 最小中文浅色、3 最小中文深色。
 @Suite(.serialized) @MainActor struct UnifiedSearchBoardInteractionTests {
@@ -60,7 +60,7 @@ import Testing
         try await f.snapshot("m2-calendar-week-\(style)")
     }
 
-    /// 选择沿 N-M1：先显示安排页，再按页面登记的色块顺序选择；检查器沿页面的 inspect。
+    /// 选择经导航：先显示安排页，再按页面登记的色块顺序选择；检查器沿页面的 inspect。
     @Test func ganttSelectionAndInspectUseThePageProjection() async throws {
         let f = try fixture(.gantt)
         defer { f.stop() }

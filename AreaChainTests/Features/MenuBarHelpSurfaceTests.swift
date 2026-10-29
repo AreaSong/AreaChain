@@ -108,7 +108,7 @@ struct MenuBarHelpSurfaceTests {
         let composer = BoardComposerSession()
         composer.tasks.text = "Synthetic original"
         let toolbar = MenuBarToolbarState()
-        // 收尾批 M-7：底栏挂真实统一搜索（同一装配），不是装配失败的“不可用”形态。
+        // 底栏挂真实统一搜索（同一装配），不是装配失败的“不可用”形态。
         let search = try MenuBarUnifiedSearchProbe(container: support.container)
         defer { search.stop() }
         let window = helpWindow(support, composer: composer, toolbar: toolbar, search: search)
@@ -179,7 +179,7 @@ struct MenuBarHelpSurfaceTests {
         let composer = BoardComposerSession()
         composer.tasks.text = "Synthetic original"
         let toolbar = MenuBarToolbarState()
-        // 收尾批 M-7：底栏挂真实统一搜索（同一装配），不是装配失败的“不可用”形态。
+        // 底栏挂真实统一搜索（同一装配），不是装配失败的“不可用”形态。
         let search = try MenuBarUnifiedSearchProbe(container: support.container)
         defer { search.stop() }
         let window = helpWindow(support, composer: composer, toolbar: toolbar, search: search)
@@ -231,7 +231,7 @@ struct MenuBarHelpSurfaceTests {
         let composer = BoardComposerSession()
         composer.tasks.text = "Synthetic original"
         let toolbar = MenuBarToolbarState()
-        // 收尾批 M-7：底栏挂真实统一搜索（同一装配），不是装配失败的“不可用”形态。
+        // 底栏挂真实统一搜索（同一装配），不是装配失败的“不可用”形态。
         let search = try MenuBarUnifiedSearchProbe(container: support.container)
         defer { search.stop() }
         let window = helpWindow(support, composer: composer, toolbar: toolbar, search: search)

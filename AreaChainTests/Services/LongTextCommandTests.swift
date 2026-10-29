@@ -3,8 +3,8 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// L-M1b 检查点 D（服务层）：三条长文指令经 prepare → accept → 托管封存 → 借用 → 提交的完整流程；
-/// L7 私密／预置标签在预览时就判为不可执行；原界面保存行为不变。
+/// 服务层：三条长文指令经 prepare → accept → 托管封存 → 借用 → 提交的完整流程；
+/// 私密／预置标签在预览时就判为不可执行；原界面保存行为不变。
 @Suite(.serialized) @MainActor struct LongTextCommandTests {
     static let commands: [(String, CommandObjectType?)] = [("todo.notes", .todo), ("routine.notes", .routine), ("routine.capture", nil)]
 
@@ -43,7 +43,7 @@ import Testing
         #expect(try f.stored(TagItem.self).count == 3)
     }
 
-    /// 合并批 M-1 A：同一判定，结果不同——指令整条拒绝（上一用例），详情页照常保存文字、不关联私密标签并提示。
+    /// 同一判定，结果不同——指令整条拒绝（上一用例），详情页照常保存文字、不关联私密标签并提示。
     @Test func detailPanelSavesTextButSkipsPrivateTag() throws {
         let f = try TaskSimpleFixture(longText: true)
         _ = try f.insert(TagItem(name: "私密", sortOrder: 0, isPrivateDiary: true))

@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import AreaChain
 
-/// L-M1b 检查点 A：长文守卫按目录声明的 longText 参数判定；clear 不带正文也必须经过托管才可放行。
+/// 长文守卫按目录声明的 longText 参数判定；clear 不带正文也必须经过托管才可放行。
 @Suite(.serialized) @MainActor struct LongTextGuardTests {
     private static func draft(_ command: String, _ argument: CommandArgument?, type: CommandObjectType = .todo,
                               protection: CommandProtectionRequirement = .ordinary) -> CommandDraft {
@@ -21,7 +21,7 @@ import Testing
         f.coordinator.textDigest.imprint(text, parameter: parameter, operation: operation, escrow: UUID())
     }
 
-    /// 复现 §9.94 现状第 2 条：未托管的 clear 草稿不带正文，旧守卫按值判定时不命中，可以直接封存。
+    /// 复现旧守卫的漏洞：未托管的 clear 草稿不带正文，旧守卫按值判定时不命中，可以直接封存。
     @Test(arguments: [("todo.notes", CommandObjectType.todo), ("routine.notes", .routine)])
     func unescrowedClearIsRejectedAtSeal(_ command: String, _ type: CommandObjectType) throws {
         let f = try HandoffFixture()

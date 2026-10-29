@@ -105,7 +105,7 @@ import Testing
         try host.snapshot("tm5-changed-rejected")
     }
 
-    /// 合并批 M-1 B：带备注的待办可以转换；损失清单与独立确认面板都单列“备注原样搬到新对象”。
+    /// 带备注的待办可以转换；损失清单与独立确认面板都单列“备注原样搬到新对象”。
     @Test(arguments: [0, 3]) func todoWithNotesListsNotesInLossesAndConfirmation(style: Int) async throws {
         let f = try UnifiedSearchConvertFixture(todoNotes: "合成备注 · synthetic note")
         defer { f.results.stop() }

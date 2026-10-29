@@ -4,7 +4,7 @@ import SwiftUI
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-6 检查点 E：两个宿主显示统一搜索；收尾批 M-7 删除旧搜索后，装配失败时搜索框显示不阻塞的说明。
+/// 两个宿主显示统一搜索；没有旧搜索可退，装配失败时搜索框显示不阻塞的说明。
 /// 后台窗口、只程序化输入，不发键鼠事件。
 /// 截图作为结果包附件，供人工逐张查看中英文、浅深色、正常与最小窗口。
 @Suite(.serialized, .tags(.backgroundWindow)) @MainActor struct UnifiedSearchProductionHostTests {
@@ -129,7 +129,7 @@ import Testing
         try host.snapshot("m6-menubar-on-\(style)")
     }
 
-    /// 收尾批 M-7：装配失败没有旧搜索可退，两个宿主的搜索框位置显示一句不阻塞的说明（中英文），
+    /// 装配失败没有旧搜索可退，两个宿主的搜索框位置显示一句不阻塞的说明（中英文），
     /// 工作台与浮层其余部分照常；⌘F 等入口不会把浮层卡在“搜索焦点”上；偏好变化重试成功后换回统一搜索框。
     @Test(arguments: [0, 1, 2, 3]) func assemblyFailureIsExplainedInBothSearchBoxes(style: Int) async throws {
         let host = try Host(failing: true)
@@ -172,7 +172,7 @@ import Testing
         }
     }
 
-    /// 收尾批 M-7：正式版宿主（共享存储）下工作台的系统类页面照常可操作；隔离宿主仍只读呈现。
+    /// 正式版宿主（共享存储）下工作台的系统类页面照常可操作；隔离宿主仍只读呈现。
     /// 删除开关前正式版也带宿主，这些页被整页禁用，只能靠关开关退回；删除开关后必须由宿主类型区分。
     @Test func productionHostKeepsSystemPagesOperable() async throws {
         for production in [true, false] {

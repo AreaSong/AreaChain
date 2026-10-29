@@ -78,7 +78,7 @@ import Testing
         try f.start(.record)
         f.source = .init(revision: UUID(), protection: .required)
         #expect(throws: TaskCopyCommandIssue.protectedContent) { try f.preview() }
-        // 合并批 M-1 B：备注证明由适配自读；没有协调者密钥即无法证明。
+        // 备注证明由适配自读；没有协调者密钥即无法证明。
         f.source = .init(revision: UUID(), protection: .ordinary)
         let key = f.adapter.environment?.notesKey
         f.adapter.environment?.notesKey = nil

@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-3 A：对照表每一项“预览说明正确、回车只导航、没有写入、没有系统调用”；返回票据可回到搜索。
+/// 对照表每一项“预览说明正确、回车只导航、没有写入、没有系统调用”；返回票据可回到搜索。
 @Suite(.serialized, .tags(.backgroundWindow)) @MainActor struct UnifiedSearchOriginalPageTests {
     /// 每条页面路由都由 executeNavigation 落到 executeOriginalPage 的 `.page` 分支；该分支只读 tab、focusesTrash、finishesOnPage，
     /// 预览另读 sectionKey、noteKey。逐条核对路径能解析回本指令、不被更早的导航分支截走，原生挂载只需每种组合一条。
@@ -132,7 +132,7 @@ import Testing
         #expect(try fixture.handoff.state().operations.active == nil)
         try await fixture.settle()
         try await fixture.enter("/notification/complete")
-        // 工作台操作面板的合成鼠标事件到不了按钮（§9.96 已知），沿 M-1 用 AXPress 按同一按钮。
+        // 工作台操作面板的合成鼠标事件到不了按钮（已知限制），沿任务页指令测试的做法用 AXPress 按同一按钮。
         try await press(fixture, "unified.originalPage.use.todo.completion")
         #expect(fixture.controller.buffer.text == CommandCatalog.standard.command(id: .init(rawValue: "todo.completion"))?.path)
         try await fixture.go("/notification/snooze")

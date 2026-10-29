@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 沿 B-M1 的隔离批量环境；回收能力只在这里显式打开。
+/// 沿批量改期的隔离批量环境；回收能力只在这里显式打开。
 @MainActor final class TrashCommandFixture {
     let base: BatchCommandFixture
     let adapter: TrashCommandAdapter

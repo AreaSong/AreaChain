@@ -87,7 +87,7 @@ struct WorkspaceHeaderInteractionTests {
         #expect(host.createField?.stringValue == "")
     }
 
-    /// 收尾批 M-7：⌘F 聚焦的是统一搜索框（经唯一装配，测试容器与页面同一 mainContext）；搜索不创建标签，清空后回到原页面。
+    /// ⌘F 聚焦的是统一搜索框（经唯一装配，测试容器与页面同一 mainContext）；搜索不创建标签，清空后回到原页面。
     @Test func globalShortcutWinsOverDiaryLocalSearchAndClearingRestoresSource() async throws {
         let host = try HeaderTestHost()
         defer { host.close() }

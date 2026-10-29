@@ -237,7 +237,7 @@ struct WorkspaceInspectorSizingTests {
         #expect(todo.title == "Synthetic inspection" && !fixture.container.mainContext.hasChanges)
     }
 
-    /// 收尾批 M-7：顶栏只有统一搜索。装配的导航就是 `.shared`，结果页展示写到本工作台；不传宿主，页面仍按无宿主运行。
+    /// 顶栏只有统一搜索。装配的导航就是 `.shared`，结果页展示写到本工作台；不传宿主，页面仍按无宿主运行。
     private static var searches: [ObjectIdentifier: (UnifiedSearchProductionFixture, UnifiedSearchProductionAssembly)] = [:]
 
     private func makeWindow(_ fixture: SettingsButtonTestSupport) throws -> NSWindow {

@@ -64,7 +64,7 @@ import Testing
         #expect(f.count("save") == 0)
     }
 
-    /// 合并批 M-1 B：带备注的目标可以回收（计入 counts.notes 供确认面板说明）；受保护来源仍逐个报原因。
+    /// 带备注的目标可以回收（计入 counts.notes 供确认面板说明）；受保护来源仍逐个报原因。
     @Test func ineligibleTargetsAreReportedPerTarget() throws {
         let f = try TrashCommandFixture()
         let notes = f.base.todos[1]

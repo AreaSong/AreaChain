@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-4 C（J2）：记录置顶、改日、普通标签直接执行（沿原仓储与原菜单）；加私密标签拒绝并引导到原手记页；
+/// J2：记录置顶、改日、普通标签直接执行（沿原仓储与原菜单）；加私密标签拒绝并引导到原手记页；
 /// 受保护手记改为打开原手记页且不读正文；diary.tags 的未决项已解决；“私密”标记、显示、遮罩只在原页面对照里。
 @Suite(.serialized) @MainActor struct DiaryOrganizeCommandTests {
     static func targets(_ entries: [DiaryEntry]) -> [CommandObjectReference] { entries.map { .init(type: .diary, id: $0.id) } }
@@ -34,7 +34,7 @@ import Testing
         }
     }
 
-    /// 决策 2：普通标签加减与整体替换沿原菜单的 toggleTag；要加私密标签整条拒绝（隐私转换只在原手记页）。
+    /// 普通标签加减与整体替换沿原菜单的 toggleTag；要加私密标签整条拒绝（隐私转换只在原手记页）。
     @Test func tagsChangeOrdinaryTagsAndRefusePrivateOnes() throws {
         let f = try TaskSimpleFixture(diary: true)
         let work = try f.insert(TagItem(name: "工作", sortOrder: 0))
@@ -66,7 +66,7 @@ import Testing
         _ = secret
     }
 
-    /// 决策 3：“私密”标记、显示、遮罩只在 CommandOriginalPage 里，骨架不装配。
+    /// “私密”标记、显示、遮罩只在 CommandOriginalPage 里，骨架不装配。
     @Test func privacyMarkRevealAndMaskStayOnTheOriginalPage() throws {
         let f = try TaskSimpleFixture(diary: true)
         for id in ["diary.privateMark", "diary.reveal", "diary.mask"] {

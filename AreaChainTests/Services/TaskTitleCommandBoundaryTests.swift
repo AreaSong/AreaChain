@@ -124,7 +124,7 @@ struct TaskTitleCommandBoundaryTests {
         #expect(fixture.base.io.trace.isEmpty && !fixture.base.io.context.hasChanges)
     }
 
-    /// 合并批 M-1 B：todo.title 不放宽——真实备注拒绝为 notesNotSupported，无法证明（无密钥）为 sourceUnavailable。
+    /// todo.title 不放宽——真实备注拒绝为 notesNotSupported，无法证明（无密钥）为 sourceUnavailable。
     @Test(arguments: [SyntheticNotes.present, .unknown])
     func missingNoNotesProofRejectsBeforeProjection(notes: SyntheticNotes) throws {
         let fixture = try TaskTitleCommandFixture()

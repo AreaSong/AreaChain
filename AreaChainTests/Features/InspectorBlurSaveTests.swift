@@ -5,8 +5,8 @@ import SwiftUI
 import Testing
 @testable import AreaChain
 
-/// 修复批 M-7F：正式版宿主（`sharesProductionStorage`）下检查器失焦即保存，与删开关前的旧界面一致；
-/// 隔离宿主仍沿 N-M1 只留草稿（见 UnifiedSearchNavigationBoundaryTests）。只用内存库与合成文字。
+/// 正式版宿主（`sharesProductionStorage`）下检查器失焦即保存，与删开关前的旧界面一致；
+/// 隔离宿主为保证导航零写入仍只留草稿（见 UnifiedSearchNavigationBoundaryTests）。只用内存库与合成文字。
 @Suite(.serialized) @MainActor
 struct InspectorBlurSaveTests {
     @Test func titleBlurSavesInProductionHost() async throws {

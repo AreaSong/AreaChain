@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 检查点 D：快速新增重复事项的共享入口与抽取前算法逐字等价；routine.capture 规格沿同一入口，
+/// 快速新增重复事项的共享入口与抽取前算法逐字等价；routine.capture 规格沿同一入口，
 /// 但 body 是 longText，执行受导出守卫拒绝（受控借用另批），这里直接运行规格。
 @Suite(.serialized) @MainActor struct RoutineCaptureCommandTests {
     nonisolated static let inputs = ["散步 #WORK #今日 @18:00", "  读书 !p1 #新标签\n备注第二行  ", "#只有标签", "   ", "看图 @图.png"]

@@ -3,9 +3,9 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-4：手记小窗会话的保存／重载／舍弃（复用 DiaryEditorSession，只作用于已打开的小窗）、普通手记复制
+/// 手记小窗会话的保存／重载／舍弃（复用 DiaryEditorSession，只作用于已打开的小窗）、普通手记复制
 /// （PrivateClipboard，隔离剪贴板）、受保护目标改为打开原手记页，以及“私密”标记／显示／遮罩只打开原手记页。
-/// 沿 M-3 的隔离导航夹具与 SystemCommandFakes；合成内存库，不退出、不写真实剪贴板。
+/// 沿系统指令的隔离导航夹具与 SystemCommandFakes；合成内存库，不退出、不写真实剪贴板。
 @Suite(.serialized, .tags(.backgroundWindow)) @MainActor struct UnifiedSearchDiaryCommandTests {
     @Test func diaryWindowSessionSaveReloadAndDiscardReuseTheSession() async throws {
         let fixture = try UnifiedSearchNavigationFixture()
@@ -87,7 +87,7 @@ import Testing
         #expect(fixture.router.mounted("page.diary") && fixture.controller.returnSearch != nil)
     }
 
-    /// 决策 3：“私密”标记、显示、遮罩只导航到原手记页，不建草稿、不写数据。
+    /// “私密”标记、显示、遮罩只导航到原手记页，不建草稿、不写数据。
     @Test func privacyMarkRevealAndMaskOnlyOpenTheNotesPage() async throws {
         let fixture = try UnifiedSearchNavigationFixture()
         defer { fixture.stop() }

@@ -119,7 +119,7 @@ struct CommandNativeFailureTests {
         let f = try CommandNativeFixture()
         defer { f.close() }
         var rows = ["bytes,sample,milliseconds,checkpoints"]
-        // C-M3 起正文以 CommandLongTextLimit 为上限；最大档留出 6 次“字”的空间，原 1MiB 档改为断言拒绝。
+        // 正文以 CommandLongTextLimit 为上限；最大档留出 6 次“字”的空间，原 1MiB 档改为断言拒绝。
         for bytes in [1_024, CommandLongTextLimit.maxUTF8Bytes - 24] {
             let body = String(repeating: "中a🙂", count: bytes / 8)
             f.editor.insertText(body, replacementRange: NSRange(location: 0, length: f.editor.string.utf16.count))

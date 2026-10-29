@@ -45,7 +45,7 @@ import Testing
         try host.snapshot("tm4-single-result-\(style)")
     }
 
-    /// 合并批 M-1 B：带备注的对象可以回收；预览与独立确认面板都说明“备注随对象进回收站”。
+    /// 带备注的对象可以回收；预览与独立确认面板都说明“备注随对象进回收站”。
     @Test(arguments: [0, 3]) func trashWithNotesExplainsNotesInPreviewAndConfirmation(style: Int) async throws {
         let f = try UnifiedSearchTrashFixture()
         defer { f.results.stop() }

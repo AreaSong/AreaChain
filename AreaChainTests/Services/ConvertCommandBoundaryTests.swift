@@ -4,7 +4,7 @@ import Testing
 @testable import AreaChain
 
 @Suite(.serialized) @MainActor struct ConvertCommandBoundaryTests {
-    /// 合并批 M-1 B：带备注可以转换，损失清单标出“备注搬到新对象”；受保护来源与无法证明仍拒绝。
+    /// 带备注可以转换，损失清单标出“备注搬到新对象”；受保护来源与无法证明仍拒绝。
     @Test func notesAreListedAndProtectedSourcesAreRejectedWithReason() throws {
         let f = try ConvertCommandFixture()
         f.todo.notes = "有备注"

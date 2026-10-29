@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-6 检查点 D：写入侧与系统服务接线。同一份装配、内存容器的 mainContext（自动保存开着，与正式版同形）、
+/// 写入侧与系统服务接线。同一份装配、内存容器的 mainContext（自动保存开着，与正式版同形）、
 /// 私有事件中心与计数 fake 副作用；不发系统授权、不碰真实剪贴板与窗口。
 @Suite(.serialized, .tags(.backgroundWindow)) @MainActor struct UnifiedSearchProductionCommandTests {
     static let host = UnifiedSearchProductionAssembly.workspaceHost

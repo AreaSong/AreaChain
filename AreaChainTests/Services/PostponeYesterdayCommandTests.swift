@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 检查点 C：昨天清单里全部未完成的待办一次事务延至今天；取法沿今日页，写入沿 B-M1 的 moveTodo。
+/// 昨天清单里全部未完成的待办一次事务延至今天；取法沿今日页，写入沿批量改期的 moveTodo。
 @Suite(.serialized) @MainActor struct PostponeYesterdayCommandTests {
     private struct Board {
         let yesterday: TodoItem

@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// T-M5 原生夹具：合成内存库、私有事件、固定时钟与计数 fake 日历刷新；转换只在此显式装配。
+/// 互转原生夹具：合成内存库、私有事件、固定时钟与计数 fake 日历刷新；转换只在此显式装配。
 @MainActor final class UnifiedSearchConvertFixture {
     let service: ConvertCommandFixture
     let results: UnifiedSearchResultsFixture

@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-1 检查点 C（服务层）：页面指令只读写页面自己的那一份状态；页面不对时拒绝且不切页。
+/// 服务层：页面指令只读写页面自己的那一份状态；页面不对时拒绝且不切页。
 @Suite(.serialized) @MainActor struct WorkspacePageCommandTests {
     @MainActor final class Fixture {
         let io: TaskCaptureFixture

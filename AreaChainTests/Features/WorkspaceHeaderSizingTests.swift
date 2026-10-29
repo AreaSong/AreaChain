@@ -6,7 +6,7 @@ import Testing
 @Suite(.serialized) @MainActor
 struct WorkspaceHeaderSizingTests {
     private let previousAccessibility = NSApp.accessibilityAttributeValue(NSAccessibility.Attribute(rawValue: "AXEnhancedUserInterface"))
-    /// 收尾批 M-7：顶栏只有统一搜索；每个窗口经唯一装配挂接一个工作台控制器，release 时销毁。
+    /// 顶栏只有统一搜索；每个窗口经唯一装配挂接一个工作台控制器，release 时销毁。
     private static var searches: [ObjectIdentifier: (UnifiedSearchProductionFixture, UnifiedSearchProductionAssembly)] = [:]
     @Test func longTitleWithoutActionsKeepsInputAndHasNoEmptyMenu() async throws {
         let nav = WorkspaceNavigation(boardSelection: BoardSelection())

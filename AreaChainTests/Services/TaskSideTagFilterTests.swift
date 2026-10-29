@@ -4,7 +4,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-1 检查点 A：任务、子任务、习惯一侧从文字解析标签时，照常保存文字，但不关联私密标签与预设标签，
+/// 任务、子任务、习惯一侧从文字解析标签时，照常保存文字，但不关联私密标签与预设标签，
 /// 保存成功后给出一次提示；手记一侧仍关联私密标签（按标签加密手记靠它实现）。
 @Suite(.serialized) @MainActor struct TaskSideTagFilterTests {
     @MainActor final class Scenario {

@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// T-M4 原生夹具：合成内存库、私有事件与 fake 剪贴板；回收与复制只在此显式装配。
+/// 回收与复制原生夹具：合成内存库、私有事件与 fake 剪贴板；回收与复制只在此显式装配。
 @MainActor final class UnifiedSearchTrashFixture {
     let service: TrashCommandFixture
     let results: UnifiedSearchResultsFixture

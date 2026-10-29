@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 检查点 F：骨架按目录状态拒绝未决／不可用指令；tag.color 与原标签页一致跳过预置标签；新建身份只分配一次。
+/// 骨架按目录状态拒绝未决／不可用指令；tag.color 与原标签页一致跳过预置标签；新建身份只分配一次。
 @Suite(.serialized) @MainActor struct SimpleCommandSkeletonTests {
     /// 只为检验骨架准入：规格本身合法，拒绝只能来自目录状态。
     struct CatalogProbe: SimpleCommandSpec {
@@ -18,7 +18,7 @@ import Testing
 
     @Test func unresolvedOrUnavailableCatalogEntriesAreNeverAssembled() throws {
         let f = try SimpleCommandFixture()
-        // tag.merge 已在合并批 M-2 按用户决策 3（涉及私密标签整条拒绝）解决，不再是未决项。
+        // tag.merge 已按用户决定（涉及私密标签整条拒绝）解决，不再是未决项。
         #expect(CommandCatalog.standard.command(id: .init(rawValue: "tag.merge"))?.availability == .declared)
         for (id, availability) in [("tag.cleanup", "unresolved"), ("tag.unlinkGlobal", "unavailable")] {
             let descriptor = try #require(CommandCatalog.standard.command(id: .init(rawValue: id)))

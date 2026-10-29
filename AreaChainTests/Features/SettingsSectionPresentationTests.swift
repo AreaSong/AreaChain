@@ -23,7 +23,7 @@ struct SettingsSectionPresentationTests {
         try SystemPageHost.assertContained(["settings.login.needsApproval", "settings.login.openSystem"], in: window)
     }
 
-    /// 收尾批 M-7：统一搜索是唯一入口，通用设置不再有“搜索”分节与开关；装配失败的说明改在搜索框里（见 UnifiedSearchProductionHostTests）。
+    /// 统一搜索是唯一入口，通用设置不再有“搜索”分节与开关；装配失败的说明改在搜索框里（见 UnifiedSearchProductionHostTests）。
     @Test(arguments: ["zh-Hans", "en"]) func generalSettingsHaveNoSearchSwitch(locale: String) async throws {
         let fixture = try SettingsButtonTestSupport()
         defer { fixture.cleanup() }

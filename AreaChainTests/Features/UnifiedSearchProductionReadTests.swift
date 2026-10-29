@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-6 检查点 C：正式版读取接线。同一份装配、内存容器、私有事件中心；不开窗口。
+/// 正式版读取接线。同一份装配、内存容器、私有事件中心；不开窗口。
 @Suite(.serialized, .tags(.backgroundWindow)) @MainActor struct UnifiedSearchProductionReadTests {
     static func query(_ text: String) -> ContentQuerySession {
         let page = QuerySessionFixture.page(.today(.init()), host: UnifiedSearchProductionAssembly.workspaceHost)
@@ -75,7 +75,7 @@ import Testing
         #expect(!controller.session.hasRetainedPresentation)
     }
 
-    /// 修复批 M-6R 检查点 A：与 ContentQueryBodyReadTests／ImageContentQueryPrivacyTests 的旧格式隐私用例同一组手记，
+    /// 与 ContentQueryBodyReadTests／ImageContentQueryPrivacyTests 的旧格式隐私用例同一组手记，
     /// 改走正式版唯一装配点；结果、摘要、预览与图片关联里都不能出现这些手记的正文或附件文件名。
     @Test func legacySensitiveDiariesStayHiddenThroughProductionAssembly() async throws {
         let fixture = try UnifiedSearchProductionFixture()

@@ -3,7 +3,7 @@ import Foundation
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-2 D 的隔离剪贴板：临时目录里的历史、私有命名剪贴板（不碰系统通用剪贴板）、fake 辅助功能门与按键、
+/// 剪贴板指令的隔离剪贴板：临时目录里的历史、私有命名剪贴板（不碰系统通用剪贴板）、fake 辅助功能门与按键、
 /// fake 小窗（只计数，不建窗口）。
 @MainActor final class ClipboardCommandFixture {
     /// 门与按键的计数：先于会话创建，闭包只捕获它。

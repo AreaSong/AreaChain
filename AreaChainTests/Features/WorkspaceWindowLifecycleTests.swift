@@ -75,7 +75,7 @@ struct WorkspaceWindowLifecycleTests {
 @MainActor
 private final class WorkspaceWindowHost: NSObject, NSWindowDelegate {
     let fixture: SettingsButtonTestSupport
-    /// 收尾批 M-7：顶栏只有统一搜索；经唯一装配挂接，与工作台页面共用同一内存容器。
+    /// 顶栏只有统一搜索；经唯一装配挂接，与工作台页面共用同一内存容器。
     let searchFixture: UnifiedSearchProductionFixture
     let assembly: UnifiedSearchProductionAssembly
     let window: NSWindow

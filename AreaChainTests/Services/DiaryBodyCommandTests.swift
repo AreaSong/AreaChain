@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-4 B（J1 服务层）：diary.create／diary.body 经 prepare → accept →（确认）→ 托管封存 → 借用 → 提交；
+/// J1 服务层：diary.create／diary.body 经 prepare → accept →（确认）→ 托管封存 → 借用 → 提交；
 /// 只有普通手记直接执行，受保护目标在读取正文前拒绝，正文含私密标签被拒，超长已有正文改为打开原页面，
 /// 锁定后旧借用失效，哨兵正文不出现在预览、接受、Run、Facts、托管描述与追踪里。合成内存库与隔离保险箱。
 @Suite(.serialized) @MainActor struct DiaryBodyCommandTests {
@@ -47,7 +47,7 @@ import Testing
         #expect(try f.stored(DiaryEntry.self).count == 1)
     }
 
-    /// 决策 2：正文里解析出私密标签（活的或已删除的）、或选中要关联私密标签，都在写入前拒绝并引导到原手记页；不写、不托管。
+    /// 正文里解析出私密标签（活的或已删除的）、或选中要关联私密标签，都在写入前拒绝并引导到原手记页；不写、不托管。
     @Test(arguments: [0, 1, 2])
     func createRefusesPrivateTagsBeforeWriting(_ variant: Int) throws {
         let f = try TaskSimpleFixture(diary: true)
@@ -91,7 +91,7 @@ import Testing
         #expect(entry.text == "别处改过")
     }
 
-    /// 决策 1：加密正文（不可解的随机字节）、私密标记（哨兵明文）、挂私密标签三种受保护目标都在读取正文前拒绝：
+    /// 加密正文（不可解的随机字节）、私密标记（哨兵明文）、挂私密标签三种受保护目标都在读取正文前拒绝：
     /// 保险箱锁定时任何读取都会抛 PrivacyError.locked，而这里得到的是 protectedDiary；哨兵不出现在错误与追踪里。
     @Test(arguments: [0, 1, 2])
     func protectedTargetsAreRefusedWithoutReadingTheirBody(_ variant: Int) throws {
@@ -134,7 +134,7 @@ import Testing
         #expect(entry.text == "普通正文" && f.count("save") == 0)
     }
 
-    /// C-M3：已有正文超过 64KiB 不在指令里改，改为打开原手记页。
+    /// 已有正文超过 64KiB 不在指令里改，改为打开原手记页。
     @Test func existingBodyOverLimitOpensTheOriginalPage() throws {
         let f = try TaskSimpleFixture(diary: true)
         let entry = try Self.diary(f, String(repeating: "长", count: CommandLongTextLimit.maxUTF8Bytes / 3 + 1))

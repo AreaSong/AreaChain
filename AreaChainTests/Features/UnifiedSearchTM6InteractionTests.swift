@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// T-M6 原生交互：排序位置数字输入、昨天全部延至今日预览、剪贴板加今天的读取提示。只发合成原生事件、只用合成数据。
+/// 任务类修改原生交互：排序位置数字输入、昨天全部延至今日预览、剪贴板加今天的读取提示。只发合成原生事件、只用合成数据。
 @Suite(.serialized) @MainActor struct UnifiedSearchTM6InteractionTests {
     private static func localized(_ key: String, style: Int) -> String {
         L10n.format(key, locale: Locale(identifier: style < 2 ? "en" : "zh-Hans"))
@@ -54,7 +54,7 @@ import Testing
         defer { host.close() }
         try await f.begin("/tasks/postpone-yesterday", host: host)
         try await host.clickCompositionControl("unified.parameter.date")
-        // 原生日期格在本宿主里找不到按钮标识（与 §9.90 记录的既有失败同因）；改走日期选择器绑定背后的同一参数入口。
+        // 原生日期格在本宿主里找不到按钮标识（与回收测试里已记录的既有失败同因）；改走日期选择器绑定背后的同一参数入口。
         _ = f.controller.editParameter(.init(parameter: .day, operation: .assign, value: .day(TaskSimpleFixture.today)),
                                        source: f.controller.buffer)
         try await host.settle()

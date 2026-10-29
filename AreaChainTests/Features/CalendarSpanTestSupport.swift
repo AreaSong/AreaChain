@@ -17,7 +17,7 @@ final class CalendarSpanTestSupport {
     let probe = CalendarHeaderProbe()
     let restore: () -> Void
     private var saveObserver: NSObjectProtocol?
-    /// 收尾批 M-7：嵌入页头只有统一搜索；经唯一装配挂接导航为 `.shared` 的工作台控制器（页面仍按无宿主运行）。
+    /// 嵌入页头只有统一搜索；经唯一装配挂接导航为 `.shared` 的工作台控制器（页面仍按无宿主运行）。
     private var search: (UnifiedSearchProductionFixture, UnifiedSearchProductionAssembly)?
     private(set) var saves = 0
     var context: ModelContext { fixture.container.mainContext }

@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// T-M6 任务类简单指令的隔离夹具：内存库、私有事件、计数 fake 刷新与授权、临时附件目录、固定今天。
+/// 任务类简单指令的隔离夹具：内存库、私有事件、计数 fake 刷新与授权、临时附件目录、固定今天。
 /// 七个任务类规格只在这里显式打开（长文三条另需 longText: true）；来源证明默认 ordinary，可逐对象改为受保护。
 @MainActor final class TaskSimpleFixture {
     static let today = "2026-10-19"
@@ -22,10 +22,10 @@ import Testing
     var context: ModelContext { io.context }
     var attachments: TaskNotesService.Attachments { .init(store: AttachmentStore(root: root), root: root) }
 
-    /// 合并批 M-4：手记仓储用隔离保险箱（未配置即锁定）与临时附件目录；转任务的来源戳固定。
+    /// 手记仓储用隔离保险箱（未配置即锁定）与临时附件目录；转任务的来源戳固定。
     let vault = PrivacyVault(store: MemoryVaultConfigurationStore(), systemKeys: FakeSystemVaultKeys())
 
-    /// 合并批 M-2：board 为真时另装配看板规格（gantt.shift）；合并批 M-4：diary 为真时另装配手记规格（含两条长文）。
+    /// board 为真时另装配看板规格（gantt.shift）；diary 为真时另装配手记规格（含两条长文）。
     init(capability: SimpleCommandAdapter.Capability = .open, longText: Bool = false, board: Bool = false,
          diary: Bool = false) throws {
         io = try TaskCaptureFixture()

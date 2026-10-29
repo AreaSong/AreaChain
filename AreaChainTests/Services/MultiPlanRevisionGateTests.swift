@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import AreaChain
 
-/// §9.100 整改第 6～8 条：默认装配（不支持修订）与旧单项设置适配不能接收、产生或封存修订来源。
+/// 默认装配（不支持修订）与旧单项设置适配不能接收、产生或封存修订来源。
 @Suite(.serialized) @MainActor struct MultiPlanRevisionGateTests {
     /// 第 6 条：合并后的计划项带 mergedOrigins 与 executionOrigin，默认装配预检直接拒绝。
     @Test func defaultAssemblyRejectsMergedItems() throws {

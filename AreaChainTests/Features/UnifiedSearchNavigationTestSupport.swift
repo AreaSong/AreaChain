@@ -32,8 +32,8 @@ import Testing
     var context: ModelContext { data.context }
     let day = "2026-10-07"
 
-    /// 合并批 M-2：可注入隔离剪贴板会话（私有命名剪贴板与 fake 门），工作台剪贴板页与剪贴板指令读同一份。
-    /// 修复批 M-7F：`productionHost` 模拟正式版宿主——检查器失焦即保存、导航前先失焦保存；缺省仍为隔离宿主（N-M1 零写入）。
+    /// 可注入隔离剪贴板会话（私有命名剪贴板与 fake 门），工作台剪贴板页与剪贴板指令读同一份。
+    /// `productionHost` 模拟正式版宿主——检查器失焦即保存、导航前先失焦保存；缺省仍为隔离宿主（导航零写入）。
     init(handoff provided: HandoffFixture? = nil, clipboard injected: ClipboardHistorySession? = nil,
          productionHost: Bool = false) throws {
         data = try TaskContentQueryFixture()

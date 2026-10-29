@@ -81,7 +81,7 @@ extension MenuBarPopoverRenderingTests {
         view.layoutSubtreeIfNeeded()
     }
 
-    /// 底栏统一搜索输入（收尾批 M-7 起是浮层唯一的全局搜索框）。
+    /// 底栏统一搜索输入（浮层唯一的全局搜索框）。
     func searchField(in view: NSView) -> NSTextField? {
         if let field = view as? DaybookAppKitTextField,
            let coordinator = field.delegate as? DaybookTextField.Coordinator,

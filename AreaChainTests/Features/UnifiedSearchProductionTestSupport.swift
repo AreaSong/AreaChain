@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-6：唯一装配点的测试输入。与正式版走同一份 UnifiedSearchProductionAssembly，只是参数不同：
+/// 唯一装配点的测试输入。与正式版走同一份 UnifiedSearchProductionAssembly，只是参数不同：
 /// 内存容器（mainContext，保持自动保存，与正式版同形）、私有事件中心、隔离保险箱、临时附件与剪贴板目录、计数 fake 副作用。
 /// 不读写真实用户库、真实附件目录、真实剪贴板历史或真实钥匙串；不发系统授权。
 @MainActor final class ProductionEffectsProbe {
@@ -36,7 +36,7 @@ import Testing
 }
 
 @MainActor final class UnifiedSearchProductionFixture {
-    /// 与 N-M1 夹具同理：视图图可能比夹具活得久，容器保活到进程结束。
+    /// 与导航夹具同理：视图图可能比夹具活得久，容器保活到进程结束。
     private static var retainedContainers: [ModelContainer] = []
     static let today = "2026-10-22"
     let container: ModelContainer
@@ -101,7 +101,7 @@ import Testing
     func cleanup() { try? FileManager.default.removeItem(at: root) }
 }
 
-/// 收尾批 M-7：旧底栏搜索删除后，菜单栏原生测试经同一唯一装配挂接统一搜索；装配失败时测试直接失败，不静默退回。
+/// 旧底栏搜索删除后，菜单栏原生测试经同一唯一装配挂接统一搜索；装配失败时测试直接失败，不静默退回。
 @MainActor final class MenuBarUnifiedSearchProbe {
     let fixture: UnifiedSearchProductionFixture
     let production = UnifiedSearchProduction()

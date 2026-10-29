@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 沿 B-M1 的隔离批量环境；转换能力只在这里显式打开。时钟固定，日历刷新是计数 fake。
+/// 沿批量改期的隔离批量环境；转换能力只在这里显式打开。时钟固定，日历刷新是计数 fake。
 @MainActor final class ConvertCommandFixture {
     static let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)

@@ -97,7 +97,7 @@ struct UnifiedSearchObjectContractTests {
         try fixture.startOperation(command.rawValue)
         try await fixture.acceptObjects([.object(0)])
         try fixture.typeParameter(.title, text: "我的修改")
-        // 3T-4C 起标题基线只由真实 prepare 读取，候选摘要/合成基线不得变成当前值证据。
+        // 标题基线只由真实 prepare 读取，候选摘要/合成基线不得变成当前值证据。
         #expect(try fixture.draft.baseline == CommandDraftBaseline())
         fixture.controller.syntheticBaselines[command] = nil
         try await fixture.acceptObjects([.object(1)])

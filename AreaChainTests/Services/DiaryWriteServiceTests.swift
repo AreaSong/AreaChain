@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-4 A：手记写入共享入口的抽出等价。旧实现逐字复制自抽出前的原界面代码（DiaryQuickComposerView.submitNote、
+/// 手记写入共享入口的抽出等价。旧实现逐字复制自抽出前的原界面代码（DiaryQuickComposerView.submitNote、
 /// DayBoardMutations.diaryTodoTitle／diaryTodoNotes、DiarySummaryRow.contentPresentation），用同一批样例对照；
 /// 另证明保护判定只看记录字段与标签关联，不读取、不解密受保护正文。
 @Suite(.serialized) @MainActor struct DiaryWriteServiceTests {

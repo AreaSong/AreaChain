@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-1 检查点 B：无备注证明改为适配自读备注取带键摘要（L8），并按用户 2026-10-20 的决定放宽门槛。
+/// 无备注证明改为适配自读备注取带键摘要，并按用户 2026-10-20 的决定放宽门槛。
 /// 每个放宽的指令：带备注对象执行成功、预览后备注被改即拒绝；todo.title／subtask.title 仍拒绝带备注对象。
 @Suite(.serialized) @MainActor struct NotesProofRelaxationTests {
     static let notes = "合成备注 #不解析 !p1"

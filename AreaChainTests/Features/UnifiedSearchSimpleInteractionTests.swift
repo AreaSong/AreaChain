@@ -52,7 +52,7 @@ import Testing
         #expect(color.service.tags[0].colorToken == "ink" && color.service.tags[2].colorToken == "ink")
         host.close()
 
-        // 合并批 M-1 D：tag.order 用 position 表达新位置，不再依赖选择器的登记顺序。
+        // tag.order 用 position 表达新位置，不再依赖选择器的登记顺序。
         let order = try UnifiedSearchSimpleFixture()
         defer { order.results.stop() }
         host = try await order.host(style)

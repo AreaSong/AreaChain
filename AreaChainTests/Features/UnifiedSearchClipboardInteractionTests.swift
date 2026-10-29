@@ -4,7 +4,7 @@ import SwiftUI
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-2 D（原生）：工作台宿主里的剪贴板指令。搜索结果与原生历史浏览（同一会话的 visibleItems）逐行一致；
+/// 原生：工作台宿主里的剪贴板指令。搜索结果与原生历史浏览（同一会话的 visibleItems）逐行一致；
 /// 复制写私有命名剪贴板、粘贴只到 fake；小窗打开两次只有一个窗口。0 标准英文浅色、3 最小中文深色。
 @Suite(.serialized) @MainActor struct UnifiedSearchClipboardInteractionTests {
     private func fixture(_ clipboard: ClipboardCommandFixture) throws -> UnifiedSearchNavigationFixture {

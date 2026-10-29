@@ -67,7 +67,7 @@ import Testing
         try editor.begin(using: protected ? f.restore() : f.service.explicitlyEditOrdinary(f.draft().stamp, expecting: f.host.owned().lease))
         let singleBlock = String(repeating: "中a🙂", count: 128)
         let multipleBlock = String(repeating: "中a🙂", count: 127) + "中\n🙂"
-        // 原 1MiB 对照超出 C-M3 的 CommandLongTextLimit；改用上限内最大整 KiB 块，并留出 6 次“字”的空间。
+        // 原 1MiB 对照超出 CommandLongTextLimit；改用上限内最大整 KiB 块，并留出 6 次“字”的空间。
         let body = String(repeating: test.paragraphs ? multipleBlock : singleBlock, count: CommandLongTextLimit.maxUTF8Bytes / 1_024 - 1)
         #expect(body.utf8.count == CommandLongTextLimit.maxUTF8Bytes - 1_024)
         let preparation = ContinuousClock.now

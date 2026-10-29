@@ -77,7 +77,7 @@ import Testing
         controller.beginLongText(.notes, source: controller.buffer)
         try await SystemPageHost.settle(window)
         let ordinary = try #require(controller.longTextEditing?.editor)
-        // 原 1MiB 合成长段超出 C-M3 上限；改用上限内最大段，留出末尾输入空间。
+        // 原 1MiB 合成长段超出长文上限；改用上限内最大段，留出末尾输入空间。
         ordinary.insertText(String(repeating: "中a🙂", count: CommandLongTextLimit.maxUTF8Bytes / 8 - 128),
                             replacementRange: .init(location: 0, length: ordinary.string.utf16.count))
         controller.protectLongText(source: controller.buffer)

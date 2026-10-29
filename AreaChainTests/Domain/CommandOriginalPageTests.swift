@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-3 A：“在原页面完成”对照只有一处，覆盖用户决策 1、2 列出的全部指令，且不含直接执行的两条。
+/// “在原页面完成”对照只有一处，覆盖用户决定列出的全部指令，且不含直接执行的两条。
 @Suite struct CommandOriginalPageTests {
     static let expected: [String: [String]] = [
         "G2": ["tag.delete", "tag.cleanup"],
@@ -22,7 +22,7 @@ import Testing
         "S7": ["shortcut.record", "shortcut.reset", "shortcut.resetAll", "shortcut.cancel"],
         // trash.browse 只是打开回收站页浏览（不标“在原页面完成”），类别在页面筛选里选。
         "D1": ["trash.delete", "trash.empty", "trash.browse"],
-        // 合并批 M-4 决策 3：手记“私密”标记、显示与遮罩。
+        // 手记“私密”标记、显示与遮罩。
         "J2": ["diary.privateMark", "diary.reveal", "diary.mask"],
         "D4": ["recovery.status", "recovery.resetQuit"],
         "N6": ["help.syntax", "help.page", "help.example"],
@@ -44,7 +44,7 @@ import Testing
         #expect(CommandOriginalPage.route(for: .init(rawValue: "trash.restore")) == nil)
         for row in rows {
             let command = try #require(catalog.command(id: row.command), "\(row.command.rawValue) 不在目录里")
-            // 覆盖的 §8 行与对照分组一致，避免把别的功能误塞进对照。
+            // 覆盖的目录家族与对照分组一致，避免把别的功能误塞进对照。
             let features = Set(command.coverage.map(\.feature.rawValue))
             let group = Self.expected.first { $0.value.contains(row.command.rawValue) }?.key
             if let group { #expect(features.contains(group), "\(row.command.rawValue) 应覆盖 \(group)") }

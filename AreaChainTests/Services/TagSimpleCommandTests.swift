@@ -79,7 +79,7 @@ import Testing
         #expect(mixed.tags[0].colorToken == TagColorToken.default.rawValue && mixed.count("save") == 0)
     }
 
-    /// 合并批 M-1 D：用 position 表达新位置（同三个任务排序指令），越界与非整数拒绝；墓碑不参与排序。
+    /// 用 position 表达新位置（同三个任务排序指令），越界与非整数拒绝；墓碑不参与排序。
     @Test func orderMovesOneTagToTypedPosition() throws {
         let f = try SimpleCommandFixture()
         let before = try f.live()

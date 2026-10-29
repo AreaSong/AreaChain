@@ -4,7 +4,7 @@ import SwiftUI
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-2 C（原生）：image.browse 在面板里列出附件中心可见的图片；image.preview 沿 N-M2 的普通图片查阅打开，
+/// 原生：image.browse 在面板里列出附件中心可见的图片；image.preview 沿普通图片查阅打开，
 /// 不另开查看器、不写库。0 标准英文浅色、3 最小中文深色。
 @Suite(.serialized) @MainActor struct UnifiedSearchImageCommandInteractionTests {
     private func fixture() throws -> UnifiedSearchContentFixture {
@@ -25,7 +25,7 @@ import Testing
         try await f.base.press("unified.page.prepare")
         #expect(try f.base.label("unified.page.before").contains("合成山景.png"))
         try await f.base.press("unified.page.apply")
-        // 查阅先重读结果再沿 N-M2 打开，两段都是异步任务：等到两者都结束且内容会话不再加载（有上限，不靠运气）。
+        // 查阅先重读结果再沿普通图片查阅打开，两段都是异步任务：等到两者都结束且内容会话不再加载（有上限，不靠运气）。
         for _ in 0..<150 {
             await f.controller.contentCommandTask?.value
             await f.controller.navigationTask?.value

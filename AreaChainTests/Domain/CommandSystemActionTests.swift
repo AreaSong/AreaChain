@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-3 B、C：直接动作只做纯解析；集合不含 trash.restore（走独立确认）。合并批 M-4 起含手记小窗会话的
+/// 直接动作只做纯解析；集合不含 trash.restore（走独立确认）。另含手记小窗会话的
 /// 保存／重载／舍弃（复用 DiaryEditorSession）与普通手记复制。
 @Suite struct CommandSystemActionTests {
     @Test func onlyDiaryWindowActionsReadSearchResults() {
@@ -23,7 +23,7 @@ import Testing
             let command = try #require(catalog.command(id: .init(rawValue: raw)), "\(raw)")
             #expect(CommandOriginalPage.route(for: command.id) == nil, "\(raw) 不能同时在原页面对照里")
         }
-        // 合并批 M-4：diaryWindow.save 不再留空（复用小窗会话保存，不另写正文）；复制缺省整篇。
+        // diaryWindow.save 不再留空（复用小窗会话保存，不另写正文）；复制缺省整篇。
         #expect(CommandSystemAction.commands.isSuperset(of: ["diaryWindow.save", "diary.save", "diary.reload", "diary.discard",
                                                              "diary.copy"]))
         #expect(try CommandSystemAction(command: .init(rawValue: "diaryWindow.save"), arguments: []) == .diarySave(window: true))

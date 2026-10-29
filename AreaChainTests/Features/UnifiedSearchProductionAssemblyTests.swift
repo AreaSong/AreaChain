@@ -3,9 +3,9 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-6 检查点 B：唯一装配点；收尾批 M-7 删除开关后，启动即装配、失败可重试。纯程序化，不开窗口、不发键鼠事件。
+/// 唯一装配点；没有开关，启动即装配、失败可重试。纯程序化，不开窗口、不发键鼠事件。
 @Suite(.serialized, .tags(.backgroundWindow)) @MainActor struct UnifiedSearchProductionAssemblyTests {
-    /// 收尾批 M-7：旧开关键留在 UserDefaults 不迁移，代码不再读取——存着“关”也照样装配。
+    /// 旧开关键留在 UserDefaults 不迁移，代码不再读取——存着“关”也照样装配。
     @Test func legacyPreferenceKeyIsIgnored() throws {
         let fixture = try UnifiedSearchProductionFixture()
         defer { fixture.cleanup() }
@@ -50,7 +50,7 @@ import Testing
         #expect(own.store !== AttachmentStore.shared && own.ordinaryOnly && own.root != nil)
     }
 
-    /// 修复批 M-6R 检查点 D：装配失败不再无声——记录失败供宿主搜索框提示；仍失败时保持失败，偏好变化后重试成功即清除。
+    /// 装配失败不再无声——记录失败供宿主搜索框提示；仍失败时保持失败，偏好变化后重试成功即清除。
     @Test func assemblyFailureIsRecordedAndClearedOnRetry() throws {
         let fixture = try UnifiedSearchProductionFixture()
         defer { fixture.cleanup() }
@@ -70,7 +70,7 @@ import Testing
         #expect(fixture.probe.total == 0 && fixture.saves == 0)
     }
 
-    /// 收尾批 M-7：已有装配时偏好变化不重建，控制器、查询与工作台展示状态都不动。
+    /// 已有装配时偏好变化不重建，控制器、查询与工作台展示状态都不动。
     @Test func preferenceChangesKeepTheExistingAssembly() throws {
         let fixture = try UnifiedSearchProductionFixture()
         defer { fixture.cleanup() }

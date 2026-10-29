@@ -190,7 +190,7 @@ struct UnifiedSearchTaskTitleBoundaryTests {
         defer { host.close() }
         trace.host = host
         trace.record("kind=\(kind).hostReady")
-        // T-M1 将混合创建/标题计划交给链面板；仅装配标题的宿主仍须拒绝整项计划。
+        // 任务链将混合创建/标题计划交给链面板；仅装配标题的宿主仍须拒绝整项计划。
         try await host.clickCompositionControl(kind == 2 ? "unified.chain.prepare" : "unified.title.prepare")
         trace.record("kind=\(kind).prepared")
         host.window.makeFirstResponder(try host.field)

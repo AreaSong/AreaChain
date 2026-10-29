@@ -53,7 +53,7 @@ extension MenuBarHelpSurfaceTests {
         describeInput(window)
         try await helpKey(53, in: window)
         if preview { #expect(!state.showsPreview) }
-        // 统一搜索的 Esc（M-6 规则）把焦点留在输入框、不清空查询；旧底栏搜索在这里会清空。
+        // 统一搜索的 Esc 把焦点留在输入框、不清空查询；旧底栏搜索在这里会清空。
         else if search { #expect(try probe.controller.buffer.text == "query" && field.currentEditor() === editor) }
         #expect(!anyHelpVisible(window) && !support.container.mainContext.hasChanges)
     }

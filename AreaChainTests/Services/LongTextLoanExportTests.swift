@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// L-M1b 检查点 B：哨兵正文只在宿主草稿、托管与借用里；预览、接受、Snapshot、Run 输入、Facts、回执、
+/// 哨兵正文只在宿主草稿、托管与借用里；预览、接受、Snapshot、Run 输入、Facts、回执、
 /// 描述与追踪里一处都搜不到（深度反射，含私有存储）。正对照：同一搜索能在草稿与落库结果里找到哨兵。
 @Suite(.serialized) @MainActor struct LongTextLoanExportTests {
     static let sentinel = "SENTINEL-长文哨兵-7f3a9c"

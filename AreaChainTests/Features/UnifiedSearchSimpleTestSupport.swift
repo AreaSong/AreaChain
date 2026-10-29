@@ -3,13 +3,13 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// X-1 原生夹具：合成内存库、私有事件与计数 fake 刷新；四个标签指令只在此显式装配。
+/// 简单指令原生夹具：合成内存库、私有事件与计数 fake 刷新；四个标签指令只在此显式装配。
 @MainActor final class UnifiedSearchSimpleFixture {
     let service: SimpleCommandFixture
     let results: UnifiedSearchResultsFixture
     var controller: UnifiedSearchController { results.controller }
 
-    /// 合并批 M-2：organize 为真时另装配标签整理规格（合并、解绑、回收、恢复）。
+    /// organize 为真时另装配标签整理规格（合并、解绑、回收、恢复）。
     init(organize: Bool = false, restore: Bool = false) throws {
         let service = try SimpleCommandFixture(organize: organize, restore: restore)
         self.service = service

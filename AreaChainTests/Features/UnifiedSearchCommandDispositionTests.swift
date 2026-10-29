@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 修复批 M-7G 检查点 C：目录级用例。走正式版唯一装配（内存容器、fake 副作用），对目录里每一条指令都走与原生输入相同的入口：
+/// 目录级用例。走正式版唯一装配（内存容器、fake 副作用），对目录里每一条指令都走与原生输入相同的入口：
 /// edit（打字）→ accept（接受候选）→ intent(.open)（Return）→ 草稿／面板 → intent(.submit)（⌘Return，提交入口）。
 /// 每条按实际行为归类，再断言与唯一判断入口 disposition(for:) 给出的类别一致（标签类别 = 实际行为）。不开窗口、不发键鼠事件。
 @Suite(.serialized, .tags(.backgroundWindow)) @MainActor struct UnifiedSearchCommandDispositionTests {

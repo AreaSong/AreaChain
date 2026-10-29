@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-2 C（服务层）：image.browse 沿 2E 的图片口径（附件中心可见）分组列出；image.preview 只接普通图片。
+/// 服务层：image.browse 沿既有图片口径（附件中心可见）分组列出；image.preview 只接普通图片。
 @Suite(.serialized) @MainActor struct ImagePageCommandTests {
     typealias Fixture = WorkspacePageCommandTests.Fixture
 
@@ -27,7 +27,7 @@ import Testing
         #expect(try browse(f, nil) == .results(["习惯图.png", "待办图.png"], total: 2))
         #expect(try browse(f, "todo") == .results(["待办图.png"], total: 1))
         #expect(try browse(f, "diary") == .results([], total: 0))
-        // 与 2E 的同一判定：私密手记的图与孤儿图都不可浏览。
+        // 与既有图片口径同一判定：私密手记的图与孤儿图都不可浏览。
         let owners = AttachmentAccess.ownerIndex(todos: [f.todo], routines: [f.routine], diaries: [secret])
         #expect(rows.filter { AttachmentAccess.canBrowse($0, owners: owners, tags: []) }.count == 2)
         #expect(!f.context.hasChanges)

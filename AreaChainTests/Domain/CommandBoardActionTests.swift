@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-2 A：看板导航的纯解析与日期推算，以及修改指令转交给已有执行时搬运的参数与目标。
+/// 看板导航的纯解析与日期推算，以及修改指令转交给已有执行时搬运的参数与目标。
 @Suite struct CommandBoardActionTests {
     private let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
@@ -79,7 +79,7 @@ import Testing
         #expect(gantt.targets == .init(.selected, objects: [todo, other]))
     }
 
-    /// 目录：quadrant.complete 已按 R-M3 的跳过语义解决，转交执行；看板指令都在页面指令里登记。
+    /// 目录：quadrant.complete 已按习惯跳过语义解决，转交执行；看板指令都在页面指令里登记。
     @Test func catalogDeclaresTheBoardCommands() throws {
         let catalog = CommandCatalog.standard
         #expect(catalog.command(id: .init(rawValue: "quadrant.complete"))?.availability == .declared)

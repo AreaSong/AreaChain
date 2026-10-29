@@ -4,7 +4,7 @@ import SwiftUI
 import Testing
 @testable import AreaChain
 
-/// 修复批 M-7F：菜单栏筛选重新缩小统一搜索结果，底栏胶囊可单个移除；筛选只有 BoardFilterSession 一份，
+/// 菜单栏筛选重新缩小统一搜索结果，底栏胶囊可单个移除；筛选只有 BoardFilterSession 一份，
 /// 工作台宿主不受影响。只用内存库与合成任务。
 @Suite(.serialized) @MainActor
 struct MenuBarSearchFilterTests {

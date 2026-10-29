@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// L-M1b 原生夹具：合成内存库、私有事件中心（隐私事件同走此中心）、计数 fake 刷新与授权、临时附件目录、固定今天。
+/// 长文受控借用原生夹具：合成内存库、私有事件中心（隐私事件同走此中心）、计数 fake 刷新与授权、临时附件目录、固定今天。
 /// 长文三条只在此显式装配；规格的带键摘要取控制器所在协调者的密钥。
 @MainActor final class UnifiedSearchLongTextCommandFixture {
     let service: TaskSimpleFixture
@@ -48,7 +48,7 @@ import Testing
         return host
     }
 
-    /// 经原 C-M1 长文编辑入口输入：点开参数、原生插入文本，再收起编辑器（不改变草稿）。
+    /// 经原长文编辑入口输入：点开参数、原生插入文本，再收起编辑器（不改变草稿）。
     func type(_ text: String, into parameter: CommandParameterID, host: UnifiedSearchTestHost) async throws {
         try await host.clickResult("unified.longText.open." + parameter.rawValue)
         try await host.settle()
@@ -100,7 +100,7 @@ import Testing
     }
 }
 
-/// 原生交互：长文经 C-M1 原生编辑输入，预览逐项列出派生变化，保存只经托管借用；私密标签整条不可执行。
+/// 原生交互：长文经原生长文编辑输入，预览逐项列出派生变化，保存只经托管借用；私密标签整条不可执行。
 @Suite(.serialized) @MainActor struct UnifiedSearchLongTextCommandTests {
     static let sentinel = "SENTINEL-原生哨兵-51c2"
 
@@ -167,7 +167,7 @@ import Testing
         #expect(location.object == .init(type: .routineOccurrence, id: creation.id, dayKey: TaskSimpleFixture.today))
     }
 
-    /// L7：正文里的私密标签让整条不可执行；预览说明是哪个标签、为什么，不出现接受，保存不可用。
+    /// 正文里的私密标签让整条不可执行；预览说明是哪个标签、为什么，不出现接受，保存不可用。
     @Test(arguments: [0, 3]) func privateTagIsExplainedAndNotAcceptable(style: Int) async throws {
         let f = try UnifiedSearchLongTextCommandFixture()
         defer { f.results.stop() }

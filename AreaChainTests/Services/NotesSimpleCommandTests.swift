@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 检查点 A：备注保存的共享入口与抽取前算法逐字等价；todo.notes／routine.notes 经骨架执行同一入口。
+/// 备注保存的共享入口与抽取前算法逐字等价；todo.notes／routine.notes 经骨架执行同一入口。
 @Suite(.serialized) @MainActor struct NotesSimpleCommandTests {
     /// 两份相同的合成库：固定 UUID 的标签、另一待办上的公开图片，便于新旧实现分别运行后逐项比较。
     @MainActor final class Scenario {

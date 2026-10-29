@@ -8,7 +8,7 @@ import Testing
 @MainActor
 struct WorkspaceRenderingTests {
     private static var retainedContainers: [ModelContainer] = []
-    /// 收尾批 M-7：顶栏只有统一搜索；装配的导航就是 `.shared`，结果页展示写到本工作台，页面仍按无宿主运行。
+    /// 顶栏只有统一搜索；装配的导航就是 `.shared`，结果页展示写到本工作台，页面仍按无宿主运行。
     private static var searches: [ObjectIdentifier: (UnifiedSearchProductionFixture, UnifiedSearchProductionAssembly)] = [:]
 
     private struct RouteAppearance: Sendable {

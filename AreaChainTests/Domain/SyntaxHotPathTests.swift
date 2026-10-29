@@ -81,7 +81,7 @@ struct SyntaxHotPathTests {
         prefixes.map { raw in
             if parseOnce {
                 let parsed = BoardSearch.parseQuery(raw)
-                // 收尾批 M-7：旧工作台搜索的附件文件名匹配随旧搜索删除，这里只量共用的 BoardSearch（手记列表仍在用）。
+                // 旧工作台搜索的附件文件名匹配随旧搜索删除，这里只量共用的 BoardSearch（手记列表仍在用）。
                 return BoardSearch.hits(parsed, todos: todos, diaries: diaries, routines: [])
             }
             return BoardSearch.hits(query: raw, todos: todos, diaries: diaries, routines: [])

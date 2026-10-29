@@ -172,7 +172,7 @@ struct UnifiedSearchResultsInteractionTests {
         defer { fixture.session.displayUpdates.remove(observer) }
         fixture.focus.post(name: UnifiedSearchResultsFixture.focusLost, object: fixture.focusObject)
         #expect(fixture.session.isMasked && !fixture.session.hasRetainedPresentation)
-        // §9.62：撤显示使旧 UI source 失效，但不续租、清查询或触发隐私清空。
+        // 撤显示使旧 UI source 失效，但不续租、清查询或触发隐私清空。
         let expected = UnifiedSearchBuffer(lease: source.lease, version: source.version + 1, text: source.text,
             privacyRevision: source.privacyRevision, operation: source.operation, selectingObjects: source.selectingObjects,
             plan: source.plan, planItem: source.planItem)

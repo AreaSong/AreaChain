@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-2 C：image.trash 与详情面板、附件中心同一写入（只打删除戳）；资格同附件中心——孤儿与受保护附件拒绝；
+/// image.trash 与详情面板、附件中心同一写入（只打删除戳）；资格同附件中心——孤儿与受保护附件拒绝；
 /// 必须经共用独立确认。
 @Suite(.serialized) @MainActor struct ImageCommandTests {
     @MainActor final class Fixture {

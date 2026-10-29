@@ -62,7 +62,7 @@ struct MenuBarToolbarStateTests {
         #expect(actions == 1)
     }
 
-    /// 收尾批 M-7：搜索文字由统一搜索控制器持有，工具栏只剩“正在搜索”（桥接维护的 unifiedActive）与焦点。
+    /// 搜索文字由统一搜索控制器持有，工具栏只剩“正在搜索”（桥接维护的 unifiedActive）与焦点。
     @Test func changingToolbarContentsPreservesSearch() {
         let toolbar = MenuBarToolbarState()
         toolbar.unifiedActive = true

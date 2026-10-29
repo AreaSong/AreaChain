@@ -4,7 +4,7 @@ import SwiftUI
 import Testing
 @testable import AreaChain
 
-/// 修复批 M-7G 检查点 A：真实窗口 key 切换（另开一个窗口抢走 key 再交回），不直接调用 loseFocus。
+/// 真实窗口 key 切换（另开一个窗口抢走 key 再交回），不直接调用 loseFocus。
 /// 工作台与菜单栏各走一遍：什么都不做时仍遮罩；在搜索框里打字、Return 等显式动作才恢复并重读。
 /// 前台套件：发真实键盘事件，不打 .backgroundWindow。
 @Suite(.serialized) @MainActor struct UnifiedSearchFocusRecoveryTests {
@@ -58,7 +58,7 @@ import Testing
         }
     }
 
-    /// 锁定按 D3 清掉查询后：切回窗口本身不重建；显式动作由宿主可信当前页面重建，只按这次新文字读取，旧文字与条件不回来；
+    /// 真正锁定清掉查询后：切回窗口本身不重建；显式动作由宿主可信当前页面重建，只按这次新文字读取，旧文字与条件不回来；
     /// 仍锁定时受保护内容不出现在结果、摘要与候选里；解锁后再打字照常。
     @Test(arguments: Kind.allCases) func lockedQueryRebuildsFromTrustedPageOnNewInput(kind: Kind) async throws {
         let host = try UnifiedSearchFocusHost(kind)

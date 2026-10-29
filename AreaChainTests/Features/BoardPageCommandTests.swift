@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-2 A（服务层）：看板页面指令只写页面那一份状态（BoardSelection 日期、宿主 boardPages），
+/// 服务层：看板页面指令只写页面那一份状态（BoardSelection 日期、宿主 boardPages），
 /// 页面不对时拒绝且不切页；检查器与选择只在页面投影里。
 @Suite(.serialized) @MainActor struct BoardPageCommandTests {
     typealias Fixture = WorkspacePageCommandTests.Fixture

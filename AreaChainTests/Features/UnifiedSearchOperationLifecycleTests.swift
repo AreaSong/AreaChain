@@ -4,7 +4,7 @@ import Testing
 
 @Suite(.serialized) @MainActor
 struct UnifiedSearchOperationLifecycleTests {
-    /// 合并批 M-3：clipboard.limit 改为“打开原页面”，数字参数样例换成同为整数的 tag.order 位置。
+    /// clipboard.limit 改为“打开原页面”，数字参数样例换成同为整数的 tag.order 位置。
     @Test func nativeSwitchKeepRestoreCancelAndOldConfirmation() async throws {
         let fixture = try UnifiedSearchResultsFixture()
         defer { fixture.stop() }

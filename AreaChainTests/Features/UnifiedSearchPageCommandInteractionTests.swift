@@ -4,7 +4,7 @@ import SwiftUI
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-1 检查点 C（原生）：真实工作台宿主里的页面指令面板。筛选双向同步、选择沿 N-M1 显示当前页后按页面投影、
+/// 原生：真实工作台宿主里的页面指令面板。筛选双向同步、选择经导航显示当前页后按页面投影、
 /// 页面不对时说明且不切页、取消与连击查询。0 标准英文浅色、1 标准英文深色、2 最小中文浅色、3 最小中文深色。
 @Suite(.serialized, .tags(.backgroundWindow)) @MainActor struct UnifiedSearchPageCommandInteractionTests {
     private func fixture(_ page: WorkspaceTab) throws -> UnifiedSearchNavigationFixture {
@@ -37,7 +37,7 @@ import Testing
     }
 
     /// 先把控件滚进操作面板（离开渐隐边缘），再用辅助功能按下（AXPress，同键盘／VoiceOver 激活）。
-    /// 工作台窗口里合成鼠标事件到不了操作面板按钮（缓冲版本与输入焦点都不变，原因未判定，见 §9.96 缺口），
+    /// 工作台窗口里合成鼠标事件到不了操作面板按钮（缓冲版本与输入焦点都不变，原因未判定），
     /// 因此不用鼠标；按钮仍按渲染时的原身份调用同一入口。
     private func press(_ f: UnifiedSearchNavigationFixture, _ id: String) async throws {
         let window = try #require(f.window)
@@ -102,7 +102,7 @@ import Testing
         try await f.snapshot("m1-page-filter-page-changed-\(style)")
     }
 
-    /// 选择类沿 N-M1：先显示当前页（不切页），再按页面登记的投影全选。
+    /// 选择类经导航：先显示当前页（不切页），再按页面登记的投影全选。
     @Test func selectAllRevealsTheCurrentPageAndUsesItsList() async throws {
         let f = try fixture(.allItems)
         defer { f.stop() }

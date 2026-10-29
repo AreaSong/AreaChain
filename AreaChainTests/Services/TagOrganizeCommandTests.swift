@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-2 B：标签合并、对象解绑、回收与恢复。写入只调原仓储；私密标签合并整条拒绝（用户决策 3）；
+/// 标签合并、对象解绑、回收与恢复。写入只调原仓储；私密标签合并整条拒绝（用户决定）；
 /// 受保护手记解绑拿不到资格就拒绝；回收与恢复必须经共用独立确认、只能单项执行。
 @Suite(.serialized) @MainActor struct TagOrganizeCommandTests {
     private func destination(_ tag: TagItem) -> CommandArgument {
@@ -37,7 +37,7 @@ import Testing
         #expect(page.tags[0].deletedAt != nil && ids(pageTodo.tagIDs) == [page.tags[1].id])
     }
 
-    /// 决策 3：来源或目标里有私密标签就整条拒绝，不写库；预置标签与原页面一样不能参与。
+    /// 来源或目标里有私密标签就整条拒绝，不写库；预置标签与原页面一样不能参与。
     @Test func mergeInvolvingPrivateOrPresetTagsIsRejected() throws {
         let f = try SimpleCommandFixture(organize: true)
         try f.queue("tag.merge", targets: [f.target(f.tags[2])], arguments: [destination(f.tags[0])])

@@ -3,7 +3,7 @@ import SwiftUI
 import Testing
 @testable import AreaChain
 
-/// 修复批 M-7G 检查点 B：候选接受后 Return 是否被占用。真实原生输入：键盘选中候选＋两次 Return、鼠标点选候选＋Return；
+/// 候选接受后 Return 是否被占用。真实原生输入：键盘选中候选＋两次 Return、鼠标点选候选＋Return；
 /// 工作台与菜单栏各一遍。每一步记录候选是否仍活动与操作状态，作为结论证据。前台套件（发真实键鼠事件）。
 @Suite(.serialized) @MainActor struct UnifiedSearchCandidateReturnTests {
     @Test(arguments: UnifiedSearchFocusRecoveryTests.Kind.allCases) func keyboardSelectThenTwoReturnsOpensPanel(kind: UnifiedSearchFocusRecoveryTests.Kind) async throws {

@@ -3,8 +3,8 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// T-M6 原生夹具：合成内存库、私有事件、计数 fake 刷新、注入剪贴板与临时附件目录、固定今天。
-/// 排序与延至今日沿 X-1 骨架装配；剪贴板加今天沿 todo.copy 的无 Run 模式装配。只在此显式装配。
+/// 任务类修改原生夹具：合成内存库、私有事件、计数 fake 刷新、注入剪贴板与临时附件目录、固定今天。
+/// 排序与延至今日沿简单指令骨架装配；剪贴板加今天沿 todo.copy 的无 Run 模式装配。只在此显式装配。
 @MainActor final class UnifiedSearchTM6Fixture {
     let service: TaskSimpleFixture
     let results: UnifiedSearchResultsFixture

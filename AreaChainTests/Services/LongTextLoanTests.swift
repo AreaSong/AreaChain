@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// L-M1b 检查点 B：托管与一次性借用的反例（合成内存库、私有事件中心、fake 刷新与授权）。
+/// 托管与一次性借用的反例（合成内存库、私有事件中心、fake 刷新与授权）。
 @Suite(.serialized) @MainActor struct LongTextLoanTests {
     /// 一次封存后的现场：已接受的预览、本 attempt 的调用占用。
     struct Sealed {

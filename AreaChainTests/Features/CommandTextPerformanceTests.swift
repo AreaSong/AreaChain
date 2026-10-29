@@ -26,7 +26,7 @@ struct CommandTextPerformanceTests {
             #expect(editor.issue == nil)
             rows.append("\(protected ? "protected" : "ordinary"),\(bytes),\(sample),\(operation),\(milliseconds),\(editor.checkpointCount - before)")
         }
-        // C-M3 起最大档为上限内留出 18 字节输入空间的单段；原 1MiB 档改为下方断言拒绝。
+        // 最大档为上限内留出 18 字节输入空间的单段；原 1MiB 档改为下方断言拒绝。
         for bytes in [1_024, CommandLongTextLimit.maxUTF8Bytes - 24] {
             editor.insertText(String(repeating: "中a🙂", count: bytes / 8),
                               replacementRange: NSRange(location: 0, length: editor.string.utf16.count))
@@ -53,7 +53,7 @@ struct CommandTextPerformanceTests {
         Attachment.record(Data(rows.joined(separator: "\n").utf8), named: "CM1-input-costs.csv")
     }
 
-    /// C-M3 决策闸：默认 legacy 引擎在上限内最大单段的“打开到首键可用”和“首次组词”。
+    /// 引擎取舍依据：默认 legacy 引擎在上限内最大单段的“打开到首键可用”和“首次组词”。
     /// 普通先、受保护后，在同一测试进程内各一次；3 秒只是本批是否下调上限的判断线，不是产品预算。
     @Test(.serialized, arguments: [false, true])
     func defaultEngineLimitOpenAndFirstComposition(protected: Bool) async throws {

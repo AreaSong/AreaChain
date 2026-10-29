@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 复用 2K-1 的全 schema 内存库；生产适配器与测试共用同一显式上下文入口。
+/// 复用全 schema 内存库；生产适配器与测试共用同一显式上下文入口。
 @MainActor
 struct RoutineContentQueryFixture {
     let task: TaskContentQueryFixture

@@ -314,8 +314,8 @@ struct MenuBarPopoverRenderingTests {
         try snapshot(darkView, name: "menubar-normal-en-dark")
     }
 
-    /// 收尾批 M-7：原用例点选底栏向上展开的 `#标签` 候选；统一搜索只给 `/` 指令候选（`#`、`!`、`@` 没有候选，
-    /// 见 §9.106 等价核对），这里改为点选同一底栏向上展开的指令候选：只补全搜索框、焦点留在原输入框、不建标签或事项。
+    /// 原用例点选底栏向上展开的 `#标签` 候选；统一搜索只给 `/` 指令候选（`#`、`!`、`@` 没有候选，
+    /// 见 docs/unified-search-commands.md 的“删除旧全局搜索”），这里改为点选同一底栏向上展开的指令候选：只补全搜索框、焦点留在原输入框、不建标签或事项。
     @Test func clickingAnUpwardCommandCandidateCompletesTheFooterSearchOnly() async throws {
         let container = try fixture()
         let search = try MenuBarUnifiedSearchProbe(container: container)

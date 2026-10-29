@@ -3,7 +3,7 @@ import Foundation
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-2 D（服务层）：剪贴板浏览与搜索与历史页同一取法；复制写入失败不报成功；粘贴在隔离环境只到 fake；
+/// 服务层：剪贴板浏览与搜索与历史页同一取法；复制写入失败不报成功；粘贴在隔离环境只到 fake；
 /// 置顶沿会话原有入口且保存成功才报告；小窗指令不新建第二个窗口；默认未装配。
 @Suite(.serialized) @MainActor struct ClipboardPageCommandTests {
     typealias Fixture = WorkspacePageCommandTests.Fixture

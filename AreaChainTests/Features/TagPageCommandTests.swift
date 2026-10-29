@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-2 B（服务层）：tag.cancel 只去掉标签页那一份草稿；三个查询沿标签页同一取法（TagListQuery），不写库。
+/// 服务层：tag.cancel 只去掉标签页那一份草稿；三个查询沿标签页同一取法（TagListQuery），不写库。
 @Suite(.serialized) @MainActor struct TagPageCommandTests {
     typealias Fixture = WorkspacePageCommandTests.Fixture
 

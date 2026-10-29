@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 合并批 M-2 B（原生）：标签回收经共用独立确认面板（默认焦点在取消、Esc 只撤销确认）；私密标签合并在预览时拒绝；
+/// 原生：标签回收经共用独立确认面板（默认焦点在取消、Esc 只撤销确认）；私密标签合并在预览时拒绝；
 /// 标签页取消与标签查询走页面指令面板。0 标准英文浅色、1 紧凑英文深色、2 标准中文深色、3 紧凑中文浅色。
 @Suite(.serialized) @MainActor struct UnifiedSearchTagOrganizeInteractionTests {
     @Test(arguments: [0, 3]) func trashGoesThroughTheSharedConfirmationPanel(style: Int) async throws {
@@ -28,7 +28,7 @@ import Testing
         try host.snapshot("m2-tag-trash-saved-\(style)")
     }
 
-    /// 决策 3：涉及私密标签的合并在准备时就说明原因，不写库。
+    /// 用户决定：涉及私密标签的合并在准备时就说明原因，不写库。
     @Test(arguments: [1, 2]) func privateTagMergeIsRejectedWithReason(style: Int) async throws {
         let f = try UnifiedSearchSimpleFixture(organize: true)
         defer { f.results.stop() }

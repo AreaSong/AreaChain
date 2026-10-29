@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 检查点 B：三个排序指令经骨架执行，规则沿原仓储 reorderSubtasks／reorderRoutines 与 ManualOrder。
+/// 三个排序指令经骨架执行，规则沿原仓储 reorderSubtasks／reorderRoutines 与 ManualOrder。
 @Suite(.serialized) @MainActor struct OrderSimpleCommandTests {
     private func family(_ f: TaskSimpleFixture) throws -> (TodoItem, [SubtaskItem], SubtaskItem) {
         let todo = try f.insert(TodoItem(title: "父任务", dayKey: TaskSimpleFixture.today))

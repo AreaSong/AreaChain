@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// R-M3兼容新读取，同时固定旧生产写入和页面差异。
+/// 习惯状态兼容新读取，同时固定旧生产写入和页面差异。
 @Suite(.serialized) @MainActor struct RoutineStateCompatibilityTests {
     @Test(arguments: [false, true], [false, true]) func fourStoredEncodings(done: Bool, skipped: Bool) {
         let day = QuerySessionFixture.today
