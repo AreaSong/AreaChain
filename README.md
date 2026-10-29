@@ -38,7 +38,7 @@ AreaChain 是专为 macOS 打造的个人任务看板与习惯打卡助手：菜
 架构与数据模型见 [docs/architecture.md](docs/architecture.md)。
 共享组件与新增功能复用入口见 [docs/component-catalog.md](docs/component-catalog.md)。
 完整开发生命周期、注释、安全、性能、测试、交付与维护门禁见 [docs/quality-gates.md](docs/quality-gates.md)。
-开发协作、工程质量门禁、生命周期覆盖与发行/维护缺口见 [docs/engineering.md](docs/engineering.md)。
+开发协作、质量门禁与覆盖缺口见 [docs/quality-gates.md](docs/quality-gates.md)，发行准备见 [docs/signing.md](docs/signing.md#发行准备)。
 
 应用内「设置 → 版本 / 支持 / 关于」可以查看当前版本、打开使用讨论和功能建议，并在报告问题时复制环境信息。不要把手记、附件、密码或日历标题贴到公开讨论。
 

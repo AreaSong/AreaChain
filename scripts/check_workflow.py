@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SKILLS = ("areachain-workflow", "areachain-ui", "areachain-verify")
 REQUIRED_DOCS = (
     "AGENTS.md", "README.md", "docs/README.md", "docs/architecture.md",
-    "docs/signing.md", "docs/engineering.md", "skill-routing.md",
+    "docs/signing.md", "skill-routing.md",
     "docs/component-catalog.md", "docs/quality-gates.md",
     "docs/unified-search-status.md",
 )

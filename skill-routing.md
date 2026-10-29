@@ -46,9 +46,9 @@
 - 产品行为读 `docs/features.md`、`docs/usage.md`。
 - 模块、状态、窗口和数据契约读 `docs/architecture.md` 的相关章节。
 - 生命周期质量、注释、安全、性能、测试、交付和维护读 [质量门禁](docs/quality-gates.md)；性能数字再读 [`docs/performance-baselines.json`](docs/performance-baselines.json)。
-- 构建、脚本、签名、恢复或交付读 `docs/engineering.md` 的相关章节，必要时再读 `docs/signing.md`。
+- 构建、脚本、恢复或诊断读 `docs/quality-gates.md` 的相关章节；签名、安装、回退与发行准备读 `docs/signing.md`。
 - 需要新增或修改界面时读 [组件目录](docs/component-catalog.md) 的相关条目及实际调用方；不能只看组件名。
-- `component-catalog.md` 和 `architecture.md` 按组件分节，篇幅较长：先按标题或锚点检索，只读本次相关章节，不整篇载入。各阶段与批次的历史验收记录不在当前文档里，需要追溯时按工程手册与统一搜索权威设计开头给出的 `git show` 查看。
+- `component-catalog.md` 和 `architecture.md` 按组件分节，篇幅较长：先按标题或锚点检索，只读本次相关章节，不整篇载入。各阶段与批次的历史验收记录不在当前文档里，需要追溯时用 `git show 6bc1f72:docs/engineering.md`（阶段验收记录）或统一搜索权威设计开头给出的 `git show` 查看。
 
 ### 3. 选择技能
 
@@ -120,7 +120,7 @@
 
 - 新增项目技能时，同时更新本文件、`AGENTS.md`、`.gitignore`、`scripts/check_workflow.py` 的技能清单、`skill-format` 夹具和对应测试。默认不新增；现有三个已覆盖日常编排、界面和验收。
 - 新增共享控件或公共规则时，同时更新 [组件目录](docs/component-catalog.md)、实际调用方测试和必要架构说明。
-- 修改验证入口时，保持脚本、技能、README 和工程手册使用同一命令来源；不维护两套互相漂移的门禁。
+- 修改验证入口时，保持脚本、技能、README 和质量门禁文档使用同一命令来源；不维护两套互相漂移的门禁。
 - 任何路由文件、技能引用或组件目录变更，都要运行 `python3 -B scripts/check_workflow.py`；修改检查器本身还要运行其定向测试。
 - **统一搜索交接规则**（本条是唯一出处，其他文件只引用）：
   - 每批只更新 [统一搜索现状总览](docs/unified-search-status.md) 里受影响的行（覆盖表、缺口、补复核待办），不再往[权威设计](docs/unified-search-commands.md) §8 表格行末追加注记。
@@ -129,4 +129,4 @@
 
 ## 历史里程碑路由
 
-本文件曾逐批记录各阶段与统一搜索里程碑的技能顺序和边界（第三～第十阶段、统一搜索 1A～N-M2、T/C/P/R/B 系列等）。这些记录已从本文件移出：它们不再约束新任务，却让每次冷启动都要通读。需要追溯时用 `git show ffe27a3:skill-routing.md` 查看原文；各里程碑的组件入口与证据仍分别在[组件目录](docs/component-catalog.md)和[工程手册](docs/engineering.md)的对应章节。
+本文件曾逐批记录各阶段与统一搜索里程碑的技能顺序和边界（第三～第十阶段、统一搜索 1A～N-M2、T/C/P/R/B 系列等）。这些记录已从本文件移出：它们不再约束新任务，却让每次冷启动都要通读。需要追溯时用 `git show ffe27a3:skill-routing.md` 查看原文；各组件入口见[组件目录](docs/component-catalog.md)。

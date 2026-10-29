@@ -11,7 +11,7 @@
 
 ## 2. 文档、规则与技能
 
-- 运行 `python3 -B scripts/check_workflow.py` 检查本地内联引用/锚点、Domain 显式 UI 导入、项目技能格式及 Git 边界，以及代码注释里不写进度字样（progress-notes）。它只读取仓库文件并执行只读 Git 查询，不触碰个人签名、应用或真实数据；边界见 [工程手册](../../../../docs/engineering.md)。
+- 运行 `python3 -B scripts/check_workflow.py` 检查本地内联引用/锚点、Domain 显式 UI 导入、项目技能格式及 Git 边界，以及代码注释里不写进度字样（progress-notes）。它只读取仓库文件并执行只读 Git 查询，不触碰个人签名、应用或真实数据；边界见 [质量门禁](../../../../docs/quality-gates.md)。
 - 检查差异、Markdown/元数据结构、相对引用和适用边界；仓库内使用 `git diff --check`。未跟踪文件还需单独检查，不能因 Git 未显示差异就略过。
 - 本检查器改变时，先运行 `python3 -B -m unittest discover -s scripts/tests -p test_check_workflow.py -v`，再运行下文脚本回归。反例应证明坏引用、UI 导入和错误忽略规则能被拒绝，不能只测试当前仓库恰好通过。
 - 个人规则也属于本次授权范围时，可显式传入 `--personal-root <实际个人规则目录>` 检查自有 AGENTS、路由及 `areasong-development` 的引用；默认不访问个人目录，不扫描其他技能/插件缓存。该选项不是 YAML 格式或冷启动发现测试。

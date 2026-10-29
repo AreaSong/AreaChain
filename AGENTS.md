@@ -2,7 +2,7 @@
 
 本文件适用于本仓库，在全局与当前会话约束基础上补充项目事实和验证入口，不扩大操作授权。只检查本次变更相关的约定；改变已有产品边界时先说明并按风险分级处理。
 
-本仓库与个人会话规则冲突时，以本文件和 [技能路由](skill-routing.md) 为准。日常任务不把 `.cursor/plans` 当项目路线：不读取、不写入、不提交该目录；Cursor 若在本地生成草稿，忽略它，不把它当任务清单。整项目优化只沿 [工程手册](docs/engineering.md) 的已完成路线作为历史记录，不再另开总任务执行器。
+本仓库与个人会话规则冲突时，以本文件和 [技能路由](skill-routing.md) 为准。日常任务不把 `.cursor/plans` 当项目路线：不读取、不写入、不提交该目录；Cursor 若在本地生成草稿，忽略它，不把它当任务清单。不另开总任务执行器或平行于本仓库规则的计划文件。
 
 ## 开发技能分层
 
@@ -18,7 +18,7 @@
 - 所有新对话先读 [技能路由](skill-routing.md)；新增控件、公共规则或界面时再读 [共享组件与复用目录](docs/component-catalog.md)，并沿实际调用方核对，不只按名称猜测。
 - 入口、环境要求和命令见 [README.md](README.md)；产品定位、功能与边界见 [docs/features.md](docs/features.md)。
 - 界面、快捷键和保存行为见 [docs/usage.md](docs/usage.md)；分层、数据与隔离验收见 [docs/architecture.md](docs/architecture.md)。
-- 开发全生命周期的覆盖状态、工程环境、质量门禁、发行准备及恢复/维护方法见 [docs/engineering.md](docs/engineering.md) 与 [docs/quality-gates.md](docs/quality-gates.md)；通用标准由全局规则按需引用，项目手册只保存本项目证据、入口和缺口。
+- 质量门禁、覆盖缺口、工程环境、恢复演练与诊断方法见 [docs/quality-gates.md](docs/quality-gates.md)，发行准备见 [docs/signing.md](docs/signing.md)；通用标准由全局规则按需引用，项目手册只保存本项目证据、入口和缺口。
 - 触及构建、签名、安装或系统解锁时先读 [docs/signing.md](docs/signing.md)。不要把安装、启动或真实认证当作普通检查的隐含步骤。
 - 文档与实现有差异时先核对相关代码和测试，说明现状与目标；不凭单一旧说明扩大权限或修改无关行为。
 
