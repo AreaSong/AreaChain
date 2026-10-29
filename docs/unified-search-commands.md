@@ -8702,7 +8702,7 @@ README、features、usage、architecture 改为统一搜索描述并删开关说
 #### 规则与入口
 
 - **工作台三条**（`c3cb084`）：`occurrence.inspect` 沿习惯月历点日期（`inspectTask(id, dayKey:)`），焦点习惯换检查日、不打卡；目录去掉目标参数只带日期（目标取焦点结果，与 `inspector.day` 同形，路径尾段可写日期）。`inspector.close` 沿检查器关闭按钮，先经 `commitInspectorBeforeNavigation`（正式版失焦保存、隔离宿主留 `EditDrafts`）再关。`trash.browse` 在 `CommandOriginalPage` 登记为打开回收站页、不标“在原页面完成”：原界面的浏览是该页五组列表与类别筛选，`/trash` 范围是文字搜索，不等价；类别参数在页面筛选里选。
-- **菜单栏转交**（`23f2235`）：`CommandHostDisposition.workspaceHandoff`（“在工作台完成 · Return 打开工作台”）。判断仍只在 `disposition(for:)`：本宿主未接上、工作台控制器同一入口为可执行或打开原页面。唯一转交入口 `UnifiedSearchProductionAssembly.revealWorkspaceThenWrite`（显示工作台 → 等可见 → 写入文字 → 继续），结果转交与指令转交共用；工作台按自己的 Return 路径执行（`openHandedOffCommand`）。工作台有未完成草稿或待执行列表时不写入，显示 `UnifiedSearchUnsavedWork`（与关闭工作台被挡同一块），菜单栏原文字保留；该说明由反馈派生，用户改字或接受候选即收起。结果转交因此也不再覆盖工作台未完成的工作（行为收紧）。
+- **菜单栏转交**（`23f2235`）：`CommandHostDisposition.workspaceHandoff`（“在工作台完成 · Return 打开工作台”）。判断仍只在 `disposition(for:)`：本宿主未接上、工作台控制器同一入口为可执行或打开原页面。唯一转交入口 `UnifiedSearchProductionAssembly.revealWorkspaceThenWrite`（显示工作台 → 等可见 → 写入文字 → 继续），结果转交与指令转交共用；工作台按自己的 Return 路径执行（`openHandedOffCommand`）。工作台有未完成草稿或待执行列表时不写入，显示 `UnifiedSearchUnsavedWork`（与关闭工作台被挡同一块），菜单栏原文字保留；该说明由反馈派生，用户改字或接受候选即收起。结果转交因此也不再覆盖工作台未完成的工作（行为收紧）。指令转交先在工作台写入菜单栏的同一查询、选中菜单栏按 Return 时的焦点对象，再写指令文字——焦点类指令（`inspector.open`、`go.tagList`、`occurrence.inspect`、`trash.delete`／`empty` 的定位）作用于菜单栏选中的对象；工作台找不到该对象就不执行并说明（`unified.handoff.objectMissing`）。工作台停在目的地时，返回条下给出同一块被挡说明。路径参数只对单参数指令解析，转交至多带一个参数。
 - **锁定后再输入**（`8ff7922`）：`resumeForExplicitAction` 在查询停在 `privacyInvalidated` 时，先过 `eligibleHost` 的其余门禁，再用宿主注入的 `trustedPage`（工作台 `navigation.queryContext`，菜单栏 `menubarPage`）发 `enterPage`，返回重建后的缓冲给这次动作。五条不变量：旧文字与条件不恢复；重新拿到 key 不重建；认证中／更改方式中／vault 不可用照常拒绝并说明；仍锁定时只读锁定可见范围；`PrivacyVault`、`privacyWillLock` 顺序与 D3 清理不变。没有注入页面的隔离宿主行为不变。
 - **补验 ffe27a3**：原生实测发现结果区隐藏时 Tab 会进入看不见的结果控件（SwiftUI 透明与禁点不影响 AppKit 键盘环）。根因修在 `UnifiedSearchResultsBoundary.yieldsToCommand`：让位时托管视图 `isHidden`（仍挂载），边界不再接受焦点、不处理方向键。点击命中原本即不落到结果上。
 - **补验 6b3dba6**：`commandReturnPending` 在 `returnThenContinue` 的 `defer` 里复位，重复 Return 被吞、返回被拒（附着表单）都复位，补了两个原生用例。该提交带入的 `secondAppearanceAfterAppliedResult` 是无条件 `Issue.record` 的观察用例、每次必失败，改为断言现行为：结果卡未点“完成”时第二条外观指令被挡（`unified.gate.busy`）、偏好不变，点“完成”后同一指令照常开始。“上一个操作还没完成”这句对“已应用待确认”的结果卡不够准确，未改，留待用户决定。
@@ -8713,6 +8713,10 @@ README、features、usage、architecture 改为统一搜索描述并删开关说
 - 新增或改写的原生用例：UnifiedSearchWorkspaceHandoffTests（真实双窗口：`/go/tags`、`/trash/empty`、结果转交、工作台有草稿被挡）；UnifiedSearchFocusRecoveryTests 的锁定三组（两宿主）、Return 复位两例、外观结果卡一例；UnifiedSearchHiddenResultsNativeTests（隐藏结果点击与 Tab、两块被挡说明 16 张截图：中英文、浅深色、正常与最小窗口，已逐张查看，不截断、不重叠）；UnifiedSearchNavigationTests 三条新指令；InspectorBlurSaveTests 关闭检查器前保存。
 - 推导门禁 `quality_gate.py --profile swift --base-ref 32ed7d3`：整次推导 127 类超上限 120，收敛为同名＋冒烟集 23 类，后台轮通过、前台轮 144／146，两项 InspectorBlurSaveTests 失败有外来键盘输入混入（标题变成 “…savedin”），单独重跑 7／7 通过；工作流检查在本节写入前因锚点未建失败，写入后通过。
 - 各检查点点名门禁通过（命令与轮次见交付报告）；焦点前置类失败（`failedBlurSaveKeepsDraftWithoutReportingSuccess`、`commandOnNavigatedDestinationReturnsToSearch`）单独重跑通过，不登记。`./scripts/build.sh` 构建验签通过（描述文件 2026-11-04 10:35 UTC 到期，未安装）。未跑 `--profile full`。
+
+#### 复核
+
+- Claude Code `verifier` 第一轮**不通过**（1 中 4 低）：中级是转交的焦点类指令落到工作台自己的焦点上——已按上文改为带上菜单栏焦点对象，补原生用例 `focusCommandUsesMenuBarSelection`；低级：目的地上被挡说明不完整（已补，用例 `blockedHandoffOnDestinationShowsFullNotice`）、只带一个参数（路径语法本身至多一个，已加注释）、总览写了登记表变化（已删）、vault 门禁只测一种（记入未覆盖）。
 
 #### 未覆盖
 

@@ -112,7 +112,7 @@ import SwiftData
         menubar.trustedPage = { Self.menubarPage(services) }
         menubar.workspaceHandoff = .init(
             disposition: { [weak self] in self?.workspace?.disposition(for: $0) ?? .unwired },
-            open: { [weak self] text in self?.continueCommandInWorkspace(text) })
+            open: { [weak self] text, focus in self?.continueCommandInWorkspace(text, focus: focus) })
     }
 
     static func menubarPage(_ services: UnifiedSearchProductionServices) -> ContentQueryPageContext {
@@ -169,21 +169,38 @@ import SwiftData
     /// 工作台查询的页面上下文不同时可能不含该对象，此时只停在结果页。
     func continueInWorkspace(_ open: ContentQueryBrowseOpen) {
         guard let menubar else { return }
-        revealWorkspaceThenWrite(menubar.queryInputText) { workspace in
-            for _ in 0..<150 where !Task.isCancelled {
-                if let page = try? workspace.session.presentation().pagination, page.snapshot.visible.contains(open.object) {
-                    workspace.browse(.init(version: page.snapshot.version, action: .activate(open.object)), source: workspace.buffer)
-                    workspace.browse(.init(version: page.snapshot.version, action: .open(inputEditing: false)), source: workspace.buffer)
-                    return
-                }
-                try? await Task.sleep(for: .milliseconds(20))
-            }
+        revealWorkspaceThenWrite(menubar.queryInputText) { [weak self] workspace in
+            guard let version = await self?.activateWhenVisible(open.object, in: workspace) else { return }
+            workspace.browse(.init(version: version, action: .open(inputEditing: false)), source: workspace.buffer)
         }
     }
 
-    /// 菜单栏没接上、工作台能处理的指令：同一文字（含已填参数）交给工作台，由工作台走它自己的 Return 路径。
-    func continueCommandInWorkspace(_ text: String) {
-        revealWorkspaceThenWrite(text) { $0.openHandedOffCommand() }
+    /// 菜单栏没接上、工作台能处理的指令：先在工作台用菜单栏的同一查询选中菜单栏当时的焦点对象（没有焦点则不选），
+    /// 再写入同一指令文字（含已填参数），由工作台走它自己的 Return 路径。焦点对象在工作台找不到时不执行，只说明。
+    func continueCommandInWorkspace(_ text: String, focus: CommandObjectReference?) {
+        guard let menubar else { return }
+        revealWorkspaceThenWrite(menubar.queryInputText) { [weak self] workspace in
+            if let focus {
+                guard await self?.activateWhenVisible(focus, in: workspace) != nil else {
+                    workspace.navigationMessage = "unified.handoff.objectMissing"; return
+                }
+            }
+            guard workspace.edit(.init(source: workspace.buffer, text: text,
+                selection: NSRange(location: text.utf16.count, length: 0))) != nil else { return }
+            workspace.openHandedOffCommand()
+        }
+    }
+
+    /// 等工作台按同一查询读出该对象并选中它；返回选中时的结果版本，超时或被取消返回 nil。
+    private func activateWhenVisible(_ object: CommandObjectReference, in workspace: UnifiedSearchController) async -> UUID? {
+        for _ in 0..<150 where !Task.isCancelled {
+            if let page = try? workspace.session.presentation().pagination, page.snapshot.visible.contains(object) {
+                workspace.browse(.init(version: page.snapshot.version, action: .activate(object)), source: workspace.buffer)
+                return page.snapshot.version
+            }
+            try? await Task.sleep(for: .milliseconds(20))
+        }
+        return nil
     }
 
     /// 菜单栏交给工作台的唯一路径：显示工作台 → 等窗口可见 → 写入文字 → 在工作台继续。菜单栏浮层随工作台显示而收起，

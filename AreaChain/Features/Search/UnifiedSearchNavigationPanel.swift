@@ -97,6 +97,20 @@ struct UnifiedSearchWorkspaceInput: View {
 struct UnifiedSearchReturnBar: View {
     @Bindable var controller: UnifiedSearchController
     var body: some View {
+        VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
+            bar
+            // 停在从搜索导航到的目的地时也给出完整的被挡说明（草稿名、放弃、回到列表），不只一行反馈。
+            if controller.showsBlockedHandoff {
+                UnifiedSearchUnsavedWork(controller: controller, headlineKey: "unified.handoff.blocked")
+                    .accessibilityElement(children: .contain)
+                    .accessibilityIdentifier("unified.handoff.blocked")
+            }
+        }
+        .padding(DaybookSpacing.sm)
+        .background(DaybookPalette.fill.page)
+    }
+
+    private var bar: some View {
         HStack(spacing: DaybookSpacing.sm) {
             if let ticket = controller.returnSearch {
                 Button("unified.navigation.return") { Task { await controller.returnToSearch(ticket.id) } }
@@ -104,11 +118,11 @@ struct UnifiedSearchReturnBar: View {
                     .keyboardShortcut("[", modifiers: .command)
                     .accessibilityIdentifier("unified.navigation.return")
             }
-            Text(LocalizedStringKey(controller.navigationMessage)).font(DaybookType.caption)
+            if !controller.showsBlockedHandoff {
+                Text(LocalizedStringKey(controller.navigationMessage)).font(DaybookType.caption)
+            }
             Spacer(minLength: 0)
         }
-        .padding(DaybookSpacing.sm)
-        .background(DaybookPalette.fill.page)
     }
 }
 

@@ -40725,6 +40725,23 @@
         }
       }
     },
+    "unified.handoff.objectMissing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The workspace couldn't find the item selected in the menu bar, so the command wasn't run. Select it in the workspace results and press Return."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "工作台没有找到菜单栏里选中的对象，指令没有执行。请在工作台结果里选中它再按 Return。"
+          }
+        }
+      }
+    },
     "unified.handoff.sent": {
       "extractionState": "manual",
       "localizations": {

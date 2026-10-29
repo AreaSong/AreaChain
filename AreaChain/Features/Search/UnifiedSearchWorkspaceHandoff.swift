@@ -4,8 +4,8 @@ import Foundation
 /// 转交走装配里唯一的“显示工作台 → 等窗口可见 → 写入文字”入口；菜单栏不另写执行逻辑。
 @MainActor struct UnifiedSearchWorkspaceHandoff {
     let disposition: @MainActor (CommandID) -> CommandHostDisposition
-    /// 交出菜单栏当前的指令文字（含已填参数）；工作台在可见后按自己的 Return 路径处理。
-    let open: @MainActor (String) -> Void
+    /// 交出菜单栏当前的指令文字（含已填参数）与当时的焦点结果；工作台先在同一查询里选中同一对象，再按自己的 Return 路径处理。
+    let open: @MainActor (String, CommandObjectReference?) -> Void
 }
 
 extension UnifiedSearchController {
@@ -13,7 +13,8 @@ extension UnifiedSearchController {
     func handOffToWorkspace(_ source: UnifiedSearchBuffer) -> Bool {
         guard validates(source), let handoff = workspaceHandoff, let command = browsedCommand,
               disposition(for: command.id) == .workspaceHandoff else { return false }
-        handoff.open(source.text)
+        // 焦点类指令（检查、定位、按焦点打开原页面）作用于菜单栏此刻选中的对象，不能落到工作台自己的焦点上。
+        handoff.open(source.text, try? session.presentation().pagination.browse.active)
         navigationMessage = "unified.handoff.sent"
         return true
     }
@@ -26,6 +27,7 @@ extension UnifiedSearchController {
         guard let command = parsed.command else { return }
         if isNavigationInput { intent(.open, source: buffer); return }
         if returnThenContinue({ [weak self] _ in self?.openHandedOffCommand() }) { return }
+        // 路径尾段只对单参数指令解析出参数，至多一个；不走 intent(.open)，因为它开草稿时不带路径里的参数。
         let argument = parsed.arguments.first { acceptsTypedArgument($0, for: command.id) }
         beginOperation(command.id, source: buffer, text: buffer.text, argument: argument)
     }

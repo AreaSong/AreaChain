@@ -53,6 +53,49 @@ import Testing
         #expect(host.assembly.workspace.buffer.text == "needle")
     }
 
+    /// 焦点类指令作用于菜单栏选中的对象：工作台此前选中的是另一个结果，转交后检查器打开的仍是菜单栏那个。
+    @Test func focusCommandUsesMenuBarSelection() async throws {
+        let host = try UnifiedSearchHandoffHost()
+        defer { host.close() }
+        let menubarTodo = try host.fixture.insert(TodoItem(title: "needle 合成菜单栏焦点", dayKey: UnifiedSearchProductionFixture.today))
+        let workspaceTodo = try host.fixture.insert(TodoItem(title: "other 合成工作台焦点", dayKey: UnifiedSearchProductionFixture.today))
+        try await host.start(workspaceFirst: true)
+        try await host.typeInWorkspace("other")
+        try await host.waitPublished(host.assembly.workspace)
+        let other = CommandObjectReference(type: .todo, id: workspaceTodo.id)
+        let page = try host.assembly.workspace.session.presentation().pagination
+        host.assembly.workspace.browse(.init(version: page.snapshot.version, action: .activate(other)), source: host.assembly.workspace.buffer)
+        try await host.showMenuBar()
+        try await host.typeInMenuBar("needle")
+        try await host.waitPublished(host.assembly.menubar)
+        try await host.key(125, "\u{F701}", in: host.menubarWindow)
+        let wanted = CommandObjectReference(type: .todo, id: menubarTodo.id)
+        try #require(try host.assembly.menubar.session.presentation().pagination.browse.active == wanted)
+        try await host.typeInMenuBar("/inspector/open")
+        try await host.pressReturnInMenuBar { host.fixture.navigation.navigationObject != nil }
+        #expect(host.fixture.navigation.navigationObject?.object == wanted, "应打开菜单栏选中的对象")
+        #expect(host.fixture.navigation.selectedTaskID == menubarTodo.id)
+    }
+
+    /// 工作台停在从搜索导航到的目的地且有未完成草稿：转交被挡时目的地上也给出完整说明，页面不动。
+    @Test func blockedHandoffOnDestinationShowsFullNotice() async throws {
+        let host = try UnifiedSearchHandoffHost()
+        defer { host.close() }
+        try await host.start(workspaceFirst: true)
+        try await host.typeInWorkspace("/setting/appearance")
+        try await host.pressReturnInWorkspace { host.assembly.workspace.operations?.active != nil }
+        try await host.typeInWorkspace("/go/tags")
+        try await host.pressReturnInWorkspace { host.fixture.navigation.selectedTab == .tags }
+        try #require(host.assembly.workspace.returnSearch != nil && host.assembly.workspace.operations?.active != nil)
+        try await host.showMenuBar()
+        try await host.typeInMenuBar("/go/settings")
+        try await host.pressReturnInMenuBar { host.assembly.workspace.showsBlockedHandoff }
+        try await host.settle(host.workspaceWindow)
+        #expect(host.fixture.navigation.selectedTab == .tags)
+        #expect(NativeSyntaxUI.identifiers(in: host.workspaceWindow).contains("unified.handoff.blocked"))
+        #expect(NativeSyntaxUI.identifiers(in: host.workspaceWindow).contains("unified.system.unsaved.discardDraft"))
+    }
+
     @Test func workspaceDraftBlocksHandoffAndStaysUnchanged() async throws {
         let host = try UnifiedSearchHandoffHost()
         defer { host.close() }
@@ -174,7 +217,7 @@ import Testing
 
     func waitPublished(_ controller: UnifiedSearchController) async throws {
         for _ in 0..<150 where (try? controller.session.presentation()) == nil { try await Task.sleep(for: .milliseconds(20)) }
-        try await settle(menubarWindow)
+        try await settle(controller === assembly.menubar ? menubarWindow : workspaceWindow)
     }
 
     /// 候选活动时第一次 Return 先接受候选；转交是异步的（等工作台可见），按完后等条件成立。
