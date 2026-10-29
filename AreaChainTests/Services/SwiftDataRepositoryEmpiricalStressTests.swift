@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// Milestone M2 Empirical Challenger Stress Tests:
+/// Empirical challenger stress tests:
 /// Adversarially stress testing all 4 SwiftData repositories on lifecycle retention,
 /// edge cases, graph integrity, subtask deduplication, cascade operations, and cycle prevention.
 @MainActor
