@@ -116,7 +116,7 @@
 
 ## 补复核待办
 
-- **统一搜索收口**（2026-10-29，含补验 ffe27a3、6b3dba6）：复核结论见 [§9.109](unified-search-commands.md#9109-统一搜索收口两宿主指令去处与锁定后再输入)。
+- **统一搜索收口**（2026-10-29，含补验 ffe27a3、6b3dba6）：Claude Code `verifier` 第一轮不通过（1 中 4 低），整改后第二轮**通过**（2 条低级意见已记录），见 [§9.109](unified-search-commands.md#9109-统一搜索收口两宿主指令去处与锁定后再输入)。
 - **修复批 M-7F**（2026-10-28）：Claude Code `verifier` 复核**通过**（4 条低级意见已记录），见 [§9.107](unified-search-commands.md#9107-修复批-m-7f恢复三处旧行为)。
 - **收尾批 M-7**（2026-10-23～28）：Claude Code `verifier` 第一轮不通过（6 条整改），整改后第二轮**通过**（2 条低级意见已记录），见 [§9.106](unified-search-commands.md#9106-收尾批-m-7删除旧全局搜索)。
 - **修复批 M-6R**（2026-10-23）：Claude Code `verifier` 复核**通过**（4 条低级意见已记录），见 [§9.104](unified-search-commands.md#9104-修复批-m-6r接入前阻断修复)。
