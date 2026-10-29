@@ -103,6 +103,9 @@ import SwiftData
         }
         workspace = try makeController(Self.workspaceHost)
         menubar = try makeController(Self.menubarHost)
+        menubar.workspaceHandoff = .init(
+            disposition: { [weak self] in self?.workspace?.disposition(for: $0) ?? .unwired },
+            open: { [weak self] text in self?.continueCommandInWorkspace(text) })
     }
 
     static func menubarPage(_ services: UnifiedSearchProductionServices) -> ContentQueryPageContext {
@@ -155,20 +158,11 @@ import SwiftData
         privacyObservers = []
     }
 
-    /// 菜单栏没有工作台路由：先显示工作台，再用同一查询在工作台读取，命中同一对象后沿原导航打开。
-    /// 菜单栏浮层随工作台显示而收起，所以不能在菜单栏会话里等待；工作台查询的页面上下文不同时可能不含该对象，此时只停在结果页。
+    /// 菜单栏打开结果：在工作台用同一查询读取，命中同一对象后沿原导航打开。
+    /// 工作台查询的页面上下文不同时可能不含该对象，此时只停在结果页。
     func continueInWorkspace(_ open: ContentQueryBrowseOpen) {
         guard let menubar else { return }
-        let text = menubar.queryInputText
-        handoffTask?.cancel()
-        services.effects.revealWorkspace()
-        handoffTask = Task { @MainActor [weak self] in
-            guard let self, let workspace = self.workspace else { return }
-            for _ in 0..<100 where self.router.host?.window?.isVisible != true {
-                try? await Task.sleep(for: .milliseconds(20))
-            }
-            guard !Task.isCancelled, workspace.edit(.init(source: workspace.buffer, text: text,
-                selection: NSRange(location: text.utf16.count, length: 0))) != nil else { return }
+        revealWorkspaceThenWrite(menubar.queryInputText) { workspace in
             for _ in 0..<150 where !Task.isCancelled {
                 if let page = try? workspace.session.presentation().pagination, page.snapshot.visible.contains(open.object) {
                     workspace.browse(.init(version: page.snapshot.version, action: .activate(open.object)), source: workspace.buffer)
@@ -177,6 +171,29 @@ import SwiftData
                 }
                 try? await Task.sleep(for: .milliseconds(20))
             }
+        }
+    }
+
+    /// 菜单栏没接上、工作台能处理的指令：同一文字（含已填参数）交给工作台，由工作台走它自己的 Return 路径。
+    func continueCommandInWorkspace(_ text: String) {
+        revealWorkspaceThenWrite(text) { $0.openHandedOffCommand() }
+    }
+
+    /// 菜单栏交给工作台的唯一路径：显示工作台 → 等窗口可见 → 写入文字 → 在工作台继续。菜单栏浮层随工作台显示而收起，
+    /// 所以不能在菜单栏会话里等待。工作台有未完成的指令草稿或待执行列表时不写入（不替换它的工作），改由工作台显示被挡说明。
+    private func revealWorkspaceThenWrite(_ text: String, then next: @escaping @MainActor (UnifiedSearchController) async -> Void) {
+        handoffTask?.cancel()
+        services.effects.revealWorkspace()
+        handoffTask = Task { @MainActor [weak self] in
+            guard let self, let workspace = self.workspace else { return }
+            for _ in 0..<100 where self.router.host?.window?.isVisible != true {
+                try? await Task.sleep(for: .milliseconds(20))
+            }
+            guard !Task.isCancelled else { return }
+            guard !workspace.hasUnsavedCommandWork else { workspace.reportBlockedHandoff(); return }
+            guard workspace.edit(.init(source: workspace.buffer, text: text,
+                selection: NSRange(location: text.utf16.count, length: 0))) != nil else { return }
+            await next(workspace)
         }
     }
 

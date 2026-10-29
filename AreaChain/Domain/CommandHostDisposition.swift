@@ -9,17 +9,20 @@ enum CommandHostDisposition: Equatable, Sendable {
     case navigates
     /// 在原页面完成：只导航，由原页面操作（CommandOriginalPage 有对照）；pageKey 是目的地名称的文案键。
     case originalPage(pageKey: String, finishesOnPage: Bool)
+    /// 当前宿主没有接上、工作台能处理（菜单栏没有工作台路由与页面指令）：Return 显示工作台，同一文字交给工作台完成。
+    case workspaceHandoff
     /// 目录声明不可用或未定（CommandAvailability），reasonKey 是原因文案键。
     case catalogUnavailable(reasonKey: String)
     /// 以上都不是：能填写参数，但当前宿主没有接上执行。
     case unwired
 
-    enum Kind: String, CaseIterable, Sendable { case executable, originalPage, catalogUnavailable, unwired }
+    enum Kind: String, CaseIterable, Sendable { case executable, originalPage, workspaceHandoff, catalogUnavailable, unwired }
 
     var kind: Kind {
         switch self {
         case .executable, .navigates: .executable
         case .originalPage: .originalPage
+        case .workspaceHandoff: .workspaceHandoff
         case .catalogUnavailable: .catalogUnavailable
         case .unwired: .unwired
         }
@@ -33,6 +36,7 @@ enum CommandHostDisposition: Equatable, Sendable {
         case .originalPage(let page, let finishes):
             return L10n.format(finishes ? "unified.candidate.originalPage" : "unified.candidate.opens", locale: locale,
                                L10n.format(page, locale: locale))
+        case .workspaceHandoff: return L10n.format("unified.candidate.workspaceHandoff", locale: locale)
         case .catalogUnavailable(let reason):
             return L10n.format("unified.candidate.catalogUnavailable", locale: locale, L10n.format(reason, locale: locale))
         case .unwired: return L10n.format("unified.input.unavailable", locale: locale)

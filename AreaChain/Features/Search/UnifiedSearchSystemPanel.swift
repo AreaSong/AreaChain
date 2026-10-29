@@ -12,42 +12,13 @@ struct UnifiedSearchSystemBlock: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("unified.system.preview")
             if case .stats(let kind, let day) = action { stats(kind, day: day) }
-            if action == .quit || action == .workspaceClose, controller.hasUnsavedCommandWork { unsavedWork }
+            if action == .quit || action == .workspaceClose, controller.hasUnsavedCommandWork {
+                UnifiedSearchUnsavedWork(controller: controller,
+                    headlineKey: action == .quit ? "unified.system.quit.unsaved" : "unified.system.workspace.closeBlocked")
+            }
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("unified.system")
-    }
-
-    /// 说明挡住关闭（或退出会丢掉）的是哪份草稿、几项待执行，并就地给出放弃草稿与回到列表的入口。
-    private var unsavedWork: some View {
-        VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
-            Text(action == .quit ? "unified.system.quit.unsaved" : "unified.system.workspace.closeBlocked")
-                .font(DaybookType.caption).fixedSize(horizontal: false, vertical: true)
-                .accessibilityIdentifier("unified.system.warning")
-            if let draft = controller.operations?.active,
-               let command = CommandCatalog.standard.command(id: draft.commandID) {
-                Text(verbatim: L10n.format("unified.system.unsaved.draft", locale: locale, command.name(locale: locale)))
-                    .font(DaybookType.caption).foregroundStyle(DaybookPalette.text.secondary)
-                    .accessibilityIdentifier("unified.system.unsaved.draft")
-            }
-            if let count = controller.plan?.items.count, count > 0 {
-                Text(verbatim: L10n.format("unified.plan.count", locale: locale, count))
-                    .font(DaybookType.caption).foregroundStyle(DaybookPalette.text.secondary)
-                    .accessibilityIdentifier("unified.system.unsaved.plan")
-            }
-            HStack(spacing: DaybookSpacing.sm) {
-                // 编辑待执行项时放弃入口不作用于活动草稿，不显示，避免点了无反应。
-                if controller.operations?.active != nil, controller.buffer.planItem == nil {
-                    Button("unified.system.unsaved.discardDraft") {
-                        controller.discardActiveOperation(source: controller.buffer)
-                    }
-                    .accessibilityIdentifier("unified.system.unsaved.discardDraft")
-                }
-                Button("unified.system.unsaved.review") { _ = controller.navigationInput(controller.queryInputText) }
-                    .accessibilityIdentifier("unified.system.unsaved.review")
-            }
-            .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
-        }
     }
 
     @ViewBuilder private func stats(_ kind: CommandStatsKind, day: String?) -> some View {
@@ -128,6 +99,45 @@ struct UnifiedSearchSystemBlock: View {
         case .statsOpenActivity: "unified.stats.chooseActivity"
         case .quit: "unified.system.quit.preview"
         case .privacyLock: "unified.privacy.lock.preview"
+        }
+    }
+}
+
+/// 说明挡住关闭、退出或菜单栏转交的是哪份草稿、几项待执行，并就地给出放弃草稿与回到列表的入口。
+/// 关闭工作台、退出与菜单栏转交被挡共用这一块，只换首句说明。
+struct UnifiedSearchUnsavedWork: View {
+    @Bindable var controller: UnifiedSearchController
+    let headlineKey: String
+    @Environment(\.locale) private var locale
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
+            Text(LocalizedStringKey(headlineKey))
+                .font(DaybookType.caption).fixedSize(horizontal: false, vertical: true)
+                .accessibilityIdentifier("unified.system.warning")
+            if let draft = controller.operations?.active,
+               let command = CommandCatalog.standard.command(id: draft.commandID) {
+                Text(verbatim: L10n.format("unified.system.unsaved.draft", locale: locale, command.name(locale: locale)))
+                    .font(DaybookType.caption).foregroundStyle(DaybookPalette.text.secondary)
+                    .accessibilityIdentifier("unified.system.unsaved.draft")
+            }
+            if let count = controller.plan?.items.count, count > 0 {
+                Text(verbatim: L10n.format("unified.plan.count", locale: locale, count))
+                    .font(DaybookType.caption).foregroundStyle(DaybookPalette.text.secondary)
+                    .accessibilityIdentifier("unified.system.unsaved.plan")
+            }
+            HStack(spacing: DaybookSpacing.sm) {
+                // 编辑待执行项时放弃入口不作用于活动草稿，不显示，避免点了无反应。
+                if controller.operations?.active != nil, controller.buffer.planItem == nil {
+                    Button("unified.system.unsaved.discardDraft") {
+                        controller.discardActiveOperation(source: controller.buffer)
+                    }
+                    .accessibilityIdentifier("unified.system.unsaved.discardDraft")
+                }
+                Button("unified.system.unsaved.review") { _ = controller.navigationInput(controller.queryInputText) }
+                    .accessibilityIdentifier("unified.system.unsaved.review")
+            }
+            .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
         }
     }
 }

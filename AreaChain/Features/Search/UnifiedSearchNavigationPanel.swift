@@ -62,6 +62,13 @@ struct UnifiedSearchWorkspaceContent: View {
                     .font(DaybookType.caption)
                     .accessibilityIdentifier("unified.navigation.feedback")
             }
+            // 菜单栏转交被挡：说明挡住的草稿与列表，就地给出放弃与回到列表。
+            if controller.showsBlockedHandoff {
+                UnifiedSearchUnsavedWork(controller: controller, headlineKey: "unified.handoff.blocked")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityElement(children: .contain)
+                    .accessibilityIdentifier("unified.handoff.blocked")
+            }
             UnifiedSearchResults(controller: controller)
                 .unifiedSearchYieldsToCommand(controller)
             if MenuBarUnifiedSearchContent.showsOperation(controller), !controller.hidesResultsForCommand {
@@ -107,8 +114,10 @@ struct UnifiedSearchReturnBar: View {
 
 extension UnifiedSearchController {
     /// 导航面板可见时它自己显示反馈，宿主顶部不再重复同一句；面板被门禁收起时仍由宿主显示。
+    /// 转交被挡的说明块已写出同一句，也不重复。
     var showsNavigationFeedback: Bool {
         navigationMessage != "unified.navigation.hint" && !(isNavigationInput && operationVisible)
+            && !showsBlockedHandoff
     }
 }
 

@@ -88,11 +88,7 @@ extension UnifiedSearchController {
         case .complete(let id), .chooseParameter(let id, _):
             return beginOperation(id, source: request.source, text: request.text)
         case .setArgument(let id, let argument):
-            guard let command = CommandCatalog.standard.command(id: id),
-                  let parameter = command.parameters.first(where: { $0.id == argument.parameter }),
-                  UnifiedSearchParameterContext.supports(parameter, command: command),
-                  let value = argument.value, CommandArgumentValidation.accepts(value, type: parameter.type),
-                  parameter.operations.contains(argument.operation) else { return nil }
+            guard acceptsTypedArgument(argument, for: id) else { return nil }
             if editingDraft?.commandID != id {
                 return beginOperation(id, source: request.source, text: request.text, argument: argument)
             }
@@ -101,10 +97,22 @@ extension UnifiedSearchController {
         }
     }
 
+    /// 参数值候选与转交来的路径参数共用的校验：参数属于这条指令、可在面板里编辑、值与操作合法。
+    func acceptsTypedArgument(_ argument: CommandArgument, for id: CommandID) -> Bool {
+        guard let command = CommandCatalog.standard.command(id: id),
+              let parameter = command.parameters.first(where: { $0.id == argument.parameter }),
+              UnifiedSearchParameterContext.supports(parameter, command: command),
+              let value = argument.value, CommandArgumentValidation.accepts(value, type: parameter.type),
+              parameter.operations.contains(argument.operation) else { return false }
+        return true
+    }
+
     @discardableResult
     func beginOperation(_ id: CommandID, source: UnifiedSearchBuffer, text: String? = nil,
                         argument: CommandArgument? = nil) -> UnifiedSearchBuffer? {
-        if validates(source), CommandCatalog.standard.command(id: id)?.category == .navigation {
+        // 交给工作台完成的指令不在本宿主建草稿：接受候选只写文字，Return 再转交（handOffToWorkspace）。
+        if validates(source), CommandCatalog.standard.command(id: id)?.category == .navigation
+            || disposition(for: id) == .workspaceHandoff {
             return navigationInput(text ?? CommandCatalog.standard.command(id: id)!.path)
         }
         guard validates(source), operationVisible, let state = operations,

@@ -9,7 +9,8 @@ import Testing
 @Suite(.serialized, .tags(.backgroundWindow)) @MainActor struct UnifiedSearchCommandDispositionTests {
     /// navigated：导航入口接上了（未被拒为 unsupported／unassembled）。后台用例没有真实窗口，看不到导航完成反馈，
     /// 因此不在这里区分“前往”与“打开原页面”，只要求标签落在这两类之一；不再用 CommandOriginalPage 表自证。
-    enum Observed: String { case executable, navigated, notWired }
+    /// handedOff：菜单栏把同一文字交给工作台（显示工作台的副作用被调用、菜单栏没有建草稿）。
+    enum Observed: String { case executable, navigated, handedOff, notWired }
 
     struct Outcome { let id: String; let observed: Observed; let disposition: CommandHostDisposition }
 
@@ -36,8 +37,13 @@ import Testing
             _ = controller.edit(.init(source: controller.buffer, text: command.path,
                                       selection: .init(location: command.path.utf16.count, length: 0)))
         }
+        let reveals = fixture.probe.reveals
         controller.intent(.open, source: controller.buffer)
         await controller.navigationTask?.value
+        if fixture.probe.reveals > reveals {
+            #expect(controller.operations?.active == nil, "\(command.id.rawValue) 转交时菜单栏不应建草稿")
+            return .init(id: command.id.rawValue, observed: .handedOff, disposition: disposition)
+        }
         if UnifiedSearchController.routesAsNavigation(command) {
             let refused = ["unified.navigation.unsupported", "unified.navigation.unassembled"].contains(controller.navigationMessage)
             if refused { return .init(id: command.id.rawValue, observed: .notWired, disposition: disposition) }
@@ -62,6 +68,8 @@ import Testing
             case .navigated:
                 #expect([.executable, .originalPage].contains(outcome.disposition.kind), "\(outcome.id)：导航已接上但标签为 \(outcome.disposition)")
                 #expect(outcome.disposition != .executable, "\(outcome.id)：导航类不应标为“Return 开始 · 预览后确认”")
+            case .handedOff:
+                #expect(host == "menubar" && outcome.disposition == .workspaceHandoff, "\(outcome.id)：已转交但标签为 \(outcome.disposition)")
             case .notWired:
                 #expect([.catalogUnavailable, .unwired].contains(outcome.disposition.kind), "\(outcome.id)：走不通但标签为 \(outcome.disposition)")
                 if case .catalogUnavailable = outcome.disposition {
@@ -74,11 +82,11 @@ import Testing
             let outcome = outcomes.first { $0.id == id }
             #expect(outcome?.disposition == .executable && outcome?.observed == .executable, "\(id) 应可执行（\(host)）")
         }
-        // 两宿主的类别计数：工作台没有“未接上”；菜单栏的导航、打开原页面与页面指令仍未接上。
+        // 两宿主的类别计数：都没有“未接上”；菜单栏的导航、打开原页面与页面指令交给工作台完成。
         let counts = Dictionary(grouping: outcomes, by: \.disposition.kind).mapValues(\.count)
         let expected: [CommandHostDisposition.Kind: Int] = host == "workspace"
             ? [.executable: 160, .originalPage: 86, .catalogUnavailable: 1]
-            : [.executable: 64, .catalogUnavailable: 5, .unwired: 178]
+            : [.executable: 64, .workspaceHandoff: 178, .catalogUnavailable: 5]
         #expect(counts == expected, "\(host)：\(counts)")
         let report = outcomes.map { "\($0.id)\t\($0.observed.rawValue)\t\($0.disposition.kind.rawValue)" }.joined(separator: "\n")
         Attachment.record(report, named: "m7g-c-catalog-\(host).tsv")
@@ -86,11 +94,11 @@ import Testing
         Attachment.record(unwired.joined(separator: "\n"), named: "m7g-c-unwired-\(host).txt")
     }
 
-    /// 四类标签中英文都有文案，且不同类别文字不同（未接上才写“暂不可用”）。
+    /// 五类标签中英文都有文案，且不同类别文字不同（未接上才写“暂不可用”）。
     @Test func labelsAreLocalizedPerKind() {
         let samples: [CommandHostDisposition] = [.executable, .navigates, .originalPage(pageKey: "tab.tags", finishesOnPage: true),
             .originalPage(pageKey: "unified.candidate.page.help", finishesOnPage: false),
-            .catalogUnavailable(reasonKey: "command.reason.globalUnlink"), .unwired]
+            .workspaceHandoff, .catalogUnavailable(reasonKey: "command.reason.globalUnlink"), .unwired]
         for locale in [Locale(identifier: "en"), Locale(identifier: "zh-Hans")] {
             let labels = samples.map { $0.label(locale: locale) }
             #expect(Set(labels).count == labels.count)

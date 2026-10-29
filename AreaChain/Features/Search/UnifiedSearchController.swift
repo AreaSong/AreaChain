@@ -82,6 +82,7 @@ final class UnifiedSearchController {
     var taskCopyFailure: String?
     /// 合并批 M-1 C 页面指令；默认未装配（nil），生产没有构造点。
     @ObservationIgnored var pageCommands: WorkspacePageCommands?
+    @ObservationIgnored var workspaceHandoff: UnifiedSearchWorkspaceHandoff? // 只有菜单栏装配；工作台为 nil
     var pagePreview: WorkspacePagePreview?
     var pageReceipt: WorkspacePageReceipt?
     var pageFailure: CommandPageIssue?
@@ -245,6 +246,7 @@ final class UnifiedSearchController {
             resumeForExplicitAction(source: source) { [weak self] in self?.intent(intent, source: source) }
             return
         }
+        if intent == .open, handOffToWorkspace(source) { return }
         if returnForCommand(intent) { return }
         if isNavigationInput {
             if intent == .submit { return }

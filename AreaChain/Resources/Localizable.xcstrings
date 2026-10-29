@@ -37991,6 +37991,23 @@
         }
       }
     },
+    "unified.candidate.workspaceHandoff": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finish in the workspace · Return opens the workspace"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在工作台完成 · Return 打开工作台"
+          }
+        }
+      }
+    },
     "unified.category.group": {
       "extractionState": "stale",
       "localizations": {
@@ -40687,6 +40704,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "核验只检查本次精确提交，不会再次保存；仍不确定时保留原运行。"
+          }
+        }
+      }
+    },
+    "unified.handoff.blocked": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The menu bar command wasn't passed on: the workspace still has an unfinished command draft or pending list. Finish or discard it first."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "菜单栏的指令没有转交：工作台还有未完成的指令草稿或待执行列表，请先完成或放弃。"
+          }
+        }
+      }
+    },
+    "unified.handoff.sent": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opened in the workspace"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已交给工作台"
           }
         }
       }

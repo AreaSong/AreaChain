@@ -32,6 +32,7 @@ extension UnifiedSearchController {
 
     func executeNavigation(source: UnifiedSearchBuffer) {
         guard validates(source), isNavigationInput else { return }
+        if handOffToWorkspace(source) { return }
         guard let router = navigationRouter else { navigationMessage = "unified.navigation.unassembled"; return }
         let parsed = CommandPathParser().parse(.init(text: source.text))
         guard let command = parsed.command else { return }
