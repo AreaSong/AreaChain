@@ -2,7 +2,7 @@
 
 这是 AreaChain 的复用导航，不是新的设计系统，也不是把所有 `struct` 都承诺成公共 API。新任务必须先查本目录，再查看声明和真实调用方；如果目录与代码不一致，以代码、测试和 `AGENTS.md` 的当前契约为准，并在同一任务中修正目录。
 
-本目录按复用原则、令牌与基座、复合组件、领域入口、决策清单、维护规则排在前面，其后按领域列出各入口。条目原按阶段和批次命名，2026-10-30 已改为按组件命名；阶段与批次的验收细节在工程手册和统一搜索权威设计的 git 历史里。
+本目录按复用原则、令牌与基座、复合组件、领域入口、决策清单、维护规则排在前面，其后按领域列出各入口。条目按组件命名；阶段与批次的验收细节在工程手册和统一搜索权威设计的 git 历史里。
 
 ## 1. 复用原则
 
@@ -663,7 +663,7 @@ F 补修在 `TagManagementPage.body` 的合并 sheet 边界显式传递宿主 `l
 
 展示直接扩展 `DaybookControlsPreview`；验证入口为 [DaybookStepperTests.swift](../AreaChainTests/Theme/DaybookStepperTests.swift)、[原生基线](../AreaChainTests/Theme/DaybookStepperBaselineTests.swift)、[交互测试](../AreaChainTests/Theme/DaybookStepperInteractionTests.swift) 与 [ClipboardStepperConsumerTests.swift](../AreaChainTests/Features/ClipboardStepperConsumerTests.swift)。消费者复用 ClipboardOptionsFixture 的随机目录、suite、nil pasteboard 和无副作用 gate，预写合成历史；不调用 shared/start/stage。实际证据和未验项见工程手册。现存日期 `.stepperField` 及任务完成等控件不迁移。
 
-Stepper 焦点反馈补证（2026-10-08）：桥接只延后按钮描边的 focusChanged，事件/禁用/拆离防线仍同步；通知按当前原生焦点及接入状态发布，代次丢弃旧通知，dismantle 取消并清空回调。[DaybookStepperFocusTests](../AreaChainTests/Theme/DaybookStepperFocusTests.swift) 补持焦禁用、重挂/迟到反馈与多实例，原交互及剪贴板消费者继续回归。根因、Runtime Warning 和最终证据仅维护在原 O/P 续记，不新增数值或保存 API。
+Stepper 焦点反馈：桥接只延后按钮描边的 focusChanged，事件/禁用/拆离防线仍同步；通知按当前原生焦点及接入状态发布，代次丢弃旧通知，dismantle 取消并清空回调。[DaybookStepperFocusTests](../AreaChainTests/Theme/DaybookStepperFocusTests.swift) 补持焦禁用、重挂/迟到反馈与多实例，原交互及剪贴板消费者继续回归；不新增数值或保存 API。
 
 ### 公共任务完成控件与行内子任务
 
@@ -965,7 +965,7 @@ SyntaxOverlay 保留锚点、尺寸、来源优先级、最近宿主、事件和
 
 **E 修复二**：MenuBarPopoverView 将原遮罩和卡片组织为根 ZStack 的同一 `zIndex(20)` 层，层内卡片为 1、遮罩为默认 0；原筛选仍为 30。卡片空白由宿主局部点击区域接住，外部关闭不穿透；尺寸、92pt 偏移、原裁切与 transition 保留。原 setupTabKeyMonitor 限定有效可见宿主，先走筛选，再由内部 dismissSyntaxHelpForEscape 处理无核心修饰键且无 marked text 的 Escape；只改变唯一 showingSyntaxHelp，卸载移除监视器并清宿主引用。输入、草稿与原回调不变，帮助关闭后恢复原输入路由。回归沿原 [帮助测试](../AreaChainTests/Features/MenuBarHelpSurfaceTests.swift) 及宿主内的 [键盘回归](../AreaChainTests/Features/MenuBarHelpKeyboardTests.swift)、[鼠标回归](../AreaChainTests/Features/MenuBarHelpPointerTests.swift)；实际结果见工程补记。
 
-**E 修复一（2026-10-04）**：公共浮层装饰性描边不参与命中，内容与宿主继续负责交互。唯一生产修复是在 `DaybookFloatingSurfaceModifier.border` 的 stroke 视图上设置 `allowsHitTesting(false)`，同时覆盖五预设；背景命中、内容真实点击范围、isPresented 身份、绘制顺序及原 row/card/panel/banner 不变。冻结外壳继续记录旧 medium 故障，公共外壳改为严格成功与边界次数断言，不再要求故障路径点击轨迹相同。直接帮助卡的鼠标证据不代表生产帮助遮罩或 Escape 已修复；下一轮只处理宿主层级和键盘路由。实际回归、静态对照及缺口见工程补记。
+**浮层描边不拦截点击**：公共浮层装饰性描边不参与命中，内容与宿主继续负责交互。唯一生产修复是在 `DaybookFloatingSurfaceModifier.border` 的 stroke 视图上设置 `allowsHitTesting(false)`，同时覆盖五预设；背景命中、内容真实点击范围、isPresented 身份、绘制顺序及原 row/card/panel/banner 不变。冻结外壳继续记录旧 medium 故障，公共外壳改为严格成功与边界次数断言，不再要求故障路径点击轨迹相同。直接帮助卡的鼠标证据不代表生产帮助遮罩或 Escape 的行为，二者由宿主层级和键盘路由负责。
 
 复用 [DaybookSurface.swift](../AreaChain/Theme/DaybookSurface.swift) 的 `DaybookFloatingSurface` / `daybookSurface(floating:isPresented:)`，两个明确预设共享页面底色、border.default 的 **60% / 0.8pt 居中 stroke**（边缘内外各 0.4pt）及背景形状阴影。
 
@@ -1098,7 +1098,7 @@ Browser 仍绑定 session.query，Return 使用 selectedOrFirst 并调用原 onC
 
 ### 工作台统一用户标签与双向私密授权
 
-- 领域与仓储入口为 [CatalogModels.swift](../AreaChain/Domain/CatalogModels.swift)、[Catalog.swift](../AreaChain/Domain/Catalog.swift)、[DiaryPrivacy.swift](../AreaChain/Domain/DiaryPrivacy.swift)、[SwiftDataCatalogRepository.swift](../AreaChain/Services/Repositories/SwiftDataCatalogRepository.swift) 与 [SwiftDataDiaryRepository.swift](../AreaChain/Services/Repositories/SwiftDataDiaryRepository.swift)：取消默认种子内置标签（`密码`、`小巧思`、`日记`）及基于正文的自动打标；所有用户标签一视同仁（支持新建、重命名、改色、合并、排序与删除），手记展示敏感判定 `DiaryPrivacy.isSensitive` 为显式 `isPrivate`、关联私密标签（`isPrivateDiary`）、关联“密码”名标签或正文旧 `#密码`／`#password` 标记之一（2026-10-23 用户决定恢复 0789245 之前的规则，见§9.105；`requiresProtection` 与写入规则不变）；手记三分类名不当作待办标签（`DayBoardMutations.addTag`／`resolveTaskTag`、详情新建标签提示 `tag.preset.reserved`）；`Catalog.matchingDiaries(_:tag:)` 提供按标签筛选关联手记投影；`TagColorToken.resolvedToken` 同时支持预设语义色与自定义 `#RRGGBB` 十六进制色。统一搜索与旧搜索的读取侧另用 `DiaryPrivacy.isSearchSensitive`（TagItem 与元数据两种形式），在 isSensitive 之上再把正文写出或关键字命中的私密标签名当作敏感、失败即关闭；不改写入（修复批 M-6R，见§9.104）。
+- 领域与仓储入口为 [CatalogModels.swift](../AreaChain/Domain/CatalogModels.swift)、[Catalog.swift](../AreaChain/Domain/Catalog.swift)、[DiaryPrivacy.swift](../AreaChain/Domain/DiaryPrivacy.swift)、[SwiftDataCatalogRepository.swift](../AreaChain/Services/Repositories/SwiftDataCatalogRepository.swift) 与 [SwiftDataDiaryRepository.swift](../AreaChain/Services/Repositories/SwiftDataDiaryRepository.swift)：取消默认种子内置标签（`密码`、`小巧思`、`日记`）及基于正文的自动打标；所有用户标签一视同仁（支持新建、重命名、改色、合并、排序与删除），手记展示敏感判定 `DiaryPrivacy.isSensitive` 为显式 `isPrivate`、关联私密标签（`isPrivateDiary`）、关联“密码”名标签或正文旧 `#密码`／`#password` 标记之一（`requiresProtection` 与写入规则不变）；手记三分类名不当作待办标签（`DayBoardMutations.addTag`／`resolveTaskTag`、详情新建标签提示 `tag.preset.reserved`）；`Catalog.matchingDiaries(_:tag:)` 提供按标签筛选关联手记投影；`TagColorToken.resolvedToken` 同时支持预设语义色与自定义 `#RRGGBB` 十六进制色。统一搜索与旧搜索的读取侧另用 `DiaryPrivacy.isSearchSensitive`（TagItem 与元数据两种形式），在 isSensitive 之上再把正文写出或关键字命中的私密标签名当作敏感、失败即关闭；不改写入。
 - 标签双向私密授权与加解密事务入口为 [DiaryProtection.swift](../AreaChain/Services/Privacy/DiaryProtection.swift) 的 `DiaryProtection.setTagsPrivacy(_:isPrivate:in:save:)`：需要 `requireFreshAuthentication()` 现场验证；授权私密（`isPrivate = true`）时标记 `tag.isPrivateDiary = true` 并加密关联的明文手记与附件；取消私密（`isPrivate = false`）时标记 `tag.isPrivateDiary = false`，对不再挂载任何其他私密标签的手记及附件自动解密恢复为普通公开手记。
 - 自定义颜色存储与应用内调色盘入口为 [CustomTagColorStore.swift](../AreaChain/Services/CustomTagColorStore.swift)、[DaybookPalette.swift](../AreaChain/Theme/DaybookPalette.swift) 与 [TagColorPickerSheet.swift](../AreaChain/Features/Workspace/TagColorPickerSheet.swift)：`DaybookPalette.tagMark(name:token:)` 统一解析预设色与 `#RRGGBB` 自定义色，`DaybookPalette.tagSwatchImage(token:size:)` 生成非模板 `NSImage` 圆点供原生 `NSMenu` 颜色项左侧展示；`TagColorPickerSheet` 提供 2D 色相/饱和度画布、明度滑块、快捷色卡与 `#HEX`/名称输入，保存后写入 `CustomTagColorStore` 供所有标签一键复用。
 - 界面入口为 [TagManagementPage.swift](../AreaChain/Features/Workspace/TagManagementPage.swift)、[TagManagementPage+Privacy.swift](../AreaChain/Features/Workspace/TagManagementPage+Privacy.swift)、[TagRelatedContentPanel.swift](../AreaChain/Features/Workspace/TagRelatedContentPanel.swift)、[WorkspaceSidebarView.swift](../AreaChain/Features/Workspace/WorkspaceSidebarView.swift) 与 [WorkspaceFilteredListView.swift](../AreaChain/Features/Workspace/WorkspaceFilteredListView.swift)：侧栏「组织」下仅保留带活标签数量徽标的「标签」导航入口，不在侧栏展开单个标签列表；标签页顶部常驻搜索框与「新建标签」输入框（去掉右上角顶栏新建按钮与输入框关闭按钮，支持连续回车创建），筛选胶囊与批量操作栏合并为锁定 `24pt` 最小高度的单行防抖动胶囊栏；左侧标签列表采用 Daybook 柔和浅色选中底色（`DaybookPalette.fill.selection`），右侧联动 `TagRelatedContentPanel` 实时展示选中标签关联的事项、灵感手记与附件；未配置密码时引导打开 `PrivacySetupSheet`（预勾选待授权标签），已配置时调用 `PrivacyUnlockPresenter.shared.request(..., force: true, vault: vault)` 遵循用户首选解锁方式。
