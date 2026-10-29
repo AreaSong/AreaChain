@@ -34,7 +34,7 @@ LIMITATIONS = [
     "component-catalog 只核对少量稳定入口的文件和符号仍存在；不把所有内部类型自动变成公共 API。",
     "ci-contract 只核对工作流中的关键文本标记与 checkout revision；不替代 GitHub Actions YAML 语义或远端运行验证。",
     "swift-file-size 只数源码行数，不判断函数是否该拆，也不证明行为等价。",
-    "progress-notes 只在注释里匹配批次、检查点与章节编号的字面模式（不含 scripts/tests，不拦决策代号）；不判断注释是否解释了原因。",
+    "progress-notes 只在注释里匹配批次、检查点与章节编号的字面模式（不含 scripts/tests，不拦决策代号）；不识别 Swift 字符串内插里的注释与 Shell 反斜杠转义的引号；不判断注释是否解释了原因。",
     "long-text-loan 只核对借用符号出现的文件与声明形状；不证明同文件代码不复制正文，也不替代运行时测试。",
     "unified-search-assembly 只匹配生产代码里“类型名(”与凭据签发的字面构造；不识别 .init 推断构造，也不证明运行时只装配一次。",
 ]

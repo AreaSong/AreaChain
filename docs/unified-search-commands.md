@@ -8752,4 +8752,10 @@ README、features、usage、architecture 改为统一搜索描述并删开关说
 
 #### 只记录、未修
 
-- 见下方复核结论之前的清理记录：`AreaChainApp` 里“开关开时……关时与原入口相同”与 `UnifiedSearchInput` 原注释“开关控制”描述的开关已删除，注释过时（后者本批随进度字样一并去掉）；`CommandTrash` 注释说“恢复继续关闭”，而回收站恢复已另由 trash.restore 开放，表述只对回收适配器成立。
+- `AreaChainApp` 里“开关开时……关时与原入口相同”与 `UnifiedSearchInput` 原注释“开关控制”描述的开关已删除，注释过时（后者本批随进度字样一并去掉）；`CommandTrash` 注释说“恢复继续关闭”，而回收站恢复已另由 trash.restore 开放，表述只对回收适配器成立。
+
+#### 只读复核
+
+- Claude Code `verifier` **通过**。独立核对：自写 Swift 词法、Python `tokenize`／`ast`、Shell 注释剥离后比较三个注释提交的代码层，零差异；改名映射逐字节一致、全仓无旧名残留（历史记录除外）；计数与本节一致；重点注释的改写与文档原定义相符；新规则探针与 4 个用例覆盖命中、豁免、scripts/tests、边界词。
+- 采纳的低严重度建议：本节悬空句已删；progress-notes 的边界说明补上两处已知漏报（Swift 字符串内插里的注释、Shell 反斜杠转义的引号）。执行者的临时等价性脚本按行首判定，多行字符串与 Python 字符串语句会漏报，不宜复用；本批结论以复核者的独立核对为准。
+- 未覆盖：复核者未重跑构建与隔离 QA（任务禁止），以执行者结果为准；`TaskRowAdversarialTests`、`TasksPageViewAdversarialTests` 的名字只概括主体内容；`scripts/known_test_failures.json` 等非源码文件里的进度字样不在本批范围。
