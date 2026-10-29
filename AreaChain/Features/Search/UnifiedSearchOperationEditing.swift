@@ -226,6 +226,14 @@ extension UnifiedSearchController {
         }
     }
 
+    /// 关闭工作台／退出被未完成草稿挡住时的放弃入口；只丢弃活动草稿，待执行列表仍须回到列表逐项处理。
+    func discardActiveOperation(source: UnifiedSearchBuffer) {
+        guard source.planItem == nil, let draft = operations?.active,
+              sendOperation(.discardActive(draft.stamp), source: source) != nil else { return }
+        editingParameter = nil
+        parameterText[draft.id] = nil
+    }
+
     func restoreOperation(_ stamp: CommandDraftStamp, source: UnifiedSearchBuffer) {
         guard validates(source), let state = operations, plan?.editing == nil,
               let draft = state.retained.first(where: { $0.stamp == stamp }),

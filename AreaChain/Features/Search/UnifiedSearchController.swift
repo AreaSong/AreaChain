@@ -251,6 +251,7 @@ final class UnifiedSearchController {
             if intent == .submit { return }
             if intent == .open { executeNavigation(source: source); return }
             if intent == .escape { _ = navigationInput(queryInputText); return }
+            if hidesResultsForCommand { return }
         }
         if hasIndependentConfirmation {
             // 独立确认期间只接受 Esc 取消；提交、打开和结果移动都不能越过确认。

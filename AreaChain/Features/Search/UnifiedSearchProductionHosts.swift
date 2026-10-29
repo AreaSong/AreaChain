@@ -91,14 +91,15 @@ struct MenuBarUnifiedSearchContent: View {
 
     var body: some View {
         VStack(spacing: DaybookSpacing.sm) {
-            if controller.navigationMessage != "unified.navigation.hint" {
+            if controller.showsNavigationFeedback {
                 Text(LocalizedStringKey(controller.navigationMessage))
                     .font(DaybookType.caption)
                     .foregroundStyle(DaybookPalette.text.secondary)
                     .accessibilityIdentifier("menubar.unified.feedback")
             }
             UnifiedSearchResults(controller: controller, layout: .compact)
-            if Self.showsOperation(controller) {
+                .unifiedSearchYieldsToCommand(controller)
+            if Self.showsOperation(controller), !controller.hidesResultsForCommand {
                 UnifiedSearchOperationPanel(controller: controller)
                     .frame(height: 220)
             }

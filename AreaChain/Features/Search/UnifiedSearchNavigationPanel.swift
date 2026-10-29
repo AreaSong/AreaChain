@@ -33,10 +33,14 @@ struct UnifiedSearchNavigationPanel: View {
                         .padding(DaybookSpacing.md)
                     }
             }
-            Text(LocalizedStringKey(controller.navigationMessage)).font(DaybookType.caption)
-                .accessibilityIdentifier("unified.navigation.message")
+            // 默认提示已由上方说明块给出，只在有执行反馈时再显示一行。
+            if controller.navigationMessage != "unified.navigation.hint" {
+                Text(LocalizedStringKey(controller.navigationMessage)).font(DaybookType.caption)
+                    .accessibilityIdentifier("unified.navigation.message")
+            }
             Button(openTitle) { controller.executeNavigation(source: controller.buffer) }
                 .buttonStyle(DaybookButtonStyle(.prominent))
+                .disabled(controller.systemActionBlocked)
                 .accessibilityIdentifier("unified.navigation.open")
         }
         .padding(DaybookSpacing.md)
@@ -52,14 +56,14 @@ struct UnifiedSearchWorkspaceContent: View {
     @Bindable var controller: UnifiedSearchController
     var body: some View {
         VStack(spacing: DaybookSpacing.sm) {
-            if controller.navigationMessage != "unified.navigation.hint" {
+            if controller.showsNavigationFeedback {
                 Text(LocalizedStringKey(controller.navigationMessage))
                     .font(DaybookType.caption)
                     .accessibilityIdentifier("unified.navigation.feedback")
             }
             UnifiedSearchResults(controller: controller)
-            if controller.isNavigationInput || controller.operations?.active != nil
-                || controller.plan?.items.isEmpty == false || controller.settingExecution != nil {
+                .unifiedSearchYieldsToCommand(controller)
+            if MenuBarUnifiedSearchContent.showsOperation(controller), !controller.hidesResultsForCommand {
                 UnifiedSearchOperationPanel(controller: controller)
                     .frame(height: 260)
             }
@@ -97,5 +101,28 @@ struct UnifiedSearchReturnBar: View {
         }
         .padding(DaybookSpacing.sm)
         .background(DaybookPalette.fill.page)
+    }
+}
+
+extension UnifiedSearchController {
+    /// 导航面板可见时它自己显示反馈，宿主顶部不再重复同一句；面板被门禁收起时仍由宿主显示。
+    var showsNavigationFeedback: Bool {
+        navigationMessage != "unified.navigation.hint" && !(isNavigationInput && operationVisible)
+    }
+}
+
+extension View {
+    /// 不读结果的系统指令输入期间：结果区保持挂载（滚动与选择不丢）但隐藏，操作面板占用结果区整块空间。
+    func unifiedSearchYieldsToCommand(_ controller: UnifiedSearchController) -> some View {
+        let yields = controller.hidesResultsForCommand
+        return opacity(yields ? 0 : 1)
+            .allowsHitTesting(!yields)
+            .accessibilityHidden(yields)
+            .overlay(alignment: .top) {
+                if yields, MenuBarUnifiedSearchContent.showsOperation(controller) {
+                    UnifiedSearchOperationPanel(controller: controller)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                }
+            }
     }
 }

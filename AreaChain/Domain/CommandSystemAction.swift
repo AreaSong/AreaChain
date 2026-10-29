@@ -13,6 +13,14 @@ enum CommandSystemAction: Equatable {
     case stats(CommandStatsKind, day: String?), statsOpenDay(String), statsOpenActivity
     case quit, privacyLock
 
+    /// 只有手记小窗类动作以当前选中结果为目标；其余动作与结果无关。
+    var readsSearchResults: Bool {
+        switch self {
+        case .diaryOpen, .diaryPinned, .diaryClose, .diarySave, .diaryReload, .diaryDiscard, .diaryCopy: true
+        default: false
+        }
+    }
+
     static let commands: Set<String> = Set([
         "workspace.open", "workspace.reveal", "workspace.close", "overlay.toggle", "overlay.mode",
         "routine.addPanel", "routine.managePanel",

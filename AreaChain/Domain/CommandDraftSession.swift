@@ -24,6 +24,8 @@ enum CommandDraftEvent {
     /// 显式放弃该版本的修改并采用调用方提供的快照，不代表保存。
     case reloadDiscardingChanges(CommandDraftStamp, CommandDraftBaseline, [CommandArgument])
     case discardRetained(CommandDraftStamp)
+    /// 用户显式放弃当前草稿（不保存、不转入保留集合）；有待决切换时拒绝，避免越过那次决定。
+    case discardActive(CommandDraftStamp)
 }
 
 enum CommandDraftIntent: Equatable {
@@ -147,6 +149,10 @@ enum CommandDraftReducer {
         case .discardRetained(let stamp):
             guard state.retained.contains(where: { $0.stamp == stamp }) else { return [.rejectedEvent] }
             state.retained.removeAll { $0.stamp == stamp }
+            advance(&state)
+        case .discardActive(let stamp):
+            guard state.pending == nil, state.active?.stamp == stamp else { return [.rejectedEvent] }
+            state.active = nil
             advance(&state)
         case .externalValuesArrived(let stamp):
             guard state.active?.stamp == stamp else { return [.rejectedEvent] }

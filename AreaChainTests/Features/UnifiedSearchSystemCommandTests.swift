@@ -66,10 +66,18 @@ import Testing
         _ = fixture.controller.beginOperation(.init(rawValue: "todo.create"), source: fixture.controller.buffer)
         #expect(fixture.controller.operations?.active != nil)
         _ = fixture.controller.navigationInput("/window/workspace/close")
+        #expect(fixture.controller.systemActionBlocked && fixture.controller.hidesResultsForCommand)
+        let before = fixture.controller.navigationMessage
         fixture.controller.executeNavigation(source: fixture.controller.buffer)
-        #expect(fixture.controller.navigationMessage == "unified.system.workspace.closeBlocked",
-                "\(fixture.controller.navigationMessage)")
+        // 面板常驻说明原因，被挡时不再写一遍同样的反馈。
+        #expect(fixture.controller.navigationMessage == before, "\(fixture.controller.navigationMessage)")
         #expect(fakes.closes == 1)
+        // 就地放弃草稿后解除阻挡，输入仍是关闭指令。
+        fixture.controller.discardActiveOperation(source: fixture.controller.buffer)
+        #expect(fixture.controller.operations?.active == nil && !fixture.controller.systemActionBlocked)
+        #expect(fixture.controller.buffer.text == "/window/workspace/close")
+        fixture.controller.executeNavigation(source: fixture.controller.buffer)
+        #expect(fakes.closes == 2)
         try await fixture.go("/window/routines/manage")
         #expect(fixture.router.mounted("page.today"))
         #expect(fixture.window?.attachedSheet != nil, "今日页原有的管理面板")

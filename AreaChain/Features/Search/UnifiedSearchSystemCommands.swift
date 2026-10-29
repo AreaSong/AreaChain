@@ -13,6 +13,12 @@ extension UnifiedSearchController {
     /// 有未完成的指令草稿或待执行列表时，关闭工作台会丢掉它们；先要求在搜索里完成或放弃。
     var hasUnsavedCommandWork: Bool { operations?.active != nil || plan?.items.isEmpty == false }
 
+    /// 不读搜索结果的系统动作输入期间，结果区让位给面板，避免看起来像要作用于这些结果。
+    var hidesResultsForCommand: Bool { systemAction.map { !$0.readsSearchResults } ?? false }
+
+    /// 关闭工作台在有未完成指令工作时不可执行；面板常驻说明原因，执行按钮随之禁用。
+    var systemActionBlocked: Bool { systemAction == .workspaceClose && hasUnsavedCommandWork }
+
     func executeSystemAction(_ command: CommandDescriptor, parsed: CommandPathResult, source: UnifiedSearchBuffer) {
         do {
             guard let pages = pageCommands else { throw CommandPageIssue.unassembled }
@@ -27,7 +33,7 @@ extension UnifiedSearchController {
                 AppWindows.revealWorkspace(opening: system.opening)
                 navigationMessage = "unified.system.workspace.revealed"
             case .workspaceClose:
-                guard !hasUnsavedCommandWork else { throw CommandPageIssue.stale }
+                guard !hasUnsavedCommandWork else { return }
                 system.closeWorkspace()
                 navigationMessage = "unified.system.workspace.closed"
             case .overlayToggle:
@@ -170,7 +176,6 @@ extension UnifiedSearchController {
         case (.copyFailed, "diary.copy"): "unified.system.diary.copyFailed"
         case (.invalidTarget, "diary.save"), (.invalidTarget, "diary.reload"), (.invalidTarget, "diary.discard"),
              (.invalidTarget, "diaryWindow.save"): "unified.system.diary.chooseWindow"
-        case (.stale, "workspace.close"): "unified.system.workspace.closeBlocked"
         case (.protectedContent, "diaryWindow.draft"): "unified.system.diary.draftProtected"
         case (.protectedContent, _): "unified.system.diary.protected"
         case (.nothingToCancel, _): "unified.system.diary.noWindow"

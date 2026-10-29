@@ -5,6 +5,18 @@ import Testing
 /// 合并批 M-3 B、C：直接动作只做纯解析；集合不含 trash.restore（走独立确认）。合并批 M-4 起含手记小窗会话的
 /// 保存／重载／舍弃（复用 DiaryEditorSession）与普通手记复制。
 @Suite struct CommandSystemActionTests {
+    @Test func onlyDiaryWindowActionsReadSearchResults() {
+        let reading: [CommandSystemAction] = [.diaryOpen, .diaryPinned(nil), .diaryClose, .diarySave(window: true),
+                                              .diaryReload, .diaryDiscard, .diaryCopy(.record)]
+        let ignoring: [CommandSystemAction] = [.workspaceOpen, .workspaceReveal, .workspaceClose, .overlayToggle,
+                                               .overlayMode("tasks"), .routineAddPanel, .routineManagePanel, .diaryDraft,
+                                               .stats(.today, day: nil), .statsOpenDay("2026-10-07"), .statsOpenActivity,
+                                               .quit, .privacyLock]
+        let readers = reading.filter(\.readsSearchResults), stray = ignoring.filter(\.readsSearchResults)
+        #expect(readers == reading)
+        #expect(stray.isEmpty)
+    }
+
     @Test func everyDeclaredCommandParsesAndExistsInCatalog() throws {
         let catalog = CommandCatalog.standard
         for raw in CommandSystemAction.commands {

@@ -57198,6 +57198,57 @@
         }
       }
     },
+    "unified.system.unsaved.discardDraft": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discard Draft"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "放弃草稿"
+          }
+        }
+      }
+    },
+    "unified.system.unsaved.draft": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unfinished draft: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未完成的草稿：%@"
+          }
+        }
+      }
+    },
+    "unified.system.unsaved.review": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to Draft and List"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "回到草稿与列表"
+          }
+        }
+      }
+    },
     "unified.system.workspace.close.preview": {
       "extractionState": "manual",
       "localizations": {

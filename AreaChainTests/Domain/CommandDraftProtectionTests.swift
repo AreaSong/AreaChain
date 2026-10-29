@@ -103,6 +103,26 @@ struct CommandDraftProtectionTests {
         #expect(DraftFixture.apply(.start(expectedRevision: state.revision, seed), to: &state) == [.rejectedEvent])
     }
 
+    @Test func activeDiscardIsExplicitAndRespectsPendingDecision() throws {
+        var state = DraftFixture.session()
+        DraftFixture.start("diary.create", in: &state)
+        DraftFixture.edit(DraftFixture.body("Synthetic discard", operation: .assign), in: &state)
+        let stamp = try #require(state.active?.stamp)
+        #expect(state.unsavedDrafts == [stamp])
+        DraftFixture.start("setting.language", in: &state)
+        let pending = state
+        #expect(pending.pending != nil, "已修改的草稿切换时须先决定")
+        #expect(DraftFixture.apply(.discardActive(stamp), to: &state) == [.rejectedEvent], "待决切换时不能越过")
+        #expect(state == pending)
+        DraftFixture.apply(.resolve(try #require(state.pending), .cancel), to: &state)
+        let stale = DraftFixture.draft("diary.create").stamp
+        #expect(DraftFixture.apply(.discardActive(stale), to: &state) == [.rejectedEvent])
+        let revision = state.revision
+        #expect(DraftFixture.apply(.discardActive(stamp), to: &state).isEmpty)
+        #expect(state.active == nil && state.retained.isEmpty && state.revision == revision + 1)
+        #expect(state.unsavedDrafts.isEmpty)
+    }
+
     @Test func targetChangesAreExplicitVersionedAndHaveOnlyOneOwner() throws {
         let first = DraftFixture.object(.todo), second = DraftFixture.object(.todo)
         var state = DraftFixture.session()
