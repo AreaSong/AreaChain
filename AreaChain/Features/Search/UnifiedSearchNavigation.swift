@@ -239,7 +239,9 @@ extension UnifiedSearchController {
         }
         router.clearDestination()
         router.navigation.restoreSearchPage(ticket.tab, tag: ticket.tag)
-        restoreQueryInput()
+        // 目的地上新输入的修改类指令是用户当前的意图，不用保留查询覆盖；导航指令（含导航过来时留下的那条）
+        // 照旧换回保留查询。保留查询仍决定回来后读取的结果。
+        if !isCommandInput || isNavigationInput { restoreQueryInput() }
         if (try? session.presentation().pagination.snapshot.version) != ticket.version || ticket.version == nil {
             preservedSearchScrollVersion = nil
             do {
@@ -265,6 +267,46 @@ extension UnifiedSearchController {
         }
         returnSearch = nil
         inputFocused = true
+    }
+
+    /// 工作台停在原页面（searchPresentation 为 false、不是从搜索导航过去）时操作面板没有宿主：输入指令即显示搜索页。
+    /// 从搜索导航到的目的地持有返回票据，输入时不切页，由 Return／⌘Return 经 returnForCommand 回到搜索页。
+    func showSearchForCommandOnOriginalPage() {
+        guard isNavigationPresented, returnSearch == nil else { return }
+        navigationRouter?.navigation.searchPresentation = true
+    }
+
+    /// 停在从搜索导航到的目的地（持有返回票据）时，操作面板没有宿主：修改类指令的 Return／⌘Return
+    /// 先回到搜索页（保留指令文字）再按 Return 继续；已有草稿时 ⌘Return 只回到面板，不在用户看到预览前直接提交。
+    /// 导航类指令不经过这里，仍在目的地之间跳转并保留票据。
+    func returnForCommand(_ intent: UnifiedSearchIntent) -> Bool {
+        guard intent == .open || intent == .submit, isCommandInput, !isNavigationInput,
+              browsedCommand != nil || editingDraft != nil else { return false }
+        let continues = intent == .open || editingDraft == nil
+        return returnThenContinue { [weak self] source in
+            if continues { self?.intent(.open, source: source) }
+        }
+    }
+
+    /// 回到搜索页后再继续；只认按键当时的缓冲，期间改字、锁定或换所有者都不再继续。
+    /// 票据失效回不去时给出原因，不覆盖 returnToSearch 已写的更具体原因（例如正在组词）。
+    func returnThenContinue(_ next: @escaping (UnifiedSearchBuffer) -> Void) -> Bool {
+        guard isNavigationPresented, let ticket = returnSearch else { return false }
+        guard !commandReturnPending else { return true }
+        commandReturnPending = true
+        let source = buffer, message = navigationMessage
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer { self.commandReturnPending = false }
+            await self.returnToSearch(ticket.id)
+            guard self.validates(source) else { return }
+            guard !self.isNavigationPresented else {
+                if self.navigationMessage == message { self.reportGate() }
+                return
+            }
+            next(source)
+        }
+        return true
     }
 
     private func restoreBrowse(_ ticket: UnifiedSearchReturnContext) {

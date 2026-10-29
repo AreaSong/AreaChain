@@ -119,6 +119,109 @@ import Testing
         #expect(host.operationPanelShown && host.fixture.navigation.isSearching)
     }
 
+    /// 从搜索导航到目的地（持有返回票据）后输入修改类指令：Return／⌘Return 先回到搜索页并保留指令，再出面板；
+    /// 点“返回搜索”也不再用保留查询覆盖正在输入的指令。
+    @Test(arguments: [false, true]) func commandOnNavigatedDestinationReturnsToSearch(command: Bool) async throws {
+        let host = try UnifiedSearchFocusHost(.workspace)
+        defer { host.close() }
+        _ = try await navigatedWithCommand(host)
+        try await host.key(36, "\r", flags: command ? .command : [])
+        try await host.waitUntil { host.operationPanelShown }
+        #expect(host.fixture.navigation.isSearching && host.controller.returnSearch == nil)
+        #expect(host.controller.operations?.active?.commandID.rawValue == "setting.appearance")
+        #expect(host.controller.buffer.text.hasPrefix("/setting/appearance"), "\(host.controller.buffer.text)")
+        #expect(host.controller.navigationMessage != "unified.gate.navigationPresented")
+    }
+
+    @Test func returnButtonKeepsTypedCommand() async throws {
+        let host = try UnifiedSearchFocusHost(.workspace)
+        defer { host.close() }
+        let ticket = try await navigatedWithCommand(host)
+        await host.controller.returnToSearch(ticket.id)
+        try await host.settle()
+        #expect(host.fixture.navigation.isSearching)
+        #expect(host.controller.buffer.text == "/setting/appearance", "\(host.controller.buffer.text)")
+        #expect(host.controller.operations?.active == nil, "只回到搜索页，不替用户开始")
+    }
+
+    /// 已有草稿时在目的地按 ⌘Return：只回到搜索页与面板，不在用户看到预览前提交。
+    @Test func commandReturnWithExistingDraftOnlyShowsPanel() async throws {
+        let host = try UnifiedSearchFocusHost(.workspace)
+        defer { host.close() }
+        try host.fixture.insert(TodoItem(title: "needle 合成导航任务", dayKey: UnifiedSearchProductionFixture.today))
+        try await host.start()
+        try await host.type("needle")
+        try await host.waitPublished()
+        try await host.type("/setting/appearance")
+        try await host.pressReturnUntil { host.controller.operations?.active != nil }
+        let draft = try #require(host.controller.operations?.active)
+        try await host.type("/go/tags")
+        try await host.pressReturnUntil { host.fixture.navigation.selectedTab == .tags }
+        try #require(host.controller.returnSearch != nil)
+        try await host.focusField()
+        try await host.type("/setting/appearance")
+        try await host.key(36, "\r", flags: .command)
+        try await host.waitUntil { host.operationPanelShown }
+        #expect(host.controller.operations?.active?.id == draft.id, "仍是原草稿，没有提交或替换")
+        #expect(!host.controller.settingSubmitting && host.controller.settingExecution == nil)
+    }
+
+    /// 目的地上的导航指令不回搜索页，仍跳转并保留同一张票据；接受带参数的修改类候选会回到搜索页且参数不丢。
+    @Test func destinationKeepsNavigationAndAcceptsArgumentCandidate() async throws {
+        let host = try UnifiedSearchFocusHost(.workspace)
+        defer { host.close() }
+        let ticket = try await navigatedWithCommand(host)
+        try await host.type("/go/calendar")
+        try await host.pressReturnUntil { host.fixture.navigation.selectedTab == .calendar }
+        #expect(host.fixture.navigation.selectedTab == .calendar && host.controller.returnSearch?.id == ticket.id)
+        try await host.focusField()
+        try await host.type("/setting/appearance/")
+        try await host.key(36, "\r")
+        try await host.waitUntil { host.operationPanelShown }
+        let active = try #require(host.controller.operations?.active)
+        #expect(active.commandID.rawValue == "setting.appearance")
+        #expect(!active.arguments.isEmpty, "接受的参数值随回到搜索页保留：\(host.controller.buffer.text)")
+        #expect(host.fixture.navigation.isSearching)
+    }
+
+    /// 复现（记录当前行为）：外观改一次已应用、结果卡未点“完成”时，再输入另一条外观指令按 Return／⌘Return。
+    @Test func secondAppearanceAfterAppliedResult() async throws {
+        let host = try UnifiedSearchFocusHost(.workspace)
+        defer { host.close() }
+        try await host.start()
+        try await host.type("/setting/appearance/dark")
+        try await host.pressReturnUntil { host.controller.operations?.active != nil }
+        try await host.key(36, "\r", flags: .command)
+        try await host.settle()
+        let first = (host.controller.settingExecution != nil, host.controller.operations?.active == nil)
+        #expect(first == (true, true), "首次应用后结果卡占用执行：\(first)")
+        try await host.type("/setting/appearance/system")
+        for _ in 0..<3 { try await host.key(36, "\r") }
+        let afterReturn = "active=\(host.controller.operations?.active?.commandID.rawValue ?? "nil") "
+            + "execution=\(host.controller.settingExecution != nil) message=\(host.controller.navigationMessage) "
+            + "operationMessage=\(host.controller.operationMessage) feedback=\(host.feedbackShown) panel=\(host.operationPanelShown)"
+        try await host.key(36, "\r", flags: .command)
+        let afterSubmit = "active=\(host.controller.operations?.active?.commandID.rawValue ?? "nil") "
+            + "execution=\(host.controller.settingExecution != nil) message=\(host.controller.navigationMessage) "
+            + "appearance=\(host.fixture.preferences.appearance)"
+        Issue.record("观察 Return 后：\(afterReturn)；⌘Return 后：\(afterSubmit)")
+    }
+
+    /// 搜索 needle → /go/tags 导航（持有票据）→ 在目的地输入修改类指令；输入本身不切页。
+    private func navigatedWithCommand(_ host: UnifiedSearchFocusHost) async throws -> UnifiedSearchReturnContext {
+        try host.fixture.insert(TodoItem(title: "needle 合成导航任务", dayKey: UnifiedSearchProductionFixture.today))
+        try await host.start()
+        try await host.type("needle")
+        try await host.waitPublished()
+        try await host.type("/go/tags")
+        try await host.pressReturnUntil { host.fixture.navigation.selectedTab == .tags }
+        let ticket = try #require(host.controller.returnSearch, "从搜索导航应持有返回票据")
+        try await host.focusField()
+        try await host.type("/setting/appearance")
+        #expect(host.controller.isNavigationPresented && !host.fixture.navigation.isSearching)
+        return ticket
+    }
+
     @Test(arguments: Kind.allCases) func gatedReturnExplainsWhyNothingStarted(kind: Kind) async throws {
         let host = try UnifiedSearchFocusHost(kind)
         defer { host.close() }
@@ -252,6 +355,12 @@ import Testing
     /// 候选活动时第一次 Return 先接受候选；最多按三次，直到条件成立（B 的证据另由专门用例记录）。
     func pressReturnUntil(_ condition: () -> Bool) async throws {
         for _ in 0..<3 where !condition() { try await key(36, "\r") }
+    }
+
+    /// 回到搜索页是异步的（先提交检查器、可能重读），等条件成立而不是多按键。
+    func waitUntil(_ condition: () -> Bool) async throws {
+        for _ in 0..<150 where !condition() { try await Task.sleep(for: .milliseconds(20)); try await settle() }
+        try #require(condition(), "等待超时")
     }
 
     func waitPublished() async throws {

@@ -7,6 +7,8 @@ final class UnifiedSearchController {
     private(set) var buffer: UnifiedSearchBuffer
     var navigationRouter: WorkspaceSearchRouter?
     var returnSearch: UnifiedSearchReturnContext?
+    /// 为指令回到搜索页的异步过程进行中；期间再按 Return 不重复返回和重读。
+    @ObservationIgnored var commandReturnPending = false
     var navigationQueryRevision: UInt64 = 0
     @ObservationIgnored var captureSearchScroll: (() -> CGPoint?)?
     var restoreSearchScroll: (version: UUID, point: CGPoint)?
@@ -206,11 +208,7 @@ final class UnifiedSearchController {
                 try session.modelDidChange(expecting: buffer.lease.ownership)
                 try coordinator.send(.query(.setInput(request.text)), expecting: request.source.lease)
             } catch { reportGate(); return nil }
-        } else if isNavigationPresented, returnSearch == nil {
-            // 工作台停在原页面（searchPresentation 为 false、不是从搜索导航过去）时操作面板没有宿主，Return 会被静默挡住；
-            // 输入指令即显示搜索页（修复批 M-7G）。从搜索导航到的目的地保留返回票据，不在这里改。
-            navigationRouter?.navigation.searchPresentation = true
-        }
+        } else { showSearchForCommandOnOriginalPage() }
         guard let owned = try? coordinator.host(buffer.lease.ownership.hostID) else { return nil }
         buffer = .init(lease: owned.lease, version: buffer.version + 1, text: request.text,
                        privacyRevision: buffer.privacyRevision, operation: editingDraft?.stamp, plan: plan?.stamp, planItem: editingPlanItem?.stamp)
@@ -247,6 +245,7 @@ final class UnifiedSearchController {
             resumeForExplicitAction(source: source) { [weak self] in self?.intent(intent, source: source) }
             return
         }
+        if returnForCommand(intent) { return }
         if isNavigationInput {
             if intent == .submit { return }
             if intent == .open { executeNavigation(source: source); return }

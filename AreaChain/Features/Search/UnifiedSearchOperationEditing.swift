@@ -74,6 +74,15 @@ extension UnifiedSearchController {
         if let command = CommandPathParser().parse(.init(text: request.text)).command, Self.routesAsNavigation(command) {
             return navigationInput(request.text)
         }
+        if case .expand = acceptance.intent {} else if isNavigationPresented, returnSearch != nil,
+           let published = navigationInput(request.text) {
+            // 目的地上接受修改类候选：先显示接受后的文字，回到搜索页后在同一文字上重新接受（参数值不丢）。
+            _ = returnThenContinue { [weak self] source in
+                _ = self?.accept(.init(source: source, text: request.text, selection: request.selection,
+                                       acceptance: request.acceptance))
+            }
+            return published
+        }
         switch acceptance.intent {
         case .expand: return edit(request)
         case .complete(let id), .chooseParameter(let id, _):
