@@ -14,7 +14,7 @@ DaybookSurface 的 `daybookStaticCardSurface()` 只提供固定静态绘制，�
 
 DaybookFloatingSurface.rowBubble 只消费外部悬停与复制反馈值，在原 floating 装配中集中 small/continuous、页面底色、0.8pt 居中动态描边及背景阴影。状态切换不分支重建内容；isPresented 只开关装饰，五个静态预设与旧接口保留。装饰描边继续不参与命中，帮助层级/Escape 修复不变。
 
-RowTitleBubble 与 RowNoteBubble 独占原事件、反馈和 Task 生命周期；公共层没有回调、计时器、悬停处理或状态镜像。备注仅 noteCardContent 被装饰，箭头仍在卡片外，圆角标题与矩形备注点击区各自保持。三消费者的显隐、敏感判断和偏移不下沉，Void 复制回调不能证明系统写入成功。接口、合理差异及验证入口见[组件目录](component-catalog.md#第八阶段-f标题与备注气泡动态外壳)，实际证据见[工程记录](engineering.md#第八阶段-f标题与备注气泡动态外壳)。
+RowTitleBubble 与 RowNoteBubble 独占原事件、反馈和 Task 生命周期；公共层没有回调、计时器、悬停处理或状态镜像。备注仅 noteCardContent 被装饰，箭头仍在卡片外，圆角标题与矩形备注点击区各自保持。三消费者的显隐、敏感判断和偏移不下沉，Void 复制回调不能证明系统写入成功。接口、合理差异及验证入口见[组件目录](component-catalog.md#第八阶段-f标题与备注气泡动态外壳)，实际证据见工程记录。
 
 
 普通设置 3A-2 在原 UnifiedSearchController 显式注入 LocalSettingCommandAdapter；仅四项能力开放到隔离 UI。Features 只衔接原事件及投影实际 report，prepare 将真实标量基线写入原 draft，enqueue / seal / attempt 继续唯一移交。ReadSession 负责显示资格；最后写入也核对同一显示会话，写入后撤显示不撤销原 Run 事实。成功/noChange 仅通过原 releaseExecution 显式释放，未知/已提交失败不退回草稿；结果和证据只维护在权威 §9.56。生产搜索、其他命令、多项与安全撤销仍关闭。
@@ -29,19 +29,19 @@ Run 保留 noChange、写调用/读回以及独立 preferencePresentation 结果
 
 DaybookFloatingSurface 的 tagDetail / syntaxHelp 只表达 regular/medium continuous 圆角及共同的 60% / 0.8pt 居中描边，沿既有背景阴影装配；颜色、描边与阴影由公共层维护。原 suggestions/readOnly/smallBackground 的 70% / 0.7pt、阴影和 isPresented 身份保持。公共层不接布局、裁切、事件或状态，帮助原 clipShape 继续在消费者装饰之后裁切；公共完整阴影与实际帮助裁切是两类证据。
 
-仅替换 LiveComposerPreviewHeader.tagDetailBubble 与 SyntaxExpandableCard 的重复背景/边框，不搬历史 Theme 业务。标签出现条件、解析、滚动与草稿不动；MenuBarPopoverView 保留唯一帮助状态、上下文、示例替换/搜索追加及关闭焦点责任，只作为隔离测试入口。接口、标题/备注动态边框的后续线索及证据见[组件目录](component-catalog.md#第八阶段-e标签详情与语法帮助卡外壳)和[工程记录](engineering.md#第八阶段-e标签详情与语法帮助卡外壳)。
+仅替换 LiveComposerPreviewHeader.tagDetailBubble 与 SyntaxExpandableCard 的重复背景/边框，不搬历史 Theme 业务。标签出现条件、解析、滚动与草稿不动；MenuBarPopoverView 保留唯一帮助状态、上下文、示例替换/搜索追加及关闭焦点责任，只作为隔离测试入口。接口、标题/备注动态边框的后续线索及证据见[组件目录](component-catalog.md#第八阶段-e标签详情与语法帮助卡外壳)和工程记录。
 
 ### 第八阶段 D 实时预览主外壳
 
 任务 mainRow 直接复用 suggestions；手记 body 的 smallBackground 与 suggestions 共用背景阴影装配，但保留 small/continuous。手记仍先绘 row 悬停表面，再按 !showsSuggestions 开关浮层装饰；开关只作用于背景/边框/阴影，内容身份与复制反馈不归公共层。readOnly 的整体阴影及旧表面接口不改。
 
-两处仅删除重复绘制，不搬移 Theme 历史业务组合、不增加生产消费者；内容、解析、敏感投影、悬停、回调和定位仍在原组件。SyntaxAutocompletePopup 的任务双层与手记伴随候选无自身浮层装饰保持。剩余气泡及验证边界见[组件目录](component-catalog.md#第八阶段-d两类实时预览主外壳)和[工程记录](engineering.md#第八阶段-d两类实时预览主外壳)。
+两处仅删除重复绘制，不搬移 Theme 历史业务组合、不增加生产消费者；内容、解析、敏感投影、悬停、回调和定位仍在原组件。SyntaxAutocompletePopup 的任务双层与手记伴随候选无自身浮层装饰保持。剩余气泡及验证边界见[组件目录](component-catalog.md#第八阶段-d两类实时预览主外壳)和工程记录。
 
 ### 第八阶段 C 候选与只读属性表面
 
 DaybookSurface 的 floating 重载只组合页面底色、居中描边、圆角和既有 elevation。suggestions 的阴影只作用于背景，readOnly 作用于整个面板；没有表面状态、布局、命中扩区或事件策略。旧 panel 保持独立的内描边及原 modifier 行为。候选独立预览关闭装饰而不分支重建内容，实时预览仍拥有原外壳。
 
-SyntaxOverlay / UnifiedSearchOverlay 保留唯一定位与来源选择；内容、滚动、属性解析/关闭、原生候选替换和搜索许可不下沉公共层。接口、两个已迁移消费者及未迁移边界见[组件目录](component-catalog.md#第八阶段-c候选与只读属性浮层外壳)，验证缺口见[工程记录](engineering.md#第八阶段-c候选与只读属性浮层外壳)。
+SyntaxOverlay / UnifiedSearchOverlay 保留唯一定位与来源选择；内容、滚动、属性解析/关闭、原生候选替换和搜索许可不下沉公共层。接口、两个已迁移消费者及未迁移边界见[组件目录](component-catalog.md#第八阶段-c候选与只读属性浮层外壳)，验证缺口见工程记录。
 
 ### 统一搜索计划编辑（4A-3B2）
 
@@ -78,7 +78,7 @@ TaskDetailTagSelector 和 ClipboardHistoryOptions 三个字段使用同一公共
 
 CalendarWeekBoard 只将日期按钮转交 DaybookDateCell.weekHeader(shortStamp:)；公共层拥有两行布局、原 quiet 承载和完整日期辅助语义，选中值由外部提供且重选仍回调。shortStamp 是已格式化的纯字符串，以保留原默认日历来源；日号和完整辅助日期沿环境 calendar，不改民事日规则。picker/monthGrid/habit 的默认与附加参数保持兼容。
 
-列顺序、整列选中表面、列表/滚动/焦点、检查目标及所属日、周导航、拖放接收与保存继续归原 Feature。原 dropDestination 仍覆盖整列，不下移到按钮；公共层不接模型、查询、导航或第二份业务状态。接口、剩余范围与运行缺口见[组件目录](component-catalog.md#第六阶段-e周视图日期列头接入)和[工程记录](engineering.md#第六阶段-e周视图日期列头接入)。
+列顺序、整列选中表面、列表/滚动/焦点、检查目标及所属日、周导航、拖放接收与保存继续归原 Feature。原 dropDestination 仍覆盖整列，不下移到按钮；公共层不接模型、查询、导航或第二份业务状态。接口、剩余范围与运行缺口见[组件目录](component-catalog.md#第六阶段-e周视图日期列头接入)和工程记录。
 
 统一搜索 2K-8 在受控 Session 内按需读取全来源标签使用元数据，复用原全枚举依赖、同批实体及 TagUsage 的唯一计数规则。真实统计与 injected 来源分开；公开 TagQueryUsageSummary 仅含次数，最近排序不外传精确时间。既有来源/隐私/宿主门禁约束全部发布；性能、生产监听、指定复核和完整接口见权威设计 §9.44。
 
@@ -404,12 +404,12 @@ Theme 的 DaybookTimePicker / DaybookNativeTimePicker 只消费可空分钟 Bind
 
 ### 公共日期选择与排期暂存（第六阶段 A）
 
-Theme 的 DaybookDatePicker 只读取民事日 Binding 和环境 calendar/locale，瞬时浏览月份与业务选中值分离。DayKey / WeekdayMask 是唯一日期算法来源，不使用时间控件的固定 UTC 展示日；DaybookDateCell 只绘制日期与辅助语义，Theme 不引用 CalendarMonthGrid。DaySchedulePicker 独占本次暂存日键，打开按 initialKey 的原 DayKey 解析及当前日期回退初始化；确认才调用 onPick，取消/关闭不提交。四个宿主沿原保存/关闭链路并显式传递环境；失败不会被公共层转成新关闭/回滚策略。接口与消费者见[组件目录](component-catalog.md#第六阶段-a公共日期选择器与排期弹窗)，验证及未验边界见[工程手册](engineering.md#第六阶段-a公共日期选择器与排期弹窗)。
+Theme 的 DaybookDatePicker 只读取民事日 Binding 和环境 calendar/locale，瞬时浏览月份与业务选中值分离。DayKey / WeekdayMask 是唯一日期算法来源，不使用时间控件的固定 UTC 展示日；DaybookDateCell 只绘制日期与辅助语义，Theme 不引用 CalendarMonthGrid。DaySchedulePicker 独占本次暂存日键，打开按 initialKey 的原 DayKey 解析及当前日期回退初始化；确认才调用 onPick，取消/关闭不提交。四个宿主沿原保存/关闭链路并显式传递环境；失败不会被公共层转成新关闭/回滚策略。接口与消费者见[组件目录](component-catalog.md#第六阶段-a公共日期选择器与排期弹窗)，验证及未验边界见工程手册。
 
 
 ### 主月网格公共呈现（第六阶段 B）
 
-DaybookDateCell 以 picker / monthGrid 两种语义呈现共享日期基础，DaybookWeekdayHeader 共用环境星期名称与排序。月格附加文字是已计算显示值，投放高亮是外部状态；Theme 不持有任务、统计、解码、拖放事件、仓储或保存。CalendarMonthGrid 保留原 dates/counts/onSelect/onDropTodo 和临时 dropKey，CalendarPage/CalendarGridKeys 继续管理业务选择、导航及键盘。日期选择器原月份/焦点载体仍独立于日格，重选去重只存在其自己的 Binding 路径。几何与身份见[组件目录](component-catalog.md#第六阶段-b主日历月网格接入)，测试证据与指定复核缺口见[工程手册](engineering.md#第六阶段-b主日历月网格接入)。
+DaybookDateCell 以 picker / monthGrid 两种语义呈现共享日期基础，DaybookWeekdayHeader 共用环境星期名称与排序。月格附加文字是已计算显示值，投放高亮是外部状态；Theme 不持有任务、统计、解码、拖放事件、仓储或保存。CalendarMonthGrid 保留原 dates/counts/onSelect/onDropTodo 和临时 dropKey，CalendarPage/CalendarGridKeys 继续管理业务选择、导航及键盘。日期选择器原月份/焦点载体仍独立于日格，重选去重只存在其自己的 Binding 路径。几何与身份见[组件目录](component-catalog.md#第六阶段-b主日历月网格接入)，测试证据与指定复核缺口见工程手册。
 
 ### 统一搜索原生输入边界（4A-1）
 
@@ -420,7 +420,7 @@ UnifiedSearchInput 只消费宿主发布的 UnifiedSearchBuffer，并把原 leas
 
 HabitCheckMonthView 将打卡状态映射为 DaybookHabitDateState，日号、字体、圆角、状态色与选中反馈统一由 DaybookDateCell.habit 绘制。HabitMonth.mark 的创建日、星期掩码、删除、第一条历史记录及未来日语义均不改变；Feature 保留原全量 Query 与导航调用，不新增规则、缓存或保存。网格与状态计算显式使用局部 Calendar.current 默认值，并传给公共日格环境；今天仍来自 DayClock。公共层不依赖模型、SwiftData、时钟或导航单例。辅助名称使用公共完整日期，业务状态只在 value 中出现，outside 保留原文案；空白不生成相邻月日期。
 
-TaskDetailDrawer 仍从 BoardSelection 读取检查日；点击和重选沿原 inspectTask 同步检查目标与检查器显示状态，外部跨月更新重新派生网格。标题和备注保持原焦点与失焦保存，不把“导航不打卡”扩大成禁止合法编辑保存。公共按钮其他呈现的焦点、键盘和拖放承载未改变；接口与实际基线见[组件目录](component-catalog.md#第六阶段-c习惯月历接入公共日期格)，验收及 partial 缺口见[工程手册](engineering.md#第六阶段-c习惯月历接入公共日期格)。
+TaskDetailDrawer 仍从 BoardSelection 读取检查日；点击和重选沿原 inspectTask 同步检查目标与检查器显示状态，外部跨月更新重新派生网格。标题和备注保持原焦点与失焦保存，不把“导航不打卡”扩大成禁止合法编辑保存。公共按钮其他呈现的焦点、键盘和拖放承载未改变；接口与实际基线见[组件目录](component-catalog.md#第六阶段-c习惯月历接入公共日期格)，验收及 partial 缺口见工程手册。
 
 ### 公共星期多选（第六阶段 D）
 

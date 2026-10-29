@@ -143,22 +143,22 @@ Swift 定向测试范围只由 [swift_test_scope.py](../scripts/swift_test_scope
 - 同目录的 FormInput、SecureInput、DateCell、HabitDateCell、WeekHeader、Weekday、FloatingSurface Samples 从测试提取，仍直接使用 Daybook 公共组件。日期／时间弹窗也只绑定本地值。输入不解析或提交，固定标题／手记表面组合只解析固定合成字符串；不注入模型库、业务环境或保存入口。合成 TagItem 仅驻留窗口内存。
 - [DaybookOverlaySamples](../AreaChain/Features/Settings/ControlsPreview/DaybookOverlaySamples.swift) 只构造固定候选与属性展示；测试原 OverlaySurfaceTestSupport 转调该展示，原像素读取、冻结基线和记录函数仍在测试目标。ControlsPlatformAcceptance、真实 Feature 验收宿主、故障注入、runner 和事件记录不进入产品导航。
 - LiveComposerPreviewHeader 的可选 `onCopy` 与 SyntaxAutocompletePopup 的 `onCopyPreview` 只为宿主提供复制回调，默认 nil 保持原消费者路径。所有设置展示路径显式提供本地反馈，包括组合候选内的任务／手记卡片；不写系统剪贴板。按钮减弱效果的局部环境值在 Debug／Release 均可用，默认 false，仅加强系统减弱设置。没有重写公共控件或改变原业务的默认复制规则。
-- 自动验证入口为 [SettingsControlsPreviewTests](../AreaChainTests/Features/SettingsControlsPreviewTests.swift)、[ControlsPreviewInteractionTests](../AreaChainTests/Features/ControlsPreviewInteractionTests.swift) 及原 Gallery／样例测试。实际结果与指定复核缺口见[工程记录](engineering.md#设置控件预览2026-10-08)。此前 O/P 重构和人工验收结论保留为历史，不将本功能当作重启 QA 应用的入口。
+- 自动验证入口为 [SettingsControlsPreviewTests](../AreaChainTests/Features/SettingsControlsPreviewTests.swift)、[ControlsPreviewInteractionTests](../AreaChainTests/Features/ControlsPreviewInteractionTests.swift) 及原 Gallery／样例测试。实际结果与指定复核缺口见工程记录。此前 O/P 重构和人工验收结论保留为历史，不将本功能当作重启 QA 应用的入口。
 
 ## 当前收口状态：第十阶段 O
 
-2026-10-08最终工程收口的当前状态只维护在[原 O 总交接](engineering.md#最终工程收口2026-10-08)：界定范围和有效快照的代码实施/工程验证已收口；指定复核及保留项使整体仍partial，不宣称最新并发工作区整体通过。用户已确认上一轮旁白、取消、焦点、K输入和L操作均正常，记为人工确认通过；不因原日志缺项重复人工操作或启动Gallery。下方P入口及历史“待验”保留能力/过程说明，不再作为本轮人工任务。已检起点36文件未发现确定公共控件漏接，运行期间新增的习惯状态UI不外推为已核验；旧日志未知、平台证据限制与指定复核分别保留，不推导整体接受或发布授权。
+2026-10-08最终工程收口的当前状态只维护在原 O 总交接：界定范围和有效快照的代码实施/工程验证已收口；指定复核及保留项使整体仍partial，不宣称最新并发工作区整体通过。用户已确认上一轮旁白、取消、焦点、K输入和L操作均正常，记为人工确认通过；不因原日志缺项重复人工操作或启动Gallery。下方P入口及历史“待验”保留能力/过程说明，不再作为本轮人工任务。已检起点36文件未发现确定公共控件漏接，运行期间新增的习惯状态UI不外推为已核验；旧日志未知、平台证据限制与指定复核分别保留，不推导整体接受或发布授权。
 
-P人工验收仍从 [DaybookButtonInteractionTests.interactiveGallery](../AreaChainTests/Theme/DaybookButtonInteractionTests.swift) 进入；仅测试环境 `AREACHAIN_PLATFORM_QA=1` 启用 [ControlsPlatformAcceptance](../AreaChainTests/Theme/ControlsPlatformAcceptance.swift) 的既有生产夹具入口，保留最多600秒与结束清理。它不属于产品导航；裸NSStepper长按、搜索／捕获、窄周／总览／气泡的实际证据和H/K/L判定统一见[原O内的P收尾](engineering.md#第十阶段-p人工平台验收与最终交付判定)，不以挂载或人工同意当作通过。
+P人工验收仍从 [DaybookButtonInteractionTests.interactiveGallery](../AreaChainTests/Theme/DaybookButtonInteractionTests.swift) 进入；仅测试环境 `AREACHAIN_PLATFORM_QA=1` 启用 [ControlsPlatformAcceptance](../AreaChainTests/Theme/ControlsPlatformAcceptance.swift) 的既有生产夹具入口，保留最多600秒与结束清理。它不属于产品导航；裸NSStepper长按、搜索／捕获、窄周／总览／气泡的实际证据和H/K/L判定统一见原O内的P收尾，不以挂载或人工同意当作通过。
 
 P生命周期完善继续由同一会话独占Gallery/子窗口、观察者和清理，600秒内设30秒收尾期。窗口号另配唯一ID、代次及打开单调时刻；局部 [ControlsPlatformEvidence](../AreaChainTests/Theme/ControlsPlatformEvidence.swift) 负责独占JSONL与失败/关闭回执，[ControlsPlatformEvents](../AreaChainTests/Theme/ControlsPlatformEvents.swift) 负责控制键元数据和同步窗口派发范围，不是通用框架或安全认证。SearchMultilineFixture显式platform才用测试窗口子类及双语反馈；SystemPageHost/SettingsButtonTestSupport的suppliedWindow默认nil，其他消费者保留原NSWindow。原SearchMultilineDraft在实际累加处记录回调，保留草稿且不创建生产记录，CaptureField不改。验证由ControlsPlatformLifecycleTests、ControlsPlatformEventTests和原Button/搜索/捕获/Stepper测试承担；本地runner仍为build/Controls10P/run.py，隔离脚本测试为同目录test_run.py。完整证据与暂停桌面入口条件仍只维护在原O/P。
 
 P输入补证只扩展原工具条：普通搜索选择workspace/menu/tags/diary，剪贴板子窗切换mixed/exact/regex，中段初值沿原测试的“头🧪尾”。`SearchMultilineFixture.observedField/inputEvidence`按本场景语言定位原字段，只读Coordinator的原Binding、原生编辑值及合成结果；100ms原生命周期tick和白名单事件边界记录去重标量状态，不记录任意正文/哈希。`ControlsPlatformInputTests`核对短操作、观测不改输入/选区/撤销/焦点、模式与重开清理；Record按钮会改变焦点，连续输入不点击。实际人工结论继续只在原O/P记录，入口存在不表示步骤通过。
 
-K/L 剩余平台验收继续复用同一入口。测试专用 [ControlsPlatformPassword](../AreaChainTests/Theme/ControlsPlatformPassword.swift) 组合原 PasswordSheetProbe / PrivacyButtonSheetHost / PrivacyPasswordSheet，仅控制合成 action 的30秒失败、12秒重试观察及必要长度/布尔取样；两条人工路径分别为逐字输入和用户自愿同值粘贴，不观察生产私有State。裸 [ControlsNativeStepper](../AreaChainTests/Theme/ControlsPlatformStepper.swift) 从原支持文件移出以保持500行边界，系统重复配置不变；原trace保留事件时间和方向，只有实际收到匹配释放才安排2秒观察。端点准备500/990/30只写合成初值，不计action。反馈必须在局部View body读取Observable状态；原生tracking返回后未收到释放的关联失效，后续其他点击不补算原释放。对应短回归在 [ControlsPlatformStepperTests](../AreaChainTests/Theme/ControlsPlatformStepperTests.swift)、[ControlsPlatformPasswordTests](../AreaChainTests/Theme/ControlsPlatformPasswordTests.swift)、原生命周期与Stepper观测测试；实际人工结果仅见[原O/P续记](engineering.md#剩余平台验收kl与关键可访问性2026-10-08)。
+K/L 剩余平台验收继续复用同一入口。测试专用 [ControlsPlatformPassword](../AreaChainTests/Theme/ControlsPlatformPassword.swift) 组合原 PasswordSheetProbe / PrivacyButtonSheetHost / PrivacyPasswordSheet，仅控制合成 action 的30秒失败、12秒重试观察及必要长度/布尔取样；两条人工路径分别为逐字输入和用户自愿同值粘贴，不观察生产私有State。裸 [ControlsNativeStepper](../AreaChainTests/Theme/ControlsPlatformStepper.swift) 从原支持文件移出以保持500行边界，系统重复配置不变；原trace保留事件时间和方向，只有实际收到匹配释放才安排2秒观察。端点准备500/990/30只写合成初值，不计action。反馈必须在局部View body读取Observable状态；原生tracking返回后未收到释放的关联失效，后续其他点击不补算原释放。对应短回归在 [ControlsPlatformStepperTests](../AreaChainTests/Theme/ControlsPlatformStepperTests.swift)、[ControlsPlatformPasswordTests](../AreaChainTests/Theme/ControlsPlatformPasswordTests.swift)、原生命周期与Stepper观测测试；实际人工结果仅见原O/P续记。
 
 
-第九阶段四类发现及第十阶段四象限、Dashboard 后补入口均已有真实生产接入；总扫描未发现新增确定漏接。权威入口、消费者与合理差异沿本目录各原条目维护。当前源码身份、最终回归清单/计数和保留边界统一见[第十阶段 O 总交接](engineering.md#第十阶段-o控件收口最终整合验收与总交接)：原 O 的2方法/3次历史失败封存保留；O 补验将其定位为测试宿主重排与卡内命令焦点契约问题，仅校正测试，103方法/264次复验通过，按源码影响和实际方法去重后315方法/770次所选自动回归通过。人工、平台、指定复核及H/K/L仍单列，整体 partial，不能将自动回归通过写成全部运行验收完成。原分阶段“下一处/留待后续”是历史范围说明，以本入口及 O 的当前证据为准。
+第九阶段四类发现及第十阶段四象限、Dashboard 后补入口均已有真实生产接入；总扫描未发现新增确定漏接。权威入口、消费者与合理差异沿本目录各原条目维护。当前源码身份、最终回归清单/计数和保留边界统一见第十阶段 O 总交接：原 O 的2方法/3次历史失败封存保留；O 补验将其定位为测试宿主重排与卡内命令焦点契约问题，仅校正测试，103方法/264次复验通过，按源码影响和实际方法去重后315方法/770次所选自动回归通过。人工、平台、指定复核及H/K/L仍单列，整体 partial，不能将自动回归通过写成全部运行验收完成。原分阶段“下一处/留待后续”是历史范围说明，以本入口及 O 的当前证据为准。
 
 ## 第十阶段 I 修复二：剪贴板搜索保真输入
 
@@ -166,7 +166,7 @@ K/L 剩余平台验收继续复用同一入口。测试专用 [ControlsPlatformP
 
 [DaybookTextFieldCell / DaybookFieldEditor](../AreaChain/Theme/DaybookNativeTextInput.swift) 同时绕过已提交 payload 转换与 AppKit usesSingleLineMode 转换。String、NSAttributedString、命名 pasteboard 和外部 Binding 均保留原文。公开 [DaybookSingleLineLayout](../AreaChain/Theme/DaybookSingleLineLayout.swift) 只调整换行控制字形的排版动作和空白宽度；编辑 storage 不变，UTF-16 索引与原 UndoManager 保留。非编辑态以同一规则绘制原始 attributedStringValue，并裁剪到原 cell；不存在转义查询、可编辑镜像或失焦还原。原 DaybookInputShell、字体、横向编辑与快捷键继续沿原入口。
 
-Browser 仍绑定 session.query，Return 使用 selectedOrFirst 并调用原 onCommit；⌘Return 不增加提交，Escape 清查询，焦点传播不变。工作台父宿主 showsFooter=true/commitsOnClick=false，历史小窗 true/true；父层默认系统复制/粘贴未运行。ClipboardTextMatching 的 trim、mixed/exact/regex、无效及零长度正则规则不变；搜索内容不自动保存。命名 pasteboard 导入证据不等于真实系统粘贴或真人 IME 证据，实际验收见[工程记录](engineering.md#第十阶段-i-修复二剪贴板搜索保真输入)。
+Browser 仍绑定 session.query，Return 使用 selectedOrFirst 并调用原 onCommit；⌘Return 不增加提交，Escape 清查询，焦点传播不变。工作台父宿主 showsFooter=true/commitsOnClick=false，历史小窗 true/true；父层默认系统复制/粘贴未运行。ClipboardTextMatching 的 trim、mixed/exact/regex、无效及零长度正则规则不变；搜索内容不自动保存。命名 pasteboard 导入证据不等于真实系统粘贴或真人 IME 证据，实际验收见工程记录。
 
 
 ## 第十阶段 J：捕获按钮组合文本提交保护
@@ -175,7 +175,7 @@ Browser 仍绑定 session.query，Return 使用 selectedOrFirst 并调用原 onC
 
 `allowsDiaryShortcut` 仍只控制键盘入口；鼠标、停用/改绑及显示符号沿原机制，`onTodo`、首行/备注、补全、保存责任不变。鼠标若先由系统正常完成组词，动作按当时状态正常提交。原共享文本插入事务、普通搜索与统一搜索分支未改动。
 
-复用 SearchMultilineFixture/原队列 helper；CaptureSubmissionTests、CaptureShortcutBoundaryTests 与 MenuBarCaptureSubmissionTests 分别覆盖动作/归属、原生分支/隔离快捷键契约和生产菜单栏合成数据。原失败与最终证据、真人 IME 和指定复核缺口只见[工程记录](engineering.md#第十阶段-j捕获按钮组合文本提交保护)。
+复用 SearchMultilineFixture/原队列 helper；CaptureSubmissionTests、CaptureShortcutBoundaryTests 与 MenuBarCaptureSubmissionTests 分别覆盖动作/归属、原生分支/隔离快捷键契约和生产菜单栏合成数据。原失败与最终证据、真人 IME 和指定复核缺口只见工程记录。
 
 ## 第十阶段 I 修复一：普通搜索换行与撤销边界
 
@@ -183,7 +183,7 @@ Browser 仍绑定 session.query，Return 使用 selectedOrFirst 并调用原 onC
 
 TagManagementPage.searchField 和 DiaryPage.searchChrome 显式选择 `.searchWhitespace`（旧 WorkspaceHeaderSearchCapsule、MenuBarSearchField 已随 M-7 删除）：每个换行标量换成一个空格，CRLF 为两个空格，不 trim、不折叠其他空白、不新增半角或全角任务分隔符。查询、焦点、候选、token、结果及提交责任留在原消费者；标签目录仍使用原连续子串匹配。
 
-普通字段的 [DaybookFieldEditor](../AreaChain/Theme/DaybookNativeTextInput.swift) 由原字段 cell 稳定持有，不在撤销时重建，也不替换 UndoManager。非组合态的已提交 payload 与纯文本导入在原生插入前完成原有的逐标量空格转换，避免 AppKit 第二次整段归一化把重做光标移到末尾；原文与富文本中的其他字符保留。两条文本通知只发布原生当前值，撤销/重做中间态不改写 field/editor/storage；组合文本也受保护。外部同步不增加撤销操作，安全提交所需转换走原生 insertText 事务并映射 UTF-16 选区，后续撤销仍同步真实最终值。修复一时剪贴板仅共享安全修复；其后保真接入见上方修复二，三个匹配器和新统一搜索专用输入分支不变。复用六个 SearchMultiline 文件、原输入测试与生产装配夹具；实际结果与缺口见[工程记录](engineering.md#第十阶段-i-修复一普通搜索换行与撤销边界)。
+普通字段的 [DaybookFieldEditor](../AreaChain/Theme/DaybookNativeTextInput.swift) 由原字段 cell 稳定持有，不在撤销时重建，也不替换 UndoManager。非组合态的已提交 payload 与纯文本导入在原生插入前完成原有的逐标量空格转换，避免 AppKit 第二次整段归一化把重做光标移到末尾；原文与富文本中的其他字符保留。两条文本通知只发布原生当前值，撤销/重做中间态不改写 field/editor/storage；组合文本也受保护。外部同步不增加撤销操作，安全提交所需转换走原生 insertText 事务并映射 UTF-16 选区，后续撤销仍同步真实最终值。修复一时剪贴板仅共享安全修复；其后保真接入见上方修复二，三个匹配器和新统一搜索专用输入分支不变。复用六个 SearchMultiline 文件、原输入测试与生产装配夹具；实际结果与缺口见工程记录。
 
 ## 第十阶段 G：日历窄周布局
 
@@ -191,13 +191,13 @@ TagManagementPage.searchField 和 DiaryPage.searchChrome 显式选择 `.searchWh
 
 最小列宽 280pt 与列间距 8pt 集中在 [DaybookMetrics.WeekBoard](../AreaChain/Theme/DaybookMetrics.swift)；七列临界内容宽度为 2008pt。宽于临界时等分，低于时横向浏览。可见性请求只包含当前日键、七天身份与视口宽度，任务在变更/卸载时取消；不复制业务选择，不写保存、不请求输入焦点。公共导航、任务行、滚动 scope 与羽化没有修改。
 
-[CalendarWeekLayoutTests](../AreaChainTests/Features/CalendarWeekLayoutTests.swift) 复用原 Span/Week 宿主并补真实 MainSplitWorkspaceView。原 ScrollAssemblyConsumerTests 按各列实际绑定和外层轴区分，不把总数硬改为 8；列对象、浮层归属及轴独立断言保留。证据和未验项见[工程记录](engineering.md#第十阶段-g日历窄周布局修复)。
+[CalendarWeekLayoutTests](../AreaChainTests/Features/CalendarWeekLayoutTests.swift) 复用原 Span/Week 宿主并补真实 MainSplitWorkspaceView。原 ScrollAssemblyConsumerTests 按各列实际绑定和外层轴区分，不把总数硬改为 8；列对象、浮层归属及轴独立断言保留。证据和未验项见工程记录。
 
 ## 第十阶段 F：月周切换后的键盘焦点恢复
 
 CalendarPage 将原 `onChange(of: span)` 移到稳定的根 GeometryReader 后；实际范围变化只令原 `keyboardFocus = .grid`，不复制状态、不清 `listFocusID` 或 `selectedKey`，也不结束原生编辑会话。分段仍直接写 `$span`，同值重选不触发协调；顶栏菜单保留原显式 grid 赋值，含同值重选。CalendarGridKeys 继续负责网格步长和 Return，DayBoardList / CalendarWeekBoard 继续负责清单焦点、检查日期和 Escape，公共分段、输入、保存与滚动组件未改。
 
-原 CalendarSpanConsumerTests / CalendarSpanTestSupport 通过真实分段鼠标与真实顶栏菜单动作验证首次方向键、反向切换、宽窄宿主、跨年、空日、重选、草稿、原生组合文本及窗口隔离；临时状态诊断只用于前后取证，未留在生产代码。菜单辅助函数的 Escape 只结束系统菜单追踪，范围切换之后的第一个日历按键仍是待验方向键。工程证据与指定复核缺口见[第十阶段 F 记录](engineering.md#第十阶段-f日历月周切换后的键盘焦点恢复)。
+原 CalendarSpanConsumerTests / CalendarSpanTestSupport 通过真实分段鼠标与真实顶栏菜单动作验证首次方向键、反向切换、宽窄宿主、跨年、空日、重选、草稿、原生组合文本及窗口隔离；临时状态诊断只用于前后取证，未留在生产代码。菜单辅助函数的 Escape 只结束系统菜单追踪，范围切换之后的第一个日历按键仍是待验方向键。工程证据与指定复核缺口见第十阶段 F 记录。
 
 
 
@@ -207,7 +207,7 @@ CalendarPage 将原 `onChange(of: span)` 移到稳定的根 GeometryReader 后�
 
 [DaybookScrollEdgeObserverNSView](../AreaChain/Theme/DaybookScroller.swift) 负责目标/clip/document 绑定、初值、对象限定的 bounds/frame/live-scroll 通知、主队列合并发布和代次校验。Host 的现有布局入口复核目标及 document 身份；清理仅移除自己的 token，不关闭共享通知能力或删除别人的浮层。无目标、歧义、短内容清零；拆卸清除回调并拒绝迟到发布。开关通过固定透明背景容器仅装卸观察者，不替换正文，掩膜保持同一渐变类型，禁用或过短时为全不透明；仍使用原 7pt/显式高度、3/4pt 阈值与 DaybookMotion.fade。
 
-自动更新、替换/清理、并列/嵌套/多窗口和静态渐变分别见 [自动测试](../AreaChainTests/Theme/DaybookScrollFeatherTests.swift)、[生命周期](../AreaChainTests/Theme/DaybookScrollFeatherLifecycleTests.swift)、[归属](../AreaChainTests/Theme/DaybookScrollFeatherOwnershipTests.swift)、[渐变与事件](../AreaChainTests/Theme/DaybookScrollFeatherVisualTests.swift)。[真实消费者](../AreaChainTests/Features/ScrollFeatherConsumerTests.swift) 直接挂 TasksPage / DiaryPage；原 Dashboard、侧栏和 D 浮层测试继续回归。结果与未验边界只维护在[工程记录](engineering.md#第十阶段-e滚动边缘羽化定位与更新修复)。静态检查器守住入口存在，不代替自动观察或像素证明。
+自动更新、替换/清理、并列/嵌套/多窗口和静态渐变分别见 [自动测试](../AreaChainTests/Theme/DaybookScrollFeatherTests.swift)、[生命周期](../AreaChainTests/Theme/DaybookScrollFeatherLifecycleTests.swift)、[归属](../AreaChainTests/Theme/DaybookScrollFeatherOwnershipTests.swift)、[渐变与事件](../AreaChainTests/Theme/DaybookScrollFeatherVisualTests.swift)。[真实消费者](../AreaChainTests/Features/ScrollFeatherConsumerTests.swift) 直接挂 TasksPage / DiaryPage；原 Dashboard、侧栏和 D 浮层测试继续回归。结果与未验边界只维护在工程记录。静态检查器守住入口存在，不代替自动观察或像素证明。
 
 ## 第十阶段 D：公共滚动浮层目标归属
 
@@ -215,7 +215,7 @@ CalendarPage 将原 `onChange(of: span)` 移到稳定的根 GeometryReader 后�
 - 标记不承载正文，不新增 NSHostingView、AnyView、条件内容或业务状态；内容、草稿、焦点和滚动仍归原 SwiftUI/原生宿主。旧具体类型对照因增加边界 modifier 失效；[契约测试](../AreaChainTests/Theme/DaybookScrollContractTests.swift)核对五种参数/新静态组合，[原生测试](../AreaChainTests/Theme/DaybookScrollNativeTests.swift)核对三种上游策略、身份、内容长短/空态与 resize。
 - Host 只持有自己安装浮层的弱引用：相同目标复用；换目标、暂时无目标或离开窗口先移除自己的旧浮层。Representable 拆卸使宿主永久失效，代次拦截排队回调；浮层仍用原 deinit 清理观察者/Timer，不改变绘制、拖动或动画政策。[生命周期测试](../AreaChainTests/Theme/DaybookScrollLifecycleTests.swift)核对对象释放、歧义、目标替换、并列删除、重挂和多窗口。
 - 统一搜索结果与操作预览保持直接 Configurator：document 内归原 enclosingScrollView，防止正文展开后误选内嵌 AppKit 编辑器；外部直连只接受局部唯一候选，歧义不任取。新的嵌套公共装配依赖成对 scope，不能把旧直连入口当通用嵌套解析器。[直接消费者回归](../AreaChainTests/Features/UnifiedSearchScrollOwnershipTests.swift)独立核对结果展开和候选切换，候选 ObjectPicker 原一处私有装配改用同一个边界 modifier，因为说明区/候选区有两个独立 ScrollView；未改控制器、许可或新增生产入口。
-- 周列和甘特旧错绑的现阶段证据、Dashboard 保持情况及事件/未验边界只维护在[工程记录](engineering.md#第十阶段-d公共滚动浮层目标归属修复)。甘特外层装配继续存在，归属正确不代表已有横向公共滑块。DaybookScrollEdgeObserver 独立定位、羽化和所有历史问题仍不扩修。
+- 周列和甘特旧错绑的现阶段证据、Dashboard 保持情况及事件/未验边界只维护在工程记录。甘特外层装配继续存在，归属正确不代表已有横向公共滑块。DaybookScrollEdgeObserver 独立定位、羽化和所有历史问题仍不扩修。
 
 ## 第十阶段 C：Dashboard 外层垂直滚动接入（partial）
 
@@ -225,7 +225,7 @@ DashboardTrendSection 与 DashboardHeatmapSection 的横向 ScrollView 继续各
 
 [DashboardScrollTests](../AreaChainTests/Features/DashboardScrollTests.swift) 与[合成宿主](../AreaChainTests/Features/DashboardScrollTestSupport.swift) 直接挂生产页面，复用 SettingsButtonTestSupport、CalendarSpanTestSupport 状态恢复和原 CGEvent 滚动事件方式。按生产日期按钮的真实纵向区域及 NSScrollView 父链定位两个横层和共同外层，不取第一个滚动对象。合成数据相对测试今日，无数据与有数据分开。
 
-**续验状态**：完整正常测试目标编译阻断已解除，原设置合成方法实际通过且未被本轮修改。生产归属严格证实为外层 1／趋势 0／热力图 0，系统指示器策略和零羽化观察器通过；更新、resize、重开、两横层真实溢出独立滚动、外层顶中底/最后活动可达、滑块合成窗口事件和安全日期导航已验。有效 Dashboard/公共回归为32方法／53次通过，重跑不累加。最终1200×900大视口与正常/窄矮矩阵同条件补验通过，72对完整缓存图等尺寸、180条几何完全一致；预期指示器与少数悬停高亮差异保留。第二处漏接按归属及相关自动回归证据标为已处理，人工、窗口合成器和指定复核缺口保留；完整证据见[工程记录](engineering.md#第十阶段-cdashboard-外层垂直滚动接入partial)。生产仍只有原一行，不修改公共滚动或历史问题。
+**续验状态**：完整正常测试目标编译阻断已解除，原设置合成方法实际通过且未被本轮修改。生产归属严格证实为外层 1／趋势 0／热力图 0，系统指示器策略和零羽化观察器通过；更新、resize、重开、两横层真实溢出独立滚动、外层顶中底/最后活动可达、滑块合成窗口事件和安全日期导航已验。有效 Dashboard/公共回归为32方法／53次通过，重跑不累加。最终1200×900大视口与正常/窄矮矩阵同条件补验通过，72对完整缓存图等尺寸、180条几何完全一致；预期指示器与少数悬停高亮差异保留。第二处漏接按归属及相关自动回归证据标为已处理，人工、窗口合成器和指定复核缺口保留；完整证据见工程记录。生产仍只有原一行，不修改公共滚动或历史问题。
 
 
 ## 第十阶段 B：四象限标题预览纯装饰接入
@@ -238,7 +238,7 @@ QuadrantTitleOverflow 保留六行、360 字符预览探测、80 字符溢出探
 
 [直接呈现](../AreaChainTests/Features/QuadrantPreviewSurfaceTests.swift)、[原生事件](../AreaChainTests/Features/QuadrantPreviewInteractionTests.swift)、[生产 overlay](../AreaChainTests/Features/QuadrantPreviewOverlayTests.swift) 和 [合成宿主](../AreaChainTests/Features/QuadrantPreviewTestSupport.swift) 沿 SettingsButtonTestSupport、SurfaceEventTestSupport 与 PrivacyQA。旧代码仅复用 OriginalRowBubbleSurface 的冻结默认装饰，不复制完整预览业务。原 [QuadrantLayoutTests](../AreaChainTests/Features/QuadrantLayoutTests.swift) 补页面安全显隐/定位及模型、选择和检查器不变断言；默认 NSPasteboard 路径不点击。原检查器补静态调用窄守卫，只有声明、注释调用或动态 isCopied 均不能作为接入通过。
 
-本轮实际证据及未验项见[工程记录](engineering.md#第十阶段-b四象限标题预览纯装饰接入)。下一处确定漏接仍是 [DashboardView 外层 ScrollView](../AreaChain/Features/Dashboard/DashboardView.swift)；本轮不接入，不修复历史滚动归属、羽化、手记辅助树、气泡及复制运行问题。
+本轮实际证据及未验项见工程记录。下一处确定漏接仍是 [DashboardView 外层 ScrollView](../AreaChain/Features/Dashboard/DashboardView.swift)；本轮不接入，不修复历史滚动归属、羽化、手记辅助树、气泡及复制运行问题。
 
 ## 第九阶段 E：两处标签色点接入
 
@@ -249,7 +249,7 @@ QuadrantTitleOverflow 保留六行、360 字符预览探测、80 字符溢出探
 | 侧栏标签行 | 显式 8pt；原 `DaybookPalette.tagMark(name:token:)`；`accessibilityHidden(true)`。标题、整行按钮/矩形命中、选中背景与导航不变。原 `Catalog.liveTaskTags` 继续排除手记预设分类。 |
 | 标签管理行 | 显式 10pt；同一原颜色来源；保留 `colorTitle(tag.resolvedColorToken)` 及 `.accessibilityElement(children: .combine)`。预设色仍按名称优先解析；颜色辅助名仍表达原 resolvedColorToken，两者不强行合并。选择、双击改名、计数、菜单和保存留在原页面。 |
 
-测试直接挂载生产消费者，复用 SettingsButtonTestSupport / SystemPageHost、原生事件及原图像支持；[TagDotConsumerTests](../AreaChainTests/Features/TagDotConsumerTests.swift) 与 [合成支持](../AreaChainTests/Features/TagDotTestSupport.swift) 补双语/浅深色、两档宽度、六令牌/回退、实际直径、完整行与原生交互。管理行按原合并节点检查颜色名一次、标题和计数，不要求暴露独立色点。原 WorkspaceRenderingTests、WorkspaceMenuConsumerTests 和标签目录/仓储测试补直接消费者回归；前后证据、过程失败和缺口见[工程记录](engineering.md#第九阶段-e两处标签色点接入)。不新增全局检查器规则、公共框架、展示应用或重复复核。
+测试直接挂载生产消费者，复用 SettingsButtonTestSupport / SystemPageHost、原生事件及原图像支持；[TagDotConsumerTests](../AreaChainTests/Features/TagDotConsumerTests.swift) 与 [合成支持](../AreaChainTests/Features/TagDotTestSupport.swift) 补双语/浅深色、两档宽度、六令牌/回退、实际直径、完整行与原生交互。管理行按原合并节点检查颜色名一次、标题和计数，不要求暴露独立色点。原 WorkspaceRenderingTests、WorkspaceMenuConsumerTests 和标签目录/仓储测试补直接消费者回归；前后证据、过程失败和缺口见工程记录。不新增全局检查器规则、公共框架、展示应用或重复复核。
 
 第九阶段原登记四类发现的当前接入状态：昨日静态卡片已在 B 接入，筛选浮层已在 C 接入，连击指标列已在 D 局部复用，两处标签色点已在 E 接入。下文 B/C/D 的待办描述是当时记录。接入清单收口不等于全应用最终验收：原生加载器、不同数字口径、标签胶囊与空态的合理差异保留；滚动归属、羽化、手记辅助树、下方气泡与复制等历史运行问题，以及既有指定复核/人工缺口继续保留。可进入第十阶段的复用清单和最终验收规划，本轮到 E 停止，不执行第十阶段。
 
@@ -261,7 +261,7 @@ QuadrantTitleOverflow 保留六行、360 字符预览探测、80 字符溢出探
 
 直接消费者仍为 [RoutineHabitSectionView](../AreaChain/Features/Workspace/TaskDetailSections.swift)，继续接收原检查器传入的 `StreakResult`；配置、检查日和暂停→跳过→完成→非计划日→待打卡的优先级未改。验证沿 [StreakCardRenderingTests](../AreaChainTests/Features/StreakCardRenderingTests.swift)、[合成装配支持](../AreaChainTests/Features/StreakCardTestSupport.swift)、原 StreakInspectionStatusTests 与五状态构造测试，直接挂载生产卡片建立前后基线，不复制业务卡片。
 
-长数字原本按环境分组并完整换行，两列行数不同可使标题高低不同；本轮只保持原表现。结果与既有验收缺口见[工程记录](engineering.md#第九阶段-d连击指标列复用)。D 当时登记的两处标签色点漏接已由上节 E 收口；D 本身没有新增全局指标组件或展示应用。
+长数字原本按环境分组并完整换行，两列行数不同可使标题高低不同；本轮只保持原表现。结果与既有验收缺口见工程记录。D 当时登记的两处标签色点漏接已由上节 E 收口；D 本身没有新增全局指标组件或展示应用。
 
 ## 第九阶段 C：菜单栏筛选浮层外壳
 
@@ -269,7 +269,7 @@ QuadrantTitleOverflow 保留六行、360 字符预览探测、80 字符溢出探
 
 仅 [MenuBarFilterFlyout.swift](../AreaChain/Features/MenuBar/MenuBarFilterFlyout.swift) 的 `level1CategoryCard`、`level2OptionCard` 接入。任务 110/175pt 两级，手记 175pt 标签单级；4pt 级间距、3pt 外 padding、内容 padding4、二级 maxHeight165 和隐藏滚动指示器不变。原组件持有 externalCategory/internalCategory 选择、220ms dismissTask、选项生成与计数，BoardFilters 保留分 tab 写回，选项 applied/cleared 后仍走一次原 onDismiss。状态、悬停、滚动、清除和关闭均不下沉公共层。
 
-[生产宿主](../AreaChain/Features/MenuBar/MenuBarPopoverView+Drawer.swift) 仅核对：左12pt、底44pt、zIndex30，原 FilterDrawerScrim 外部关闭和底栏穿透、按钮再次切换、筛选优先于帮助及 Escape 均不改。验证沿 [生产卡片](../AreaChainTests/Features/MenuBarFilterConsumerTests.swift)、[精确选择与原生悬停](../AreaChainTests/Features/MenuBarFilterInteractionTests.swift)、[宿主](../AreaChainTests/Features/MenuBarFilterHostTests.swift) 和原 DaybookFloatingSurfaceTests、MenuBarHelpKeyboardTests、BoardFilterBarTests；合成准备见 [测试支持](../AreaChainTests/Features/MenuBarFilterTestSupport.swift)。原 ControlsPreview 展示公共预设及生产两级/单级。实际结果和历史缺口见[工程记录](engineering.md#第九阶段-c菜单栏筛选浮层外壳)。连击指标、标签色点留待后续；不借此迁移统一搜索或修复原滚动/羽化/手记 AX/下方气泡/复制问题。
+[生产宿主](../AreaChain/Features/MenuBar/MenuBarPopoverView+Drawer.swift) 仅核对：左12pt、底44pt、zIndex30，原 FilterDrawerScrim 外部关闭和底栏穿透、按钮再次切换、筛选优先于帮助及 Escape 均不改。验证沿 [生产卡片](../AreaChainTests/Features/MenuBarFilterConsumerTests.swift)、[精确选择与原生悬停](../AreaChainTests/Features/MenuBarFilterInteractionTests.swift)、[宿主](../AreaChainTests/Features/MenuBarFilterHostTests.swift) 和原 DaybookFloatingSurfaceTests、MenuBarHelpKeyboardTests、BoardFilterBarTests；合成准备见 [测试支持](../AreaChainTests/Features/MenuBarFilterTestSupport.swift)。原 ControlsPreview 展示公共预设及生产两级/单级。实际结果和历史缺口见工程记录。连击指标、标签色点留待后续；不借此迁移统一搜索或修复原滚动/羽化/手记 AX/下方气泡/复制问题。
 
 ## 第九阶段 B：昨日事项静态卡片外壳
 
@@ -277,7 +277,7 @@ QuadrantTitleOverflow 保留六行、360 字符预览探测、80 字符溢出探
 
 仅 [TasksPage+Sections.swift](../AreaChain/Features/Tasks/TasksPage+Sections.swift) 的 `yesterdaySection` / `centeredYesterdaySection` 接入，分别保留 padding 8/10、标题原边距、外水平 1/4；普通分支底部 8 和 transition 不变。原 TasksPage 决定展开、空态及今日为空时的分支选择，原行决定悬停、检查目标/检查日、完成与跳过；标题、计数与 moveAllYesterdayTodosToToday 留在 Feature。全部移动仍只遍历昨日待办、逐项调用原移动入口，不变为批量原子事务。
 
-验证复用 DaybookSurfaceTests、DaybookFloatingSurfaceTests、TasksPageEmptyStateTests、DayBoardPageProjectionTests、TaskListScrollTests 和 MonthGridMoveRepository / ModelChanges 失败设施；新增 [公共静态表面测试](../AreaChainTests/Theme/DaybookStaticCardTests.swift)、[生产布局测试](../AreaChainTests/Features/YesterdayCardConsumerTests.swift)、[生产操作测试](../AreaChainTests/Features/YesterdayCardActionTests.swift)，合成输入沿 [原生宿主支持](../AreaChainTests/Features/YesterdayCardTestSupport.swift)。修改前直接挂生产 TasksPage 经原昨日入口取基线，冻结仅限装饰。实际证据与未验项见[工程记录](engineering.md#第九阶段-b昨日事项静态卡片外壳)。
+验证复用 DaybookSurfaceTests、DaybookFloatingSurfaceTests、TasksPageEmptyStateTests、DayBoardPageProjectionTests、TaskListScrollTests 和 MonthGridMoveRepository / ModelChanges 失败设施；新增 [公共静态表面测试](../AreaChainTests/Theme/DaybookStaticCardTests.swift)、[生产布局测试](../AreaChainTests/Features/YesterdayCardConsumerTests.swift)、[生产操作测试](../AreaChainTests/Features/YesterdayCardActionTests.swift)，合成输入沿 [原生宿主支持](../AreaChainTests/Features/YesterdayCardTestSupport.swift)。修改前直接挂生产 TasksPage 经原昨日入口取基线，冻结仅限装饰。实际证据与未验项见工程记录。
 
 第九阶段其他三类发现继续登记：筛选浮层、连击指标、标签色点；本轮均不接入。第八阶段手记 AX、下方气泡保留、瞬态悬停、滚动归属与羽化等历史缺口仍保留，不由本轮外壳结论覆盖。
 
@@ -293,7 +293,7 @@ QuadrantTitleOverflow 保留六行、360 字符预览探测、80 字符溢出探
 
 三处直接消费者仍是 DiarySummaryRow+Bubbles、LiveComposerPreviewHeader、LiveDiaryComposerPreview。截断、显隐、候选互斥、敏感投影、上下位置及偏移留在原宿主；不新增生产消费者或复制替身。Void onCopy 只证明调用发生，反馈不能证明系统复制成功。
 
-验证沿原 PrivacyQA、TaskRowBubbleTests、DaybookFloatingSurfaceTests、LivePreviewSurfaceTests / LivePreviewCompositionTests、OverlaySurfaceConsumerTests 及手记行宿主；新增 [动态外壳](../AreaChainTests/Theme/RowBubbleSurfaceTests.swift)、[直接原生气泡](../AreaChainTests/Theme/RowBubbleInteractionTests.swift)、[消费者](../AreaChainTests/Theme/RowBubbleConsumerTests.swift) 和[冻结装饰/合成支持](../AreaChainTests/Theme/RowBubbleTestSupport.swift)。原 ControlsPreview / DaybookFloatingSurfaceSamples 展示四种状态及外部箭头。原生点击只在直接气泡的无副作用回调上计数；无安全注入点的消费者不点击复制。实际结果与缺口见[工程记录](engineering.md#第八阶段-f标题与备注气泡动态外壳)。
+验证沿原 PrivacyQA、TaskRowBubbleTests、DaybookFloatingSurfaceTests、LivePreviewSurfaceTests / LivePreviewCompositionTests、OverlaySurfaceConsumerTests 及手记行宿主；新增 [动态外壳](../AreaChainTests/Theme/RowBubbleSurfaceTests.swift)、[直接原生气泡](../AreaChainTests/Theme/RowBubbleInteractionTests.swift)、[消费者](../AreaChainTests/Theme/RowBubbleConsumerTests.swift) 和[冻结装饰/合成支持](../AreaChainTests/Theme/RowBubbleTestSupport.swift)。原 ControlsPreview / DaybookFloatingSurfaceSamples 展示四种状态及外部箭头。原生点击只在直接气泡的无副作用回调上计数；无安全注入点的消费者不点击复制。实际结果与缺口见工程记录。
 
 第八阶段原登记的标题/备注外壳与两处边框映射已接入；C/D/E 的未迁移描述是历史状态。两种点击形状、箭头、内容高度及反馈归属是合理差异；B 的滚动归属、D 的复制按钮辅助树、已有悬停/窗口边缘与定位属于运行问题，不能当作本轮遗漏继续修复。这里不宣称全仓库不存在其他未审计重复。
 
@@ -314,9 +314,9 @@ QuadrantTitleOverflow 保留六行、360 字符预览探测、80 字符溢出探
 
 ## 第八阶段 E：标签详情与语法帮助卡外壳
 
-**E 修复二**：MenuBarPopoverView 将原遮罩和卡片组织为根 ZStack 的同一 `zIndex(20)` 层，层内卡片为 1、遮罩为默认 0；原筛选仍为 30。卡片空白由宿主局部点击区域接住，外部关闭不穿透；尺寸、92pt 偏移、原裁切与 transition 保留。原 setupTabKeyMonitor 限定有效可见宿主，先走筛选，再由内部 dismissSyntaxHelpForEscape 处理无核心修饰键且无 marked text 的 Escape；只改变唯一 showingSyntaxHelp，卸载移除监视器并清宿主引用。输入、草稿与原回调不变，帮助关闭后恢复原输入路由。回归沿原 [帮助测试](../AreaChainTests/Features/MenuBarHelpSurfaceTests.swift) 及宿主内的 [键盘回归](../AreaChainTests/Features/MenuBarHelpKeyboardTests.swift)、[鼠标回归](../AreaChainTests/Features/MenuBarHelpPointerTests.swift)；实际结果见[工程补记](engineering.md#e-修复二语法帮助遮罩与-escape-路由)。
+**E 修复二**：MenuBarPopoverView 将原遮罩和卡片组织为根 ZStack 的同一 `zIndex(20)` 层，层内卡片为 1、遮罩为默认 0；原筛选仍为 30。卡片空白由宿主局部点击区域接住，外部关闭不穿透；尺寸、92pt 偏移、原裁切与 transition 保留。原 setupTabKeyMonitor 限定有效可见宿主，先走筛选，再由内部 dismissSyntaxHelpForEscape 处理无核心修饰键且无 marked text 的 Escape；只改变唯一 showingSyntaxHelp，卸载移除监视器并清宿主引用。输入、草稿与原回调不变，帮助关闭后恢复原输入路由。回归沿原 [帮助测试](../AreaChainTests/Features/MenuBarHelpSurfaceTests.swift) 及宿主内的 [键盘回归](../AreaChainTests/Features/MenuBarHelpKeyboardTests.swift)、[鼠标回归](../AreaChainTests/Features/MenuBarHelpPointerTests.swift)；实际结果见工程补记。
 
-**E 修复一（2026-10-04）**：公共浮层装饰性描边不参与命中，内容与宿主继续负责交互。唯一生产修复是在 `DaybookFloatingSurfaceModifier.border` 的 stroke 视图上设置 `allowsHitTesting(false)`，同时覆盖五预设；背景命中、内容真实点击范围、isPresented 身份、绘制顺序及原 row/card/panel/banner 不变。冻结外壳继续记录旧 medium 故障，公共外壳改为严格成功与边界次数断言，不再要求故障路径点击轨迹相同。直接帮助卡的鼠标证据不代表生产帮助遮罩或 Escape 已修复；下一轮只处理宿主层级和键盘路由。实际回归、静态对照及缺口见[工程补记](engineering.md#e-修复一公共浮层描边不拦截内容点击)。
+**E 修复一（2026-10-04）**：公共浮层装饰性描边不参与命中，内容与宿主继续负责交互。唯一生产修复是在 `DaybookFloatingSurfaceModifier.border` 的 stroke 视图上设置 `allowsHitTesting(false)`，同时覆盖五预设；背景命中、内容真实点击范围、isPresented 身份、绘制顺序及原 row/card/panel/banner 不变。冻结外壳继续记录旧 medium 故障，公共外壳改为严格成功与边界次数断言，不再要求故障路径点击轨迹相同。直接帮助卡的鼠标证据不代表生产帮助遮罩或 Escape 已修复；下一轮只处理宿主层级和键盘路由。实际回归、静态对照及缺口见工程补记。
 
 复用 [DaybookSurface.swift](../AreaChain/Theme/DaybookSurface.swift) 的 `DaybookFloatingSurface` / `daybookSurface(floating:isPresented:)`，两个明确预设共享页面底色、border.default 的 **60% / 0.8pt 居中 stroke**（边缘内外各 0.4pt）及背景形状阴影。
 
@@ -329,7 +329,7 @@ QuadrantTitleOverflow 保留六行、360 字符预览探测、80 字符溢出探
 
 [MenuBarPopoverView](../AreaChain/Features/MenuBar/MenuBarPopoverView.swift) 是帮助真实入口，沿原 FooterBar 打开：⌘/，暂停 syntaxOverlayHost，capture 示例替换整个草稿，search token 按原空格规则追加；单项优先示例回调，底部 nil 可选回调保持无动作。原页签、关闭、焦点、延迟和快捷键分支均保留。
 
-原 ControlsPreview / [DaybookFloatingSurfaceSamples](../AreaChain/Features/Settings/ControlsPreview/DaybookFloatingSurfaceSamples.swift) 展示新预设完整阴影与实际帮助裁切。验证扩展原 DaybookFloatingSurfaceTests / OverlaySurfaceTestSupport，并增加 [标签与直接回调刻画](../AreaChainTests/Theme/TagHelpSurfaceConsumerTests.swift) 和 [生产菜单栏入口](../AreaChainTests/Features/MenuBarHelpSurfaceTests.swift)；实际证据见[工程记录](engineering.md#第八阶段-e标签详情与语法帮助卡外壳)。下节 D 的未迁移项是历史记录，以本节更新接入状态。
+原 ControlsPreview / [DaybookFloatingSurfaceSamples](../AreaChain/Features/Settings/ControlsPreview/DaybookFloatingSurfaceSamples.swift) 展示新预设完整阴影与实际帮助裁切。验证扩展原 DaybookFloatingSurfaceTests / OverlaySurfaceTestSupport，并增加 [标签与直接回调刻画](../AreaChainTests/Theme/TagHelpSurfaceConsumerTests.swift) 和 [生产菜单栏入口](../AreaChainTests/Features/MenuBarHelpSurfaceTests.swift)；实际证据见工程记录。下节 D 的未迁移项是历史记录，以本节更新接入状态。
 
 下一阶段线索仅登记：[RowTitleBubble / RowNoteBubble](../AreaChain/Theme/DaybookRowBubbles.swift) 使用 small/continuous、背景阴影和 **0.8pt 动态边框**，还有复制反馈、箭头、方向与偏移。不能直接套本轮静态预设；本轮不预增动态边框配置、不迁移气泡、不修复制或滚动。
 
@@ -348,7 +348,7 @@ QuadrantTitleOverflow 保留六行、360 字符预览探测、80 字符溢出探
 
 后续线索仅登记：任务 tagDetailBubble 为 140pt、regular/continuous、背景阴影，但边框是 **60% / 0.8pt**，不能直接套 suggestions；标题/备注沿 [DaybookRowBubbles](../AreaChain/Theme/DaybookRowBubbles.swift) 的 RowTitleBubble / RowNoteBubble：small/continuous、背景阴影，但为 0.8pt 动态边框，另有复制反馈、箭头与偏移；[SyntaxExpandableCard](../AreaChain/Theme/SyntaxHelpCard.swift) 为 medium/continuous、60% / 0.8pt、背景阴影及原 clipShape。均不能直接换成当前预设，不在本轮迁移。标签胶囊、滚动装配与 B 的历史问题保留。
 
-验证复用 DaybookFloatingSurfaceTests、OverlaySurfaceConsumerTests / OverlaySurfaceTestSupport，新增 [生产预览基线与状态测试](../AreaChainTests/Theme/LivePreviewSurfaceTests.swift)。展示扩展原 [DaybookFloatingSurfaceSamples](../AreaChain/Features/Settings/ControlsPreview/DaybookFloatingSurfaceSamples.swift) / ControlsPreview。完整证据和未验项见[工程记录](engineering.md#第八阶段-d两类实时预览主外壳)。
+验证复用 DaybookFloatingSurfaceTests、OverlaySurfaceConsumerTests / OverlaySurfaceTestSupport，新增 [生产预览基线与状态测试](../AreaChainTests/Theme/LivePreviewSurfaceTests.swift)。展示扩展原 [DaybookFloatingSurfaceSamples](../AreaChain/Features/Settings/ControlsPreview/DaybookFloatingSurfaceSamples.swift) / ControlsPreview。完整证据和未验项见工程记录。
 
 ## 第八阶段 C：候选与只读属性浮层外壳
 
@@ -365,7 +365,7 @@ QuadrantTitleOverflow 保留六行、360 字符预览探测、80 字符溢出探
 
 SyntaxOverlay 保留锚点、尺寸、来源优先级、最近宿主、事件和关闭责任；候选/属性内容和 daybookScroll 保持。属性关闭仍是 state.dismiss()，不创建标签或保存。共享的 [UnifiedSearchOverlay](../AreaChain/Theme/UnifiedSearchOverlay.swift) 仍只在已有统一搜索宿主回归：customRow、68pt 行高、列表高度上限、原锚点宽度和向上优先、接受许可不变，不接生产搜索。
 
-复用 DaybookSurfaceTests、SyntaxOverlayPlacementTests、CaptureOverlayLayoutTests、SyntaxAutocompleteTests、InputSyntaxInteractionTests、DiaryComposerInteractionTests、MenuBarPopoverRenderingTests、UnifiedSearchLayoutTests / InputTests。新增 [完整外缘与生产宿主矩阵](../AreaChainTests/Theme/OverlaySurfaceConsumerTests.swift) 和 [冻结绘制支持](../AreaChainTests/Theme/OverlaySurfaceTestSupport.swift)，原 ControlsPreview 增加 [合成浮层样例](../AreaChain/Features/Settings/ControlsPreview/DaybookFloatingSurfaceSamples.swift)。实际运行、失败及指定复核缺口见[工程记录](engineering.md#第八阶段-c候选与只读属性浮层外壳)。
+复用 DaybookSurfaceTests、SyntaxOverlayPlacementTests、CaptureOverlayLayoutTests、SyntaxAutocompleteTests、InputSyntaxInteractionTests、DiaryComposerInteractionTests、MenuBarPopoverRenderingTests、UnifiedSearchLayoutTests / InputTests。新增 [完整外缘与生产宿主矩阵](../AreaChainTests/Theme/OverlaySurfaceConsumerTests.swift) 和 [冻结绘制支持](../AreaChainTests/Theme/OverlaySurfaceTestSupport.swift)，原 ControlsPreview 增加 [合成浮层样例](../AreaChain/Features/Settings/ControlsPreview/DaybookFloatingSurfaceSamples.swift)。实际运行、失败及指定复核缺口见工程记录。
 
 ## 统一搜索计划列表（4A-3B2）
 
@@ -385,7 +385,7 @@ SyntaxOverlay 保留锚点、尺寸、来源优先级、最近宿主、事件和
 - 主密码/确认仍绑定原 master/repeated，仅在 `creating && !vault.isConfigured && useMaster` 时显示；备份密码/确认仍绑定 backupPassword/backupRepeated，仅在原 candidates/selected/includeLegacy 决定的 count > 0 时显示。四个稳定身份为 `privacy.setup.master`、`privacy.setup.master.confirmation`、`privacy.setup.backup`、`privacy.setup.backup.confirmation`，确认字段不能只按相同文案或数组下标定位。
 - valid 原样保留：已配置分支、至少一种方式、启用主密码时与存在候选时分别至少 12 个 Swift Character 且匹配；同时启用系统方式不跳过主密码校验。两组可使用不同口令，不新增 trim、规范化、字节长度或密码镜像。
 - 没有 onSubmit、自动聚焦或自动跳字段。submit 捕获 newPassword/backupInput 后不立即清空；原成功、catch、取消与 onDisappear 才调用 clearPasswords。busy 禁用整个 ScrollView、取消/应用及交互关闭，与 B/C 的输入/取消差异保留。界面清空不代表 Swift String/内存安全擦除。
-- [Setup 四字段验证](../AreaChainTests/Features/PrivacySetupSecureInputTests.swift) 与 [稳定身份支持](../AreaChainTests/Features/SetupSecureTestSupport.swift) 复用原 [SetupFixture/Toggle 测试](../AreaChainTests/Features/PrivacySetupToggleTests.swift)、PrivacyTagChoiceTests、PrivacyButtonSheetHost 与 SecureInputTestSupport；展示复用原 ControlsPreview 安全样例。仅隔离合成数据、probeSystem:false；合法键盘/Apply 用测试进程临时内存回退状态保护，只验证原 storageFailure 提前失败，恢复状态且不进入配置、认证、文件面板或迁移。结果和缺口见[工程记录](engineering.md#第七阶段-d隐私设置安全输入接入)。
+- [Setup 四字段验证](../AreaChainTests/Features/PrivacySetupSecureInputTests.swift) 与 [稳定身份支持](../AreaChainTests/Features/SetupSecureTestSupport.swift) 复用原 [SetupFixture/Toggle 测试](../AreaChainTests/Features/PrivacySetupToggleTests.swift)、PrivacyTagChoiceTests、PrivacyButtonSheetHost 与 SecureInputTestSupport；展示复用原 ControlsPreview 安全样例。仅隔离合成数据、probeSystem:false；合法键盘/Apply 用测试进程临时内存回退状态保护，只验证原 storageFailure 提前失败，恢复状态且不进入配置、认证、文件面板或迁移。结果和缺口见工程记录。
 - 当前生产安全输入清单：PrivacyPasswordSheet 两字段、PrivacyUnlockView 一字段、Setup 四字段均接入公共入口；公共内部原生 SecureField 是合理承载。搜索线索原为 WorkspaceHeaderSearchCapsule / MenuBarSearchField（M-7 已删除，统一搜索输入见 UnifiedSearchInput），任务/手记继续沿 DaybookTextField / SyntaxTextField / SyntaxTextEditor / DaybookTextEditor，各自提交契约留后续核对，不在 D 修改；B 的特定 busy/重试残留、原生空值回写、指定复核/人工和历史缺口继续登记。
 
 ## 第七阶段 C：解锁面板安全输入接入
@@ -394,7 +394,7 @@ SyntaxOverlay 保留锚点、尺寸、来源优先级、最近宿主、事件和
 - 密码/系统入口仍分别由 `hasMasterPassword` / `hasSystemUnlock` 决定。密码按钮按 `busy || password.isEmpty` 禁用，但 authenticate 只 guard `!busy`，聚焦空字段的 Return 仍进入原认证。与 PrivacyPasswordSheet 的空值/匹配校验不同，不统一两者提交算法。
 - 开始认证仍先 busy、清错、捕获 input、清空 password，再进入 Task；成功检查 vault.isUnlocked 后回调，失败保留原错误映射。busy 禁用两种认证按钮、字段仍可编辑；取消仍可用，与密码 sheet 的 busy 禁止取消不同。onDisappear 仍清字段；不恢复已提交密码或增加清空补偿。
 - View 的 onCancel 仅回调；关闭、锁定及 continuation 完成由原 Presenter 负责。原 request/show/finish、窗口代理、PrivacyAccess、vault/代次/限流/钥匙串/加密均未改。原 Presenter 只读 shared locale；直接 View 双语证据不能替代 Presenter 双语。
-- [直接视图对照](../AreaChainTests/Features/PrivacyUnlockSecureInputTests.swift) 与 [原 Presenter 接线](../AreaChainTests/Features/PrivacyUnlockPresenterInputTests.swift) 共用 [隔离支持](../AreaChainTests/Features/PrivacyUnlockSecureTestSupport.swift)，沿 SecureInputTestSupport、SettingsButtonTestSupport 和 PrivacyAutolockTestSupport 的归属/清理方式，所有请求显式注入 MemoryVaultConfigurationStore / FakeSystemVaultKeys。展示复用原 ControlsPreview 安全样例；实际结果及缺口见[工程记录](engineering.md#第七阶段-c解锁面板安全输入接入)。
+- [直接视图对照](../AreaChainTests/Features/PrivacyUnlockSecureInputTests.swift) 与 [原 Presenter 接线](../AreaChainTests/Features/PrivacyUnlockPresenterInputTests.swift) 共用 [隔离支持](../AreaChainTests/Features/PrivacyUnlockSecureTestSupport.swift)，沿 SecureInputTestSupport、SettingsButtonTestSupport 和 PrivacyAutolockTestSupport 的归属/清理方式，所有请求显式注入 MemoryVaultConfigurationStore / FakeSystemVaultKeys。展示复用原 ControlsPreview 安全样例；实际结果及缺口见工程记录。
 - 下一阶段仅作线索：PrivacySetupSheet 的 master/repeated 在 `creating && !vault.isConfigured && useMaster` 时显示，backupPassword/backupRepeated 在候选 count > 0 时显示；两对各自至少 12 字符且相等，方法另要求至少一种可用。submit 捕获 newPassword/backupInput 后进入原流程，字段在成功、失败、取消和消失时清空，并非本解锁面板的提交前立即清空；busy 禁用滚动输入区及取消。Setup、搜索及任务/手记编辑器本轮均不迁移。
 
 ## 第七阶段 B：公共安全输入与通用密码弹窗
@@ -403,7 +403,7 @@ SyntaxOverlay 保留锚点、尺寸、来源优先级、最近宿主、事件和
 - `init(_:text:)` 接本地化键，`init(verbatim:text:)` 接已解析文字，两者都提供占位符和辅助名称；稳定标识沿调用方 `.accessibilityIdentifier`。外部 Binding 是唯一密码来源；内部只持瞬时焦点，不做校验、trim、Unicode 规范化、密码镜像、提交、清空、明文切换、复制、缓存或 IO。
 - 本阶段仅 [PrivacyPasswordSheet](../AreaChain/Features/Settings/PrivacyPasswordSheet.swift) 两个字段接入，保留 title/confirmation/explanation/action/onComplete，以及两处 `.onSubmit(submit)`。440pt 宽度和原分组保持。宿主继续决定空值/匹配校验、busy、清空、异步错误/重试、取消和关闭；输入区域 busy 时仍可编辑。
 - PrivacySettingsSection 的主密码操作确认、关闭系统解锁不确认；DataBackupView 的导出确认、恢复不确认。父页成功清 dialog 并更新状态；本轮仅静态核对父页，测试只注入可控 action，不执行认证、钥匙串、文件面板、备份或恢复。
-- [公共输入测试](../AreaChainTests/Theme/DaybookSecureFieldTests.swift)、[生产弹窗对照](../AreaChainTests/Features/PrivacySecureInputTests.swift)、[安全编辑/长说明](../AreaChainTests/Features/PrivacySecureEditingTests.swift) 复用 SettingsButtonTestSupport 和 PrivacyButtonSheetHost；后者可选外部 presentation Binding 只用于同一宿主关闭/重开。原 [ControlsPreview](../AreaChain/Features/Settings/ControlsPreview/DaybookControlsPreview.swift) 增加 [合成遮蔽样例](../AreaChain/Features/Settings/ControlsPreview/DaybookSecureInputSamples.swift)。实际证据与缺口见[工程记录](engineering.md#第七阶段-b公共安全输入与通用密码弹窗)。
+- [公共输入测试](../AreaChainTests/Theme/DaybookSecureFieldTests.swift)、[生产弹窗对照](../AreaChainTests/Features/PrivacySecureInputTests.swift)、[安全编辑/长说明](../AreaChainTests/Features/PrivacySecureEditingTests.swift) 复用 SettingsButtonTestSupport 和 PrivacyButtonSheetHost；后者可选外部 presentation Binding 只用于同一宿主关闭/重开。原 [ControlsPreview](../AreaChain/Features/Settings/ControlsPreview/DaybookControlsPreview.swift) 增加 [合成遮蔽样例](../AreaChain/Features/Settings/ControlsPreview/DaybookSecureInputSamples.swift)。实际证据与缺口见工程记录。
 - 后续 PrivacySetupSheet 可复用键/Binding 入口，但需保留配置组合、至少 12 字符规则和迁移/备份流程；PrivacyUnlockView 须保留自己的 placeholder、稳定标识、原 onSubmit 认证、取消回调与 Presenter 生命周期。本轮两者均未迁移，搜索与任务/手记编辑器也不接入。
 
 
@@ -414,7 +414,7 @@ SyntaxOverlay 保留锚点、尺寸、来源优先级、最近宿主、事件和
 - 两个生产定义、三个字段全部接入：[TaskDetailTagSelector.newTagSheet](../AreaChain/Features/Workspace/TaskDetailClassificationSection.swift) 的名称字段以 `verbatim: L10n.string(...)` 进入；[ClipboardHistoryOptions.addRow](../AreaChain/Features/Clipboard/ClipboardHistoryOptions.swift) 的正则与类型名保留本地化键。三处稳定标识分别为 `drawer.tag.create.name`、`clipboard.patterns.add`、`clipboard.types.add`。公共组合内部的原生 TextField 不算生产遗漏。
 - 标签消费者仍清空打开/取消草稿，编辑清错，仅创建时 trim；保留名不回调，回调失败保留输入和弹窗，成功清空关闭。待办/习惯详情走原 addTag 创建及关联；RecurringItemEditor 经 resolveTaskTag 立即保存标签，再更新事项草稿，取消新事项不会回滚已经创建的标签。
 - 剪贴板两个草稿互不覆盖；addPattern/addType 仍在原 session 校验、trim 并即时保存偏好，成功才清空。正则拒绝提示不随输入清除，类型拒绝不新增反馈；取消只关闭，未添加输入不提交。错误文字从原行底部 overlay 改为同一行下方占位，避免覆盖输入和添加按钮；240pt 标签弹窗及 440×560pt 页面约束不变。
-- [公共测试](../AreaChainTests/Theme/DaybookFormTextFieldTests.swift)、[消费者事件刻画](../AreaChainTests/Features/FormInputConsumerBaselineTests.swift)、[标签链路](../AreaChainTests/Features/TagFormInputConsumerTests.swift) 和 [剪贴板添加](../AreaChainTests/Features/ClipboardFormInputTests.swift) 沿 SettingsButtonTestSupport / ClipboardOptionsFixture 与 PrivacyQA；展示扩展原 [ControlsPreview](../AreaChain/Features/Settings/ControlsPreview/DaybookControlsPreview.swift)，样例含普通、禁用、长文本及多个实例。实际执行和缺口以[工程记录](engineering.md#第七阶段-a普通表单输入与三个输入框)为准，测试存在不代表已通过。
+- [公共测试](../AreaChainTests/Theme/DaybookFormTextFieldTests.swift)、[消费者事件刻画](../AreaChainTests/Features/FormInputConsumerBaselineTests.swift)、[标签链路](../AreaChainTests/Features/TagFormInputConsumerTests.swift) 和 [剪贴板添加](../AreaChainTests/Features/ClipboardFormInputTests.swift) 沿 SettingsButtonTestSupport / ClipboardOptionsFixture 与 PrivacyQA；展示扩展原 [ControlsPreview](../AreaChain/Features/Settings/ControlsPreview/DaybookControlsPreview.swift)，样例含普通、禁用、长文本及多个实例。实际执行和缺口以工程记录为准，测试存在不代表已通过。
 - 普通输入不解析 `# @ ! //`、反斜杠、括号、Unicode 或资源键形状的原文；粘贴/换行保留原生输入约束。任务语法仍由 DaybookTextField / SyntaxTextField / SyntaxTextEditor 负责，搜索仍由各搜索宿主负责，安全输入仍保留 SecureField 与原认证边界。本阶段不迁移上述入口或手记编辑器；后续安全输入实际线索为 Features/Settings 下的 PrivacyPasswordSheet / PrivacySetupSheet，以及 Features/Diary 的 PrivacyUnlockPresenter，须重新核对其宿主及授权。
 
 ## 第六阶段 E：周视图日期列头接入
@@ -423,7 +423,7 @@ SyntaxOverlay 保留锚点、尺寸、来源优先级、最近宿主、事件和
 - [CalendarWeekBoard](../AreaChain/Features/Calendar/CalendarWeekBoard.swift) 保留 `calendar.week.<完整日键>`，覆盖公共默认标识；完整日期辅助名称、今天 value 与外部选中语义由公共层提供，按钮不包含整列列表。多个实例须限定宿主祖先与完整日键。默认 picker、monthGrid、habit 及 `annotation: Text?`、`statusDescription` 兼容。
 - 格式来源刻意保留：Feature 的 `DayKey.shortStamp(day, locale:)` 仍使用默认 calendar；公共第二行日号和完整辅助日期使用环境 calendar。未统一系统日历/时区、未改 DayKey。异日历历史显示差异单独登记；纯显示参数不允许 Feature 自绘 View。
 - Feature 继续负责 days 顺序、selectedKey/todayKey、整列选中背景、6pt 列内边距/列头列表间距、8pt 列距、查询/列表投影、滚动、焦点、onInspect 所属日、onSelect 重选及列级拖放。TodoDragToken 解码、onDropTodo、接收区域和保存链原样保留。直接宿主仍是 CalendarPage.weekLayout；公共层无模型、导航单例、额外选择状态或键盘监听。
-- [公共对照与展示](../AreaChainTests/Theme/DaybookWeekHeaderTests.swift) 扩展原 ControlsPreview；[生产基线](../AreaChainTests/Features/CalendarWeekBaselineTests.swift)、[周消费者](../AreaChainTests/Features/CalendarWeekConsumerTests.swift) 复用 [隔离支持](../AreaChainTests/Features/CalendarWeekTestSupport.swift)、CalendarSpanTestSupport 和原日期消费者。稳定呈现/几何沿 check_workflow.py 与反例维护，实际结果见[工程记录](engineering.md#第六阶段-e周视图日期列头接入)。
+- [公共对照与展示](../AreaChainTests/Theme/DaybookWeekHeaderTests.swift) 扩展原 ControlsPreview；[生产基线](../AreaChainTests/Features/CalendarWeekBaselineTests.swift)、[周消费者](../AreaChainTests/Features/CalendarWeekConsumerTests.swift) 复用 [隔离支持](../AreaChainTests/Features/CalendarWeekTestSupport.swift)、CalendarSpanTestSupport 和原日期消费者。稳定呈现/几何沿 check_workflow.py 与反例维护，实际结果见工程记录。
 
 ### 第六阶段剩余范围
 
@@ -499,7 +499,7 @@ SyntaxOverlay 保留锚点、尺寸、来源优先级、最近宿主、事件和
 | 普通文本输入 | `DaybookTextField`、`DaybookTextEditor` | [DaybookTextField.swift](../AreaChain/Theme/DaybookTextField.swift)、[DaybookTextEditor.swift](../AreaChain/Theme/DaybookTextEditor.swift) | 原生 AppKit 输入桥接；需要核对焦点、输入法、撤销和最小尺寸。 |
 | 语法输入 | `SyntaxTextField`、`SyntaxTextEditor` | [SyntaxTextField.swift](../AreaChain/Theme/SyntaxTextField.swift)、[SyntaxTextEditor.swift](../AreaChain/Theme/SyntaxTextEditor.swift) | 任务/手记语法高亮和候选输入；必须提供正确的 `SyntaxInputContext`，搜索不能借此创建标签。触发检测和高亮正则编译一次。同一 `NSTextStorage` 在文本、字体、默认色和外观未变时不整段重建属性。外观键取自该 storage 所属文本视图或窗口的 `effectiveAppearance`，没有宿主时才回退 `NSApp`。 |
 | 候选与浮层 | `SyntaxAutocompletePopup`、`SyntaxOverlay` | [SyntaxAutocompleteView.swift](../AreaChain/Theme/SyntaxAutocompleteView.swift)、[SyntaxOverlay.swift](../AreaChain/Theme/SyntaxOverlay.swift) | 就近消费输入锚点，保留 Esc 先关闭候选、焦点和定位；不要在多个宿主重复呈现同一浮层。 |
-| 按钮 | `DaybookButtonStyle`、`DaybookIconButton`、`CommandReturnButton` | [DaybookButtonStyle.swift](../AreaChain/Theme/DaybookButtonStyle.swift)、[CommandReturnButton.swift](../AreaChain/Theme/CommandReturnButton.swift) | 复用尺寸、禁用、悬停、可访问性和 Command 反馈；图标按钮需有语义标签。`daybookMenuLabel` 与按钮共享内部视觉基座，保留 `fitsLabel` 和系统菜单语义；文字仍按内容加边距，图标为 28/22/18 正方形。原生焦点与显式 `isFocused` 均可显示焦点环，减弱动态效果禁用按下缩放。测试专用 `DaybookControlsPreview` 的开发展示见[工程手册](engineering.md#按钮开发展示与验收)。 |
+| 按钮 | `DaybookButtonStyle`、`DaybookIconButton`、`CommandReturnButton` | [DaybookButtonStyle.swift](../AreaChain/Theme/DaybookButtonStyle.swift)、[CommandReturnButton.swift](../AreaChain/Theme/CommandReturnButton.swift) | 复用尺寸、禁用、悬停、可访问性和 Command 反馈；图标按钮需有语义标签。`daybookMenuLabel` 与按钮共享内部视觉基座，保留 `fitsLabel` 和系统菜单语义；文字仍按内容加边距，图标为 28/22/18 正方形。原生焦点与显式 `isFocused` 均可显示焦点环，减弱动态效果禁用按下缩放。测试专用 `DaybookControlsPreview` 的开发展示见工程手册。 |
 | 启用开关 | `DaybookToggleStyle` | [DaybookToggleStyle.swift](../AreaChain/Theme/DaybookToggleStyle.swift)、[DaybookMetrics.swift](../AreaChain/Theme/DaybookMetrics.swift) 的 `Toggle` | 默认显示原标签；紧凑布局传 `hiddenLabel: LocalizedStringKey`，同时提供辅助名称，并保留消费者 `labelsHidden` / help 意图。原生 Toggle 的 button 样式承载鼠标与辅助操作；显式焦点容器独占空格按下/释放，临时按下态不镜像业务布尔值。统一轨道、滑块及反馈，无保存、导航或权限行为。几何 34×20、滑块 16、点击高度 28 集中维护；不提供颜色覆盖。消费者含新建重复事项、管理行、隐私标签多选与三个表单布尔项、剪贴板及普通设置各三项偏好；表现及提交差异见本页第三阶段 A–E。 |
 | 表面与分组 | `daybookSurface`、`DaybookChip`、`DaybookSectionHeader`、`DaybookDivider` | [DaybookSurface.swift](../AreaChain/Theme/DaybookSurface.swift)、[DaybookChip.swift](../AreaChain/Theme/DaybookChip.swift)、[DaybookSectionHeader.swift](../AreaChain/Theme/DaybookSectionHeader.swift) | 共享表面、芯片、分节头和分隔线；不要在 Feature 自绘同义基座。 |
 | 分段选择 | `DaybookSegmentedControl`、`DaybookSegmentOption` | [DaybookSegmentedControl.swift](../AreaChain/Theme/DaybookSegmentedControl.swift)、[菜单栏适配](../AreaChain/Theme/DaybookSegmentedBar.swift)、[日历接入](../AreaChain/Features/Calendar/CalendarPage.swift) | 核心只读写强类型 Binding。菜单栏保留 BoardTab 适配；日历直接传 CalendarSpan。快捷键、草稿、日期和投影属于宿主，详见第四阶段 E/F。 |
@@ -514,17 +514,17 @@ SyntaxOverlay 保留锚点、尺寸、来源优先级、最近宿主、事件和
 - [MenuBarStatusImage.swift](../AreaChain/Theme/MenuBarStatusImage.swift)
 - [KeyWindowHost.swift](../AreaChain/Theme/KeyWindowHost.swift)
 
-第二阶段 A 的消费者接入：手记小窗 [DiaryWindowView.swift](../AreaChain/Features/Diary/DiaryWindowView.swift) 的置顶使用 `.active / .subtle`，显示正文和保存使用 `.prominent`（均 compact）；[DiaryCardComponents.swift](../AreaChain/Features/Diary/DiaryCardComponents.swift) 的编辑保存使用 `.prominent`、取消保留 `.quiet`（compact）；[TaskDetailClassificationSection.swift](../AreaChain/Features/Workspace/TaskDetailClassificationSection.swift) 的标签创建/取消使用 `.prominent / .quiet`（regular）。均直接使用 `DaybookButtonStyle`，已有图标按钮及快捷提交入口保留。系统 `confirmationDialog` / `alert` 内按钮继续由系统承载；标签芯片、输入框及其他特殊选择控件不在本次迁移范围。回调、禁用、快捷键、授权和草稿语义不变。消费者回归见 `DiaryButtonConsumerTests`，不替代[第一阶段未验项](engineering.md#第一阶段-b-补充验收2026-10-01)。
+第二阶段 A 的消费者接入：手记小窗 [DiaryWindowView.swift](../AreaChain/Features/Diary/DiaryWindowView.swift) 的置顶使用 `.active / .subtle`，显示正文和保存使用 `.prominent`（均 compact）；[DiaryCardComponents.swift](../AreaChain/Features/Diary/DiaryCardComponents.swift) 的编辑保存使用 `.prominent`、取消保留 `.quiet`（compact）；[TaskDetailClassificationSection.swift](../AreaChain/Features/Workspace/TaskDetailClassificationSection.swift) 的标签创建/取消使用 `.prominent / .quiet`（regular）。均直接使用 `DaybookButtonStyle`，已有图标按钮及快捷提交入口保留。系统 `confirmationDialog` / `alert` 内按钮继续由系统承载；标签芯片、输入框及其他特殊选择控件不在本次迁移范围。回调、禁用、快捷键、授权和草稿语义不变。消费者回归见 `DiaryButtonConsumerTests`，不替代第一阶段未验项。
 
-第二阶段 B 的消费者接入：[PrivacyUnlockPresenter.swift](../AreaChain/Features/Diary/PrivacyUnlockPresenter.swift) 仅 `PrivacyUnlockView` 的系统验证、密码解锁使用 `.prominent`，取消使用 `.quiet`；[PrivacyPasswordSheet.swift](../AreaChain/Features/Settings/PrivacyPasswordSheet.swift) 的保存/取消及 [PrivacySetupSheet.swift](../AreaChain/Features/Settings/PrivacySetupSheet.swift) 的应用/取消使用 `.prominent / .quiet`，均为 regular。系统验证保留全宽，其他按钮保留原对齐与弹窗尺寸。解锁取消不随 busy 禁用，另外两个 sheet 的取消仍随 busy 禁用；认证、校验、快捷键、密码清空和关闭语义保持不变。直接消费者测试为 [PrivacyButtonConsumerTests.swift](../AreaChainTests/Features/PrivacyButtonConsumerTests.swift)，复用 `PrivacyFixture`、内存配置、`FakeSystemVaultKeys` 与 `SystemPageHost`，Setup 始终传 `probeSystem: false` 且不执行 Apply 提交；具体证据与未测范围见[工程手册](engineering.md#第二阶段-b隐私弹窗按钮接入2026-10-01)。普通设置、快捷键等按钮尚待后续独立迁移，开关、密码框、加载指示器及系统弹窗按钮不在此阶段。
+第二阶段 B 的消费者接入：[PrivacyUnlockPresenter.swift](../AreaChain/Features/Diary/PrivacyUnlockPresenter.swift) 仅 `PrivacyUnlockView` 的系统验证、密码解锁使用 `.prominent`，取消使用 `.quiet`；[PrivacyPasswordSheet.swift](../AreaChain/Features/Settings/PrivacyPasswordSheet.swift) 的保存/取消及 [PrivacySetupSheet.swift](../AreaChain/Features/Settings/PrivacySetupSheet.swift) 的应用/取消使用 `.prominent / .quiet`，均为 regular。系统验证保留全宽，其他按钮保留原对齐与弹窗尺寸。解锁取消不随 busy 禁用，另外两个 sheet 的取消仍随 busy 禁用；认证、校验、快捷键、密码清空和关闭语义保持不变。直接消费者测试为 [PrivacyButtonConsumerTests.swift](../AreaChainTests/Features/PrivacyButtonConsumerTests.swift)，复用 `PrivacyFixture`、内存配置、`FakeSystemVaultKeys` 与 `SystemPageHost`，Setup 始终传 `probeSystem: false` 且不执行 Apply 提交；具体证据与未测范围见工程手册。普通设置、快捷键等按钮尚待后续独立迁移，开关、密码框、加载指示器及系统弹窗按钮不在此阶段。
 
-第二阶段 C 的消费者接入：[SettingsSections.swift](../AreaChain/Features/Settings/SettingsSections.swift) 的系统设置入口、通知测试、日历重试/冲突查看使用 `.quiet`，通知申请使用 `.prominent`；[ProjectSupportSections.swift](../AreaChain/Features/Settings/ProjectSupportSections.swift) 的帮助、问题报告、功能建议使用 `.quiet`，仓库/许可证使用 `.subtle`；[HotKeyRecorder.swift](../AreaChain/Features/Settings/HotKeyRecorder.swift) 的录入使用 `.quiet`、原 `listening` 时切换 `.active`，单项重置 `.subtle`；[ShortcutsSettingsView.swift](../AreaChain/Features/Settings/ShortcutsSettingsView.swift) 全部重置 `.quiet`，均为 regular。直接复用 `DaybookButtonStyle`，不设置 Form 根样式，不新增公共 API 或平行状态；业务回调、条件、禁用、通知防重入、链接交接、热键冲突/持久化/注册和监听释放保持原实现。消费者测试复用 `SystemPageHost`，快捷键同时隔离偏好及 fake `HotKeyCenter`；系统按钮仅取呈现和静态回调证据，详见[工程手册](engineering.md#第二阶段-c普通设置快捷键和项目支持按钮接入2026-10-01)。隐私主页、备份、Picker、Toggle、输入框及其他页面不在此阶段。
+第二阶段 C 的消费者接入：[SettingsSections.swift](../AreaChain/Features/Settings/SettingsSections.swift) 的系统设置入口、通知测试、日历重试/冲突查看使用 `.quiet`，通知申请使用 `.prominent`；[ProjectSupportSections.swift](../AreaChain/Features/Settings/ProjectSupportSections.swift) 的帮助、问题报告、功能建议使用 `.quiet`，仓库/许可证使用 `.subtle`；[HotKeyRecorder.swift](../AreaChain/Features/Settings/HotKeyRecorder.swift) 的录入使用 `.quiet`、原 `listening` 时切换 `.active`，单项重置 `.subtle`；[ShortcutsSettingsView.swift](../AreaChain/Features/Settings/ShortcutsSettingsView.swift) 全部重置 `.quiet`，均为 regular。直接复用 `DaybookButtonStyle`，不设置 Form 根样式，不新增公共 API 或平行状态；业务回调、条件、禁用、通知防重入、链接交接、热键冲突/持久化/注册和监听释放保持原实现。消费者测试复用 `SystemPageHost`，快捷键同时隔离偏好及 fake `HotKeyCenter`；系统按钮仅取呈现和静态回调证据，详见工程手册。隐私主页、备份、Picker、Toggle、输入框及其他页面不在此阶段。
 
-第二阶段 D 的消费者接入：[PrivacySettingsSection.swift](../AreaChain/Features/Settings/PrivacySettingsSection.swift) 的首次设置、标签管理、锁定/解锁、系统验证方式、主密码设置/移除、清理重试及退出使用 `.quiet`；[DataBackupView.swift](../AreaChain/Features/Settings/DataBackupView.swift) 的普通导入/导出和加密备份/恢复使用 `.quiet`，既有 destructive 重置入口使用 `.destructive`，均为 regular。只增加 14 处 `DaybookButtonStyle`，保留 Form/HStack、回调、角色、禁用、状态和原确认/密码弹窗语义；不新增主次层级、API、包装或令牌。系统 alert、confirmationDialog、NSAlert、文件面板内部按钮仍由系统承载。消费者测试复用 `PrivacyButtonConsumerTests`、`SettingsButtonTestSupport` 与 `SystemPageHost`，隔离范围和未执行链路见[工程手册](engineering.md#第二阶段-d隐私主页与数据备份页按钮接入2026-10-01)。
+第二阶段 D 的消费者接入：[PrivacySettingsSection.swift](../AreaChain/Features/Settings/PrivacySettingsSection.swift) 的首次设置、标签管理、锁定/解锁、系统验证方式、主密码设置/移除、清理重试及退出使用 `.quiet`；[DataBackupView.swift](../AreaChain/Features/Settings/DataBackupView.swift) 的普通导入/导出和加密备份/恢复使用 `.quiet`，既有 destructive 重置入口使用 `.destructive`，均为 regular。只增加 14 处 `DaybookButtonStyle`，保留 Form/HStack、回调、角色、禁用、状态和原确认/密码弹窗语义；不新增主次层级、API、包装或令牌。系统 alert、confirmationDialog、NSAlert、文件面板内部按钮仍由系统承载。消费者测试复用 `PrivacyButtonConsumerTests`、`SettingsButtonTestSupport` 与 `SystemPageHost`，隔离范围和未执行链路见工程手册。
 
 ### 第二阶段 E：按钮接入与全应用静态清单（2026-10-01）
 
-[DiaryPage.swift](../AreaChain/Features/Diary/DiaryPage.swift) 的 `quickComposer` 解锁使用 `.prominent`、丢弃入口使用 `.quiet`；[DayScheduleMenu.swift](../AreaChain/Features/Tasks/DayScheduleMenu.swift) 的 `DaySchedulePicker` 确认使用 `.prominent`，均为 regular，直接复用 `DaybookButtonStyle`。仅新增三行样式；指定 vault、restore/焦点、丢弃确认及角色、临时日期、`initialKey`、`confirmTitle`、`DayKey`、`onPick` 和宿主关闭/保存语义保持。日期本体不变。测试为 `DiaryButtonConsumerTests` 与 `DayScheduleButtonConsumerTests`，证据及限制见[工程手册](engineering.md#第二阶段-e剩余按钮接入与全应用清单核对2026-10-01)。
+[DiaryPage.swift](../AreaChain/Features/Diary/DiaryPage.swift) 的 `quickComposer` 解锁使用 `.prominent`、丢弃入口使用 `.quiet`；[DayScheduleMenu.swift](../AreaChain/Features/Tasks/DayScheduleMenu.swift) 的 `DaySchedulePicker` 确认使用 `.prominent`，均为 regular，直接复用 `DaybookButtonStyle`。仅新增三行样式；指定 vault、restore/焦点、丢弃确认及角色、临时日期、`initialKey`、`confirmTitle`、`DayKey`、`onPick` 和宿主关闭/保存语义保持。日期本体不变。测试为 `DiaryButtonConsumerTests` 与 `DayScheduleButtonConsumerTests`，证据及限制见工程手册。
 
 核对覆盖 `AreaChain/**/*.swift` 的 `Button`、`buttonStyle`、`Menu`、`menuStyle`、公共封装、AppKit 按钮/弹框与点击入口；可疑项沿实际父容器核对。下表路径省略 `AreaChain/`，同一文件可同时包含不同组；不是运行验收或所有间接手势链的证明。
 
@@ -562,15 +562,15 @@ E 阶段结束时共余 1 处普通 Button、5 处 Menu 定义（`scopeMenu` 有
 
 F 后复查仍沿上面的 A/B/C 分类：20 个 Menu 定义中，13 个使用公共标签、6 个属于系统展开子菜单，1 个是 `DiaryNoteCard.addTagMenu` 标签胶囊控件。未发现确定遗漏的普通按钮/页面 Menu；21 处 plain 样式继续归完成、日期、星期、象限、分段、导航行、折叠、芯片和内容选择。该结论只覆盖当前静态清单，不能代表全应用运行验收。第三阶段保留 C 类特殊控件，不在 F 迁移。
 
-消费者回归直接挂载生产组件，复用 `SystemPageHost`、`SettingsButtonTestSupport` 及内存模型；入口为 [BatchMenuConsumerTests.swift](../AreaChainTests/Features/BatchMenuConsumerTests.swift)、[WorkspaceMenuConsumerTests.swift](../AreaChainTests/Features/WorkspaceMenuConsumerTests.swift)，菜单事件辅助仅在 [MenuButtonTestSupport.swift](../AreaChainTests/Features/MenuButtonTestSupport.swift)。真实追踪/Escape 与原菜单项动作派发分开取证，结果及剩余运行缺口见[工程手册](engineering.md#第二阶段-f菜单入口与标签合并取消2026-10-01)。
+消费者回归直接挂载生产组件，复用 `SystemPageHost`、`SettingsButtonTestSupport` 及内存模型；入口为 [BatchMenuConsumerTests.swift](../AreaChainTests/Features/BatchMenuConsumerTests.swift)、[WorkspaceMenuConsumerTests.swift](../AreaChainTests/Features/WorkspaceMenuConsumerTests.swift)，菜单事件辅助仅在 [MenuButtonTestSupport.swift](../AreaChainTests/Features/MenuButtonTestSupport.swift)。真实追踪/Escape 与原菜单项动作派发分开取证，结果及剩余运行缺口见工程手册。
 
-F 补修在 `TagManagementPage.body` 的合并 sheet 边界显式传递宿主 `locale`，复用相邻 `TaskDetailTagSelector` 的环境注入模式；文案键与标签原文、Picker、选择/取消/提交/保存语义不变。`WorkspaceMenuConsumerTests` 保留严格语言断言，覆盖 en/zh-Hans × 浅深色五处文案、360pt 长标签布局、实际取消无提交，以及测试环境语言切换后重开。原中文失败保留在旧包，已由 `ButtonStage2F-locale-matrix.xcresult` 和七组 `ButtonStage2F-locale-regression.xcresult` 消除；完整证据与第二阶段仍部分验收的边界见[工程手册补修记录](engineering.md#f-补修标签合并弹窗语言传递2026-10-01)。
+F 补修在 `TagManagementPage.body` 的合并 sheet 边界显式传递宿主 `locale`，复用相邻 `TaskDetailTagSelector` 的环境注入模式；文案键与标签原文、Picker、选择/取消/提交/保存语义不变。`WorkspaceMenuConsumerTests` 保留严格语言断言，覆盖 en/zh-Hans × 浅深色五处文案、360pt 长标签布局、实际取消无提交，以及测试环境语言切换后重开。原中文失败保留在旧包，已由 `ButtonStage2F-locale-matrix.xcresult` 和七组 `ButtonStage2F-locale-regression.xcresult` 消除；完整证据与第二阶段仍部分验收的边界见工程手册补修记录。
 
 ### 第三阶段 A：公共启用开关与重复事项
 
 [RecurringItemEditor.swift](../AreaChain/Features/Workspace/RecurringItemEditor.swift) 使用默认 `DaybookToggleStyle()`，仅修改 `draft.isEnabled`，取消不创建，保存失败保留草稿。[ResidentsPage.swift](../AreaChain/Features/Workspace/ResidentsPage.swift) 使用 `DaybookToggleStyle(hiddenLabel: "residents.enabled")`，原 `enabledBinding` → `DayBoardMutations.setRoutineEnabled`、暂停/恢复及标题失焦保存规则保持。公共组件没有统一两种提交方式。
 
-展示仍在 `DaybookControlsPreview`，开/关、禁用、隐藏标签、长中英文、主题与外部更新使用本地合成状态。上方减弱效果预览仅针对按钮；开关只读取系统减弱动态效果。测试为 `DaybookToggleStyleTests`、`RecurringToggleConsumerTests`，复用现有原生宿主与仓储/事务失败注入；证据与缺口见[工程手册](engineering.md#第三阶段-a公共启用开关与重复事项2026-10-01)。其他 Toggle（设置、剪贴板、隐私）、普通复选框与任务完成圆圈均未迁移；后续须分别核对权限、提交、拒绝更新和焦点契约。
+展示仍在 `DaybookControlsPreview`，开/关、禁用、隐藏标签、长中英文、主题与外部更新使用本地合成状态。上方减弱效果预览仅针对按钮；开关只读取系统减弱动态效果。测试为 `DaybookToggleStyleTests`、`RecurringToggleConsumerTests`，复用现有原生宿主与仓储/事务失败注入；证据与缺口见工程手册。其他 Toggle（设置、剪贴板、隐私）、普通复选框与任务完成圆圈均未迁移；后续须分别核对权限、提交、拒绝更新和焦点契约。
 
 ### 第三阶段 B：公共方形复选框与隐私标签多选
 
@@ -578,13 +578,13 @@ F 补修在 `TagManagementPage.body` 的合并 sheet 边界显式传递宿主 `l
 
 [PrivacySetupSheet.swift](../AreaChain/Features/Settings/PrivacySetupSheet.swift) 仅 `tagChoices` 替换样式。原 selected 集合、UUID、排序/过滤、初始化、lock/tag 图标、用户标签原文、busy 禁用与取消保持；切换仅修改表单选择，提交和内容保护链不变。其他隐私 Toggle 保持原生，父容器不设置样式。
 
-展示复用 `DaybookControlsPreview`，包含选中/未选中、禁用、长中英文、浅深色和独立外部更新按钮。`DaybookToggleStyleTests` 参数化覆盖两种表现，原生 checkbox 单独作为焦点对照；`PrivacyTagChoiceTests.swift` 扩展 `PrivacyInteractionTests`，复用原 `PrivacyButtonSheetHost` 和内存宿主，只测试选择/取消/重开，不点击 Apply。阶段证据与未验项见[工程手册](engineering.md#第三阶段-b公共复选框与隐私标签选择2026-10-01)。
+展示复用 `DaybookControlsPreview`，包含选中/未选中、禁用、长中英文、浅深色和独立外部更新按钮。`DaybookToggleStyleTests` 参数化覆盖两种表现，原生 checkbox 单独作为焦点对照；`PrivacyTagChoiceTests.swift` 扩展 `PrivacyInteractionTests`，复用原 `PrivacyButtonSheetHost` 和内存宿主，只测试选择/取消/重开，不点击 Apply。阶段证据与未验项见工程手册。
 
 ### 第三阶段 C：剪贴板选项布尔控件
 
 [ClipboardHistoryOptions.swift](../AreaChain/Features/Clipboard/ClipboardHistoryOptions.swift) 的 `clipboard.ignoreUniversal`、`clipboard.plainByDefault`、`clipboard.playSound` 在隔离原生 440×560 宿主中确认为前置方形复选框，逐项接入 `DaybookToggleStyle(.checkbox)`，保留原文、字体与排列；父容器不设置样式。绑定继续调用 `session.setIgnoreUniversal` / `setPlainByDefault` / `setPlaySound`，立即保存偏好；顶部取消只 dismiss，不撤销。会话仍是唯一状态，未提交的 pattern/typeName 不因切换提交或清空。
 
-消费者回归为 [ClipboardOptionsConsumerTests.swift](../AreaChainTests/Features/ClipboardOptionsConsumerTests.swift)，复用 `SettingsButtonTestSupport`、`SystemPageHost` 与显式传递 locale 的 `PrivacyButtonSheetHost`。会话使用本轮新建空目录、独立随机 UserDefaults suite、nil pasteboard 和无副作用 paste gate；不使用 shared/start/stage 或真实复制粘贴。持久化核对实际测试偏好、取消后重开与同 suite 新会话；证据及历史缺口见[工程手册](engineering.md#第三阶段-c剪贴板选项布尔控件2026-10-01)。Stepper、Picker、输入及按钮不迁移；普通设置和其他隐私 Toggle 继续留待后续，不能从本次证据推导权限、失败回滚或系统操作已验收。
+消费者回归为 [ClipboardOptionsConsumerTests.swift](../AreaChainTests/Features/ClipboardOptionsConsumerTests.swift)，复用 `SettingsButtonTestSupport`、`SystemPageHost` 与显式传递 locale 的 `PrivacyButtonSheetHost`。会话使用本轮新建空目录、独立随机 UserDefaults suite、nil pasteboard 和无副作用 paste gate；不使用 shared/start/stage 或真实复制粘贴。持久化核对实际测试偏好、取消后重开与同 suite 新会话；证据及历史缺口见工程手册。Stepper、Picker、输入及按钮不迁移；普通设置和其他隐私 Toggle 继续留待后续，不能从本次证据推导权限、失败回滚或系统操作已验收。
 
 ### 第三阶段 D：普通设置布尔控件
 
@@ -592,7 +592,7 @@ F 补修在 `TagManagementPage.body` 的合并 sheet 边界显式传递宿主 `l
 
 登录仍经原 `launchesAtLogin` Binding 和 `onUpdateLoginItem` 回调，由 `SettingsView` 注册/注销后回读；失败或待批准不会在控件内锁住乐观值。捕获来源与日历同步仍直接绑定 `AppPreferences`，立即保存原键并发布原进程内通知；日历布尔值只表示启用意图，不代表授权或同步成功。系统服务、权限、同步状态/冲突/重试、Picker 和按钮均未改变。
 
-消费者测试为 [SettingsToggleConsumerTests.swift](../AreaChainTests/Features/SettingsToggleConsumerTests.swift)，复用 `SettingsButtonTestSupport`、`SystemPageHost`、原呈现/按钮/偏好与公共 Toggle 测试。仅挂载真实分节，显式注入随机 suite 的偏好与合成登录回调；不调用 CalendarSync start/refresh，进程外服务不参与。夹具恢复 `NSApp.appearance`，合成日历状态串行保存/恢复；实际证据及继承缺口见[工程手册](engineering.md#第三阶段-d普通设置布尔控件2026-10-01)。
+消费者测试为 [SettingsToggleConsumerTests.swift](../AreaChainTests/Features/SettingsToggleConsumerTests.swift)，复用 `SettingsButtonTestSupport`、`SystemPageHost`、原呈现/按钮/偏好与公共 Toggle 测试。仅挂载真实分节，显式注入随机 suite 的偏好与合成登录回调；不调用 CalendarSync start/refresh，进程外服务不参与。夹具恢复 `NSApp.appearance`，合成日历状态串行保存/恢复；实际证据及继承缺口见工程手册。
 
 后续仅记录：`PrivacySetupSheet` 的 `privacy.legacy.include`、`privacy.methods.system`、`privacy.methods.master` 仍为原生 Toggle，须分别核对内容保护和认证方式的表单契约；`ClipboardHistoryOptions` 的条数/文本上限 Stepper 及其他数值控件未迁移。任务完成圆圈和子任务勾选继续保持各自业务，本阶段到 D 停止。
 
@@ -600,7 +600,7 @@ F 补修在 `TagManagementPage.body` 的合并 sheet 边界显式传递宿主 `l
 
 [PrivacySetupSheet.swift](../AreaChain/Features/Settings/PrivacySetupSheet.swift) 的 `privacy.legacy.include`、`privacy.methods.system`、`privacy.methods.master` 已在生产 sheet 的隔离宿主确认均为前置方形复选框，逐项接入 `DaybookToggleStyle(.checkbox)`；系统方式、主密码方式、标签、旧遮罩选项的顺序和 480pt 表单宽度保持。`tagChoices` 原样保留，不在父容器设置样式，不新增公共 API、包装、状态或令牌。
 
-绑定仍分别属于 `includeLegacy`、`useSystem`、`useMaster`；创建/管理初始化、系统不可用禁用和回退、密码与备份校验、候选计算、busy、取消和密码清空时机均沿原实现。切换不保存、不创建 vault、不认证或保护内容。测试为 [PrivacySetupToggleTests.swift](../AreaChainTests/Features/PrivacySetupToggleTests.swift)，直接复用 `SettingsButtonTestSupport`、`SystemPageHost`、`PrivacyButtonSheetHost`，显式 locale、内存模型/配置、合成旧内容和 fake keys；所有 sheet 均传 `probeSystem: false`，只编辑与取消，不点击 Apply。原标签与公共 Toggle 回归、实际证据及未验项见[工程手册](engineering.md#第三阶段-e隐私设置剩余布尔控件2026-10-01)。
+绑定仍分别属于 `includeLegacy`、`useSystem`、`useMaster`；创建/管理初始化、系统不可用禁用和回退、密码与备份校验、候选计算、busy、取消和密码清空时机均沿原实现。切换不保存、不创建 vault、不认证或保护内容。测试为 [PrivacySetupToggleTests.swift](../AreaChainTests/Features/PrivacySetupToggleTests.swift)，直接复用 `SettingsButtonTestSupport`、`SystemPageHost`、`PrivacyButtonSheetHost`，显式 locale、内存模型/配置、合成旧内容和 fake keys；所有 sheet 均传 `probeSystem: false`，只编辑与取消，不点击 Apply。原标签与公共 Toggle 回归、实际证据及未验项见工程手册。
 
 阶段 E 定向清单：生产业务共 12 处 Toggle 定义，均已使用公共样式。重复事项 2 处与普通设置 3 处为滑动开关；剪贴板 3 处、隐私 3 处及标签循环 1 处为方形复选框。`DaybookToggleStyle` 内部 `Toggle(configuration)` 属公共实现，测试原生对照及 `DaybookControlsPreview` 控制面板另列，不机械迁移。检查时未发现并发新增的业务遗漏；该清单不证明其他手势控件已统一。下一阶段仅保留 `ClipboardHistoryOptions` 两个 Stepper、其他数值控件、任务完成圆圈与子任务勾选线索，本轮到 E 停止。
 
@@ -612,9 +612,9 @@ F 补修在 `TagManagementPage.body` 的合并 sheet 边界显式传递宿主 `l
 
 业务范围仍由 `ClipboardHistoryRules` 维护，写入仍走 `session.setLimit` / `setInterval`。limit 立即更新偏好并尝试裁剪；历史保存失败保留旧历史、图片和错误提示，但不回滚 limit。置顶不占名额，成功才按原顺序裁剪并清理图片。interval 保存后只重排已有 monitor；取消只关闭，不撤销偏好或恢复裁剪。其他选项及未提交 pattern/typeName 保留。
 
-展示直接扩展 `DaybookControlsPreview`；验证入口为 [DaybookStepperTests.swift](../AreaChainTests/Theme/DaybookStepperTests.swift)、[原生基线](../AreaChainTests/Theme/DaybookStepperBaselineTests.swift)、[交互测试](../AreaChainTests/Theme/DaybookStepperInteractionTests.swift) 与 [ClipboardStepperConsumerTests.swift](../AreaChainTests/Features/ClipboardStepperConsumerTests.swift)。消费者复用 ClipboardOptionsFixture 的随机目录、suite、nil pasteboard 和无副作用 gate，预写合成历史；不调用 shared/start/stage。实际证据和未验项见[工程手册](engineering.md#第三阶段-f公共数值加减与剪贴板2026-10-01)。现存日期 `.stepperField` 及任务完成等控件不迁移。
+展示直接扩展 `DaybookControlsPreview`；验证入口为 [DaybookStepperTests.swift](../AreaChainTests/Theme/DaybookStepperTests.swift)、[原生基线](../AreaChainTests/Theme/DaybookStepperBaselineTests.swift)、[交互测试](../AreaChainTests/Theme/DaybookStepperInteractionTests.swift) 与 [ClipboardStepperConsumerTests.swift](../AreaChainTests/Features/ClipboardStepperConsumerTests.swift)。消费者复用 ClipboardOptionsFixture 的随机目录、suite、nil pasteboard 和无副作用 gate，预写合成历史；不调用 shared/start/stage。实际证据和未验项见工程手册。现存日期 `.stepperField` 及任务完成等控件不迁移。
 
-Stepper 焦点反馈补证（2026-10-08）：桥接只延后按钮描边的 focusChanged，事件/禁用/拆离防线仍同步；通知按当前原生焦点及接入状态发布，代次丢弃旧通知，dismantle 取消并清空回调。[DaybookStepperFocusTests](../AreaChainTests/Theme/DaybookStepperFocusTests.swift) 补持焦禁用、重挂/迟到反馈与多实例，原交互及剪贴板消费者继续回归。根因、Runtime Warning 和最终证据仅维护在[原 O/P 续记](engineering.md#第十阶段剩余运行问题stepper-警告与-h-截止注入核对2026-10-08)，不新增数值或保存 API。
+Stepper 焦点反馈补证（2026-10-08）：桥接只延后按钮描边的 focusChanged，事件/禁用/拆离防线仍同步；通知按当前原生焦点及接入状态发布，代次丢弃旧通知，dismantle 取消并清空回调。[DaybookStepperFocusTests](../AreaChainTests/Theme/DaybookStepperFocusTests.swift) 补持焦禁用、重挂/迟到反馈与多实例，原交互及剪贴板消费者继续回归。根因、Runtime Warning 和最终证据仅维护在原 O/P 续记，不新增数值或保存 API。
 
 ### 第四阶段 A：公共下拉选择器与剪贴板
 
@@ -624,7 +624,7 @@ Stepper 焦点反馈补证（2026-10-08）：桥接只延后按钮描边的 focu
 
 第四阶段 A 的生产消费者为 [ClipboardHistoryOptions.swift](../AreaChain/Features/Clipboard/ClipboardHistoryOptions.swift) 的三处：searchMode（mixed/exact/regex，默认 mixed）、panelAnchor（cursor/center，默认 cursor）、clickAction（copy/paste，默认 copy）。继续使用原标签、枚举 rawValue、areachain.clipboard 偏好键与 setSearchMode/setPanelAnchor/setClickAction；立即保存，取消只关闭，重开/重建读取偏好。公共层不接触筛选、定位、监控或复制粘贴；原 Toggle、Stepper、按钮、输入及页面 440×560 保留，单行选择高度由原生 24 调整到共享 regular 28。
 
-展示直接扩展 [DaybookControlsPreview](../AreaChain/Features/Settings/ControlsPreview/DaybookControlsPreview.swift)，保留原控制面板，新增默认、禁用、长标签及外部更新。验证为 [DaybookPickerTests](../AreaChainTests/Theme/DaybookPickerTests.swift)、[ClipboardPickerConsumerTests](../AreaChainTests/Features/ClipboardPickerConsumerTests.swift) 与原剪贴板 Toggle/Stepper 消费者；沿 ClipboardOptionsFixture 随机目录/suite、nil pasteboard、无副作用 gate，只经隔离 XCTest 启动。稳定入口由 check_workflow.py 守卫；实际证据及 Cursor verifier 缺口见[工程手册](engineering.md#第四阶段-a公共下拉选择器与剪贴板2026-10-02)。
+展示直接扩展 [DaybookControlsPreview](../AreaChain/Features/Settings/ControlsPreview/DaybookControlsPreview.swift)，保留原控制面板，新增默认、禁用、长标签及外部更新。验证为 [DaybookPickerTests](../AreaChainTests/Theme/DaybookPickerTests.swift)、[ClipboardPickerConsumerTests](../AreaChainTests/Features/ClipboardPickerConsumerTests.swift) 与原剪贴板 Toggle/Stepper 消费者；沿 ClipboardOptionsFixture 随机目录/suite、nil pasteboard、无副作用 gate，只经隔离 XCTest 启动。稳定入口由 check_workflow.py 守卫；实际证据及 Cursor verifier 缺口见工程手册。
 
 普通设置三处已由下述第四阶段 B 接入。后续清单只登记：TagManagementPage 的合并目标；PrivacySettingsSection 的自动锁定；CalendarPage 的 calendar.span 原生分段及菜单栏 DaybookSegmentedBar 各自核对后再迁移。展示控制面板语言 Picker 仍为原生；本轮到 A 停止。
 
@@ -634,7 +634,7 @@ Stepper 焦点反馈补证（2026-10-08）：桥接只延后按钮描边的 focu
 
 公共选择器增加 `layout: .formRow`，在标签与 28pt 入口之间加弹性间距，并用独立辅助容器保留子菜单真实边界，以维持 Form 两端对齐；默认 `.inline` 维持 A 阶段剪贴板布局。没有任意颜色/字体参数，菜单原生桥接与提交逻辑不变。重选当前项仍提交一次，打开/Escape 取消不写入。
 
-[SettingsPickerConsumerTests](../AreaChainTests/Features/SettingsPickerConsumerTests.swift) 与 [SettingsPickerTestSupport](../AreaChainTests/Features/SettingsPickerTestSupport.swift) 直接挂载生产分节，复用 SettingsButtonTestSupport 随机 suite/内存库和 PickerNativeTestSupport。SystemPageHost.preferenceWindow 显式注入测试 AppPreferences，通过生产 AppChrome 提供动态 locale/主题，使用与生产同类的 NSHostingController 承载环境，未固定 window.appearance；静态宿主允许注入测试偏好，未传时的默认行为保持。只经串行隔离 XCTest 启动，通知不启动真实服务，结束恢复 XCTest 进程外观。回归覆盖原 DaybookPickerTests、剪贴板 A 消费者、设置测试及 AppPreferencesTests；证据和公共 Cursor verifier 缺口见[工程手册](engineering.md#第四阶段-b普通设置下拉选择器接入2026-10-02)。formRow 的静态入口由原检查器及反例测试守卫，不能代替运行验收。
+[SettingsPickerConsumerTests](../AreaChainTests/Features/SettingsPickerConsumerTests.swift) 与 [SettingsPickerTestSupport](../AreaChainTests/Features/SettingsPickerTestSupport.swift) 直接挂载生产分节，复用 SettingsButtonTestSupport 随机 suite/内存库和 PickerNativeTestSupport。SystemPageHost.preferenceWindow 显式注入测试 AppPreferences，通过生产 AppChrome 提供动态 locale/主题，使用与生产同类的 NSHostingController 承载环境，未固定 window.appearance；静态宿主允许注入测试偏好，未传时的默认行为保持。只经串行隔离 XCTest 启动，通知不启动真实服务，结束恢复 XCTest 进程外观。回归覆盖原 DaybookPickerTests、剪贴板 A 消费者、设置测试及 AppPreferencesTests；证据和公共 Cursor verifier 缺口见工程手册。formRow 的静态入口由原检查器及反例测试守卫，不能代替运行验收。
 
 ### 第四阶段 C：标签合并目标选择器接入
 
@@ -642,7 +642,7 @@ Stepper 焦点反馈补证（2026-10-08）：桥接只延后按钮描边的 focu
 
 唯一新增生产消费者是 [TagManagementPage.mergeSheet](../AreaChain/Features/Workspace/TagManagementPage.swift)：`ordinarySelection.map { .init($0.id, verbatim: $0.name) }` 保留原过滤与顺序，原 mergeTarget Binding、beginMerge 初始选择、360pt 宽度、显式 locale 和按钮样式不变。选择只改本地 UUID，取消不保存，重开重新初始化；点击合并仍调用原 commitMerge → DayBoardMutations → SwiftDataCatalogRepository → Catalog。用户名称不翻译，字段标题与空/不可用提示仍本地化。现有 UUID 缺省、目标校验和失败处理没有调整。
 
-测试复用 DaybookPickerTests（[原文扩展](../AreaChainTests/Theme/DaybookPickerVerbatimTests.swift)）、[WorkspaceMenuConsumerTests](../AreaChainTests/Features/WorkspaceMenuConsumerTests.swift) 的原合并 sheet 宿主、PickerNativeTestSupport 与 TagCatalogTests / TagRepositoryTests；合成提交仅使用内存普通标签、事项、子任务、重复事项和普通手记。展示沿 [DaybookControlsPreview](../AreaChain/Features/Settings/ControlsPreview/DaybookControlsPreview.swift) 增加原文例子。原检查器只增加 verbatim 稳定入口和反例，不代替运行验证。证据与指定 Cursor verifier 缺口见[工程手册](engineering.md#第四阶段-c标签合并目标选择器接入2026-10-02)。自动锁定和分段切换仍留后续；B 的 dark→system、H 两项及 Stepper 长按差异仍保留。
+测试复用 DaybookPickerTests（[原文扩展](../AreaChainTests/Theme/DaybookPickerVerbatimTests.swift)）、[WorkspaceMenuConsumerTests](../AreaChainTests/Features/WorkspaceMenuConsumerTests.swift) 的原合并 sheet 宿主、PickerNativeTestSupport 与 TagCatalogTests / TagRepositoryTests；合成提交仅使用内存普通标签、事项、子任务、重复事项和普通手记。展示沿 [DaybookControlsPreview](../AreaChain/Features/Settings/ControlsPreview/DaybookControlsPreview.swift) 增加原文例子。原检查器只增加 verbatim 稳定入口和反例，不代替运行验证。证据与指定 Cursor verifier 缺口见工程手册。自动锁定和分段切换仍留后续；B 的 dark→system、H 两项及 Stepper 长按差异仍保留。
 
 ### 第四阶段 D：自动锁定时长选择器接入
 
@@ -650,7 +650,7 @@ Stepper 焦点反馈补证（2026-10-08）：桥接只延后按钮描边的 focu
 
 原 Binding 全文保持：读取 vault.idleSeconds，经 run → authenticate → vault.setIdleSeconds 提交。authenticate 仍向原 PrivacyUnlockPresenter 传 force: true 和指定 vault；已解锁也必须重新认证，busy 防重入、取消锁定、错误反馈、成功后保存及配置失败恢复仍属于原页面/服务。公共控件不缓存候选时长，不去重认证，也不拥有配置或权限。
 
-[PrivacyAutolockPickerTests](../AreaChainTests/Features/PrivacyAutolockPickerTests.swift) 与[隔离支持](../AreaChainTests/Features/PrivacyAutolockTestSupport.swift) 复用 PrivacyFixture、MemoryVaultConfigurationStore、FakeSystemVaultKeys、SettingsButtonTestSupport 和原 PickerNativeTestSupport，直接挂载生产隐私页及原 Presenter。内存模型、独立偏好、fake 等待/失败和仅本例面板清理保证隔离；长字段样例只算公共 formRow 布局证据。基线、认证/保存回读、强制 NSMenu 派发的取证限制及历史缺口见[工程手册](engineering.md#第四阶段-d自动锁定时长选择器接入2026-10-02)。没有新验证执行器或展示应用。
+[PrivacyAutolockPickerTests](../AreaChainTests/Features/PrivacyAutolockPickerTests.swift) 与[隔离支持](../AreaChainTests/Features/PrivacyAutolockTestSupport.swift) 复用 PrivacyFixture、MemoryVaultConfigurationStore、FakeSystemVaultKeys、SettingsButtonTestSupport 和原 PickerNativeTestSupport，直接挂载生产隐私页及原 Presenter。内存模型、独立偏好、fake 等待/失败和仅本例面板清理保证隔离；长字段样例只算公共 formRow 布局证据。基线、认证/保存回读、强制 NSMenu 派发的取证限制及历史缺口见工程手册。没有新验证执行器或展示应用。
 
 D 后生产源码的普通原生下拉 Picker 未发现剩余项；原生 Picker 仅余 CalendarPage 的 calendar.span 分段，菜单栏 MenuBarPopoverView+Header 仍调用 DaybookSegmentedBar。两者保留各自切换/焦点/宿主契约，未在本轮迁移；测试展示的语言 Picker 不属生产遗漏。
 
@@ -764,7 +764,7 @@ D 后生产源码的普通原生下拉 Picker 未发现剩余项；原生 Picker
 
 默认消费者为 TaskRow、TaskDetailHeaderBar、QuadrantChip，调用不改。TaskRow 自行使用 PendingCompletionManager；四象限继续显式 `isDone: false`，不由公共控件推断。G 阶段时详情子任务尚未接入；后续接入及原宿主失败刷新差异见本页第三阶段 H。日期和其他控件不在 G/H。
 
-验证入口：ModernCheckboxTests、InlineSubtaskCompletionTests、TaskRowInteractionTests、PendingCompletionTimingTests（显式关闭延迟跳过）、QuadrantLayoutTests；复用 [DaybookControlsPreview](../AreaChain/Features/Settings/ControlsPreview/DaybookControlsPreview.swift) 展示普通/紧凑、双状态、禁用与外部更新。正常测试目标及原串行 PrivacyQA XCTest 启动，实际证据与未验项见[工程手册](engineering.md#第三阶段-g公共任务完成控件与行内子任务2026-10-01)。`check_workflow.py` 只守卫稳定入口/几何，不代替行为测试；独立复核仍指定 Cursor verifier。
+验证入口：ModernCheckboxTests、InlineSubtaskCompletionTests、TaskRowInteractionTests、PendingCompletionTimingTests（显式关闭延迟跳过）、QuadrantLayoutTests；复用 [DaybookControlsPreview](../AreaChain/Features/Settings/ControlsPreview/DaybookControlsPreview.swift) 展示普通/紧凑、双状态、禁用与外部更新。正常测试目标及原串行 PrivacyQA XCTest 启动，实际证据与未验项见工程手册。`check_workflow.py` 只守卫稳定入口/几何，不代替行为测试；独立复核仍指定 Cursor verifier。
 
 ### 第三阶段 H：详情子任务完成控件接入
 
@@ -772,7 +772,7 @@ D 后生产源码的普通原生下拉 Picker 未发现剩余项；原生 Picker
 
 原行仍由 [TaskDetailSubtasksView](../AreaChain/Features/Workspace/TaskDetailSubtasksView.swift) 与 [WorkspaceFilteredListView.subtaskSection](../AreaChain/Features/Workspace/WorkspaceFilteredListView.swift) 两处组合；后者随同一生产行复用表现，没有另迁移页面。公共控件只消费外部 Bool 并派发原动作，不保存、不镜像模型状态、不引入 PendingCompletionManager。双击标题、Return/Escape、失焦保存/失败草稿、外部标题刷新、标签、拖动排序及删除仍留原行；ModernTaskTitle 和详情删除线不改。
 
-复用 ModernCheckboxTests / InlineSubtaskCompletionTests / SubtaskTitleEditingTests / TaskRowInteractionTests / PendingCompletionTimingTests 和模型/事务回归；新增 [DetailSubtaskCompletionTests](../AreaChainTests/Features/DetailSubtaskCompletionTests.swift) 与[同一原生宿主夹具](../AreaChainTests/Features/DetailSubtaskCompletionSupport.swift)直接挂载真实行、详情与标签页。[ModernCheckboxFeedbackTests](../AreaChainTests/Theme/ModernCheckboxFeedbackTests.swift) 在串行测试内临时拦截系统 performer 并恢复，核对反馈调用次数，不以禁用动画证明无触感；没有生产反馈注入 API。展示仍是 [DaybookControlsPreview](../AreaChain/Features/Settings/ControlsPreview/DaybookControlsPreview.swift)，加入详情、双状态禁用及外部更新。`check_workflow.py` 守住原公共入口、detailSubtask 与 detailSubtaskSymbolSize；不证明运行时契约。失败基线、最终证据及指定 Cursor verifier 缺口见[工程手册](engineering.md#第三阶段-h详情子任务完成控件接入2026-10-01)。
+复用 ModernCheckboxTests / InlineSubtaskCompletionTests / SubtaskTitleEditingTests / TaskRowInteractionTests / PendingCompletionTimingTests 和模型/事务回归；新增 [DetailSubtaskCompletionTests](../AreaChainTests/Features/DetailSubtaskCompletionTests.swift) 与[同一原生宿主夹具](../AreaChainTests/Features/DetailSubtaskCompletionSupport.swift)直接挂载真实行、详情与标签页。[ModernCheckboxFeedbackTests](../AreaChainTests/Theme/ModernCheckboxFeedbackTests.swift) 在串行测试内临时拦截系统 performer 并恢复，核对反馈调用次数，不以禁用动画证明无触感；没有生产反馈注入 API。展示仍是 [DaybookControlsPreview](../AreaChain/Features/Settings/ControlsPreview/DaybookControlsPreview.swift)，加入详情、双状态禁用及外部更新。`check_workflow.py` 守住原公共入口、detailSubtask 与 detailSubtaskSymbolSize；不证明运行时契约。失败基线、最终证据及指定 Cursor verifier 缺口见工程手册。
 
 H 定向完成操作清单：TaskRow、TaskDetailHeaderBar、QuadrantChip、TaskRowSubtaskInlineList 和 SubtaskRowView 均使用 ModernCheckbox。批量完成/取消仍是 BatchActionBar 的系统菜单命令；键盘及 CompletionUndo 是原动作入口，没有独立圆圈组件。DayBoardSections 的完成分节、TaskRowSubtaskBadge 的计数/展开图标、TaskDetailScheduleSection 的检查日状态及搜索结果等是状态/导航展示，不当作遗漏迁移。日期、分段和其他控件停在原实现；此清单是定向静态核对，不等于全应用交互验收。
 
@@ -799,7 +799,7 @@ H 定向完成操作清单：TaskRow、TaskDetailHeaderBar、QuadrantChip、Task
 `CalendarSpan.titleKey` 是唯一字符串资源键来源；公共选项显式转 String.LocalizationValue，顶栏显式转 LocalizedStringKey。无调试描述解析、重复文案表或新的业务适配组件；公共核心、MenuBar 适配器、CalendarGridKeys、DayKey、投影、日期格、拖放及保存均未修改。selectedKey、草稿、listFocusID、检查器有效范围和日期导航沿原页面。第四阶段原生对照发现分支中的 onChange 在列表切周时未恢复网格，以及 420pt 周内容/右导航越界，原失败记录保留。焦点缺陷由下述第十阶段 F 单独修复；窄周内容/右导航越界和标题挤压仍保留。
 
 
-验证直接挂载生产页面与 WorkspaceHeaderBar，复用 SettingsButtonTestSupport、SystemPageHost、MenuButtonTestSupport 和原公共分段/菜单栏测试；新增 [CalendarSpanConsumerTests](../AreaChainTests/Features/CalendarSpanConsumerTests.swift) / [隔离夹具](../AreaChainTests/Features/CalendarSpanTestSupport.swift)，并补齐原 CalendarMonthNavigationTests 的共享状态恢复。可见入口须通过辅助父链、原生祖先可见性、边界和唯一性检查；隐藏的 ViewThatFits 候选不能靠同名匹配被点击。截图、合成 NSEvent、菜单项派发与真人验收分开记录，证据见[工程手册](engineering.md#第四阶段-f日历月周分段接入2026-10-02)。展示仍沿 E 的 DaybookControlsPreview，无新展示应用或检查执行器。
+验证直接挂载生产页面与 WorkspaceHeaderBar，复用 SettingsButtonTestSupport、SystemPageHost、MenuButtonTestSupport 和原公共分段/菜单栏测试；新增 [CalendarSpanConsumerTests](../AreaChainTests/Features/CalendarSpanConsumerTests.swift) / [隔离夹具](../AreaChainTests/Features/CalendarSpanTestSupport.swift)，并补齐原 CalendarMonthNavigationTests 的共享状态恢复。可见入口须通过辅助父链、原生祖先可见性、边界和唯一性检查；隐藏的 ViewThatFits 候选不能靠同名匹配被点击。截图、合成 NSEvent、菜单项派发与真人验收分开记录，证据见工程手册。展示仍沿 E 的 DaybookControlsPreview，无新展示应用或检查执行器。
 
 F 定向静态清单：
 
@@ -822,7 +822,7 @@ F 定向静态清单：
 
 第五阶段 A 接入 [TaskRow.timePicker](../AreaChain/Features/Tasks/TaskRow+Actions.swift) 和 [ResidentEditorRow](../AreaChain/Features/Workspace/ResidentsPage.swift)。任务行继续 dispatch(.setRemindMinutes)，重复事项继续 setRemind → DayBoardMutations；空提醒点击“设时刻”仍由调用方先写当前分钟，已有提醒不重写。有效修改即时提交，关闭不撤销，清除仍写 nil；原弹出层 padding 12/minWidth 180 保留。标题编辑、重复规则、授权和失败处理不移入 Theme。
 
-展示沿 [DaybookControlsPreview](../AreaChain/Features/Settings/ControlsPreview/DaybookControlsPreview.swift)，直接挂载有效值、nil、禁用午夜及外部更新。测试入口为 [原生基线](../AreaChainTests/Theme/TimePickerNativeBaselineTests.swift)、[公共契约](../AreaChainTests/Theme/DaybookTimePickerTests.swift) 和 [真实消费者](../AreaChainTests/Features/TimePickerConsumerTests.swift)，复用 SettingsButtonTestSupport、SystemPageHost、原仓储与 ModelChanges 失败注入。稳定入口由原检查器及反例守卫；实际证据和缺口统一在[工程记录](engineering.md#第五阶段-a公共时间选择器2026-10-02)。
+展示沿 [DaybookControlsPreview](../AreaChain/Features/Settings/ControlsPreview/DaybookControlsPreview.swift)，直接挂载有效值、nil、禁用午夜及外部更新。测试入口为 [原生基线](../AreaChainTests/Theme/TimePickerNativeBaselineTests.swift)、[公共契约](../AreaChainTests/Theme/DaybookTimePickerTests.swift) 和 [真实消费者](../AreaChainTests/Features/TimePickerConsumerTests.swift)，复用 SettingsButtonTestSupport、SystemPageHost、原仓储与 ModelChanges 失败注入。稳定入口由原检查器及反例守卫；实际证据和缺口统一在工程记录。
 
 第五阶段 B 的详情接入见下节。DaySchedulePicker 仍是日期/确认契约，不应通过这个纯时分接口迁移。
 
@@ -833,7 +833,7 @@ F 定向静态清单：
 
 真实消费者为 [TodoScheduleSectionView / RoutineScheduleSectionView](../AreaChain/Features/Workspace/TaskDetailSections.swift) 与 [RecurringItemEditor](../AreaChain/Features/Workspace/RecurringItemEditor.swift)。详情提醒继续走 setRemind，截止继续走 setDue；新建只修改 draft.remindMinutes，保存才创建、取消不提交、失败保留草稿。09:00、12:00、15:00、18:00、20:00 的重选清除和选中反馈不变。关闭沿公共生命周期保护，不补交暂存输入；普通失焦由原生字段完成合法输入。
 
-隔离测试复用 TimePickerConsumerTestSupport、原仓储与 ModelChanges 失败注入；新增 [详情测试](../AreaChainTests/Features/DetailTimePickerTests.swift)、[定位支持](../AreaChainTests/Features/DetailTimePickerTestSupport.swift)、[详情生命周期](../AreaChainTests/Features/DetailTimePickerLifecycleTests.swift)、[新建时间测试](../AreaChainTests/Features/RecurringEditorTimeTests.swift)。同名按钮按所属标题区域唯一定位，不手动重建宿主证明回滚。实际证据见[工程记录](engineering.md#第五阶段-b详情提醒与截止时间2026-10-02)。验证入口/公共 API 不变，不增加检查器或展示应用。
+隔离测试复用 TimePickerConsumerTestSupport、原仓储与 ModelChanges 失败注入；新增 [详情测试](../AreaChainTests/Features/DetailTimePickerTests.swift)、[定位支持](../AreaChainTests/Features/DetailTimePickerTestSupport.swift)、[详情生命周期](../AreaChainTests/Features/DetailTimePickerLifecycleTests.swift)、[新建时间测试](../AreaChainTests/Features/RecurringEditorTimeTests.swift)。同名按钮按所属标题区域唯一定位，不手动重建宿主证明回滚。实际证据见工程记录。验证入口/公共 API 不变，不增加检查器或展示应用。
 
 四处纯时间输入已静态收齐：任务行、重复事项管理、详情提醒（含新建表单）、详情截止；NSDatePicker 仅保留在公共原生承载。日期阶段仍有 DaySchedulePicker 及任务行、详情日期、DiaryNoteCard、DiarySummaryRow 的调用，星期和日历布局不在本阶段。
 
@@ -842,14 +842,14 @@ F 定向静态清单：
 - [TodoScheduleSectionView](../AreaChain/Features/Workspace/TaskDetailSections.swift) 的 `saveDue: @MainActor (ModelContext) throws -> Void` 只替换截止最终保存，默认惰性调用传入 context 的 `save()`；真实 TaskDetailDueTime 的原 Void 回调显式传给 setDue。没有新状态、控件、环境开关或失败刷新。
 - [DayBoardMutations.setDue](../AreaChain/Features/Tasks/DayBoardMutations+Convert.swift) 保留原双参签名及函数引用，新增必须显式提供 save 的重载；[persist](../AreaChain/Features/Tasks/DayBoardMutations.swift) 同样保留旧入口，仅兼容透传到原 ModelChanges.perform(in:save:_:)。todo.modelContext / 原空 context 回退、assignDue 的 nil/0/越界规则、Bool、预保存及同 context 外层事务继承不变；不暴露 preSave/publish/reportFailure。
 - [DetailDueSaveTests](../AreaChainTests/Features/DetailDueSaveTests.swift) 与非 Observable 的 [局部记录器](../AreaChainTests/Features/DetailDueSaveProbe.swift) 直接挂生产详情，用原进程内 AXPress 和窗口 NSEvent 分别验收；没有以外层事务包事件。保存依赖在已赋值后合成抛错，恢复和精确计数先在同步事件返回处检查，自然回显与同宿主重试另行检查。生产 Void 回调的只读展开诊断及 setDue Bool 检查独立记录。
-- 旧 H 的普通提醒、外层 AX、外层原生点击及返回/阶段诊断保持分层；结果、失败层级和指定 Cursor verifier 缺口只维护在[原 H 记录](engineering.md#h-真实截止详情链的最小保存依赖与失败恢复验收2026-10-08)。本接点不改变提醒、日期、通知、日历或命令适配器；不新增脚本门禁，沿原 XCTest 选择入口。
+- 旧 H 的普通提醒、外层 AX、外层原生点击及返回/阶段诊断保持分层；结果、失败层级和指定 Cursor verifier 缺口只维护在原 H 记录。本接点不改变提醒、日期、通知、日历或命令适配器；不新增脚本门禁，沿原 XCTest 选择入口。
 
 ## 第六阶段 A：公共日期选择器与排期弹窗
 
 - [DaybookDatePicker](../AreaChain/Theme/DaybookDatePicker.swift) / [DaybookDateCell](../AreaChain/Theme/DaybookDateCell.swift)：`selection: Binding<String>` 为民事日键，`todayKey: String?` 可注入展示日；locale/calendar 来自环境。月份浏览为局部瞬时状态；初始化、翻月和失焦不写 Binding，选日/方向键只提出日期更新，不保存。外部更新切回对应月份，拒绝写入不形成乐观选择，禁用/拆卸不写入。异常值按原 DayKey 解析能力展示回退，不修订全局规则或反写规范化值。
 - `DaybookDateCell` 集中今天下划线、选中/焦点和完整日期辅助名；日期身份及辅助标识为完整日键。月份/闰年/网格复用 DayKey，星期排序与名称复用 WeekdayMask，月份导航复用 DaybookPeriodBar；几何仅在 `DaybookMetrics.DatePicker`。
 - [DaySchedulePicker](../AreaChain/Features/Tasks/DayScheduleMenu.swift) 保留 initialKey / confirmTitle / onPick；本次暂存日键在打开时按原解析与当前日期回退初始化，仅确认提交。TaskRow、TaskDetailDateChips、DiaryNoteCard、DiarySummaryRow 只补来源 locale/calendar，保留原保存和关闭策略及快捷项。
-- [DaybookDatePickerTests](../AreaChainTests/Theme/DaybookDatePickerTests.swift)、[原确认消费者](../AreaChainTests/Features/DayScheduleButtonConsumerTests.swift)、[生命周期消费者](../AreaChainTests/Features/DateScheduleLifecycleTests.swift) 直接挂载生产控件，原 ControlsPreview 扩展正常/禁用/外部更新日期样例。指定 Cursor verifier 缺口与本轮证据见[工程手册](engineering.md#第六阶段-a公共日期选择器与排期弹窗)。
+- [DaybookDatePickerTests](../AreaChainTests/Theme/DaybookDatePickerTests.swift)、[原确认消费者](../AreaChainTests/Features/DayScheduleButtonConsumerTests.swift)、[生命周期消费者](../AreaChainTests/Features/DateScheduleLifecycleTests.swift) 直接挂载生产控件，原 ControlsPreview 扩展正常/禁用/外部更新日期样例。指定 Cursor verifier 缺口与本轮证据见工程手册。
 - 阶段 A 不迁移主月历；阶段 B 接入见下节。习惯月历、周布局及星期选择仍留后续；公共层没有计数规则、范围、多选、拖放处理或模型能力。
 
 ## 第六阶段 B：主日历月网格接入
@@ -858,7 +858,7 @@ F 定向静态清单：
 - [DaybookWeekdayHeader](../AreaChain/Theme/DaybookWeekdayHeader.swift) 为两个宿主唯一星期标题入口，复用环境 calendar/locale 和 WeekdayMask，保留 `daybook.date.weekday.<星期序号>` 及完整辅助名称。排序仍从 firstWeekday 开始。`DaybookMonthGridDay.month` 仅包装原 DayKey.monthGrid 的可选日键，两个宿主 ForEach 以完整日键而非格子偏移量维护身份，空白保持独立占位。
 - 几何在 [DaybookMetrics.MonthGrid](../AreaChain/Theme/DaybookMetrics.swift)：内容最小高度 52/28，附加行字号 9、间距 2；实际高度仍受文字和按钮上下各 3pt 内边距影响。320pt 六周网格实测普通 58pt，紧凑普通计数 35pt、六位数换行 46pt，不锁成声明值或统一最终高度。
 - [CalendarMonthGrid](../AreaChain/Features/Calendar/CalendarMonthGrid.swift) 接口不变，仍读取外部 dates/counts，拥有 dropKey、TodoDragToken 解码、回调及拒绝条件；重新点击也调用 onSelect，不复制选择状态。空白仍不是相邻月份日期且不可交互。生产 CalendarPage 继续负责统计、导航、选日更新、改期和保存失败后的日期规则；CalendarGridKeys 保持原宿主。
-- 展示沿原 ControlsPreview，样例 [DaybookDateCellSamples](../AreaChainTests/Theme/DaybookDateCellTests.swift) 直接使用公共日格。隔离测试包括 [几何对照](../AreaChainTests/Features/CalendarMonthGridLayoutTests.swift)、[月格交互](../AreaChainTests/Features/CalendarMonthGridTests.swift)、[拖放接线](../AreaChainTests/Features/CalendarMonthGridDropTests.swift) 和 [生产月页面](../AreaChainTests/Features/CalendarMonthPageTests.swift)。实际命中与缺口见[工程手册](engineering.md#第六阶段-b主日历月网格接入)。
+- 展示沿原 ControlsPreview，样例 [DaybookDateCellSamples](../AreaChainTests/Theme/DaybookDateCellTests.swift) 直接使用公共日格。隔离测试包括 [几何对照](../AreaChainTests/Features/CalendarMonthGridLayoutTests.swift)、[月格交互](../AreaChainTests/Features/CalendarMonthGridTests.swift)、[拖放接线](../AreaChainTests/Features/CalendarMonthGridDropTests.swift) 和 [生产月页面](../AreaChainTests/Features/CalendarMonthPageTests.swift)。实际命中与缺口见工程手册。
 - 阶段 B 未迁移习惯月历；阶段 C 接入见下节。星期选择与周布局继续保持原入口。
 
 ## 统一搜索 4A-1：公共原生输入与斜杠补全
@@ -876,7 +876,7 @@ F 定向静态清单：
 - [DaybookMetrics.HabitMonthGrid](../AreaChain/Theme/DaybookMetrics.swift) 集中 22pt 内容最小高度、4pt 列/行距和 6pt 标题间距。原生基线中有底色按钮的 AX（辅助功能）边界高 22pt，透明日期仅文字高 11pt；布局行距仍按 22+4pt。不能通过加 contentShape 或公共按钮内边距改变它。
 - [HabitCheckMonthView](../AreaChain/Features/Workspace/HabitCheckMonthView.swift) 直接消费公共日格与 DaybookMonthGridDay，保留原 Query、HabitMonth.mark、状态到呈现映射、业务状态本地化、DayClock 和 `WorkspaceNavigation.shared.inspectTask(routine.id, dayKey: day)`。重选继续导航；outside 保持可检查，padding 无操作。没有新打卡、保存、筛选、历史推断或镜像选择。
 - `calendar: Calendar = .current` 局部兼容参数传给网格、HabitMonth 和子日格环境；生产默认与原调用一致，不跟随无关父级 calendar，不改 DayKey/DayClock。公共层只从环境读取 calendar/locale。完整日期只在公共 label 朗读一次；`statusDescription: String?` 为习惯的已本地化状态 value，其他呈现仍沿今天值。outside 沿原 habit.month.open 文案。选中与完整 `daybook.date.<日键>` 标识由公共层维护；习惯宿主标识为 `habit.month.<routine UUID>`，多个同习惯实例还须限定实例祖先。
-- 直接宿主 [RoutineHabitSectionView](../AreaChain/Features/Workspace/TaskDetailSections.swift) 和 [TaskDetailDrawer](../AreaChain/Features/Workspace/TaskDetailDrawer.swift) 原样保留。测试直接挂载生产组件、真实检查器及原 [ControlsPreview](../AreaChain/Features/Settings/ControlsPreview/DaybookControlsPreview.swift)；[基线](../AreaChainTests/Features/HabitMonthBaselineTests.swift)、[像素/几何与日历](../AreaChainTests/Features/HabitMonthLayoutTests.swift)、[导航和隔离](../AreaChainTests/Features/HabitMonthInteractionTests.swift)、[公共状态展示](../AreaChainTests/Theme/DaybookHabitDateCellTests.swift) 分别提供证据，运行结果及缺口见[工程手册](engineering.md#第六阶段-c习惯月历接入公共日期格)。稳定符号继续由原 check_workflow.py 守卫。
+- 直接宿主 [RoutineHabitSectionView](../AreaChain/Features/Workspace/TaskDetailSections.swift) 和 [TaskDetailDrawer](../AreaChain/Features/Workspace/TaskDetailDrawer.swift) 原样保留。测试直接挂载生产组件、真实检查器及原 [ControlsPreview](../AreaChain/Features/Settings/ControlsPreview/DaybookControlsPreview.swift)；[基线](../AreaChainTests/Features/HabitMonthBaselineTests.swift)、[像素/几何与日历](../AreaChainTests/Features/HabitMonthLayoutTests.swift)、[导航和隔离](../AreaChainTests/Features/HabitMonthInteractionTests.swift)、[公共状态展示](../AreaChainTests/Theme/DaybookHabitDateCellTests.swift) 分别提供证据，运行结果及缺口见工程手册。稳定符号继续由原 check_workflow.py 守卫。
 - C 未迁移星期选择；D 的实际圆点入口见下节。旧线索 RepeatWeekdayPicker 在当前源码中不存在；任务行实际为 TaskRow+Menus.standingMenus 原生星期子菜单。DaybookWeekdayHeader 仅是只读标题，周布局继续留后续。
 
 ## 第六阶段 D：公共星期多选与三个消费者
@@ -886,7 +886,7 @@ F 定向静态清单：
 - [DaybookMetrics.WeekdayPicker](../AreaChain/Theme/DaybookMetrics.swift) 集中直径 25、圆点间距 4、适配标题间距 6pt；badge medium、accent.base/onAccent 与 cardSurface/text.primary 不变。原生测得 AX 边界为 25×25pt，但方框角落与间隙不响应；保留 Circle 与 plain 的实际命中和按下反馈。
 - [TaskDetailWeekdayPicker](../AreaChain/Features/Workspace/TaskDetailScheduleSection.swift) 保留 `resolvedMask / onUpdateMask / showsTitle / allowsEmpty / accessibilityTitle`，仅负责原业务标题和转交。三个调用点原样接入：[RecurringItemEditor](../AreaChain/Features/Workspace/RecurringItemEditor.swift) 只改草稿，空值提示、按钮禁用及保存校验各自保留；[ResidentsPage](../AreaChain/Features/Workspace/ResidentsPage.swift) 与 [RoutineScheduleSectionView](../AreaChain/Features/Workspace/TaskDetailSections.swift) 继续 DayBoardMutations.setWeekdayMask → 原仓储/ModelChanges，不暂存或新增确认。
 - [TaskRow+Menus.standingMenus](../AreaChain/Features/Tasks/TaskRow+Menus.swift) 是另一种系统菜单形态，沿 WeekdayMask 与原 dispatch；[DaybookWeekdayHeader](../AreaChain/Theme/DaybookWeekdayHeader.swift) 是只读星期标题。两者不改成圆点、不与多选强行合并。周布局及其他控件未纳入 D。
-- 原 [ControlsPreview](../AreaChain/Features/Settings/ControlsPreview/DaybookControlsPreview.swift) 接入 [星期样例与像素对照](../AreaChainTests/Theme/DaybookWeekdayPickerLayoutTests.swift)。[公共状态测试](../AreaChainTests/Theme/DaybookWeekdayPickerTests.swift)、[真实消费者刻画](../AreaChainTests/Features/WeekdayConsumerBaselineTests.swift) 和 [草稿/保存测试](../AreaChainTests/Features/WeekdayEditorConsumerTests.swift) 使用原 PrivacyQA、SettingsButtonTestSupport 和合成内存库。[RecurringToggleRepository](../AreaChainTests/Features/RecurringToggleRepository.swift) 的 weekdayWrites 及事务失败注入仅用于测试。旧绘制仅冻结在测试基线，不是第二个生产入口。结果与指定复核缺口见[工程记录](engineering.md#第六阶段-d公共星期多选与三个消费者)。
+- 原 [ControlsPreview](../AreaChain/Features/Settings/ControlsPreview/DaybookControlsPreview.swift) 接入 [星期样例与像素对照](../AreaChainTests/Theme/DaybookWeekdayPickerLayoutTests.swift)。[公共状态测试](../AreaChainTests/Theme/DaybookWeekdayPickerTests.swift)、[真实消费者刻画](../AreaChainTests/Features/WeekdayConsumerBaselineTests.swift) 和 [草稿/保存测试](../AreaChainTests/Features/WeekdayEditorConsumerTests.swift) 使用原 PrivacyQA、SettingsButtonTestSupport 和合成内存库。[RecurringToggleRepository](../AreaChainTests/Features/RecurringToggleRepository.swift) 的 weekdayWrites 及事务失败注入仅用于测试。旧绘制仅冻结在测试基线，不是第二个生产入口。结果与指定复核缺口见工程记录。
 
 ## 统一搜索 4A-2：公共受门禁结果列表
 
@@ -901,7 +901,7 @@ F 定向静态清单：
 - [UnifiedSearchOperationPanel / Boundary](../AreaChain/Features/Search/UnifiedSearchOperationPanel.swift) 与 [UnifiedSearchOperationPreview](../AreaChain/Features/Search/UnifiedSearchOperationPreview.swift) 是两种隔离宿主共用的下方操作区域，搜索结果继续独立消费原 ReadSession；补全仍只由 unifiedSearchOverlayHost 挂载一次。字段展开使用区域内滚动，保持主输入锚点。
 - [UnifiedSearchOperationEditing](../AreaChain/Features/Search/UnifiedSearchOperationEditing.swift) 扩展原 UnifiedSearchController，唯一操作状态仍从 CommandHandoffCoordinator 的 operations 读取。事件保留原 lease、CommandDraftStamp 和显示版本；原生拼写缓冲不是可独立提交的参数字典。
 - [UnifiedSearchParameterField](../AreaChain/Features/Search/UnifiedSearchParameterField.swift) 按 CommandParameter 元数据组合 DaybookPicker、日期、时间、星期和 [UnifiedSearchParameterText](../AreaChain/Features/Search/UnifiedSearchParameterText.swift)。后者复用原 DaybookTextField 的独立输入编辑器；[UnifiedSearchParameterContext](../AreaChain/Theme/UnifiedSearchParameterContext.swift) 仅生成当前字段的补全/校验，不改通用查询解析器。
-- 当前任务字段、子任务、习惯修改/创建仍消费同一参数入口；数字保留空值和无效拼写，不能以视觉统一为由换成 Stepper。各命令 Submission 共用原 UnifiedSearchPlanButton / DaybookButtonStyle、标签效果与外部结果组件；只读事实文字、业务布局和原生命令输入内核是合理差异，增量证据见[最终工程收口](engineering.md#最终工程收口2026-10-08)。
+- 当前任务字段、子任务、习惯修改/创建仍消费同一参数入口；数字保留空值和无效拼写，不能以视觉统一为由换成 Stepper。各命令 Submission 共用原 UnifiedSearchPlanButton / DaybookButtonStyle、标签效果与外部结果组件；只读事实文字、业务布局和原生命令输入内核是合理差异，增量证据见最终工程收口。
 - DaybookPicker 新增可选 eventVersion，默认 nil 保持原消费者；操作字段在显示版本变化时重建菜单身份，拒绝旧菜单事件。实际消费者仅本阶段参数控件；原 Picker 与普通设置等消费者需回归。
 - 实际消费者为 [UnifiedSearchOperationTestContent](../AreaChainTests/Features/UnifiedSearchOperationTestSupport.swift) 的标准/紧凑 QA 宿主和四套 UnifiedSearchOperation 测试。支持矩阵、版本边界、无真实执行、证据与 partial 缺口只维护在权威设计 §9.47。
 
@@ -926,7 +926,7 @@ F 定向静态清单：
 | `daybookScroll(featherHeight: h)` | 双参数，true / h | 保留调用方/系统策略 |
 | `daybookScroll(featherEdges: value, featherHeight: h)` | 双参数，指定开关 / h | 保留调用方/系统策略 |
 
-原默认参数不变；没有参数修正。保留策略是恒等变换，不设置 automatic 或 visible。WorkspaceItemsList、TasksPage、WorkspaceSidebarView、CalendarWeekBoard、GanttPage 和 SyntaxAutocompletePopup 均实际选择单参数入口，原生与编译证据见[工程记录](engineering.md#第八阶段-b公共滚动装配去重)。AppKit 文本仍直接使用 DaybookScroller；第八阶段 B 当时的统一搜索 ObjectPicker / ResultsContent / OperationPreview 直接安装 Configurator；第十阶段 D 对 ObjectPicker 的必要私有边界装配变更见上文，ResultsContent / OperationPreview 仍保留直连。AppKit 文本、浮层绘制/事件、羽化和页面业务均保持。
+原默认参数不变；没有参数修正。保留策略是恒等变换，不设置 automatic 或 visible。WorkspaceItemsList、TasksPage、WorkspaceSidebarView、CalendarWeekBoard、GanttPage 和 SyntaxAutocompletePopup 均实际选择单参数入口，原生与编译证据见工程记录。AppKit 文本仍直接使用 DaybookScroller；第八阶段 B 当时的统一搜索 ObjectPicker / ResultsContent / OperationPreview 直接安装 Configurator；第十阶段 D 对 ObjectPicker 的必要私有边界装配变更见上文，ResultsContent / OperationPreview 仍保留直连。AppKit 文本、浮层绘制/事件、羽化和页面业务均保持。
 
 复用 DaybookScrollerTests、TaskListScrollTests、SettingsButtonTestSupport、CalendarWeekTestSupport、GanttInteractionTests 与 CaptureOverlayLayoutTests；新增 [公共结构契约](../AreaChainTests/Theme/DaybookScrollContractTests.swift)、[原生更新](../AreaChainTests/Theme/DaybookScrollNativeTests.swift)、[真实消费者刻画](../AreaChainTests/Features/ScrollAssemblyConsumerTests.swift)。历史错误目标的原数量与已知失败保留在第八阶段 B 工程记录；第十阶段 D 将修复要求改为普通成功断言；指定 Cursor verifier 缺口保留。原 check_workflow.py 只守卫稳定入口存在，不证明行为通过。
 
@@ -1033,7 +1033,7 @@ UnifiedSearchController 的 UnifiedSearchSettingBackend 互斥选择未装配、
 - [RowTitleBubble](../AreaChain/Theme/DaybookRowBubbles.swift) 的内部 observingWindowHover 选择唯一悬停来源，继续驱动原边框/光标；其他任务/手记预览和备注默认路径不变。原圆角 contentShape 和点击接线不动。
 - [RowBubbleHoverRegion](../AreaChain/Theme/RowBubbleHoverRegion.swift) 只关联当前可见气泡及其窗口，以实际圆角几何、窗口和滚动裁切观测事件；hitTest 返回 nil，事件原样返回。SwiftUI 移除即停观察，最终拆除兜底，代次拒绝旧回调；无轮询、全局登记或跨窗口路由。
 - [BoardRowChrome](../AreaChain/Features/Board/BoardRowChrome.swift) 的 resetTitleHover 只撤销标题任务/状态，原共享行/备注政策不变。窗口恢复、敏感恢复和旧内容移除不以旧回调重开气泡。
-- 原 RowBubbleConsumerTests / RowBubbleInteractionTests / LivePreviewSurfaceTests 与 [DiaryTitleHoverTests](../AreaChainTests/Theme/DiaryTitleHoverTests.swift) 使用合成资料和原生事件；观察状态不是进入证据，淡出视图树、缓存、实际屏幕及辅助树分开。实际结果和未覆盖项见[工程记录](engineering.md#第十阶段-n手记向上标题气泡悬停保留修复)。
+- 原 RowBubbleConsumerTests / RowBubbleInteractionTests / LivePreviewSurfaceTests 与 [DiaryTitleHoverTests](../AreaChainTests/Theme/DiaryTitleHoverTests.swift) 使用合成资料和原生事件；观察状态不是进入证据，淡出视图树、缓存、实际屏幕及辅助树分开。实际结果和未覆盖项见工程记录。
 
 ## 普通无备注单目标标题适配（3T-2B2A）
 
