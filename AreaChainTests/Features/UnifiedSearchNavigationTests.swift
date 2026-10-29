@@ -70,6 +70,58 @@ import Testing
         try await fixture.back()
     }
 
+    /// 与习惯月历点日期同义：焦点习惯换到指定检查日，不建打卡；没有焦点习惯时只说明。
+    @Test func occurrenceInspectSwitchesCheckDayWithoutCheckIn() async throws {
+        let fixture = try UnifiedSearchNavigationFixture()
+        defer { fixture.stop() }
+        try await fixture.start()
+        let page = try fixture.session.presentation().pagination
+        let todo = CommandObjectReference(type: .todo, id: fixture.todo.id)
+        fixture.controller.browse(.init(version: page.snapshot.version, action: .activate(todo)), source: fixture.controller.buffer)
+        try await fixture.command("occurrence.inspect", argument: "2026-10-05")
+        #expect(fixture.controller.navigationMessage == "unified.navigation.chooseRoutine")
+        #expect(fixture.controller.returnSearch == nil)
+        let routine = try #require(page.snapshot.visible.first { $0.id == fixture.routine.id })
+        let current = try fixture.session.presentation().pagination
+        fixture.controller.browse(.init(version: current.snapshot.version, action: .activate(routine)), source: fixture.controller.buffer)
+        try await fixture.command("occurrence.inspect", argument: "2026-10-05")
+        let expected = CommandObjectReference(type: .routineOccurrence, id: fixture.routine.id, dayKey: "2026-10-05")
+        #expect(fixture.router.outcome == .displayed, "\(fixture.controller.navigationMessage)")
+        #expect(fixture.navigation.navigationObject?.object == expected)
+        #expect(fixture.navigation.inspectingDayKey == "2026-10-05")
+        #expect(fixture.navigation.selectedTaskID == fixture.routine.id && fixture.navigation.isInspectorPresented)
+        #expect(try fixture.context.fetchCount(FetchDescriptor<RoutineCheck>()) == 0)
+        #expect(!fixture.context.hasChanges && fixture.saves == 0)
+    }
+
+    /// 关闭检查器沿原关闭按钮；没有打开时只说明，不改页面。
+    @Test func inspectorCloseClosesTheOpenInspector() async throws {
+        let fixture = try UnifiedSearchNavigationFixture()
+        defer { fixture.stop() }
+        try await fixture.start()
+        try await fixture.open(.init(type: .todo, id: fixture.todo.id))
+        try #require(fixture.navigation.isInspectorPresented)
+        try await fixture.command("inspector.close")
+        #expect(!fixture.navigation.isInspectorPresented)
+        #expect(fixture.controller.navigationMessage == "unified.navigation.inspectorClosed")
+        #expect(fixture.navigation.selectedTaskID == fixture.todo.id, "关闭只收起检查器，不清选择")
+        try await fixture.command("inspector.close")
+        #expect(fixture.controller.navigationMessage == "unified.navigation.inspectorNotOpen")
+        #expect(fixture.saves == 0)
+    }
+
+    /// 浏览回收站打开回收站页（原界面的五组列表与类别筛选），保留返回搜索的票据，不写数据。
+    @Test func trashBrowseOpensTheTrashPage() async throws {
+        let fixture = try UnifiedSearchNavigationFixture()
+        defer { fixture.stop() }
+        try await fixture.start()
+        try await fixture.command("trash.browse")
+        #expect(fixture.router.mounted("page.trash"), "\(fixture.controller.navigationMessage)")
+        #expect(fixture.navigation.selectedTab == .trash)
+        #expect(fixture.controller.navigationMessage == "unified.navigation.displayed")
+        #expect(fixture.controller.returnSearch != nil && fixture.saves == 0)
+    }
+
     @Test func continuousNavigationNewQueryAndLockRevokeTicket() async throws {
         let fixture = try UnifiedSearchNavigationFixture()
         defer { fixture.stop() }

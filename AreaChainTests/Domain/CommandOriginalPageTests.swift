@@ -20,7 +20,8 @@ import Testing
                "calendarSync.conflicts", "calendarSync.openLocal"],
         "S6": ["setting.icloud"],
         "S7": ["shortcut.record", "shortcut.reset", "shortcut.resetAll", "shortcut.cancel"],
-        "D1": ["trash.delete", "trash.empty"],
+        // trash.browse 只是打开回收站页浏览（不标“在原页面完成”），类别在页面筛选里选。
+        "D1": ["trash.delete", "trash.empty", "trash.browse"],
         // 合并批 M-4 决策 3：手记“私密”标记、显示与遮罩。
         "J2": ["diary.privateMark", "diary.reveal", "diary.mask"],
         "D4": ["recovery.status", "recovery.resetQuit"],
@@ -72,7 +73,8 @@ import Testing
         let finishing = Set(CommandOriginalPage.all.filter(\.finishesOnPage).map(\.command))
         #expect(marked == finishing)
         // 导航本身、帮助与通知横幅改用入口不标“在原页面完成”。
-        for id in ["notification.open", "help.syntax", "help.page", "help.example", "notification.complete", "notification.snooze"] {
+        for id in ["notification.open", "help.syntax", "help.page", "help.example", "notification.complete", "notification.snooze",
+                   "trash.browse"] {
             #expect(try #require(catalog.command(id: .init(rawValue: id))).completesOnOriginalPage == false)
         }
         // 标记不改目录原有的可用性与入列规则。

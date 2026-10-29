@@ -5,6 +5,10 @@ import Foundation
 extension UnifiedSearchController {
     enum NavigationRoute: Equatable {
         case page(WorkspaceTab), day, focusedObject, board, clipboardWindow(CommandClipboardWindow), system
+        /// 习惯月历点某一天：检查器改看焦点习惯的那一天（HabitCheckMonthView → inspectTask(id, dayKey:)）。
+        case routineDay
+        /// 检查器的关闭按钮；先让检查器按原失焦规则保存（或在隔离宿主留草稿），再关闭。
+        case closeInspector
         case originalPage(CommandOriginalPage)
     }
 
@@ -13,6 +17,8 @@ extension UnifiedSearchController {
         guard navigationRouter != nil else { return nil }
         if let page = WorkspaceNavigationDestination.page(command: command.id) { return .page(page) }
         if command.id.rawValue == "inspector.day" { return .day }
+        if command.id.rawValue == "occurrence.inspect" { return .routineDay }
+        if command.id.rawValue == "inspector.close" { return .closeInspector }
         if command.id.rawValue == "inspector.open" || command.id.rawValue == "go.tagList" { return .focusedObject }
         if let pages = pageCommands, pages.supportsBoardNavigation(command.id) { return .board }
         if pageCommands != nil, let window = CommandClipboardWindow(rawValue: command.id.rawValue) { return .clipboardWindow(window) }

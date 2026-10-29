@@ -14317,6 +14317,23 @@
         }
       }
     },
+    "command.originalPage.note.trashBrowse": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Trash page lists deleted items by type; choose the type with the filter at the top of the page."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "回收站页按类别列出已删除的内容；类别在页面上方的筛选里选。"
+          }
+        }
+      }
+    },
     "command.overlay.mode.aliases": {
       "extractionState": "manual",
       "localizations": {
@@ -41955,6 +41972,23 @@
         }
       }
     },
+    "unified.navigation.chooseRoutine": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select a recurring item in the results first"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先在结果里选中一个重复事项"
+          }
+        }
+      }
+    },
     "unified.navigation.composing": {
       "extractionState": "manual",
       "localizations": {
@@ -42002,6 +42036,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "打开页面、查看日期或检查选中的结果。导航不会保存业务修改。"
+          }
+        }
+      }
+    },
+    "unified.navigation.inspectorClosed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inspector closed"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已关闭检查器"
+          }
+        }
+      }
+    },
+    "unified.navigation.inspectorNotOpen": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The inspector isn't open"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "检查器没有打开"
           }
         }
       }

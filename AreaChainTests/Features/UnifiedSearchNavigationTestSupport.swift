@@ -192,6 +192,26 @@ import Testing
         await controller.navigationTask?.value
         try await settle()
     }
+    /// 与原生输入同一入口：打出路径前缀 → 接受这条指令的候选 → 需要时接着打参数段 → Return。
+    func command(_ id: String, argument: String? = nil) async throws {
+        let command = try #require(CommandCatalog.standard.command(id: .init(rawValue: id)))
+        let prefix = String(command.path.dropLast())
+        _ = controller.edit(.init(source: controller.buffer, text: prefix, selection: .init(location: prefix.utf16.count, length: 0)))
+        try await settle()
+        let result = CommandPathParser().parse(.init(text: controller.buffer.text, cursorLocation: controller.buffer.text.utf16.count))
+        let candidate = try #require(result.candidates.first { $0.command.id == command.id && $0.intent != .expand(command.id) })
+        let edit = try #require(result.accepting(candidate, in: controller.buffer.text, hasMarkedText: false))
+        _ = controller.accept(.init(source: controller.buffer, text: edit.text,
+                                    selection: .init(location: edit.cursorLocation, length: 0), acceptance: edit))
+        if let argument {
+            let text = command.path + "/" + argument
+            _ = controller.edit(.init(source: controller.buffer, text: text, selection: .init(location: text.utf16.count, length: 0)))
+        }
+        try await settle()
+        controller.intent(.open, source: controller.buffer)
+        await controller.navigationTask?.value
+        try await settle()
+    }
     func back() async throws {
         let ticket = try #require(controller.returnSearch)
         await controller.returnToSearch(ticket.id)

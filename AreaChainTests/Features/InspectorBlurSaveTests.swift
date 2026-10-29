@@ -99,6 +99,24 @@ struct InspectorBlurSaveTests {
         #expect(fixture.drafts.titles[EditDrafts.key(todo: fixture.todo.id)] == nil)
     }
 
+    /// 编辑检查器标题时用指令关闭检查器：先按失焦规则保存，再关闭，不丢修改。
+    @Test func editingTitleThenClosingInspectorSavesFirst() async throws {
+        let fixture = try UnifiedSearchNavigationFixture(productionHost: true)
+        defer { fixture.stop() }
+        try await fixture.start()
+        try await fixture.open(.init(type: .todo, id: fixture.todo.id))
+        try await fixture.click("detail.title.display")
+        let editor = try Self.inspectorEditor(fixture)
+        editor.insertText("needle parent closed", replacementRange: NSRange(location: 0, length: editor.string.utf16.count))
+        try await fixture.settle()
+        #expect(try Self.persisted(fixture).title == "needle parent")
+        try await fixture.command("inspector.close")
+        #expect(!fixture.navigation.isInspectorPresented)
+        #expect(fixture.controller.navigationMessage == "unified.navigation.inspectorClosed")
+        #expect(try Self.persisted(fixture).title == "needle parent closed")
+        #expect(fixture.drafts.titles[EditDrafts.key(todo: fixture.todo.id)] == nil)
+    }
+
     /// 编辑备注后返回搜索再打开另一个结果：返回前已保存，另一个结果照常打开。
     @Test func editingNotesThenOpeningAnotherResultSavesFirst() async throws {
         let fixture = try UnifiedSearchNavigationFixture(productionHost: true)

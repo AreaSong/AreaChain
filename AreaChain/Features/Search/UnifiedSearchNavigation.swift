@@ -40,13 +40,18 @@ extension UnifiedSearchController {
         if case .page(let page)? = route, parsed.arguments.isEmpty, parsed.state == .command {
             navigate(.page(page), source: source)
         } else if route == .day {
-            guard parsed.state == .command,
-                  case .day(let day)? = parsed.arguments.first(where: { $0.parameter == .day })?.value,
-                  let date = DayKey.date(from: day, calendar: router.objects.calendar),
-                  DayKey.from(date, calendar: router.objects.calendar) == day else {
+            guard let day = navigationDay(parsed, calendar: router.objects.calendar) else {
                 navigationMessage = "unified.navigation.chooseDay"; return
             }
             navigate(.day(day), source: source)
+        } else if route == .routineDay {
+            guard let day = navigationDay(parsed, calendar: router.objects.calendar) else {
+                navigationMessage = "unified.navigation.chooseDay"; return
+            }
+            inspectRoutineDay(day, router: router, source: source)
+        } else if route == .closeInspector {
+            guard parsed.state == .command, parsed.arguments.isEmpty else { navigationMessage = "unified.navigation.invalidTarget"; return }
+            closeInspector(router: router, source: source)
         } else if route == .focusedObject {
             guard parsed.state != .invalid, parsed.arguments.isEmpty,
                   parsed.diagnostics.allSatisfy({ $0.issue == .chooseParameter && $0.range.length == 0 }) else {
@@ -72,6 +77,47 @@ extension UnifiedSearchController {
         } else if case .originalPage(let page)? = route {
             executeOriginalPage(page, command: command, parsed: parsed, source: source)
         } else { navigationMessage = "unified.navigation.unsupported" }
+    }
+
+    private func navigationDay(_ parsed: CommandPathResult, calendar: Calendar) -> String? {
+        guard parsed.state == .command,
+              case .day(let day)? = parsed.arguments.first(where: { $0.parameter == .day })?.value,
+              let date = DayKey.date(from: day, calendar: calendar), DayKey.from(date, calendar: calendar) == day else { return nil }
+        return day
+    }
+
+    /// 与月历点日期同义：只换检查日，不打卡。目标是当前可见结果里的焦点习惯（执行日结果的 id 就是习惯 id），
+    /// 位置仍经 objects.resolve 的存活与隐私检查，再沿同一 navigate 打开检查器。
+    private func inspectRoutineDay(_ day: String, router: WorkspaceSearchRouter, source: UnifiedSearchBuffer) {
+        guard let page = try? session.presentation().pagination, let active = page.browse.active,
+              page.snapshot.visible.contains(active), [.routine, .routineOccurrence].contains(active.type) else {
+            navigationMessage = "unified.navigation.chooseRoutine"; return
+        }
+        let open = ContentQueryBrowseOpen(object: .init(type: .routineOccurrence, id: active.id, dayKey: day),
+                                          parent: .init(type: .routine, id: active.id), viewingTrash: false)
+        do { navigate(.object(try router.objects.resolve(open)), source: source) }
+        catch { navigationMessage = navigationFailure(error as? WorkspaceOpenFailure ?? .invalidTarget) }
+    }
+
+    /// 沿检查器关闭按钮（navigation.closeInspector），但先经 commitInspectorBeforeNavigation：
+    /// 正式版让编辑器按失焦规则保存，隔离宿主只留 EditDrafts；同一轮直接关闭会先卸载编辑器而丢掉未保存的修改。
+    private func closeInspector(router: WorkspaceSearchRouter, source: UnifiedSearchBuffer) {
+        guard router.navigation.isInspectorPresented else { navigationMessage = "unified.navigation.inspectorNotOpen"; return }
+        do { try router.validateHost() } catch {
+            navigationMessage = navigationFailure(error as? WorkspaceOpenFailure ?? .unavailable); return
+        }
+        guard navigationTask == nil else { return }
+        let requestID = UUID()
+        navigationRequestID = requestID
+        navigationTask = Task { @MainActor [weak self] in
+            _ = await router.commitInspectorBeforeNavigation()
+            guard let self, self.navigationRequestID == requestID else { return }
+            self.navigationTask = nil
+            self.navigationRequestID = nil
+            guard self.validates(source), !Task.isCancelled, (try? router.validateHost()) != nil else { return }
+            router.navigation.closeInspector()
+            self.navigationMessage = "unified.navigation.inspectorClosed"
+        }
     }
 
     func openResult(_ open: ContentQueryBrowseOpen, source: UnifiedSearchBuffer,

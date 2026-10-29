@@ -47,7 +47,9 @@ import Testing
             try await fixture.settle()
             #expect(fixture.router.outcome == .displayed, "\(command.id.rawValue)")
             #expect(fixture.router.mounted("page." + tab.rawValue), "\(command.id.rawValue) → \(tab.rawValue)")
-            #expect(fixture.controller.navigationMessage == "unified.originalPage.displayed")
+            // 浏览类（trash.browse）只是打开页面，不说“在原页面完成”。
+            #expect(fixture.controller.navigationMessage
+                == (route.finishesOnPage ? "unified.originalPage.displayed" : "unified.navigation.displayed"))
             #expect(try fixture.handoff.state().operations.active == nil, "\(command.id.rawValue) 不能建草稿")
             #expect(try fixture.handoff.state().plan.items.isEmpty)
             #expect(try fixture.handoff.state().execution == nil)

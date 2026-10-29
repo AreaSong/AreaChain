@@ -99,9 +99,9 @@ extension CommandCatalogBuilder {
                 .targets([.routineOccurrence], batch: .explicitMultiple).ordinary(),
             entry("occurrence.skip", "/routines/checks/skip", .modification, "T6:skip")
                 .targets([.routineOccurrence]).ordinary(),
+            // 与 inspector.day 一样只带日期：习惯取当前焦点结果（导航不建草稿，没有目标参数面板），日期可写在路径尾段。
             entry("occurrence.inspect", "/routines/checks/inspect", .navigation, "T6:inspectDate",
-                  [day])
-                .targets([.routine]),
+                  [day]),
             entry("routine.streak", "/routines/streak", .query, "T6:currentStreak T6:bestStreak",
                   [choice(.kind, "current best"), day])
                 .targets([.routine]),

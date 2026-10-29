@@ -72,6 +72,8 @@ struct CommandOriginalPage: Equatable, Sendable {
         add("diary.privateMark diary.reveal diary.mask", .page("diary"), note: "diaryPrivacy")
         // D1～D4：回收站永久删除、数据交换、加密备份、降级恢复（降级提示就在数据与备份页）
         add("trash.delete trash.empty", .page("trash", focusesTrash: true), note: "permanentDeletion")
+        // D1 浏览：原界面是回收站页的五组列表与类别筛选；类别参数不在指令里执行，在页面的筛选里选。
+        add("trash.browse", .page("trash"), note: "trashBrowse", finishes: false)
         add("data.export data.selectImport data.validateImport data.previewImport data.applyImport",
             .page("dataBackup"), note: "data")
         add("backup.export backup.inspect backup.preview backup.restore", .page("dataBackup"), note: "backup")

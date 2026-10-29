@@ -74,6 +74,12 @@ import Testing
             let outcome = outcomes.first { $0.id == id }
             #expect(outcome?.disposition == .executable && outcome?.observed == .executable, "\(id) 应可执行（\(host)）")
         }
+        // 两宿主的类别计数：工作台没有“未接上”；菜单栏的导航、打开原页面与页面指令仍未接上。
+        let counts = Dictionary(grouping: outcomes, by: \.disposition.kind).mapValues(\.count)
+        let expected: [CommandHostDisposition.Kind: Int] = host == "workspace"
+            ? [.executable: 160, .originalPage: 86, .catalogUnavailable: 1]
+            : [.executable: 64, .catalogUnavailable: 5, .unwired: 178]
+        #expect(counts == expected, "\(host)：\(counts)")
         let report = outcomes.map { "\($0.id)\t\($0.observed.rawValue)\t\($0.disposition.kind.rawValue)" }.joined(separator: "\n")
         Attachment.record(report, named: "m7g-c-catalog-\(host).tsv")
         let unwired = outcomes.filter { $0.disposition == .unwired }.map(\.id)

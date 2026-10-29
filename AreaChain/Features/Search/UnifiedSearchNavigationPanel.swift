@@ -18,7 +18,8 @@ struct UnifiedSearchNavigationPanel: View {
                 Text("unified.navigation.hint").font(DaybookType.body)
             }
             if let command = controller.browsedCommand,
-               command.id.rawValue == "inspector.day" || UnifiedSearchNavigationPanel.boardDayCommands.contains(command.id.rawValue) {
+               ["inspector.day", "occurrence.inspect"].contains(command.id.rawValue)
+                || UnifiedSearchNavigationPanel.boardDayCommands.contains(command.id.rawValue) {
                 Button("unified.navigation.chooseDay") { showsDate = true }
                     .buttonStyle(DaybookButtonStyle(.subtle))
                     .popover(isPresented: $showsDate) {
