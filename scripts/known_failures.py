@@ -10,7 +10,7 @@ import re
 
 REGISTRY = Path("scripts") / "known_test_failures.json"
 _TEST_ID = re.compile(r"^[A-Za-z_]\w*Tests\.[A-Za-z_]\w*$")
-_FIELDS = ("test", "firstSeen", "reason", "registered")
+_FIELDS = ("test", "firstSeen", "reason")
 # xcodebuild 末尾的“Failing tests:”块：每行一个制表符缩进的“套件.方法(参数标签)”，同一用例可能重复出现。
 _FAILING_BLOCK = re.compile(r"^Failing tests:\n((?:\t[^\n]*\n?)+)", re.M)
 

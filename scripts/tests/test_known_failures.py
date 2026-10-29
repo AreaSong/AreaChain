@@ -16,7 +16,7 @@ SPEC = importlib.util.spec_from_file_location("quality_gate", SCRIPTS / "quality
 quality = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(quality)
 
-ENTRY = {"test": "OldTests.flaky", "firstSeen": "d77da2e", "reason": "合成原因", "registered": "2026-10-23"}
+ENTRY = {"test": "OldTests.flaky", "firstSeen": "d77da2e", "reason": "合成原因"}
 FAILING = "** TEST EXECUTE FAILED **\nFailing tests:\n\tOldTests.flaky()\n\tOldTests.flaky()\n"
 
 
@@ -87,7 +87,7 @@ class KnownFailuresTests(unittest.TestCase):
         self.assertEqual(check["status"], "failed")
 
     def test_invalid_registry_is_reported_and_not_used(self):
-        self.register({"test": "not-an-id", "firstSeen": "x", "reason": "y", "registered": "z"})
+        self.register({"test": "not-an-id", "firstSeen": "x", "reason": "y"})
         check, _ = self.run_tests([(65, FAILING, "", 1.0)])
         self.assertEqual(check["status"], "failed")
         self.assertTrue(any("类.方法" in issue for issue in check["issues"]))
