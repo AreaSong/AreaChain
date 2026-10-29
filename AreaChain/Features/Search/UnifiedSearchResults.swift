@@ -20,6 +20,7 @@ struct UnifiedSearchResults: NSViewRepresentable {
         view.layoutStyle = layout
         view.locale = locale
         view.scheme = colorScheme
+        view.yieldsToCommand = controller.hidesResultsForCommand
         view.render()
     }
 
@@ -39,7 +40,18 @@ final class UnifiedSearchResultsBoundary: NSView {
     private var renderedBuffer: UnifiedSearchBuffer?
     private var rendering = false
     private var focusObserver: NSObjectProtocol?
-    override var acceptsFirstResponder: Bool { true }
+    /// 不读结果的系统指令输入期间结果让位：托管子树保持挂载（滚动与选择不丢）但隐藏。SwiftUI 的透明与禁点
+    /// 不影响 AppKit 的键盘环，必须在这里隐藏 NSView，Tab 与点击才不会落到看不见的结果上。
+    var yieldsToCommand = false {
+        didSet {
+            guard yieldsToCommand != oldValue else { return }
+            hosting?.isHidden = yieldsToCommand
+            if yieldsToCommand, let responder = window?.firstResponder as? NSView, responder === self || responder.isDescendant(of: self) {
+                window?.makeFirstResponder(nil)
+            }
+        }
+    }
+    override var acceptsFirstResponder: Bool { !yieldsToCommand }
     // 方向键导航可显式聚焦边界；Tab 跳过边界自身，进入实际按钮。
     override var canBecomeKeyView: Bool { false }
 
@@ -101,6 +113,7 @@ final class UnifiedSearchResultsBoundary: NSView {
             let view = NSHostingView(rootView: root)
             view.frame = bounds
             view.autoresizingMask = [.width, .height]
+            view.isHidden = yieldsToCommand
             hosting = view
             addSubview(view)
         }
@@ -142,7 +155,7 @@ final class UnifiedSearchResultsBoundary: NSView {
     }
 
     private func handle(_ event: NSEvent) -> Bool {
-        guard event.window === window, let responder = window?.firstResponder as? NSView,
+        guard !yieldsToCommand, event.window === window, let responder = window?.firstResponder as? NSView,
               responder === self || responder.isDescendant(of: self),
               !(responder is NSTextView), let controller, let source = renderedBuffer,
               let version = renderedVersion else { return false }

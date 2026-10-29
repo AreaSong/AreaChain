@@ -69,6 +69,7 @@ extension UnifiedSearchController {
 
     func accept(_ request: UnifiedSearchEdit) -> UnifiedSearchBuffer? {
         guard validates(request.source), let acceptance = request.acceptance else { return nil }
+        clearBlockedHandoff()
         // 接受候选是显式动作：遮罩时先恢复（同一入口），再按原路径开始操作。
         guard let request = resumedRequest(request) else { return nil }
         if let command = CommandPathParser().parse(.init(text: request.text)).command, Self.routesAsNavigation(command) {

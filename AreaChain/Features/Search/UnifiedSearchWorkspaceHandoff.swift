@@ -36,6 +36,11 @@ extension UnifiedSearchController {
         if isNavigationPresented, returnSearch == nil { navigationRouter?.navigation.searchPresentation = true }
     }
 
+    /// 用户自己改字或接受候选即收起被挡说明：之后的输入是新意图，不再与其他面板重复同一句。
+    func clearBlockedHandoff() {
+        if navigationMessage == "unified.handoff.blocked" { navigationMessage = "unified.navigation.hint" }
+    }
+
     /// 被挡说明只由反馈与未完成工作派生：工作处理完或有了新反馈即收起，不另存状态。
     var showsBlockedHandoff: Bool { navigationMessage == "unified.handoff.blocked" && hasUnsavedCommandWork }
 }

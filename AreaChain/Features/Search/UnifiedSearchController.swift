@@ -199,6 +199,7 @@ final class UnifiedSearchController {
     func edit(_ request: UnifiedSearchEdit) -> UnifiedSearchBuffer? {
         guard validates(request.source) else { return nil }
         guard objectSelection == nil, !objectSelectionLoading, tagSelection == nil else { return nil }
+        clearBlockedHandoff()
         let state = CommandPathParser().parse(.init(text: request.text, cursorLocation: request.selection.location)).state
         let content = state == .ordinaryText || state == .scope
         // 改字是显式动作：遮罩时先恢复；普通文字随后按新文字重读，指令文字按保留的查询重读。

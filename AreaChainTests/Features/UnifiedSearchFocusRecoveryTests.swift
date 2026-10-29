@@ -245,8 +245,9 @@ import Testing
         #expect(host.fixture.navigation.isSearching)
     }
 
-    /// 复现（记录当前行为）：外观改一次已应用、结果卡未点“完成”时，再输入另一条外观指令按 Return／⌘Return。
-    @Test func secondAppearanceAfterAppliedResult() async throws {
+    /// 外观改一次已应用、结果卡未点“完成”时：再输入另一条外观指令，Return／⌘Return 不越过结果卡（不建第二份草稿、
+    /// 不改偏好），反馈行给出原因；点“完成”收起结果卡后，同一指令再按 Return 照常开始草稿。
+    @Test func secondAppearanceWaitsForAppliedResult() async throws {
         let host = try UnifiedSearchFocusHost(.workspace)
         defer { host.close() }
         try await host.start()
@@ -254,18 +255,57 @@ import Testing
         try await host.pressReturnUntil { host.controller.operations?.active != nil }
         try await host.key(36, "\r", flags: .command)
         try await host.settle()
-        let first = (host.controller.settingExecution != nil, host.controller.operations?.active == nil)
-        #expect(first == (true, true), "首次应用后结果卡占用执行：\(first)")
+        #expect(host.controller.settingExecution != nil && host.controller.operations?.active == nil, "首次应用后结果卡占用执行")
         try await host.type("/setting/appearance/system")
         for _ in 0..<3 { try await host.key(36, "\r") }
-        let afterReturn = "active=\(host.controller.operations?.active?.commandID.rawValue ?? "nil") "
-            + "execution=\(host.controller.settingExecution != nil) message=\(host.controller.navigationMessage) "
-            + "operationMessage=\(host.controller.operationMessage) feedback=\(host.feedbackShown) panel=\(host.operationPanelShown)"
+        #expect(host.controller.operations?.active == nil && host.controller.settingExecution != nil)
+        #expect(host.controller.navigationMessage == "unified.gate.busy" && host.feedbackShown)
         try await host.key(36, "\r", flags: .command)
-        let afterSubmit = "active=\(host.controller.operations?.active?.commandID.rawValue ?? "nil") "
-            + "execution=\(host.controller.settingExecution != nil) message=\(host.controller.navigationMessage) "
-            + "appearance=\(host.fixture.preferences.appearance)"
-        Issue.record("观察 Return 后：\(afterReturn)；⌘Return 后：\(afterSubmit)")
+        #expect("\(host.fixture.preferences.appearance)" == "dark", "结果卡未收起时不应用第二条")
+        let done = try #require(SettingsButtonTestSupport.elements(host.window.contentView).first {
+            SettingsButtonTestSupport.value($0, "accessibilityIdentifier") as? String == "unified.setting.done"
+        })
+        _ = done.perform(NSSelectorFromString("accessibilityPerformPress"))
+        try await host.settle()
+        #expect(host.controller.settingExecution == nil)
+        try await host.focusField()
+        try await host.type("/setting/appearance/system")
+        try await host.pressReturnUntil { host.controller.operations?.active != nil }
+        #expect(host.controller.operations?.active?.commandID.rawValue == "setting.appearance")
+    }
+
+    /// 目的地上为指令回到搜索页的过程中再按 Return：只回一次、只开一份草稿，结束后 commandReturnPending 复位。
+    @Test func repeatedReturnDuringCommandReturnRunsOnce() async throws {
+        let host = try UnifiedSearchFocusHost(.workspace)
+        defer { host.close() }
+        _ = try await navigatedWithCommand(host)
+        try await host.keysWithoutWaiting([36, 36])
+        #expect(host.controller.commandReturnPending, "第一次 Return 已开始回到搜索页")
+        try await host.waitUntil { !host.controller.commandReturnPending && host.operationPanelShown }
+        #expect(host.controller.operations?.active?.commandID.rawValue == "setting.appearance")
+        #expect(host.controller.operations?.retained.isEmpty == true, "第二次 Return 不另开草稿")
+        #expect(host.fixture.navigation.isSearching && host.controller.returnSearch == nil)
+    }
+
+    /// 回到搜索页被拒（工作台有附着的表单）：commandReturnPending 复位、不开草稿、停在目的地；表单关闭后 Return 照常。
+    @Test func cancelledCommandReturnResetsPending() async throws {
+        let host = try UnifiedSearchFocusHost(.workspace)
+        defer { host.close() }
+        _ = try await navigatedWithCommand(host)
+        let sheet = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 200, height: 80), styleMask: [.titled], backing: .buffered, defer: false)
+        host.window.beginSheet(sheet, completionHandler: nil)
+        try await host.settle()
+        host.controller.intent(.open, source: host.controller.buffer)
+        try await host.waitUntil { !host.controller.commandReturnPending }
+        #expect(host.controller.operations?.active == nil && !host.fixture.navigation.isSearching)
+        #expect(host.controller.returnSearch != nil, "被拒时票据保留，仍可返回")
+        host.window.endSheet(sheet)
+        try await host.settle()
+        try await host.switchBack()
+        try await host.focusField()
+        try await host.key(36, "\r")
+        try await host.waitUntil { host.operationPanelShown }
+        #expect(host.controller.operations?.active?.commandID.rawValue == "setting.appearance")
     }
 
     /// 搜索 needle → /go/tags 导航（持有票据）→ 在目的地输入修改类指令；输入本身不切页。
@@ -298,203 +338,5 @@ import Testing
         #expect(host.controller.operations?.active == nil && !host.operationPanelShown)
         #expect(host.controller.navigationMessage == "unified.gate.vaultBusy")
         #expect(host.feedbackShown)
-    }
-}
-
-/// 前台宿主：正式版唯一装配（内存容器、隔离保险箱、fake 副作用），另一个普通窗口用来真实抢走 key。
-@MainActor final class UnifiedSearchFocusHost {
-    let kind: UnifiedSearchFocusRecoveryTests.Kind
-    let fixture: UnifiedSearchProductionFixture
-    let production = UnifiedSearchProduction()
-    let toolbar = MenuBarToolbarState()
-    var window: NSWindow!
-    let away: NSWindow
-
-    private var forwarders: [NSObjectProtocol] = []
-
-    init(_ kind: UnifiedSearchFocusRecoveryTests.Kind) throws {
-        self.kind = kind
-        fixture = try UnifiedSearchProductionFixture()
-        production.start(center: fixture.center, makeServices: { [fixture] in fixture.services() })
-        try #require(production.assembly != nil)
-        away = NSWindow(contentRect: NSRect(x: 40, y: 40, width: 240, height: 120), styleMask: [.titled], backing: .buffered, defer: false)
-        away.isReleasedWhenClosed = false
-        away.title = "M7G away"
-    }
-
-    var controller: UnifiedSearchController {
-        kind == .workspace ? production.assembly!.workspace! : production.assembly!.menubar!
-    }
-
-    func start() async throws {
-        let root: AnyView = kind == .workspace
-            ? AnyView(UnifiedSearchWorkspaceRoot(production: production))
-            : AnyView(MenuBarPopoverView(toolbar: toolbar, composer: BoardComposerSession(), filterSession: BoardFilterSession(),
-                                         production: production))
-        let content = root.modelContainer(fixture.container).environment(\.modelContext, fixture.context)
-            .environment(fixture.preferences).environment(\.locale, Locale(identifier: "zh-Hans"))
-            .transaction { $0.disablesAnimations = true }
-        let window = NSWindow(contentViewController: NSHostingController(rootView: content))
-        window.isReleasedWhenClosed = false
-        window.isRestorable = false
-        window.setContentSize(kind == .workspace ? NSSize(width: 1200, height: 800) : DaybookMetrics.Window.popoverSize)
-        self.window = window
-        NSApp.accessibilitySetValue(true, forAttribute: NSAccessibility.Attribute(rawValue: "AXEnhancedUserInterface"))
-        NSApp.setActivationPolicy(.regular)
-        NSApp.activate(ignoringOtherApps: true)
-        window.makeKeyAndOrderFront(nil)
-        try await NativeSyntaxUI.prepareFocus(in: window)
-        try await settle()
-        try await focusField()
-    }
-
-    var field: NSTextField {
-        get throws {
-            try #require(SettingsButtonTestSupport.elements(window.contentView).compactMap { $0 as? NSTextField }
-                .first { $0.cell is UnifiedSearchFieldCell && !Self.insideOperation($0) })
-        }
-    }
-
-    static func insideOperation(_ view: NSView) -> Bool {
-        var ancestor = view.superview
-        while let current = ancestor {
-            if current is UnifiedSearchOperationBoundary { return true }
-            ancestor = current.superview
-        }
-        return false
-    }
-
-    var editor: NSTextView { get throws { try #require(try field.currentEditor() as? NSTextView) } }
-    var inputState: UnifiedSearchInputState {
-        get throws { try #require((try field.delegate as? DaybookTextField.Coordinator)?.parent.unifiedSearch) }
-    }
-
-    /// 候选浮层里标题匹配的那一行在窗口坐标里的中心（取自实际无障碍树，不写死行高）。
-    func candidateCenter(_ title: String) throws -> NSPoint {
-        let node = try #require(SettingsButtonTestSupport.elements(window.contentView).first {
-            (SettingsButtonTestSupport.value($0, "accessibilityLabel") as? String)?.hasPrefix(title) == true
-        }, "候选行缺失：\(title)")
-        let rect = try SettingsButtonTestSupport.frame(node, in: window)
-        return NSPoint(x: rect.midX, y: rect.midY)
-    }
-
-    func click(_ point: NSPoint) async throws {
-        try #require(window.isKeyWindow, "测试窗口不是 key window")
-        for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
-            let event = try #require(NSEvent.mouseEvent(with: type, location: point, modifierFlags: [],
-                timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber,
-                context: nil, eventNumber: 0, clickCount: 1, pressure: 1))
-            NSApp.sendEvent(event)
-        }
-        try await settle()
-    }
-
-    func focusField() async throws {
-        if kind == .menubar { toolbar.focusSearch() } else { window.makeFirstResponder(try field) }
-        try await settle()
-        if (try? field.currentEditor()) == nil { window.makeFirstResponder(try field); try await settle() }
-        _ = try editor
-    }
-
-    /// 原生输入：整段替换编辑器文字（与用户全选后输入同一路径）。
-    func type(_ text: String) async throws {
-        let input = try editor
-        input.setSelectedRange(NSRange(location: 0, length: (input.string as NSString).length))
-        input.insertText(text, replacementRange: input.selectedRange())
-        try await settle()
-    }
-
-    func key(_ code: UInt16, _ character: String, flags: NSEvent.ModifierFlags = []) async throws {
-        try #require(window.isKeyWindow, "测试窗口不是 key window")
-        let event = try #require(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: flags,
-            timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber, context: nil,
-            characters: character, charactersIgnoringModifiers: character, isARepeat: false, keyCode: code))
-        NSApp.sendEvent(event)
-        try await settle()
-        await controller.navigationTask?.value
-        try await settle()
-    }
-
-    /// 候选活动时第一次 Return 先接受候选；最多按三次，直到条件成立（B 的证据另由专门用例记录）。
-    func pressReturnUntil(_ condition: () -> Bool) async throws {
-        for _ in 0..<3 where !condition() { try await key(36, "\r") }
-    }
-
-    /// 回到搜索页是异步的（先提交检查器、可能重读），等条件成立而不是多按键。
-    func waitUntil(_ condition: () -> Bool) async throws {
-        for _ in 0..<150 where !condition() { try await Task.sleep(for: .milliseconds(20)); try await settle() }
-        try #require(condition(), "等待超时")
-    }
-
-    func waitPublished() async throws {
-        for _ in 0..<150 where (try? controller.session.presentation()) == nil { try await Task.sleep(for: .milliseconds(20)) }
-        try await settle()
-    }
-
-    func switchAway() async throws {
-        away.makeKeyAndOrderFront(nil)
-        for _ in 0..<100 where window.isKeyWindow || !away.isKeyWindow { try await Task.sleep(for: .milliseconds(10)) }
-        try #require(!window.isKeyWindow && away.isKeyWindow, "未能真实切走 key")
-        try await settle()
-    }
-
-    func switchBack() async throws {
-        window.makeKeyAndOrderFront(nil)
-        for _ in 0..<100 where !window.isKeyWindow { try await Task.sleep(for: .milliseconds(10)) }
-        try #require(window.isKeyWindow, "未能切回 key")
-        try await settle()
-        if (try? field.currentEditor()) == nil { try await focusField() }
-    }
-
-    func switchAwayAndBack() async throws {
-        try await switchAway()
-        try await switchBack()
-    }
-
-    var operationPanelShown: Bool {
-        SettingsButtonTestSupport.elements(window.contentView).compactMap { $0 as? UnifiedSearchOperationBoundary }
-            .contains { !$0.subviews.isEmpty }
-    }
-
-    var resultStrings: [String] {
-        let boundaries = SettingsButtonTestSupport.elements(window.contentView).compactMap { $0 as? UnifiedSearchResultsBoundary }
-        return boundaries.flatMap { SettingsButtonTestSupport.elements($0) }.flatMap { element in
-            ["accessibilityLabel", "accessibilityValue"].compactMap { SettingsButtonTestSupport.value(element, $0) as? String }
-        }
-    }
-
-    var feedbackShown: Bool {
-        let id = kind == .workspace ? "unified.navigation.feedback" : "menubar.unified.feedback"
-        return NativeSyntaxUI.identifiers(in: window).contains(id)
-    }
-
-    static let password = "synthetic-rebuild-password"
-
-    /// 保险箱把锁定与隐私变化发到 default；正式版装配也听 default，这里同步转到夹具的私有中心，时序与正式版一致（锁定前先发 willLock）。
-    func forwardPrivacyEvents() {
-        for name in [Notification.Name.privacyWillLock, .privacyDidChange] {
-            forwarders.append(NotificationCenter.default.addObserver(forName: name, object: fixture.vault, queue: nil) { [fixture] note in
-                MainActor.assumeIsolated { fixture.center.post(name: note.name, object: note.object) }
-            })
-        }
-    }
-
-    /// 应用所有窗口（含候选浮层）里可见的无障碍文字，用来断言受保护正文没有从任何地方露出。
-    var allStrings: [String] {
-        NSApp.windows.filter(\.isVisible).flatMap { SettingsButtonTestSupport.elements($0.contentView) }.flatMap { element in
-            ["accessibilityLabel", "accessibilityValue", "accessibilityTitle"].compactMap { SettingsButtonTestSupport.value(element, $0) as? String }
-        }
-    }
-
-    func settle() async throws { if let window { try await SystemPageHost.settle(window) } }
-
-    func close() {
-        for forwarder in forwarders { NotificationCenter.default.removeObserver(forwarder) }
-        forwarders = []
-        away.orderOut(nil)
-        away.close()
-        if let window { SystemPageHost.release(window) }
-        production.stop(center: fixture.center)
-        fixture.cleanup()
     }
 }
