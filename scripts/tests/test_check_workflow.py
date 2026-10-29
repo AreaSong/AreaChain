@@ -256,7 +256,7 @@ class WorkflowCheckTests(unittest.TestCase):
                           {"project-identity", "project-links", "workflow-contract",
                           "component-catalog", "performance-baselines", "domain-imports",
                           "ci-contract", "skill-format", "skill-git-scope", "theme-tokens",
-                          "swift-file-size", "long-text-loan", "unified-search-assembly"})
+                          "swift-file-size", "progress-notes", "long-text-loan", "unified-search-assembly"})
 
     def test_performance_manifest_rejects_non_object_root(self):
         self.make_project()
@@ -1491,6 +1491,42 @@ class WorkflowCheckTests(unittest.TestCase):
         result = workflow.check_swift_file_size(self.root)
         self.assertEqual(result["status"], "failed")
         self.assertIn("超过 500 行", result["issues"][0]["message"])
+
+    def test_progress_notes_flag_comments_in_swift_python_and_shell(self):
+        self.write("AreaChain/Domain/Sample.swift", "/// 合并批 M-2：新增\nlet a = 1 // 见 §9.102\n/* 检查点 A */\n")
+        self.write("AreaChainTests/Domain/SampleTests.swift", "// T-M6 夹具\n")
+        self.write("AreaChainWidget/Widget.swift", "// 修复批 M-7G：恢复入口\n")
+        self.write("scripts/tool.py", '"""收尾批说明。"""\nvalue = 1  # X-1 骨架\n')
+        self.write("scripts/run.sh", "#!/bin/sh\necho ok # L-M1b 借用\n")
+        result = workflow.check_progress_notes(self.root)
+        self.assertEqual(result["status"], "failed")
+        found = sorted((Path(item["file"]).name, item["line"]) for item in result["issues"])
+        self.assertEqual(found, [("Sample.swift", 1), ("Sample.swift", 2), ("Sample.swift", 3),
+                                 ("SampleTests.swift", 1), ("Widget.swift", 1),
+                                 ("run.sh", 2), ("tool.py", 1), ("tool.py", 2)])
+
+    def test_progress_notes_ignore_strings_and_code(self):
+        self.write("AreaChainTests/Domain/SampleTests.swift",
+                   'Issue.record("T-M1 夹具不接受")\nlet path = "tmp/CM1Runner/"  // 临时目录\n'
+                   'let raw = #"合并批 M-2"#\n')
+        self.write("scripts/tool.py", 'MESSAGE = "合并批 M-4"\n", ".join(["§9.1"])\n')
+        self.write("scripts/run.sh", 'echo "# M-3 不是注释"\n')
+        self.assertEqual(workflow.check_progress_notes(self.root)["status"], "passed")
+
+    def test_progress_notes_exemption_and_scripts_tests_are_skipped(self):
+        self.write("AreaChain/Domain/Sample.swift", "// 引用旧格式 §1 的原文 progress-note-exempt: 解析器夹具\n")
+        self.write("scripts/tests/test_sample.py", "# 合并批 M-4：夹具故意写出被拦的字样\n")
+        self.write("scripts/tests/fixtures/sample.sh", "# 检查点 B\n")
+        result = workflow.check_progress_notes(self.root)
+        self.assertEqual(result["status"], "passed")
+        self.assertEqual(result["checked"], 1)
+
+    def test_progress_notes_boundary_words_do_not_match_identifiers(self):
+        self.write("AreaChain/Domain/Sample.swift",
+                   "// MAX-1 与 X-10、HM-2、BOX-1 不是进度字样；UTF-8 与 Z-3 也不是\n")
+        self.assertEqual(workflow.check_progress_notes(self.root)["status"], "passed")
+        self.write("AreaChain/Domain/Other.swift", "// 沿 X-1 骨架\n")
+        self.assertEqual(len(workflow.check_progress_notes(self.root)["issues"]), 1)
 
     LOAN_ESCROW = (
         "@MainActor final class CommandLongTextLoan {\n"

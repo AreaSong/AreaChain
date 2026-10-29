@@ -2,6 +2,7 @@
 """只读检查工作流引用、Domain 显式 UI 导入与项目技能 Git 边界；不运行应用。"""
 
 import argparse
+import io
 import json
 import math
 import os
@@ -9,6 +10,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import tokenize
 from urllib.parse import unquote, urlsplit
 
 
@@ -32,6 +34,7 @@ LIMITATIONS = [
     "component-catalog 只核对少量稳定入口的文件和符号仍存在；不把所有内部类型自动变成公共 API。",
     "ci-contract 只核对工作流中的关键文本标记与 checkout revision；不替代 GitHub Actions YAML 语义或远端运行验证。",
     "swift-file-size 只数源码行数，不判断函数是否该拆，也不证明行为等价。",
+    "progress-notes 只在注释里匹配批次、检查点与章节编号的字面模式（不含 scripts/tests，不拦决策代号）；不判断注释是否解释了原因。",
     "long-text-loan 只核对借用符号出现的文件与声明形状；不证明同文件代码不复制正文，也不替代运行时测试。",
     "unified-search-assembly 只匹配生产代码里“类型名(”与凭据签发的字面构造；不识别 .init 推断构造，也不证明运行时只装配一次。",
 ]
@@ -950,6 +953,106 @@ def check_swift_file_size(root, limit=500):
     return result("swift-file-size", checked, issues)
 
 
+PROGRESS_NOTE = re.compile(
+    r"合并批|修复批次?|收尾批|提速基建|检查点 ?[A-Z]|里程碑 ?[A-Z]|[A-Z]-M[0-9][a-z]?|\bM-[0-9][A-Z]?\b"
+    r"|G-1[a-e]|\bX-1\b|\bZ-[12]\b|§ ?[0-9]+(?:\.[0-9]+)*")
+PROGRESS_EXEMPT = "progress-note-exempt:"
+
+
+def swift_comments(text):
+    """按 swift_code 的同一切分只保留注释，字符串与代码换成空格，行号不变。"""
+    kept, cursor = [" " if char != "\n" else "\n" for char in text], 0
+    token_pattern = re.compile(r'//|/\*|#*"')
+    while token := token_pattern.search(text, cursor):
+        start = token.start()
+        if token.group() == "//":
+            end = text.find("\n", start)
+            end = len(text) if end == -1 else end
+        elif token.group() == "/*":
+            end = block_comment_end(text, start)
+        else:
+            cursor = string_end(text, start)
+            continue
+        kept[start:end] = list(text[start:end])
+        cursor = end
+    return "".join(kept)
+
+
+def python_comments(text):
+    """只保留 # 注释与文档字符串（独占一条语句的字符串字面量）；其余字符串属于代码。"""
+    lines = text.splitlines()
+    kept = [""] * len(lines)
+    skipped = (tokenize.NL, tokenize.COMMENT)
+    tokens = list(tokenize.generate_tokens(io.StringIO(text).readline))
+    significant = [token for token in tokens if token.type not in skipped]
+    starts = (tokenize.NEWLINE, tokenize.INDENT, tokenize.DEDENT)
+    docstrings = {id(token) for before, token, after in zip([None] + significant, significant, significant[1:] + [None])
+                  if token.type == tokenize.STRING and (before is None or before.type in starts)
+                  and after is not None and after.type in (tokenize.NEWLINE, tokenize.ENDMARKER)}
+    for token in tokens:
+        if token.type == tokenize.COMMENT or id(token) in docstrings:
+            for offset, part in enumerate(token.string.split("\n")):
+                kept[token.start[0] - 1 + offset] += " " + part
+    return "\n".join(kept)
+
+
+def shell_comments(text):
+    """逐行取引号外、行首或空白后的 # 注释；不是 Shell 语法分析器，不识别 heredoc。"""
+    kept = []
+    for number, line in enumerate(text.splitlines(), 1):
+        quote, comment = None, ""
+        for index, char in enumerate(line):
+            if quote:
+                quote = None if char == quote else quote
+            elif char in "'\"":
+                quote = char
+            elif char == "#" and (index == 0 or line[index - 1].isspace()):
+                comment = "" if number == 1 and line.startswith("#!") else line[index:]
+                break
+        kept.append(comment)
+    return "\n".join(kept)
+
+
+def progress_note_paths(root):
+    for folder in ("AreaChain", "AreaChainTests", "AreaChainWidget"):
+        directory = root / folder
+        if directory.is_dir():
+            yield from ((path, swift_comments) for path in sorted(directory.rglob("*.swift")))
+    scripts = root / "scripts"
+    if scripts.is_dir():
+        for path in sorted(scripts.rglob("*")):
+            # scripts/tests 的夹具与用例说明必须写出被拦的字样本身，不纳入扫描。
+            if "tests" in path.relative_to(scripts).parts[:-1]:
+                continue
+            if path.suffix == ".py":
+                yield path, python_comments
+            elif path.suffix == ".sh":
+                yield path, shell_comments
+
+
+def check_progress_notes(root):
+    """代码注释只写原因、不变量和边界；批次、检查点与文档章节编号留给 git 历史和文档。"""
+    issues, checked = [], 0
+    for path, extract in progress_note_paths(root):
+        checked += 1
+        if not contained(path, root):
+            issues.append(issue(path, "源文件通过符号链接越出检查根目录。"))
+            continue
+        try:
+            original = path.read_text(encoding="utf-8")
+            comments = extract(original)
+        except (OSError, UnicodeError, SyntaxError, tokenize.TokenError) as error:
+            issues.append(issue(path, f"无法读取源文件：{type(error).__name__}"))
+            continue
+        for number, (raw, comment) in enumerate(zip(original.splitlines(), comments.split("\n")), 1):
+            if PROGRESS_EXEMPT in raw:
+                continue
+            match = PROGRESS_NOTE.search(comment)
+            if match:
+                issues.append(issue(path, f"注释里有进度字样「{match.group()}」：只写原因、不变量或边界。", number))
+    return result("progress-notes", checked, issues)
+
+
 def frontmatter_fields(text):
     lines = text.splitlines()
     if not lines or lines[0].strip() != "---":
@@ -1073,7 +1176,8 @@ def run_checks(root, personal_root=None):
                        check_component_catalog(root), check_performance_manifest(root),
                        check_ci_contract(root), check_skill_format(root),
                        check_skill_scope(root), check_theme_tokens(root),
-                       check_swift_file_size(root), check_long_text_loan(root),
+                       check_swift_file_size(root), check_progress_notes(root),
+                       check_long_text_loan(root),
                        check_unified_search_assembly(root)])
     if personal_root is not None:
         checks.append(check_links(personal_root, personal_docs(personal_root), "personal-links", restrict_targets=True))
