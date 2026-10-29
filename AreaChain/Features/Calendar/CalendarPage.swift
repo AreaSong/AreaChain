@@ -47,7 +47,7 @@ struct CalendarPage: View {
         nonmutating set { if hostContext == nil { localDraft = newValue } else { navigation.calendarDraft = newValue } }
     }
     @State private var localSpan: CalendarSpan = .month
-    /// 合并批 M-2：显式宿主里月／周归宿主（calendar.mode 写同一份）；默认入口仍用页面自己的状态。
+    /// 显式宿主里月／周归宿主（calendar.mode 写同一份）；默认入口仍用页面自己的状态。
     private var span: CalendarSpan {
         get { hostContext == nil ? localSpan : navigation.boardPages.calendarSpan }
         nonmutating set { if hostContext == nil { localSpan = newValue } else { navigation.boardPages.calendarSpan = newValue } }

@@ -1,9 +1,9 @@
 import Foundation
 
-/// 修复批 M-7G：窗口失焦遮罩后的唯一显式恢复入口。设计规则（§9.39、D3）：重新拿到 key 本身不恢复，
+/// 窗口失焦遮罩后的唯一显式恢复入口。重新拿到 key 本身不恢复，
 /// 须由用户在搜索框里的显式动作（改字、Return、⌘Return、↑↓、⌘F）解除本地遮罩并按宿主保留的查询重读，再处理这次动作。
 /// 这里只调用 `resumeDisplay` 与（锁定清查询后的）可信页面 enterPage：认证中、更改方式中、vault 不可用与隐私代次
-/// 仍由 ReadSession 的 eligibleHost 挡住；锁定已按 D3 清掉的查询不恢复（重读的是协调者里当前的查询，不是旧文字）。
+/// 仍由 ReadSession 的 eligibleHost 挡住；真正锁定时已清掉的查询不恢复（重读的是协调者里当前的查询，不是旧文字）。
 extension UnifiedSearchController {
     /// 返回继续这次动作要用的缓冲：通常就是 source；锁定清掉查询后经可信页面重建时是重建后的新缓冲（lease 已推进）。
     /// 遮罩时先解除遮罩：reread 为真则按当前查询重读，读完（成功或失败）且缓冲未变才执行 action；
@@ -47,7 +47,7 @@ extension UnifiedSearchController {
         }
     }
 
-    /// 锁定按 D3 清掉查询后（ContentQueryReducer.privacyReset），查询绑定停在 privacyInvalidated，只能由宿主明确传入
+    /// 真正锁定清掉查询后（ContentQueryReducer.privacyReset），查询绑定停在 privacyInvalidated，只能由宿主明确传入
     /// 可信当前页面（enterPage）重建。只在显式动作里做，重新拿到 key 不会走到这里。先过 eligibleHost 的其余门禁：
     /// 认证中、更改方式中、vault 不可用照常拒绝并说明，不因重建绕过。重建只换页面上下文——旧查询文字与条件已被清空，
     /// 不恢复；之后的读取仍按当时的保险箱状态取可见范围（仍锁定时受保护内容照旧不出现）。

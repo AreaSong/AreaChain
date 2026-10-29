@@ -10,7 +10,7 @@ final class EditDrafts {
     var notes: [String: String] = [:]
 
     /// 详情编辑草稿的键：待办标题与备注共用“todo-<id>”，子任务标题为“subtask-<id>”。
-    /// 编辑器与取消标题指令（合并批 M-1 C）都从这里取，不各写一份格式。
+    /// 编辑器与取消标题指令都从这里取，不各写一份格式。
     static func key(todo id: UUID) -> String { "todo-\(id)" }
     static func key(subtask id: UUID) -> String { "subtask-\(id)" }
 

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 底栏已生效筛选的胶囊（修复批 M-7F 恢复删开关前的旧底栏）：每个可单独移除，移除只写回 `BoardFilterSession`
+/// 底栏已生效筛选的胶囊（沿用旧底栏）：每个可单独移除，移除只写回 `BoardFilterSession`
 /// 这一份筛选；统一搜索结果随页面自动条件派生更新（`UnifiedSearchController.refreshTodayPageFilter`）。
 /// 胶囊条目、文字、图标与移除规则沿旧 `FooterBar.activeTokens`，外观沿旧 `MenuBarSearchField.tokenChip`。
 struct MenuBarFilterTokens: View {

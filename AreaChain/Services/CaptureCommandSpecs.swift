@@ -3,7 +3,7 @@ import SwiftData
 
 /// tasks.postponeYesterday：今日页“昨天”清单里全部未完成的待办（不含习惯）延至今天。
 /// 取法沿 AgendaProjection.overdueTodos（与今日页 DayBoardPageProjection 同一规则；指令没有页面筛选）。
-/// 目标在准备时推出、接受后冻结：之后清单增减都要求重新预览；写入沿 B-M1 批量改期的 moveTodo，在一次事务内完成。
+/// 目标在准备时推出、接受后冻结：之后清单增减都要求重新预览；写入沿批量改期的 moveTodo，在一次事务内完成。
 /// 总量沿 CommandBatchWriteSet.Counts.entityLimit；day 参数必须是今天。原页面按钮仍逐个保存，未改。
 @MainActor struct PostponeYesterdaySpec: SimpleCommandCallSpec {
     let dependencies: TaskCommandDependencies

@@ -67,7 +67,7 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
         try addDiary(text: text, dayKey: dayKey, tagIDs: tagIDs, allowLockedInsert: false)
     }
 
-    /// creationID 只供指令（合并批 M-4）在准备时固定新手记身份：已存在即拒绝，重试不会另建；原界面不传。
+    /// creationID 只供指令在准备时固定新手记身份：已存在即拒绝，重试不会另建；原界面不传。
     @discardableResult
     func addDiary(text: String, dayKey: String, tagIDs: Set<UUID>, allowLockedInsert: Bool,
                   creationID: UUID? = nil) throws -> DiaryEntry {

@@ -59,7 +59,7 @@ struct UnifiedSearchFocusShortcut: View {
 
     var body: some View {
         Button("") {
-            // ⌘F 是显式动作：遮罩时经唯一恢复入口解除并重读（修复批 M-7G）。
+            // ⌘F 是显式动作：遮罩时经唯一恢复入口解除并重读。
             controller.resumeForExplicitAction(source: controller.buffer)
             controller.requestInputFocus()
         }
@@ -75,7 +75,7 @@ struct MenuBarUnifiedSearchField: View {
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
 
     var body: some View {
-        // `#` 候选沿旧底栏搜索：全部存活标签（Catalog.liveTaskTags 与 liveTags 同义，修复批 M-7F）。
+        // `#` 候选沿旧底栏搜索：全部存活标签（Catalog.liveTaskTags 与 liveTags 同义）。
         UnifiedSearchInput(buffer: controller.buffer, focused: $controller.inputFocused, actions: controller.actions,
                            layout: .compact, reset: controller.inputReset, showsStatus: false,
                            minimumWidth: DaybookMetrics.Window.popoverFooterSearchMinWidth,

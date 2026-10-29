@@ -49,7 +49,7 @@ enum AttachmentCleanup {
 
     /// 删除意图以回收站元数据保留；文件或提交失败都能在下一次清空时重试。
     /// `store`／`root` 同时决定删除位置与“仍在未关联池中”的保留集合：两者必须来自同一目录，
-    /// 否则隔离宿主会按共享池判断保留、却删自己目录的文件（§9.102 M-5G）。默认值即生产的共享目录。
+    /// 否则隔离宿主会按共享池判断保留、却删自己目录的文件。默认值即生产的共享目录。
     static func purge(
         ids: Set<UUID>, context: ModelContext,
         store: AttachmentStore = .shared,

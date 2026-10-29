@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 合并批 M-2：需要独立确认的简单指令（标签回收／恢复、附件回收）沿 T-M4／T-M5 的共用确认面板。
+/// 需要独立确认的简单指令（标签回收／恢复、附件回收）沿回收与互转的共用确认面板。
 /// 接受后由“确认”打开面板（按钮与 ⌘Return 同一入口），面板的确认才提交；Esc 与取消只撤销确认。
 extension UnifiedSearchController {
     var simpleNeedsConfirmation: Bool {

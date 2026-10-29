@@ -47,7 +47,7 @@ import SwiftData
             storageID: ObjectIdentifier(environment.context.container), impact: impact)
     }
 
-    /// 来源须 ordinary；备注由适配自读取带键摘要（L8），带备注也可转换（确认面板列出“备注搬到新对象”），
+    /// 来源须 ordinary；备注由适配自读取带键摘要，带备注也可转换（确认面板列出“备注搬到新对象”），
     /// 摘要随资格冻结，确认前后备注被改即 changed。
     private func qualification(_ target: CommandObjectReference, command: CommandID) throws -> CommandTaskTitleEligibility {
         let owned: CommandTaskTitleEligibility

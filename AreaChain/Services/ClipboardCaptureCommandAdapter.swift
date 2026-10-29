@@ -90,7 +90,7 @@ import SwiftData
         let capture = ClipboardCapture.Capture(payload: payload, image: contents.image, todoID: preview.todoID,
                                                attachmentID: preview.attachmentID, dayKey: preview.dayKey,
                                                sourceBundleID: environment.capture.sourceBundleID())
-        // L7：与其他指令同一判定（TaskDerivedRows.protectedTagNotices → InputTagResolver.protection），命中即整条不写；
+        // 与其他指令同一判定（TaskDerivedRows.protectedTagNotices → InputTagResolver.protection），命中即整条不写；
         // 内容只在提交时读取，因此在写入前拦截，不能在预览阶段提前告知。
         // 判定读不出来时按未提交处理（失败即拒绝），不能退回到“跳过标签照常保存”。
         let notices: [CommandSimpleNotice]

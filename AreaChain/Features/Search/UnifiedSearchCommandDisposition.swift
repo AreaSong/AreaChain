@@ -1,6 +1,6 @@
 import Foundation
 
-/// 修复批 M-7G：“这条指令在当前宿主里怎么处理”的唯一判断入口。导航沿 executeNavigation 使用的同一个 navigationRoute，
+/// “这条指令在当前宿主里怎么处理”的唯一判断入口。导航沿 executeNavigation 使用的同一个 navigationRoute，
 /// 操作沿 initialBaseline／requestOperationSubmit 使用的同一组适配器路由；候选标签、状态行与目录级用例都读这里，不另写名单。
 extension UnifiedSearchController {
     enum NavigationRoute: Equatable {

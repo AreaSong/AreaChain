@@ -22,7 +22,7 @@ enum WorkspaceTab: String, CaseIterable, Identifiable {
 
     var titleKey: LocalizedStringKey { LocalizedStringKey(titleKeyName) }
 
-    /// 页面标题的文案键（字符串形式），供统一搜索候选标签说明目的地（修复批 M-7G）。
+    /// 页面标题的文案键（字符串形式），供统一搜索候选标签说明目的地。
     var titleKeyName: String {
         switch self {
         case .dashboard: "tab.dashboard"
@@ -162,12 +162,12 @@ final class WorkspaceNavigation {
     var allItemsQuery = ItemsListingQuery(todayKey: DayClock.shared.todayKey)
     /// 今日页“昨天／即将”展开状态：只在显式宿主里使用（见 WorkspaceTodayView）；离开今日页即复位。
     var todaySections = TasksPageSections()
-    /// 合并批 M-2：日历月／周、安排页月份与选择、标签页草稿；同上只在显式宿主里使用，离开对应页面即复位。
+    /// 日历月／周、安排页月份与选择、标签页草稿；同上只在显式宿主里使用，离开对应页面即复位。
     var boardPages = WorkspaceBoardPageState()
     var tagDrafts = WorkspaceTagPageDrafts()
     /// 总览连击或重复事项数要求今日页打开重复事项面板。页面消费后清掉。
     var wantsRecurringList = false
-    /// 合并批 M-3 B：routine.addPanel 请求今日页打开原“新建重复事项”面板（同 wantsRecurringList 的消费方式）。
+    /// routine.addPanel 请求今日页打开原“新建重复事项”面板（同 wantsRecurringList 的消费方式）。
     var wantsRecurringEditor = false
     /// 总览活动点进回收站时选中的行。离开回收站后清空。
     var focusedTrashID: UUID?

@@ -19,7 +19,7 @@ struct CommandSubtaskAcceptance: Equatable, CustomStringConvertible, CustomDebug
     var debugDescription: String { description }
 }
 
-/// 子项保留独立事实；只有显式 P-M2 运行才登记类型化依赖输出。
+/// 子项保留独立事实；只有显式装配类型化创建输出的运行才登记类型化依赖输出。
 struct CommandSubtaskFacts: Equatable, CustomStringConvertible, CustomDebugStringConvertible {
     enum State: Equatable { case pending, notSubmitted, noChange, saved, unknown }
     let object: CommandObjectReference

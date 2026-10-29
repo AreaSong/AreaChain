@@ -43,7 +43,7 @@ struct DiaryQueryPrivacy {
         var readable = diary
         // 不可读快照可能携带展示占位文字；不能把它当正文判断旧标记。
         if !readable.isContentAvailable { readable.text = "" }
-        // 搜索读取侧判定（M-6R）：含旧 #密码 标记与“密码”名标签，原界面的 isSensitive 自 0789245 起不再看它们。
+        // 搜索读取侧判定：含旧 #密码 标记与“密码”名标签，原界面的 isSensitive 自 0789245 起不再看它们。
         let sensitive = DiaryPrivacy.isSearchSensitive(readable, tagNames: metadata.tagNames ?? [:],
                                                        privateTagIDs: metadata.privateTagIDs ?? [])
         let namesComplete = metadata.tagNames.map { names in

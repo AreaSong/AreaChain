@@ -17,7 +17,7 @@ struct DiaryRowCommandStrip: View {
     var onTogglePin: () -> Void
     var onAttach: () -> Void
     var onPaste: () -> Void
-    /// 隔离宿主没有附件存储时为 false，附件两项禁用（§9.102）。
+    /// 隔离宿主没有附件存储时为 false，附件两项禁用。
     var canAttach = true
     var onTogglePrivate: () -> Void
     var onInspect: () -> Void

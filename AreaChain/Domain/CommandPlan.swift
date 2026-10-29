@@ -368,7 +368,7 @@ struct CommandPlan: Equatable, CustomStringConvertible, CustomDebugStringConvert
         revision += 1
     }
 
-    /// L-M1b：单项长文 Run 未提交（失败、冲突、取消未开始）或核为未写入时，托管正文按印记核对后还回草稿。
+    /// 单项长文 Run 未提交（失败、冲突、取消未开始）或核为未写入时，托管正文按印记核对后还回草稿。
     /// 不记 returnedAttempts：归还后整个 Run 丢弃，重新预览封存是新的 Run 与新的 attempt，不沿用旧 Run 的重试许可。
     mutating func restoreLongText(_ run: CommandExecutionRun, texts: [UUID: [CommandParameterID: String]],
                                   digest: CommandTextDigest, verifiedNotApplied: Bool) throws {

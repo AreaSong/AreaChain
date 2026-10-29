@@ -41,7 +41,7 @@ extension CommandCatalogBuilder {
             entry("trash.browse", "/trash/browse", .query, "D1:browse",
                   [choice(.kind, "all todo routine diary image tag").defaulting(to: .choice("all"))])
                 .scope(.trash),
-            // 合并批 M-3：与 tag.restore 同为可逆修改，经骨架的共用独立确认、只能单项；认证只为受保护内容，规格一律拒绝。
+            // 与 tag.restore 同为可逆修改，经骨架的共用独立确认、只能单项；认证只为受保护内容，规格一律拒绝。
             entry("trash.restore", "/trash/restore", .modification, "D1:restore")
                 .targets([.todo, .routine, .diary, .image, .tag]).ordinary().requiring([.authentication, .independentConfirmation]),
             entry("trash.delete", "/trash/delete", .systemAction, "D1:delete")

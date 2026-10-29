@@ -7,7 +7,7 @@ enum UnifiedSearchInputLayout: CaseIterable {
     var maximumSuggestionsHeight: CGFloat { self == .standard ? 300 : 240 }
 }
 
-/// 宿主提供唯一显示值和带原 lease 的事件回调；隔离宿主与正式版（M-6，开关控制）共用。
+/// 宿主提供唯一显示值和带原 lease 的事件回调；隔离宿主与正式版共用。
 struct UnifiedSearchInput: View {
     let buffer: UnifiedSearchBuffer
     let actions: UnifiedSearchActions

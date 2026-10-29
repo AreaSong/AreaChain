@@ -12,7 +12,7 @@ import re
 
 TEST_TARGET = "AreaChainTests"
 SOURCE_ROOT = "AreaChain"
-# 一个文件的直接引用超过此数（核心文件）时不再跑全部引用，收敛到同名测试 + 冒烟集（修复批 M-6R）。
+# 一个文件的直接引用超过此数（核心文件）时不再跑全部引用，收敛到同名测试 + 冒烟集。
 REFERENCE_SUITE_LIMIT = 60
 # 整次推导的套件总数上限；超过时同样收敛到同名测试 + 冒烟集。间接与大面积影响留给替换日常应用前的全量。
 TOTAL_SUITE_LIMIT = 120
@@ -217,7 +217,7 @@ def _plan_file(index, path, ui_mode):
     if len(refs) > REFERENCE_SUITE_LIMIT:
         omitted = len(refs - same)
         if not ui_mode:
-            # 核心文件：直接引用太多（M-6 曾推出 400 类），只跑同名测试 + 冒烟集；其余留给替换前的全量。
+            # 核心文件：直接引用太多（核心文件曾推出约 400 个类），只跑同名测试 + 冒烟集；其余留给替换前的全量。
             return same | index.smoke(), (f"{path}：被 {len(refs)} 个测试类引用，超过上限 {REFERENCE_SUITE_LIMIT}，"
                 f"只跑同名测试与冒烟集，省略 {omitted} 个引用类；间接影响留给替换日常应用前的全量{skipped}"), same
         return same, f"{path}：被 {len(refs)} 个测试类引用，UI 模式只跑同名测试{skipped}", same

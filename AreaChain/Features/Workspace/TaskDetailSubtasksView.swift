@@ -207,7 +207,7 @@ struct SubtaskRowView: View {
                 focused: $editFocused, context: .taskTags, fontSize: 11, onSubmit: commitEdit, onEscape: cancelEdit
             )
                 .onChange(of: editFocused) { _, focused in
-                    // 只有隔离宿主沿 N-M1 不在失焦时保存；正式版与旧界面一致，失焦即保存（M-7F）。
+                    // 只有隔离宿主为保证导航零写入不在失焦时保存；正式版与旧界面一致，失焦即保存。
                     if !focused, isEditing, hostContext?.isIsolated != true {
                         if boardSelection.consumeEscapeCancelsEdits() {
                             cancelEdit()

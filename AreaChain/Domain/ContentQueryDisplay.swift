@@ -104,7 +104,7 @@ struct ContentQueryDisplaySnapshot: CustomStringConvertible, CustomDebugStringCo
 struct ContentQueryDisplayVisibility: Equatable {
     let units: Set<ContentQueryDisplayUnitID>
     let members: Set<CommandObjectReference>
-    /// nil 保持 2J-3A 显式展示调用的兼容语义；分页始终传入有界集合。
+    /// nil 保持既有显式展示调用的兼容语义；分页始终传入有界集合。
     var contexts: Set<ContentQueryDisplayContext>?
 
     static func all(_ units: [ContentQueryDisplayUnit]) -> Self {

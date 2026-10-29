@@ -1,6 +1,6 @@
 import Foundation
 
-/// 合并批 M-4 D：手记复制内容的唯一规则（同 TaskCopyContent）。整篇是读出的原文；标题与备注沿手记卡片行的
+/// 手记复制内容的唯一规则（同 TaskCopyContent）。整篇是读出的原文；标题与备注沿手记卡片行的
 /// 首行／其余拆分（首行为空时整段作标题、没有备注）。只用于普通手记的明文，受保护手记不在这里取正文。
 enum DiaryCopyContent {
     enum Section: String, CaseIterable, Equatable {

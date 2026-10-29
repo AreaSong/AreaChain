@@ -40,7 +40,7 @@ import SwiftData
         }
     }
 
-    /// L7：正文解析出的标签命中手记预置名或已有私密标签（活的或墓碑），整条指令不可执行。判定与原界面共用
+    /// 正文解析出的标签命中手记预置名或已有私密标签（活的或墓碑），整条指令不可执行。判定与原界面共用
     /// `InputTagResolver.protection`；差别只在结果：指令整条拒绝，原界面照常保存文字、跳过这些标签并提示。
     static func protectedTagNotices(_ names: [String], in context: ModelContext) throws -> [CommandSimpleNotice] {
         try InputTagResolver.preview(names, in: context).compactMap { name, effect in
@@ -79,7 +79,7 @@ import SwiftData
     /// 保存后：已关联的保持，`matches` 给出的新关联加入。
     static func expectedAttachments(_ text: String, owner: CommandObjectReference, before: CommandSimpleState,
                                     attachments: TaskNotesService.Attachments, in context: ModelContext) -> [CommandSimpleRow] {
-        // 合并批 M-4：手记正文同样经 InputAttachmentResolver 关联 @附件，拥有者类型按对象类型给出。
+        // 手记正文同样经 InputAttachmentResolver 关联 @附件，拥有者类型按对象类型给出。
         let kind: AttachmentOwner = owner.type == .todo ? .todo : owner.type == .diary ? .diary : .routine
         let matches = InputAttachmentResolver.matches(in: text, ownerKind: kind, ownerID: owner.id, context: context,
                                                       store: attachments.store, root: attachments.root)

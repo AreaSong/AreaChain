@@ -3,7 +3,7 @@ import SwiftData
 
 /// routine.capture：一行文字快速新增重复事项，执行只经 RoutineCaptureService 的借用出口（与重复事项面板同一 `apply`）。
 /// 新习惯身份在准备时分配一次；排序值沿原面板 Catalog.nextSortOrder（全部习惯，含已删除）。
-/// 新标签沿原入口在保存时新建；搜索仍不能创建标签。L-M1b：正文只在准备期由托管同步读宿主草稿，封存后只剩印记。
+/// 新标签沿原入口在保存时新建；搜索仍不能创建标签。正文只在准备期由托管同步读宿主草稿，封存后只剩印记。
 /// 单独成文件，使借用出口守卫能按文件精确放行本规格，而不放行同处的已装配指令。
 @MainActor struct RoutineCaptureSpec: SimpleLongTextCommandSpec, SimpleCommandCallSpec {
     let dependencies: TaskCommandDependencies

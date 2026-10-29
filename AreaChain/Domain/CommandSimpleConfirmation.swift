@@ -1,6 +1,6 @@
 import Foundation
 
-/// 合并批 M-2：需要独立确认的简单指令（标签回收／恢复、附件回收）沿 T-M4／T-M5 的同一绑定规则与共用面板。
+/// 需要独立确认的简单指令（标签回收／恢复、附件回收）沿回收与互转的同一绑定规则与共用面板。
 /// 摘要来自同一份冻结预览：目标行数与预览说明行（受影响对象数等）；预览一变，旧确认就不再匹配。
 struct CommandSimpleConfirmationSummary: Equatable {
     let rows: Int

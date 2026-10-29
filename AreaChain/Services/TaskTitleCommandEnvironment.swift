@@ -14,7 +14,7 @@ import SwiftData
     var afterPublication: () throws -> Void = {}
     private var sourceRevision: UUID?
     private var sourceNotes: CommandNotesProof?
-    /// 协调者的带键摘要（L6）；由装配它的适配器设置，用于自读备注的无备注证明（L8）。未设置即无证明、不可执行。
+    /// 协调者的带键摘要；由装配它的适配器设置，用于自读备注的无备注证明。未设置即无证明、不可执行。
     var notesKey: CommandTextDigest?
     private var readingTarget: UUID?
     lazy var fieldReader = TaskFieldCommandReader(environment: self)
@@ -23,7 +23,7 @@ import SwiftData
         let evidence: CommandTaskTitleEligibility
         do { evidence = try source(readingTarget) }
         catch { throw TaskTitleCommandIssue.sourceUnavailable }
-        // L8：适配自读备注取带键摘要；标题不放宽（`//` 派生备注另行定界），有备注或无法证明都拒绝。
+        // 适配自读备注取带键摘要；标题不放宽（`//` 派生备注另行定界），有备注或无法证明都拒绝。
         let notes = CommandNotesProofReader.proof(of: .init(type: .todo, id: readingTarget), in: context, key: notesKey)
         guard notes != .unproven else { throw TaskTitleCommandIssue.sourceUnavailable }
         guard CommandNotesProofReader.admits("todo.title", notes) else { throw TaskTitleCommandIssue.notesNotSupported }

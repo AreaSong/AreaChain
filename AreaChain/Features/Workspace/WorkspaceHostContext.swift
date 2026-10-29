@@ -10,11 +10,11 @@ struct WorkspaceHostContext {
     let clipboard: ClipboardHistorySession
     let shortcuts: ShortcutStore
     var attachments: AttachmentStore?
-    /// 合并批 M-6：正式版统一搜索宿主为真，各页附件读写保持无宿主时的原生产取值；隔离宿主保持 false。
+    /// 正式版统一搜索宿主为真，各页附件读写保持无宿主时的原生产取值；隔离宿主保持 false。
     var sharesProductionStorage = false
 
     /// 隔离宿主（测试与隔离验收）不接真实系统设置、隐私、备份、剪贴板与快捷键页，这些页只读呈现；
-    /// 正式版宿主与无宿主相同，页面照常可操作（收尾批 M-7：删除开关后正式版恒带宿主，不能因此禁用这些页）。
+    /// 正式版宿主与无宿主相同，页面照常可操作（正式版恒带宿主，不能因此禁用这些页）。
     var isIsolated: Bool { !sharesProductionStorage }
 }
 
@@ -25,7 +25,7 @@ struct WorkspaceAttachmentStorage {
     let ordinaryOnly: Bool
 
     /// 按宿主决定附件存储的唯一入口：无宿主或正式版统一搜索宿主（生产）沿用共享目录；隔离宿主只用显式注入的存储，
-    /// 未注入时为 nil，调用方按"无附件"呈现并禁用写入，绝不回退共享目录（§9.85 N-M2）。
+    /// 未注入时为 nil，调用方按"无附件"呈现并禁用写入，绝不回退共享目录。
     static func resolve(_ host: WorkspaceHostContext?) -> WorkspaceAttachmentStorage? {
         guard let host, !host.sharesProductionStorage else { return .init(store: .shared, root: nil, ordinaryOnly: false) }
         guard let store = host.attachments else { return nil }

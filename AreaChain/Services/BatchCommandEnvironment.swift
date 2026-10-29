@@ -22,7 +22,7 @@ import SwiftData
     var beforePublication: () throws -> Void = {}
     var afterPublication: () throws -> Void = {}
     lazy var reader = BatchCommandReader(environment: self)
-    /// 协调者的带键摘要（L6）；由装配它的适配器设置，用于自读备注的无备注证明（L8）。未设置即无证明、不可执行。
+    /// 协调者的带键摘要；由装配它的适配器设置，用于自读备注的无备注证明。未设置即无证明、不可执行。
     var notesKey: CommandTextDigest?
 
     init(context: ModelContext, center: NotificationCenter, dependencies: Dependencies,
@@ -56,7 +56,7 @@ import SwiftData
         try publish(changed: result.facts.impacts.filter { !$0.noChange }.map(\.target)) { result.facts.external = $0 }
     }
 
-    /// 批量修改与 T-M4 回收共用私有发布；每个已改变对象只经注入刷新登记一次外部结果。
+    /// 批量修改与批量回收共用私有发布；每个已改变对象只经注入刷新登记一次外部结果。
     func publish(changed targets: [CommandObjectReference],
                  observe: @escaping ([CommandBatchFacts.External]) -> Void) throws {
         try beforePublication()

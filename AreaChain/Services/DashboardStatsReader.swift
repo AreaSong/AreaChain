@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// 合并批 M-3 B：总览投影的唯一取数入口。总览页（@Query 的同一组模型）与统计指令（显式上下文读取）都经这里
+/// 总览投影的唯一取数入口。总览页（@Query 的同一组模型）与统计指令（显式上下文读取）都经这里
 /// 调 DashboardProjection，私密手记按 diarySource 的同一口径去掉正文并计为私密，不另算、不额外暴露。
 enum DashboardStatsReader {
     static func snapshot(todos: [TodoItem], routines: [DailyRoutine], checks: [RoutineCheck], diaries: [DiaryEntry],

@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// G1 标签的四个简单指令，是 X-1 骨架的第一批真实消费者。只调用原 CatalogRepositoryProtocol 的方法；
+/// G1 标签的四个简单指令，是简单指令骨架的第一批真实消费者。只调用原 CatalogRepositoryProtocol 的方法；
 /// 名称规则（修剪空白、空名、规范化重名、预置标签）沿用 SwiftDataCatalogRepository 与 TagManagementPage。
 /// 私密标签：原界面改名、改色、排序都不需要解锁，保护按标签 UUID 关联，本指令保持一致。
 /// 新建标签只来自显式 tag.create；搜索仍不能创建标签。
@@ -174,7 +174,7 @@ import SwiftData
 }
 
 /// tag.order → reorderTags(orderedIDs:)：全部活标签（同标签页拖动的口径）中把目标移到 position 指定的位置。
-/// 合并批 M-1 D 起与 subtask／routine／tasks.order 一致用 position，不再把选择器登记顺序当新顺序。
+/// 与 subtask／routine／tasks.order 一致用 position，不再把选择器登记顺序当新顺序。
 @MainActor struct TagOrderSpec: SimpleCommandSpec {
     let repository: TagCommandSpecs.Repository
     let command = CommandID(rawValue: "tag.order")

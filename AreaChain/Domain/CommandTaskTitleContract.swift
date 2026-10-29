@@ -5,7 +5,7 @@ enum TaskTitleCommandIssue: Error, Equatable {
     case sourceUnavailable, sourceChanged, notesNotSupported, catalogChanged, fieldsChanged(Set<TaskTitleField>)
 }
 
-/// 普通证明（revision、protection）来自受控来源所有者；备注证明不再由所有者给出（合并批 M-1 B，L8）：
+/// 普通证明（revision、protection）来自受控来源所有者；备注证明不再由所有者给出：
 /// 适配器自己读对象备注，填入 `notes`。证明随资格一起参与相等比较，执行期间备注被改即判定冲突。
 struct CommandTaskTitleEligibility: Equatable {
     let revision: UUID
@@ -14,7 +14,7 @@ struct CommandTaskTitleEligibility: Equatable {
     var notes: CommandNotesProof = .unproven
 }
 
-/// 备注“有／无”的证明：只存协调者带键摘要（L6 的随机内存密钥 HMAC），不存明文。
+/// 备注“有／无”的证明：只存协调者带键摘要（随机内存密钥 HMAC），不存明文。
 /// unproven：未读或没有密钥，一律不可执行；unreadable：读不到唯一对象，由调用方原有的缺失／重复检查拒绝。
 enum CommandNotesProof: Equatable, CustomStringConvertible, CustomDebugStringConvertible {
     case unproven, unreadable, absent(digest: String), present(digest: String)

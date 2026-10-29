@@ -46,7 +46,7 @@ final class ContentQueryReadGate: Sendable {
         storage.withLock { $0.active = false; $0.epoch &+= 1 }
     }
 
-    /// 正文许可的观察闸门复查：自创建起任何一次撤销都使许可失效（修复批 M-6R）。
+    /// 正文许可的观察闸门复查：自创建起任何一次撤销都使许可失效。
     func requireUnchanged() throws {
         guard state.epoch == 0 else { throw ContentQueryReadSessionError.stalePermit }
     }

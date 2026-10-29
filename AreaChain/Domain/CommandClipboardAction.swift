@@ -1,6 +1,6 @@
 import Foundation
 
-/// 合并批 M-2 D：剪贴板历史的页面指令（显式 /clipboard 范围，不进普通搜索）。浏览与搜索只读；复制、粘贴、
+/// 剪贴板历史的页面指令（显式 /clipboard 范围，不进普通搜索）。浏览与搜索只读；复制、粘贴、
 /// 字母快捷复制与置顶沿历史页原入口；小窗置顶沿小窗现有窗口管理。删除、清空、记录控制与偏好不在这里（用户决策 1、2）。
 enum CommandClipboardAction: Equatable {
     case browse, search(String, ClipboardSearchMode)
@@ -28,7 +28,7 @@ enum CommandClipboardAction: Equatable {
         switch command {
         case "clipboard.browse": self = .browse
         case "clipboard.search":
-            // 2G：query 可省略（代表空，浏览全部）；显式给出时沿参数校验非空单行。模式必须显式给出，不暗中模糊。
+            // query 可省略（代表空，浏览全部）；显式给出时沿参数校验非空单行。模式必须显式给出，不暗中模糊。
             guard case .choice(let raw)? = arguments[.mode]?.value, let mode = ClipboardSearchMode(rawValue: raw) else {
                 throw CommandPageIssue.invalidArguments
             }

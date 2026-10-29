@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// 合并批 M-3 C：回收站恢复的唯一写入。回收站页（DayBoardMutations.restore*）与 trash.restore 共用：
+/// 回收站恢复的唯一写入。回收站页（DayBoardMutations.restore*）与 trash.restore 共用：
 /// 待办连同同一删除戳的子任务与附件、习惯与手记连同附件、标签，都只调原仓储的 restore*；
 /// 附件只能在拥有者仍在时单独恢复（孤儿附件拒绝，同回收站页 canRestore 与 AttachmentAccess 的拥有者判定）。
 @MainActor struct TrashRestoreService {

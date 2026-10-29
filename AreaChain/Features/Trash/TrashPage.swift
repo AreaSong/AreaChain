@@ -29,7 +29,7 @@ struct TrashPage: View {
         }
         let catalog = tags.compactMap { TrashRow.tag($0) }
         let rows = standing + tasks + notes + attachmentRows() + catalog
-        // 无宿主附件存储时清除一律禁用（含标签行），与附件页“写入禁用”一致，不新增文案（§9.102）。
+        // 无宿主附件存储时清除一律禁用（含标签行），与附件页“写入禁用”一致，不新增文案。
         guard store == nil else { return rows }
         return rows.map { row in
             var disabled = row

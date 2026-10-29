@@ -834,7 +834,7 @@ def required_skill_files(root, prefixes):
 LOAN_FILE = "AreaChain/Services/CommandLongTextEscrow.swift"
 LOAN_SPEC_FILES = {"AreaChain/Services/NotesCommandSpec.swift", "AreaChain/Services/RoutineCaptureCommandSpec.swift",
                    "AreaChain/Services/DiaryBodyCommandSpecs.swift"}
-# L-M1b 长文借用：正文取值器只在托管文件里；保存出口（任务备注、快速新增，合并批 M-4 起加手记正文）只由托管文件
+# 长文借用：正文取值器只在托管文件里；保存出口（任务备注、快速新增、手记正文）只由托管文件
 # 与三份长文规格文件引用。按符号放行，不按整份文件放行；手记出口必须与其他出口同在托管文件。
 LOAN_SYMBOLS = {
     "lentText": {LOAN_FILE},
@@ -887,7 +887,7 @@ def check_long_text_loan(root):
     return result("long-text-loan", len(paths), issues)
 
 
-# 合并批 M-6：正式版统一搜索只有一个装配点（主文件＋指令扩展）。测试目录不受限，测试与正式版共用同一装配代码。
+# 正式版统一搜索只有一个装配点（主文件＋指令扩展）。测试目录不受限，测试与正式版共用同一装配代码。
 ASSEMBLY_FILES = {
     "AreaChain/Features/Search/UnifiedSearchProductionAssembly.swift",
     "AreaChain/Features/Search/UnifiedSearchProductionAssembly+Commands.swift",

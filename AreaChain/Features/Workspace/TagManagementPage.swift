@@ -40,7 +40,7 @@ struct TagManagementPage: View {
     @State var pendingColorTagIDs: Set<UUID> = []
     @State var pageError: String?
 
-    /// 合并批 M-2：显式宿主里新建与改名草稿归宿主（tag.cancel 写同一份）；默认入口仍用页面自己的状态。
+    /// 显式宿主里新建与改名草稿归宿主（tag.cancel 写同一份）；默认入口仍用页面自己的状态。
     private var pageDrafts: WorkspaceTagPageDrafts {
         get { hostContext == nil ? localDrafts : navigation.tagDrafts }
         nonmutating set { if hostContext == nil { localDrafts = newValue } else { navigation.tagDrafts = newValue } }

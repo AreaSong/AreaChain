@@ -1,6 +1,6 @@
 import Foundation
 
-/// 合并批 M-3 A：“在原页面完成”的唯一对照。系统类、永久删除类、附件系统动作（2026-10-20 用户决策 1、2）
+/// “在原页面完成”的唯一对照。系统类、永久删除类、附件系统动作（2026-10-20 用户决定）
 /// 在指令里只导航到原页面，不写数据、不调系统 API、不申请权限、不打开外部网址；真正的操作由原页面完成。
 /// 本表只声明目的地与说明，不是可用性规则，也不授予任何执行能力。
 struct CommandOriginalPage: Equatable, Sendable {
@@ -68,7 +68,7 @@ struct CommandOriginalPage: Equatable, Sendable {
             privacy.systemUnlock privacy.setPassword privacy.changePassword privacy.removePassword privacy.idle \
             privacy.tags privacy.unprotect privacy.retryImages privacy.retryKeys privacy.quitForCleanup
             """, .page("privacy"), note: "privacy")
-        // J2（合并批 M-4 决策 3）：手记“私密”标记、显示与遮罩要在原手记页完成（认证、隐私转换与显示状态都属于那一页）
+        // J2：手记“私密”标记、显示与遮罩要在原手记页完成（认证、隐私转换与显示状态都属于那一页）
         add("diary.privateMark diary.reveal diary.mask", .page("diary"), note: "diaryPrivacy")
         // D1～D4：回收站永久删除、数据交换、加密备份、降级恢复（降级提示就在数据与备份页）
         add("trash.delete trash.empty", .page("trash", focusesTrash: true), note: "permanentDeletion")

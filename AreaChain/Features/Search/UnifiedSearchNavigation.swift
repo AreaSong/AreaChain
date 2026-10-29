@@ -18,7 +18,7 @@ struct UnifiedSearchReturnContext {
 extension UnifiedSearchController {
     var isNavigationInput: Bool { browsedCommand.map(Self.routesAsNavigation) == true }
 
-    /// 走导航面板（不建草稿）的指令：导航类，合并批 M-3 的“在原页面完成”对照与窗口／统计／退出等直接动作。
+    /// 走导航面板（不建草稿）的指令：导航类、“在原页面完成”对照与窗口／统计／退出等直接动作。
     static func routesAsNavigation(_ command: CommandDescriptor) -> Bool {
         command.category == .navigation || CommandOriginalPage.route(for: command.id) != nil
             || CommandSystemAction.commands.contains(command.id.rawValue)
@@ -36,7 +36,7 @@ extension UnifiedSearchController {
         guard let router = navigationRouter else { navigationMessage = "unified.navigation.unassembled"; return }
         let parsed = CommandPathParser().parse(.init(text: source.text))
         guard let command = parsed.command else { return }
-        // 分派与候选标签共用 navigationRoute（修复批 M-7G 唯一判断入口），不另写平行名单。
+        // 分派与候选标签共用 navigationRoute（唯一判断入口），不另写平行名单。
         let route = navigationRoute(for: command)
         if case .page(let page)? = route, parsed.arguments.isEmpty, parsed.state == .command {
             navigate(.page(page), source: source)
@@ -148,7 +148,7 @@ extension UnifiedSearchController {
         } catch { navigationMessage = navigationFailure(error as? WorkspaceOpenFailure ?? .invalidTarget) }
     }
 
-    /// `then` 在页面实际显示后调用（合并批 M-1 C 的选择类指令据此在页面投影上执行）；被拒或过期不调用。
+    /// `then` 在页面实际显示后调用（任务页的选择类指令据此在页面投影上执行）；被拒或过期不调用。
     func navigate(_ destination: WorkspaceNavigationDestination, source: UnifiedSearchBuffer,
                   content: ContentQueryBrowseOpen? = nil, origin: CommandObjectReference? = nil,
                   then completion: ((WorkspaceNavigationOutcome) -> Void)? = nil) {
@@ -262,7 +262,7 @@ extension UnifiedSearchController {
         catch { simpleFailure = navigationFailure(error as? WorkspaceOpenFailure ?? .invalidTarget) }
     }
 
-    /// 合并批 M-4：受保护手记、加私密标签与超长正文改在原手记页完成；沿 M-3 打开原页面里手记的目的地（手记页）。
+    /// 受保护手记、加私密标签与超长正文改在原手记页完成；沿“打开原页面”里手记的目的地（手记页）。
     func openDiaryOriginalPage(_ source: UnifiedSearchBuffer) {
         guard validates(source) else { return }
         guard navigationRouter != nil else { simpleFailure = "unified.navigation.unassembled"; return }

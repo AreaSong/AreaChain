@@ -148,7 +148,7 @@ final class ClipboardHistorySession {
         return store.imageMetadata(named: name)
     }
 
-    /// 返回是否保存成功（合并批 M-2：指令只有保存成功才报告；原界面调用忽略返回值，行为不变）。
+    /// 返回是否保存成功（指令只有保存成功才报告；原界面调用忽略返回值，行为不变）。
     @discardableResult
     func togglePin(_ id: UUID) -> Bool {
         let next = items.contains(where: { $0.id == id && $0.isPinned })

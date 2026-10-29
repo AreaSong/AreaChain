@@ -1,6 +1,6 @@
 import Foundation
 
-/// T-M4 回收沿批量的显式隔离装配；能力默认关闭，只有显式 softTrash 才开放四个回收命令。
+/// 回收沿批量的显式隔离装配；能力默认关闭，只有显式 softTrash 才开放四个回收命令。
 /// 流程固定为 prepare → accept → 独立 confirm → submit，确认只绑定接受时的计划与目标。
 @MainActor final class TrashCommandAdapter {
     enum Capability { case closed, softTrash }

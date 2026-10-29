@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// 合并批 M-4 C：手记组织（J2）——记录置顶、改日、普通标签。只有普通手记直接执行；“私密”标记、显示与遮罩
+/// 手记组织（J2）——记录置顶、改日、普通标签。只有普通手记直接执行；“私密”标记、显示与遮罩
 /// 在 CommandOriginalPage 里改为打开原手记页。
 extension DiaryCommandSpecs {
     /// 默认不装配，只在隔离 QA 测试里显式传给 SimpleCommandAdapter。
@@ -85,7 +85,7 @@ extension DiaryCommandSpecs {
     }
 }
 
-/// diary.tags（2026-10-21 决策 2 解决原未决的 privateTagTransition）：普通标签的加、减、整体替换与清空直接执行，
+/// diary.tags（2026-10-21 用户决定，解决原未决的 privateTagTransition）：普通标签的加、减、整体替换与清空直接执行，
 /// 逐个沿原菜单的 toggleTag；要加私密标签等于隐私转换，整条拒绝并引导到原手记页。移除标签不会解除已有保护
 /// （产品规则），而受保护手记本就改为打开原页面。搜索不能创建标签：只接已有的活标签。
 @MainActor struct DiaryTagsSpec: SimpleCommandSpec {

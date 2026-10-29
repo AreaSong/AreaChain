@@ -1,7 +1,7 @@
 import AppKit
 import SwiftData
 
-/// 合并批 M-4：手记编辑会话的保存／重载／舍弃与普通手记复制。只作用于已打开的小窗会话（DiaryWindows 的现有管理；
+/// 手记编辑会话的保存／重载／舍弃与普通手记复制。只作用于已打开的小窗会话（DiaryWindows 的现有管理；
 /// 手记页卡片的编辑会话是页面私有状态，宿主没有入口），复用 DiaryEditorSession 的保存、重载与冲突处理，
 /// 不绕过会话直写仓储。受保护的会话、受保护的手记都不在这里处理：调用方改为前置小窗或打开原手记页。
 extension WorkspacePageCommands {

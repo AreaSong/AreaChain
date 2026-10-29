@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// 合并批 M-1 C：任务页交互与查询指令的页面宿主。只操作显式装配的工作台——WorkspaceSearchRouter 的同一
+/// 任务页交互与查询指令的页面宿主。只操作显式装配的工作台——WorkspaceSearchRouter 的同一
 /// navigation、筛选会话与草稿——并直接读写页面自己的那一份状态，不另存可编辑副本，也就不会循环回写。
 /// 页面不对时拒绝并说明需要哪一页，不替用户切页。默认不装配：控制器的 pageCommands 为 nil，生产没有构造点。
 @MainActor final class WorkspacePageCommands {
@@ -10,14 +10,14 @@ import SwiftData
     let drafts: EditDrafts
     let pending: PendingCompletionManager
     let context: ModelContext
-    /// 宿主窗口可用性（沿 N-M1 的 validateHost）；服务层测试可注入。
+    /// 宿主窗口可用性（沿导航的 validateHost）；服务层测试可注入。
     var hostAvailable: () throws -> Void
-    /// 合并批 M-2：看板“回今天／本月”的今天与日期推算；与页面同源，测试可注入。
+    /// 看板“回今天／本月”的今天与日期推算；与页面同源，测试可注入。
     var today: () -> String = { DayClock.shared.todayKey }
     var calendar: Calendar = .current
-    /// 合并批 M-2 D：剪贴板历史的复制／粘贴与小窗；默认 nil（未装配），由隔离夹具显式注入 fake 窗口与按键。
+    /// 剪贴板历史的复制／粘贴与小窗；默认 nil（未装配），由隔离夹具显式注入 fake 窗口与按键。
     var clipboard: ClipboardHistoryActions?
-    /// 合并批 M-3 B、C：窗口、面板、小窗、统计、退出与立即锁定；默认 nil（未装配），隔离夹具注入 fake 系统动作。
+    /// 窗口、面板、小窗、统计、退出与立即锁定；默认 nil（未装配），隔离夹具注入 fake 系统动作。
     var system: WorkspaceSystemCommands?
     var navigation: WorkspaceNavigation { router.navigation }
 
@@ -90,7 +90,7 @@ import SwiftData
         return .init(action: action, after: after)
     }
 
-    /// 沿 N-M1：页面实际挂载并登记了当前投影（inspectorTargetIDs）之后才选择；不在投影里的目标拒绝，不换成别的行。
+    /// 页面实际挂载并登记了当前投影（inspectorTargetIDs）之后才选择；不在投影里的目标拒绝，不换成别的行。
     func applySelection(_ preview: WorkspacePagePreview) throws -> WorkspacePageReceipt {
         if case .ganttSelect = preview.action { return try applyGanttSelection(preview) }
         guard try requirePage(for: preview.action) == preview.page else { throw CommandPageIssue.stale }
@@ -238,13 +238,13 @@ enum WorkspacePageSnapshot: Equatable {
     case titleDraft(Bool)
     case pending(Bool)
     case streak(current: Int, best: Int)
-    /// 合并批 M-2：日历月／周（CalendarSpan 的 rawValue）与看板修改转交的目标指令。
+    /// 日历月／周（CalendarSpan 的 rawValue）与看板修改转交的目标指令。
     case calendarSpan(String)
     case transfer(CommandBoardTransfer)
-    /// 合并批 M-2 B～D：标签页草稿是否还在；只读查询的结果（前若干条的原文与总数）。
+    /// 标签页草稿是否还在；只读查询的结果（前若干条的原文与总数）。
     case tagDraft(Bool)
     case results([String], total: Int)
-    /// 合并批 M-2 D：剪贴板条目是否置顶、小窗是否置顶、复制／粘贴实际发生了什么（copied／pasted／needsAccessibility）。
+    /// 剪贴板条目是否置顶、小窗是否置顶、复制／粘贴实际发生了什么（copied／pasted／needsAccessibility）。
     case clipboardPin(Bool), windowPinned(Bool), clipboardResult(String)
 }
 

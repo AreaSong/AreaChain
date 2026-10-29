@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// 合并批 M-3 C：trash.restore → TrashRestoreService（与回收站页“恢复”同一写入）。目标须在回收站里；
+/// trash.restore → TrashRestoreService（与回收站页“恢复”同一写入）。目标须在回收站里；
 /// 待办连同同一删除戳的子任务与附件、习惯与手记连同附件一并恢复（原仓储规则），确认面板列出连带数量。
 /// 走共用独立确认、只能单项（多项计划按目录的独立确认拒绝）。受保护手记及其附件、加密附件要解锁，
 /// 指令里从不认证，一律拒绝；拥有者也在回收站里的附件不能单独恢复。

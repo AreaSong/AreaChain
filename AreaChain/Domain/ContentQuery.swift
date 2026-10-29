@@ -79,7 +79,7 @@ enum ContentQueryIssue: String {
     }
 }
 
-/// 独立指令（包括未完成路径）保持 1B-1 原结果，参数正文不会进入内容词法分析。
+/// 独立指令（包括未完成路径）保持原结果，参数正文不会进入内容词法分析。
 enum ContentQueryInput: Equatable {
     case content(ContentQuery)
     case command(CommandPathResult)

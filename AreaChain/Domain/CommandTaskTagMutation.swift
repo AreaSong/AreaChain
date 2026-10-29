@@ -42,7 +42,7 @@ struct CommandTaskTagMutation: Equatable {
 
     private static func compose(rawIDs: String, selections: [CommandTaskTagSelection],
                                 operation: CommandFieldOperation, lookup: CommandTaskTagLookup) throws -> Self {
-        // 先核对原关联，clear/remove 也不能绕过 D3。
+        // 先核对原关联，clear/remove 也不能绕过标签普通资格。
         let original = try CommandTaskTitleTags.associations(rawIDs: rawIDs, lookup: lookup)
         let selected = try selections.map { selection in
             switch lookup.resolve(selection) {

@@ -254,7 +254,7 @@ final class AppPreferences {
             revision: revisions[field, default: 0], value: localValue(field), raw: raw)
     }
 
-    /// 保留旧 Binding 的同值写入/通知；命令的目标已满足判断留给 3A-1B。
+    /// 保留旧 Binding 的同值写入/通知；命令的目标已满足判断不在这里做。
     /// matches 仅表示同句柄当前可见值一致，不保证磁盘耐久或跨进程原子性。
     @discardableResult
     func applyLocalSetting(_ value: LocalPreferenceValue, expecting expected: LocalPreferenceSnapshot? = nil,

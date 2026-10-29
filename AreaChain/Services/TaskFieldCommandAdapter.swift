@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// 普通字段共用窄适配；T-M2 必须额外声明能力，单项守卫不开放任意计划。
+/// 普通字段共用窄适配；完成、标签与截止必须额外声明能力，单项守卫不开放任意计划。
 @MainActor final class TaskFieldCommandAdapter {
     enum Capability { case basic, milestone2 }
     let coordinator: CommandHandoffCoordinator

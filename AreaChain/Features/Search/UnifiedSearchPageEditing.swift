@@ -1,7 +1,7 @@
 import Foundation
 
-/// 合并批 M-1 C：任务页交互与查询指令沿 todo.copy 的“只读当前操作草稿”模式——不入列、不建 Run、不写库。
-/// 状态类直接写页面自己的那一份状态；选择类先沿 N-M1 显示当前页面（不切页），再按页面投影选择。
+/// 任务页交互与查询指令沿 todo.copy 的“只读当前操作草稿”模式——不入列、不建 Run、不写库。
+/// 状态类直接写页面自己的那一份状态；选择类先经导航显示当前页面（不切页），再按页面投影选择。
 extension UnifiedSearchController {
     var showsPage: Bool { operations?.active.map { routesPage($0.commandID) } == true }
 

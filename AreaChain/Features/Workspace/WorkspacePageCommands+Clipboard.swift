@@ -1,6 +1,6 @@
 import Foundation
 
-/// 合并批 M-2 D：剪贴板历史的页面指令。数据就是宿主那一份 ClipboardHistorySession；复制与粘贴只经
+/// 剪贴板历史的页面指令。数据就是宿主那一份 ClipboardHistorySession；复制与粘贴只经
 /// ClipboardHistoryActions（与历史页、小窗同一入口），置顶只经会话原有的 togglePin，保存成功才报告。
 /// 默认未装配：`clipboard` 为 nil 时一律拒绝；生产没有构造点。
 extension WorkspacePageCommands {

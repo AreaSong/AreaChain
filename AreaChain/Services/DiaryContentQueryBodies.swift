@@ -79,7 +79,7 @@ extension DiaryContentQueryReader {
         let needsBodies = batch.session.typeAnalysis.possibleTypes.contains(.diary)
         var values = originals
         for index in rows.indices {
-            // 逐条只做 O(1) 复查（M-6R）：上下文与已读字段观察，再核对本行仍是捕获时的那一行；整表事实在循环前后全量复核。
+            // 逐条只做 O(1) 复查：上下文与已读字段观察，再核对本行仍是捕获时的那一行；整表事实在循环前后全量复核。
             try permit.validateStep()
             let row = rows[index]
             guard metadataOnly(row) == originals[index], ProtectionStamp(row) == protection[index] else {

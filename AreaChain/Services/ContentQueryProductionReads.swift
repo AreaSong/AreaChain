@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// 合并批 M-6：正式版统一搜索的唯一读取装配。四种受门禁读取（普通＋图片、回收站、标签统计、剪贴板历史）
+/// 正式版统一搜索的唯一读取装配。四种受门禁读取（普通＋图片、回收站、标签统计、剪贴板历史）
 /// 共用同一 context 与只读依赖，由 `ContentQueryReadSession(vault:reads:…)` 的同一 owner 发布；
 /// 手记正文只读普通手记（ordinaryOnly），受保护手记即使已解锁也不解密。只读，不 save、不发事件。
 @MainActor struct ContentQueryProductionReads {

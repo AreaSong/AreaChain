@@ -1,9 +1,9 @@
 import Foundation
 
-/// 合并批 M-2 A：看板导航沿 N-M1 的导航执行（路径参数、不建草稿），页面状态只写页面那一份；
+/// 看板导航沿导航执行（路径参数、不建草稿），页面状态只写页面那一份；
 /// 看板修改指令转交给已有指令：把参数与目标搬到那条指令的新草稿，再由它自己的面板准备、确认与保存。
 extension UnifiedSearchController {
-    /// 先核对页面（不对就说明，不切页），再沿 N-M1 显示当前页；页面显示后才写状态，检查器才核对投影。
+    /// 先核对页面（不对就说明，不切页），再经导航显示当前页；页面显示后才写状态，检查器才核对投影。
     func executeBoardNavigation(_ command: CommandID, parsed: CommandPathResult, source: UnifiedSearchBuffer,
                                 pages: WorkspacePageCommands) {
         // 检查器两条同 inspector.open：目标不在路径里，只允许“待选目标”这一种未完成。

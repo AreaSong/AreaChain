@@ -8,7 +8,7 @@ struct MainSplitWorkspaceView: View {
     @Bindable private var navigation: WorkspaceNavigation
     var search: UnifiedSearchController?
     var hostContext: WorkspaceHostContext?
-    /// 隔离宿主一出现就显示搜索页；正式版（M-6）由 UnifiedSearchProduction 按当前查询决定，打开工作台仍落在原页面。
+    /// 隔离宿主一出现就显示搜索页；正式版由 UnifiedSearchProduction 按当前查询决定，打开工作台仍落在原页面。
     var presentsSearchOnAppear = true
 
     init(navigation: WorkspaceNavigation? = nil, search: UnifiedSearchController? = nil,

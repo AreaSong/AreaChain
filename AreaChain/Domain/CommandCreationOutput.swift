@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// 目录描述类型；只有显式 P-M2 装配才开放分支和跨类型创建链。
+/// 目录描述类型；只有显式装配类型化创建输出时才开放分支和跨类型创建链。
 enum CommandMultiPlanOutputCapability: Equatable {
     case taskTitle, typedCreation
 

@@ -83,7 +83,7 @@ struct CommandDraft: Equatable, CustomStringConvertible, CustomDebugStringConver
     // 写入入口由 reducer 校验身份；每次接受编辑都推进版本，即使内容相同也使旧确认失效。
     mutating func edit(_ argument: CommandArgument, expecting stamp: CommandDraftStamp) {
         guard protectedReference == nil, self.stamp == stamp, argument.parameter != .target else { return }
-        // 印记只能由封存核对放入 Snapshot，编辑入口不接受（L-M1b）。
+        // 印记只能由封存核对放入 Snapshot，编辑入口不接受。
         if case .longTextImprint? = argument.value { return }
         textPositions[argument.parameter] = nil
         arguments.removeAll { $0.parameter == argument.parameter }

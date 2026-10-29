@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 独立确认的唯一宿主面板：回收（T-M4）与转换（T-M5）共用。各指令只提供标识前缀、标题、确认文案与说明内容；
+/// 独立确认的唯一宿主面板：回收与转换共用。各指令只提供标识前缀、标题、确认文案与说明内容；
 /// 默认焦点在取消，确认按钮与普通提交分开；Esc 与取消只撤销确认，不动草稿、计划和接受。
 struct UnifiedSearchIndependentConfirmationPanel<Details: View>: View {
     @Bindable var controller: UnifiedSearchController

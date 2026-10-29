@@ -3,8 +3,8 @@ import SwiftData
 
 /// todo.notes／routine.notes：替换、追加或清空备注，执行只经 TaskNotesService 的借用出口（与详情页同一 `apply`），
 /// 因此 #标签合并、提醒与优先级派生、@附件关联都与原界面一致。预览逐项列出这些派生变化。
-/// L-M1b：正文只在准备期由托管同步读宿主草稿；封存后输入只剩印记，写入只经一次性借用（`apply(_:loan:in:)`）。
-/// 冲突基线记目标备注与派生字段（标签、提醒、优先级）的带键摘要（L6、L8）；固定多目标在一次事务内依次写入，任何一个失败整体回滚。
+/// 正文只在准备期由托管同步读宿主草稿；封存后输入只剩印记，写入只经一次性借用（`apply(_:loan:in:)`）。
+/// 冲突基线记目标备注与派生字段（标签、提醒、优先级）的带键摘要；固定多目标在一次事务内依次写入，任何一个失败整体回滚。
 @MainActor struct NotesCommandSpec: SimpleLongTextCommandSpec, SimpleCommandCallSpec {
     let kind: CommandObjectType
     let dependencies: TaskCommandDependencies

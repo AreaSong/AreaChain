@@ -1,7 +1,7 @@
 import CryptoKit
 import Foundation
 
-/// L-M1b：封存后 longText 参数的替身。只含参数、操作、UTF-8 字节数、带键摘要与托管句柄，不含正文。
+/// 封存后 longText 参数的替身。只含参数、操作、UTF-8 字节数、带键摘要与托管句柄，不含正文。
 /// 只能由协调者的封存核对（`CommandDraft.sealLongText`）放进 Snapshot；编辑入口不接受，计划里出现即拒绝封存。
 struct CommandLongTextImprint: Equatable, Hashable, Sendable, CustomStringConvertible, CustomDebugStringConvertible {
     let parameter: CommandParameterID
@@ -14,7 +14,7 @@ struct CommandLongTextImprint: Equatable, Hashable, Sendable, CustomStringConver
     var debugDescription: String { description }
 }
 
-/// 每个协调者一把随机生成、只在内存中的 HMAC-SHA256 密钥（L6）。摘要只用于印记与冲突比对，
+/// 每个协调者一把随机生成、只在内存中的 HMAC-SHA256 密钥。摘要只用于印记与冲突比对，
 /// 不跨进程、不落盘；没有密钥就无法用字典猜出短备注。
 struct CommandTextDigest: CustomStringConvertible, CustomDebugStringConvertible {
     private let key = SymmetricKey(size: .bits256)

@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// 合并批 M-2 C：图片附件的简单指令。只接附件中心看得到的普通图片；选图、粘贴、截图（系统面板、截屏与解锁）不在这里。
+/// 图片附件的简单指令。只接附件中心看得到的普通图片；选图、粘贴、截图（系统面板、截屏与解锁）不在这里。
 @MainActor enum ImageCommandSpecs {
     static func all() -> [any SimpleCommandSpec] { [ImageTrashSpec()] }
 

@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// 已挂在对象上的附件回收的唯一入口（合并批 M-2 从 DayBoardMutations.trashAttachment 与附件中心抽出，原界面转调）：
+/// 已挂在对象上的附件回收的唯一入口（从 DayBoardMutations.trashAttachment 与附件中心抽出，原界面转调）：
 /// 只打删除戳，文件与拥有者关系保留，可从回收站恢复。事务由调用方给出。
 @MainActor enum AttachmentTrashService {
     static func stamp(_ row: AttachmentItem, at stamp: Date = SoftDelete.stamp()) {

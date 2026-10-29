@@ -14,7 +14,7 @@ final class UnifiedSearchController {
     var restoreSearchScroll: (version: UUID, point: CGPoint)?
     var preservedSearchScrollVersion: UUID?
     var navigationMessage = "unified.navigation.hint"
-    /// 合并批 M-3：help.syntax／help.example 在导航面板里打开语法帮助卡。
+    /// help.syntax／help.example 在导航面板里打开语法帮助卡。
     var helpCardPresented = false
     var contentOwnerMessage = "unified.content.ownerHint"
     @ObservationIgnored var navigationTask: Task<Void, Never>?
@@ -75,21 +75,21 @@ final class UnifiedSearchController {
     var simpleAcceptance: CommandSimpleAcceptance?
     var simpleFailure: String?
     var simpleVerification: CommandSimpleVerification?
-    /// 合并批 M-2：需要独立确认的简单指令在共用确认面板里的当前确认。
+    /// 需要独立确认的简单指令在共用确认面板里的当前确认。
     var simpleConfirmation: CommandSimpleConfirmation?
     var taskCopyPreview: CommandTaskCopyPreview?
     var taskCopyResult: CommandTaskCopyResult?
     var taskCopyFailure: String?
-    /// 合并批 M-1 C 页面指令；默认未装配（nil），生产没有构造点。
+    /// 页面指令；默认未装配（nil），生产没有构造点。
     @ObservationIgnored var pageCommands: WorkspacePageCommands?
     @ObservationIgnored var workspaceHandoff: UnifiedSearchWorkspaceHandoff? // 只有菜单栏装配；工作台为 nil
     @ObservationIgnored var trustedPage: (() -> ContentQueryPageContext)? // 宿主当前页面，锁定清查询后重建用
     var pagePreview: WorkspacePagePreview?
     var pageReceipt: WorkspacePageReceipt?
     var pageFailure: CommandPageIssue?
-    /// 合并批 M-2：image.preview 先按当前查询重读结果再沿 N-M2 打开；这一步的任务。
+    /// image.preview 先按当前查询重读结果再沿普通图片查阅打开；这一步的任务。
     @ObservationIgnored var contentCommandTask: Task<Void, Never>?
-    /// 修复批 M-7G：失焦遮罩后显式恢复的重读任务（UnifiedSearchDisplayResume）。
+    /// 失焦遮罩后显式恢复的重读任务（UnifiedSearchDisplayResume）。
     @ObservationIgnored var resumeTask: Task<Void, Never>?
     var clipboardCapture = UnifiedSearchClipboardCaptureState()
     var chainCreationPreparation: CommandTaskCreatePreparation?
@@ -487,7 +487,7 @@ final class UnifiedSearchController {
 }
 
 extension UnifiedSearchController {
-    /// 页面事件推进了 lease：沿原文字与草稿戳重新发布显示缓冲，旧缓冲上的事件随之失效（修复批 M-7F 菜单栏筛选派生）。
+    /// 页面事件推进了 lease：沿原文字与草稿戳重新发布显示缓冲，旧缓冲上的事件随之失效（菜单栏筛选派生用）。
     func renewBuffer(_ lease: CommandHostLease) {
         buffer = .init(lease: lease, version: buffer.version + 1, text: buffer.text, privacyRevision: buffer.privacyRevision,
             operation: buffer.operation, selectingObjects: buffer.selectingObjects, plan: buffer.plan, planItem: buffer.planItem)

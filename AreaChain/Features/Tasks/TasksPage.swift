@@ -2,7 +2,7 @@ import AppKit
 import SwiftData
 import SwiftUI
 
-/// 今日页“昨天／即将”两个可展开区的状态。工作台由宿主持有（合并批 M-1 C，tasks.sections 与页面共用这一份）；
+/// 今日页“昨天／即将”两个可展开区的状态。工作台由宿主持有（tasks.sections 与页面共用这一份）；
 /// 其他宿主仍用页面自己的状态。initialized 记录首次出现时的默认展开只做一次。
 struct TasksPageSections: Equatable {
     var yesterday = false

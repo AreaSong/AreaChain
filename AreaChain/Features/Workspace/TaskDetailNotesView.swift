@@ -119,7 +119,7 @@ struct TaskDetailNotesView: View {
     }
 
     private func flushLifecycleSave() {
-        // 组字收起、隔离宿主导航（N-M1 零写入）和隔离宿主本身只留草稿；正式版与旧界面一致，失焦／卸载即保存（M-7F）。
+        // 组字收起、隔离宿主导航（零写入）和隔离宿主本身只留草稿；正式版与旧界面一致，失焦／卸载即保存。
         if inspectorFocus?.retainsMarkedDraft == true || inspectorFocus?.retainsNavigationDraft == true
             || hostContext?.isIsolated == true {
             if draft != notes { drafts.notes[draftKey] = draft }

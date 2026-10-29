@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// 合并批 M-2 B～D：标签、附件、剪贴板的页面指令。取消类只写页面自己的那一份草稿；查询类只读，
+/// 标签、附件、剪贴板的页面指令。取消类只写页面自己的那一份草稿；查询类只读，
 /// 取法与原页面同一个入口（TagListQuery 等），结果只在面板里列出，不写库、不建 Run。
 extension WorkspacePageCommands {
     /// 面板只列前若干条结果，其余以总数说明。
@@ -30,7 +30,7 @@ extension WorkspacePageCommands {
             let id = image.id
             let rows = try context.fetch(FetchDescriptor<AttachmentItem>(predicate: #Predicate { $0.id == id }))
             guard rows.count == 1 else { throw CommandPageIssue.missing }
-            // 同 N-M2 与附件中心：只打开普通图片；加密、敏感手记或拥有者已删的都不打开。
+            // 同普通图片查阅与附件中心：只打开普通图片；加密、敏感手记或拥有者已删的都不打开。
             guard try AttachmentTrashService.eligibility(rows[0], in: context) == .eligible else {
                 throw CommandPageIssue.protectedContent
             }
@@ -49,7 +49,7 @@ extension WorkspacePageCommands {
         return .init(type: type, id: owner.id)
     }
 
-    /// 2E 的图片口径：已挂在对象上、附件中心可见（AttachmentAccess.canBrowse）的图片，按所属类型分组，新的在前。
+    /// 图片口径：已挂在对象上、附件中心可见（AttachmentAccess.canBrowse）的图片，按所属类型分组，新的在前。
     private func imageResults(_ owner: AttachmentOwner?) throws -> WorkspacePageSnapshot {
         let rows = try context.fetch(FetchDescriptor<AttachmentItem>(predicate: #Predicate { $0.deletedAt == nil }))
         let owners = AttachmentAccess.ownerIndex(todos: try context.fetch(FetchDescriptor<TodoItem>()),

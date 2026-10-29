@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-// L-M1b 长文受控借用（§9.94 L1～L5）：托管、一次性借用凭据与两个保存出口集中在本文件。
+// 长文受控借用：托管、一次性借用凭据与两个保存出口集中在本文件。
 // 只开放普通长文；受保护、required、unknown 在准备前就被拒。正文只在三处出现：宿主草稿、本文件的托管、
 // 借用 consume 时交给出口的同步闭包；预览、接受、Snapshot、Run 输入、Facts 与回执只含印记。
 // 进程内 String 不承诺零化；同文件代码仍能复制正文，靠单文件审查与 check_workflow 的 long-text-loan 守卫。
@@ -329,7 +329,7 @@ extension DiaryWriteService {
         let tagIDs: Set<UUID>
     }
 
-    /// 合并批 M-4：新建普通手记的借用出口。正文按手记页快速新增的“自动分类”拆出正文与标签，再交原 `add`
+    /// 新建普通手记的借用出口。正文按手记页快速新增的“自动分类”拆出正文与标签，再交原 `add`
     /// （不允许锁定时插入）；要关联私密标签或保存后会变成受保护时，在写入前拒绝。事务由调用方提供。
     @discardableResult
     static func applyLent(_ loan: CommandLongTextLoan, creating creation: LentCreation,
@@ -351,7 +351,7 @@ extension DiaryWriteService {
         }
     }
 
-    /// 合并批 M-4：普通手记正文改写（replace／append）的借用出口，交原 `editDiary`（#标签合并、@附件关联同原界面）。
+    /// 普通手记正文改写（replace／append）的借用出口，交原 `editDiary`（#标签合并、@附件关联同原界面）。
     /// 目标受保护时在取出正文前就拒绝（不读、不解密）；改写后会变成受保护时在写入前拒绝。
     static func applyLent(_ loan: CommandLongTextLoan, editing entry: DiaryEntry,
                           repository: SwiftDataDiaryRepository, in context: ModelContext) throws {

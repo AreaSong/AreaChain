@@ -1,6 +1,6 @@
 import Foundation
 
-/// T-M5 互转沿回收的显式隔离装配；能力默认关闭，只有显式 convert 才开放 todo.toRoutine／routine.toTodo。
+/// 互转沿回收的显式隔离装配；能力默认关闭，只有显式 convert 才开放 todo.toRoutine／routine.toTodo。
 /// 流程固定为 prepare → accept → 独立 confirm → submit；写入只经共享的 ItemConversionService。
 @MainActor final class ConvertCommandAdapter {
     enum Capability { case closed, convert }

@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// 合并批 M-2 A 看板的简单修改指令。其余看板修改（新建、优先级、完成、复制、批量完成）转交已有指令执行，
+/// 看板的简单修改指令。其余看板修改（新建、优先级、完成、复制、批量完成）转交已有指令执行，
 /// 不在这里另写；只有“整组平移”没有现成指令，按安排页拖动的同一规则与写入入口实现。
 @MainActor enum BoardCommandSpecs {
     static func all(_ dependencies: TaskCommandDependencies) -> [any SimpleCommandSpec] {

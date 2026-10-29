@@ -38,7 +38,7 @@ struct FooterBar: View {
             Group {
                 if let unified {
                     HStack(spacing: 4) {
-                        // 已生效的任务筛选胶囊；只在任务页签显示，因为只有它作用于菜单栏搜索结果（修复批 M-7F）。
+                        // 已生效的任务筛选胶囊；只在任务页签显示，因为只有它作用于菜单栏搜索结果。
                         if tab == .tasks { MenuBarFilterTokens(filters: filters, tags: tags) }
                         MenuBarUnifiedSearchField(controller: unified)
                     }

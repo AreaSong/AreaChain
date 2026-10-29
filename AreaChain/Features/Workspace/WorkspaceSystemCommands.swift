@@ -1,10 +1,10 @@
 import AppKit
 import SwiftData
 
-/// 合并批 M-3 B、C 的宿主依赖。窗口沿 AppWindows（WorkspaceOpening）与 DiaryWindows 的现有管理，只复用已有窗口；
+/// 窗口、面板、统计、退出与立即锁定指令的宿主依赖。窗口沿 AppWindows（WorkspaceOpening）与 DiaryWindows 的现有管理，只复用已有窗口；
 /// 激活、显示、关闭、浮层、退出全部可注入，隔离环境里是 fake，绝不真的退出测试宿主。默认不装配，生产没有构造点。
 @MainActor struct WorkspaceSystemCommands {
-    /// N-M1 的工作台打开依赖：收起浮层、激活、显示同一个工作台窗口。
+    /// 导航用的工作台打开依赖：收起浮层、激活、显示同一个工作台窗口。
     var opening: AppWindows.WorkspaceOpening
     var closeWorkspace: () -> Void
     var toggleOverlay: () -> Void
@@ -16,7 +16,7 @@ import SwiftData
     var terminate: () -> Void
     var vault: PrivacyVault
     var today: () -> String = { DayClock.shared.todayKey }
-    /// 合并批 M-4 diary.copy：原卡片经 PrivateClipboard 写通用剪贴板；隔离环境注入私有剪贴板。
+    /// diary.copy：原卡片经 PrivateClipboard 写通用剪贴板；隔离环境注入私有剪贴板。
     var pasteboard: NSPasteboard = .general
 }
 
@@ -33,7 +33,7 @@ extension WorkspacePageCommands {
     }
 
     /// 打开已有手记小窗：目标须是当前可读的活手记；受保护手记（私密、挂私密标签或加密正文）拒绝，
-    /// 沿 N-M2 普通手记的口径，不借小窗绕过解锁。同一手记只有一个窗口（DiaryWindows.open 复用）。
+    /// 沿普通手记的口径，不借小窗绕过解锁。同一手记只有一个窗口（DiaryWindows.open 复用）。
     func openDiaryWindow(_ object: CommandObjectReference) throws {
         let system = try requireSystem()
         guard object.type == .diary else { throw CommandPageIssue.invalidTarget }

@@ -13,7 +13,7 @@ struct CommandTaskTitleSource: Equatable {
     let storageID: ObjectIdentifier
     let protection: CommandProtectionRequirement
     var revision: UUID?
-    /// 适配器自读备注的带键摘要证明（L8）；参与相等比较，执行期间备注被改即不相等。
+    /// 适配器自读备注的带键摘要证明；参与相等比较，执行期间备注被改即不相等。
     var notes: CommandNotesProof?
 }
 
@@ -100,7 +100,7 @@ struct CommandTaskTitleTags: Equatable, CustomStringConvertible, CustomDebugStri
         let lookup = CommandTaskTagLookup(catalog)
         let original = try associations(rawIDs: rawIDs, lookup: lookup)
         var final = original
-        // 复用只读计划和 D3 资格，不调用有恢复/创建行为的 InputTagResolver。
+        // 复用只读计划和标签普通资格（不新增私密／预设标签，身份或保护事实不全即拒），不调用有恢复/创建行为的 InputTagResolver。
         let syntax = CommandTaskTagPlanning.compose(title: title, argument: nil, catalog: catalog)
         guard syntax.problems.isEmpty else { throw CommandTaskTitlePreviewIssue.tags(syntax.problems) }
         for association in syntax.final where !final.contains(association.target) { final.append(association.target) }

@@ -1,6 +1,6 @@
 import Foundation
 
-/// T-M1 唯一多步形状；身份覆盖整个计划，两步仍有各自的调用与提交事实。
+/// 普通任务修改唯一的多步形状；身份覆盖整个计划，两步仍有各自的调用与提交事实。
 struct CommandTaskChainIdentity: Equatable {
     let plan: CommandPlanStamp
     let producer: CommandPlanItemStamp

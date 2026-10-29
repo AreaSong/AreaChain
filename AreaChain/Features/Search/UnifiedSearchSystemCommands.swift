@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// 合并批 M-3 B、C：窗口与面板、总览统计、退出与立即锁定的执行。只沿现有入口（AppWindows、DiaryWindows、
+/// 窗口与面板、总览统计、退出与立即锁定的执行。只沿现有入口（AppWindows、DiaryWindows、
 /// 今日页面板请求、DashboardStatsReader、AppDelegate 的退出确认、PrivacyVault.lock），不建草稿、不写业务数据。
 extension UnifiedSearchController {
     var systemAction: CommandSystemAction? {
@@ -26,7 +26,7 @@ extension UnifiedSearchController {
             let action = try CommandSystemAction(command: command.id, arguments: parsed.arguments)
             switch action {
             case .workspaceOpen:
-                // 同 AppWindows.openWorkspace 的“默认总览”，但页面沿 N-M1 导航显示，保留返回搜索的票据。
+                // 同 AppWindows.openWorkspace 的“默认总览”，但页面经导航显示，保留返回搜索的票据。
                 AppWindows.revealWorkspace(opening: system.opening)
                 navigate(.page(.dashboard), source: source)
             case .workspaceReveal:
@@ -90,7 +90,7 @@ extension UnifiedSearchController {
         }
     }
 
-    /// 合并批 M-4：手记会话的保存／重载／舍弃（只作用于已打开的小窗）与普通手记复制。
+    /// 手记会话的保存／重载／舍弃（只作用于已打开的小窗）与普通手记复制。
     private func executeDiaryAction(_ action: CommandSystemAction, pages: WorkspacePageCommands,
                                     source: UnifiedSearchBuffer) throws {
         switch action {
@@ -112,7 +112,7 @@ extension UnifiedSearchController {
                 try pages.copyDiary(active, section: section)
                 navigationMessage = "unified.system.diary.copied." + section.rawValue
             } catch CommandPageIssue.protectedContent {
-                // 决策 4：受保护手记不在指令里读取或复制，改为打开原手记页（沿 M-3 打开原页面的手记目的地）。
+                // 受保护手记不在指令里读取或复制，改为打开原手记页（沿“打开原页面”的手记目的地）。
                 navigate(.page(.diary), source: source) { [weak self] _ in
                     self?.navigationMessage = "unified.system.diary.copyProtected"
                 }
@@ -122,7 +122,7 @@ extension UnifiedSearchController {
     }
 
     /// privacy.lock：沿页头与隐私设置页的“立即锁定”（vault.lock）。锁定事件让结果展示、返回票据、查阅内容、
-    /// 长文托管与受保护预览按 C-M1、L-M1b 的现有规则全部撤销；未启用或已锁定时只说明原因。
+    /// 长文托管与受保护预览按长文编辑与受控借用的现有规则全部撤销；未启用或已锁定时只说明原因。
     func lockPrivacy(_ vault: PrivacyVault) {
         guard vault.isConfigured else { navigationMessage = "unified.privacy.lock.unconfigured"; return }
         guard vault.isUnlocked else { navigationMessage = "unified.privacy.lock.already"; return }
@@ -130,7 +130,7 @@ extension UnifiedSearchController {
         navigationMessage = "unified.privacy.lock.done"
     }
 
-    /// 总览活动行的打开沿总览页 DashboardNavigation 的路由，但页面一律经 N-M1 导航（保留返回票据）；
+    /// 总览活动行的打开沿总览页 DashboardNavigation 的路由，但页面一律经导航（保留返回票据）；
     /// 对象再经 objects.resolve 的存活与隐私检查，手记沿小窗的受保护拒绝。
     func openStatsActivity(_ activity: DashboardActivity, source: UnifiedSearchBuffer) {
         guard validates(source), let router = navigationRouter, let pages = pageCommands else {

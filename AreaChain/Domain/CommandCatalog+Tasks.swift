@@ -125,7 +125,7 @@ extension CommandCatalogBuilder {
                 .targets([.routine]).ordinary().requiring([.independentConfirmation]),
             entry("tasks.sections", "/tasks/sections", .interaction, "T9:sections",
                   [choice(.section, "today yesterday upcoming"), p(.enabled, .boolean)]),
-            // 目标按今日页“昨天”清单的取法推出并在接受后冻结（T-M6），不由用户逐个选择。
+            // 目标按今日页“昨天”清单的取法推出并在接受后冻结，不由用户逐个选择。
             entry("tasks.postponeYesterday", "/tasks/postpone-yesterday", .modification, "T9:postponeYesterday",
                   [day])
                 .ordinary(),
@@ -141,7 +141,7 @@ extension CommandCatalogBuilder {
                    p(.routineStatus, .choice(RoutineStatusScope.allCases.map { CommandChoice(value: $0.rawValue) })).optional()]),
             entry("tasks.select", "/tasks/select", .interaction, "T9:select")
                 .targets([.todo, .routineOccurrence], batch: .explicitMultiple),
-            // 用 position 数字表达新位置，不依赖选择器的登记顺序（T-M6）；一次移动一项。
+            // 用 position 数字表达新位置，不依赖选择器的登记顺序；一次移动一项。
             entry("tasks.order", "/tasks/order", .modification, "T9:order",
                   [day, p(.position, .number(0...Double(Int.max), integer: true))])
                 .targets([.todo, .routine]).ordinary(),

@@ -29,7 +29,7 @@ struct UnifiedSearchActions {
     var accept: (UnifiedSearchEdit) -> UnifiedSearchBuffer?
     var focus: (Bool) -> Void
     var intent: (UnifiedSearchIntent, UnifiedSearchBuffer) -> Void
-    /// 修复批 M-7G：宿主对一条指令的处理方式（唯一判断在控制器）；未提供时按“未接上”显示，不冒充可执行。
+    /// 宿主对一条指令的处理方式（唯一判断在控制器）；未提供时按“未接上”显示，不冒充可执行。
     var disposition: (CommandID) -> CommandHostDisposition = { _ in .unwired }
 }
 
@@ -62,7 +62,7 @@ final class UnifiedSearchInputState {
     @ObservationIgnored var parameter: UnifiedSearchParameterContext?
     @ObservationIgnored var actions: UnifiedSearchActions
     @ObservationIgnored var availableTags: [String] = []
-    /// 当前候选来自 `#`／`!`／`@` 语法（非 `/` 指令，修复批 M-7F 恢复旧搜索候选）；接受走 SyntaxAutocompleteState 原生提交。
+    /// 当前候选来自 `#`／`!`／`@` 语法（非 `/` 指令，沿旧搜索候选）；接受走 SyntaxAutocompleteState 原生提交。
     private(set) var showsSyntax = false
     var focused = false
     @ObservationIgnored weak var field: NSTextField?
@@ -221,7 +221,7 @@ final class UnifiedSearchInputState {
         return buffer.text == edit.text
     }
 
-    /// 修复批 M-7G：路径已完整写出的指令级候选（complete／chooseParameter）接受后文字不变，Return 再“接受”只会原地重复、
+    /// 路径已完整写出的指令级候选（complete／chooseParameter）接受后文字不变，Return 再“接受”只会原地重复、
     /// 永远发不出 .open；此时 Return 改发 .open（Tab 仍接受）。参数值候选（setArgument）照常接受：接受才把参数写进草稿。
     static func isUnchangedCommand(_ candidate: CommandPathCandidate, in text: String) -> Bool {
         switch candidate.intent {
@@ -327,7 +327,7 @@ final class UnifiedSearchInputState {
 
     private func showSyntaxCandidates() {
         suggestions.update(text: buffer.text, cursorLocation: lastSelection.location, availableTags: availableTags)
-        // 搜索不能创建标签：`#` 只留已有标签；引擎对未命中查询给出的原样回显也不展示（§1 产品约定）。
+        // 搜索不能创建标签：`#` 只留已有标签；引擎对未命中查询给出的原样回显也不展示（产品约定）。
         let existing = Set(availableTags.map(TagSyntax.normalizedName))
         let items = suggestions.candidates.filter { candidate in
             guard candidate.kind == .tag else { return true }

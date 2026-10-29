@@ -8,7 +8,7 @@ import SwiftData
     let grant: CommandStoreGrant?
     let source: (CommandObjectReference) throws -> CommandTaskTitleEligibility
     let writer: any ClipboardTextWriting
-    /// 协调者的带键摘要（L6）；由装配它的适配器设置，用于自读备注的无备注证明（L8）。未设置即无证明、不可执行。
+    /// 协调者的带键摘要；由装配它的适配器设置，用于自读备注的无备注证明。未设置即无证明、不可执行。
     var notesKey: CommandTextDigest?
 
     init(context: ModelContext, source: @escaping (CommandObjectReference) throws -> CommandTaskTitleEligibility,
@@ -92,7 +92,7 @@ import SwiftData
         let todo = try live(target, environment: environment)
         let source = try qualification(target, environment: environment)
         let notes = TaskCopyContent.notes(todo.notes)
-        // L8：备注证明由适配自读取带键摘要（与 TaskCopyContent 同口径），不再核对来源所有者的声明；没有密钥即无证明。
+        // 备注证明由适配自读取带键摘要（与 TaskCopyContent 同口径），不再核对来源所有者的声明；没有密钥即无证明。
         guard source.notes != .unproven else { throw TaskCopyCommandIssue.notesUnverified }
         guard CommandNotesProofReader.admits(draft.commandID.rawValue, source.notes) else { throw TaskCopyCommandIssue.changed }
         guard let text = TaskCopyContent.text(section, title: todo.title, notes: notes) else {

@@ -22,7 +22,7 @@ final class WorkspaceInspectorFocus {
     weak var marker: NSView?
     private(set) var retainsMarkedDraft = false
     private(set) var retainsNavigationDraft = false
-    /// 隔离宿主沿 N-M1 的“导航零写入”取证：导航卸载只把编辑留在 EditDrafts。正式版宿主为 false（M-7F），
+    /// 隔离宿主为“导航零写入”取证：导航卸载只把编辑留在 EditDrafts。正式版宿主为 false，
     /// 与删开关前的旧界面一致——跳转前先按失焦规则保存，保存失败仍由各编辑器留草稿。
     var retainsDraftsOnNavigation = true
 

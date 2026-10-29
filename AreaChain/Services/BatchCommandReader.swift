@@ -61,7 +61,7 @@ import SwiftData
                      writeSet: edit.isState ? try CommandBatchWriteSet(impacts: impacts) : nil)
     }
 
-    /// L8：每个目标自读备注取带键摘要，随资格进入影响；batch.move／batch.tags 允许带备注，状态类仍要求无备注。
+    /// 每个目标自读备注取带键摘要，随资格进入影响；batch.move／batch.tags 允许带备注，状态类仍要求无备注。
     /// 执行前复核时资格（含摘要）不相等即该目标 changed。
     private func qualifications(_ targets: [CommandObjectReference], command: CommandID) throws -> [CommandTaskTitleEligibility] {
         var problems: [CommandBatchTargetProblem] = []

@@ -1,6 +1,6 @@
 import Foundation
 
-/// 合并批 M-2 B：标签的只读查询指令。结果沿标签页同一取法（TagListQuery），不写库、不建 Run。
+/// 标签的只读查询指令。结果沿标签页同一取法（TagListQuery），不写库、不建 Run。
 enum CommandTagQuery: Equatable {
     case search(String), view(TagListFilter), deleted
 
@@ -33,8 +33,8 @@ enum CommandTagQuery: Equatable {
     }
 }
 
-/// 合并批 M-2 C：图片的只读浏览与原图查阅。浏览沿 2E 的图片口径（已挂在对象上、附件中心可见），
-/// 查阅沿 N-M2 的普通图片打开；受保护的不浏览、不打开。不写库、不建 Run。
+/// 图片的只读浏览与原图查阅。浏览沿既有图片口径（已挂在对象上、附件中心可见），
+/// 查阅沿普通图片的原图打开；受保护的不浏览、不打开。不写库、不建 Run。
 enum CommandImageAction: Equatable {
     case browse(AttachmentOwner?), preview(CommandObjectReference)
 

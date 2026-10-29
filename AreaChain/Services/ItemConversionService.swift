@@ -18,7 +18,7 @@ enum ItemConversionService {
         var makeID: () -> UUID = { UUID() }
         var transaction = ModelChanges.Boundary()
         /// 原实现只在待办转习惯保存成功后额外请求一次日历刷新；两个方向的发布本身都会请求刷新，
-        /// 这里保持原有的不对称，不擅自改变生产行为（结论见 T-M5 交接）。
+        /// 这里保持原有的不对称，不擅自改变生产行为（结论见 docs/unified-search-commands.md 的“待办与重复事项互转”）。
         var refreshCalendar: @MainActor () -> Void = { CalendarSync.refreshIfEnabled() }
 
         static var production: Dependencies { Dependencies() }

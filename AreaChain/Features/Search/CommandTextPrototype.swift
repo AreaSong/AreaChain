@@ -2,7 +2,7 @@
 import AppKit
 import SwiftUI
 
-/// C-M2 只有这两种显式 QA 原型；环境缺省 nil，正式参数入口不切换引擎或装配时序。
+/// 只有这两种显式 QA 排版原型；环境缺省 nil，正式参数入口不切换引擎或装配时序。
 enum CommandTextPrototype: String, CaseIterable {
     case viewport
     case textKit2

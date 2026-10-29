@@ -1,15 +1,15 @@
 import Foundation
 import SwiftData
 
-/// X-1 简单修改指令的唯一适配器：流程固定为 prepare → accept → submit，可选只读核对未知结果。
-/// 能力默认关闭；只接普通指令。需要独立确认的只接声明了 `confirms` 的规格（合并批 M-2），提交前必须经共用确认面板
+/// 简单修改指令的唯一适配器：流程固定为 prepare → accept → submit，可选只读核对未知结果。
+/// 能力默认关闭；只接普通指令。需要独立确认的只接声明了 `confirms` 的规格，提交前必须经共用确认面板
 /// 确认，且只能单项执行；指令里从不认证——目录要求认证的，规格须对受保护目标一律拒绝（`refusesProtectedContent`）。
 @MainActor final class SimpleCommandAdapter {
     enum Capability { case closed, open }
     let coordinator: CommandHandoffCoordinator
     let environment: SimpleCommandEnvironment?
     let capability: Capability
-    /// L-M1b 长文托管：随适配器与隔离环境存在；隐私事件取隔离环境的私有事件中心。
+    /// 长文托管：随适配器与隔离环境存在；隐私事件取隔离环境的私有事件中心。
     let escrow: CommandLongTextEscrow?
     private let specs: [String: any SimpleCommandSpec]
 
@@ -28,7 +28,7 @@ import SwiftData
         // 目录未决或不可用的指令即使提供了规格也不装配；只接可入普通计划的修改。需要确认的只接“独立确认、无破坏性风险”的；
         // 目录要求的认证只为受保护内容，规格须对受保护目标一律拒绝（指令里从不认证）。
         guard descriptor.category == .modification, descriptor.queue == .eligibleAfterWiring else { return false }
-        // 合并批 M-4：不需要确认、只要求认证的（diary.tags）同样要求规格对受保护目标一律拒绝。
+        // 不需要确认、只要求认证的（diary.tags）同样要求规格对受保护目标一律拒绝。
         guard spec.confirms else {
             return descriptor.interactions.isEmpty
                 || (spec.refusesProtectedContent && descriptor.interactions == [.authentication] && descriptor.hazards.isEmpty)
@@ -39,7 +39,7 @@ import SwiftData
             && descriptor.hazards.isEmpty
     }
 
-    /// 合并批 M-2：为当前接受签发独立确认；确认前重新核对预览。
+    /// 为当前接受签发独立确认；确认前重新核对预览。
     func confirm(_ accepted: CommandSimpleAcceptance, expecting lease: CommandHostLease,
                  displaySession: ContentQueryReadSession? = nil) throws -> CommandSimpleConfirmation {
         guard try spec(accepted.preview.command).confirms else { throw CommandSimpleIssue.unsupportedPlan }

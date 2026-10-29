@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 合并批 M-3 A：“在原页面完成”只做导航（沿 N-M1：先校验宿主与资格，保留返回搜索的票据），
+/// “在原页面完成”只做导航（先校验宿主与资格，保留返回搜索的票据），
 /// 不建草稿、不写数据、不调系统 API、不申请权限、不打开外部网址。对照唯一来源是 CommandOriginalPage。
 extension UnifiedSearchController {
     func executeOriginalPage(_ route: CommandOriginalPage, command: CommandDescriptor, parsed: CommandPathResult,

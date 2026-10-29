@@ -149,7 +149,7 @@ final class ContentQueryReadSession {
         try self.init(vault: vault, coordinator: coordinator, ownership: ownership, notifications: notifications)
         self.tagUsageReads = tagUsageReads
     }
-    /// 合并批 M-6 正式版：普通／图片、回收站、标签统计共用同一宿主与 owner，由 ContentQueryProductionReads 选路。
+    /// 正式版：普通／图片、回收站、标签统计共用同一宿主与 owner，由 ContentQueryProductionReads 选路。
     convenience init(vault: PrivacyVault, reads: ContentQueryProductionReads, coordinator: CommandHandoffCoordinator,
                      ownership: CommandHostOwnership, notifications: ContentQueryReadNotifications) throws {
         try self.init(vault: vault, coordinator: coordinator, ownership: ownership, notifications: notifications)
@@ -484,7 +484,7 @@ final class ContentQueryReadSession {
 
 struct ContentQueryReadHandle: Equatable { fileprivate let id: UUID }
 
-/// 仅本文件的校验路径生成。validate：上下文＋全部登记事实（整表复查），只在读取边界、准备收尾、发布与查阅调用；validateStep：上下文＋已读字段观察闸门，O(1)，供逐条读取（修复批 M-6R，不变式见 §9.104）。
+/// 仅本文件的校验路径生成。validate：上下文＋全部登记事实（整表复查），只在读取边界、准备收尾、发布与查阅调用；validateStep：上下文＋已读字段观察闸门，O(1)，供逐条读取（不变式见 docs/unified-search-commands.md 的“接入前阻断修复”）。
 @MainActor
 final class ContentQueryBodyReadPermit {
     private let check: () throws -> Void

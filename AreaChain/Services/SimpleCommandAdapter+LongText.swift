@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// L-M1b：简单骨架里长文规格与普通规格的分岔点。正文只经托管：准备期同步读宿主草稿，封存时移入托管，
+/// 简单骨架里长文规格与普通规格的分岔点。正文只经托管：准备期同步读宿主草稿，封存时移入托管，
 /// 执行时每个 attempt 签一次借用；失败或取消经 `returnLongText` 还回草稿。普通规格的流程不变。
 extension SimpleCommandAdapter {
     /// 准备与重新校验共用：长文规格的输入只含印记，前后状态由准备期的原文推出；普通规格沿原 `checkedInput`。

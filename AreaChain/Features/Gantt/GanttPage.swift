@@ -40,7 +40,7 @@ struct GanttPage: View {
         _localMonthKey = State(initialValue: todayKey)
     }
 
-    /// 合并批 M-2：显式宿主里月份与选择归宿主（gantt.step／currentMonth／select 写同一份）；默认入口不变。
+    /// 显式宿主里月份与选择归宿主（gantt.step／currentMonth／select 写同一份）；默认入口不变。
     private var monthKey: String {
         get { hostContext == nil ? localMonthKey : navigation.boardPages.ganttMonth ?? todayKey }
         nonmutating set { if hostContext == nil { localMonthKey = newValue } else { navigation.boardPages.ganttMonth = newValue } }

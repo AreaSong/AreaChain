@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// 合并批 M-2 B：标签整理的简单指令。全部只调原仓储方法（与 TagManagementPage／各对象的标签切换同一入口），
+/// 标签整理的简单指令。全部只调原仓储方法（与 TagManagementPage／各对象的标签切换同一入口），
 /// 依赖由调用方注入；只在测试夹具里构造，生产没有构造点。永久删除与清理未使用（tag.delete／tag.cleanup）不在这里。
 @MainActor struct TagOrganizeDependencies {
     var catalog: (ModelContext) -> any CatalogRepositoryProtocol = { SwiftDataCatalogRepository(context: $0) }

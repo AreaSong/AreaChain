@@ -1,7 +1,7 @@
 import AppKit
 import Foundation
 
-/// 剪贴板历史“复制 / 粘贴 / 纯文本粘贴”的唯一实现（合并批 M-2 从 ClipboardHistoryKeys.commit 抽出，原小窗与历史页转调）。
+/// 剪贴板历史“复制 / 粘贴 / 纯文本粘贴”的唯一实现（从 ClipboardHistoryKeys.commit 抽出，原小窗与历史页转调）。
 /// 复制先经原 stage 写剪贴板并登记自身回写；直接粘贴再经原 gate 请求辅助功能并发送 ⌘V——只能说明按键已发送，
 /// 目标应用是否收下没有回执。小窗、前台交还与按键发送都可注入，隔离环境全部用 fake，不触发真实辅助功能权限。
 @MainActor struct ClipboardHistoryActions {

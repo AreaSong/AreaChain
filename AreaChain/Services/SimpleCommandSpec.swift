@@ -23,9 +23,9 @@ import SwiftData
     func afterSave(_ call: CommandSimpleCall, in context: ModelContext) -> Bool
     /// 新建型指令回执里“打开新对象”的位置；沿原导航解析，不另建打开规则。默认没有。
     func openTarget(_ creation: CommandObjectReference) -> ContentQueryBrowseOpen?
-    /// 合并批 M-2：为真时只接目录要求独立确认的指令，提交前必须在共用确认面板里确认一次。默认不需要。
+    /// 为真时只接目录要求独立确认的指令，提交前必须在共用确认面板里确认一次。默认不需要。
     var confirms: Bool { get }
-    /// 合并批 M-2：目录要求认证（只为受保护内容）的指令，规格对受保护目标一律拒绝时才可装配；指令里从不认证。
+    /// 目录要求认证（只为受保护内容）的指令，规格对受保护目标一律拒绝时才可装配；指令里从不认证。
     var refusesProtectedContent: Bool { get }
 }
 
@@ -55,7 +55,7 @@ extension SimpleCommandCallSpec {
     func apply(_ input: CommandResolvedInput, in context: ModelContext) throws { throw CommandSimpleIssue.unassembled }
 }
 
-/// L-M1b：参数含 longText 的规格。准备期由托管同步读宿主草稿推出前后状态；执行不经 `apply(call)`，
+/// 参数含 longText 的规格。准备期由托管同步读宿主草稿推出前后状态；执行不经 `apply(call)`，
 /// 只经托管为本 attempt 签发的一次性借用写入（借用出口见 CommandLongTextEscrow.swift）。
 @MainActor protocol SimpleLongTextCommandSpec: SimpleCommandSpec {
     func apply(_ call: CommandSimpleCall, loan: CommandLongTextLoan, in context: ModelContext) throws

@@ -57,7 +57,7 @@ import SwiftData
         return preview
     }
 
-    /// L8：自读备注取带键摘要；todo.trash／routine.trash／batch.trash 允许带备注（确认面板列出去向），摘要随资格冻结。
+    /// 自读备注取带键摘要；todo.trash／routine.trash／batch.trash 允许带备注（确认面板列出去向），摘要随资格冻结。
     private func qualifications(_ targets: [CommandObjectReference], command: CommandID) throws -> [CommandTaskTitleEligibility] {
         var problems: [CommandTrashTargetProblem] = []
         var sources: [CommandTaskTitleEligibility] = []

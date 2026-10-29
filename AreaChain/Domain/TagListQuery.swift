@@ -1,6 +1,6 @@
 import Foundation
 
-/// 标签页列表的唯一取法（合并批 M-2 从 TagManagementPage 抽出，原页面转调）：全部／常用／最近／未使用视图沿 TagUsage，
+/// 标签页列表的唯一取法（从 TagManagementPage 抽出，原页面转调）：全部／常用／最近／未使用视图沿 TagUsage，
 /// 已删除视图按删除时间倒序，页内搜索按名字包含匹配。tag.search／tag.view／tag.deleted 用同一份。
 enum TagListQuery {
     static func usage(todos: [TodoItem], routines: [DailyRoutine], diaries: [DiaryEntry]) -> [UUID: TagUsageRecord] {

@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// 合并批 M-4 手记类简单指令的显式装配：手记仓储（隔离保险箱与附件目录）、任务仓储、附件位置、日期、来源戳与带键摘要
+/// 手记类简单指令的显式装配：手记仓储（隔离保险箱与附件目录）、任务仓储、附件位置、日期、来源戳与带键摘要
 /// 都由调用方注入。只在测试夹具里构造；生产没有构造点。
 @MainActor struct DiaryCommandDependencies {
     var diaries: (ModelContext) -> SwiftDataDiaryRepository
@@ -10,14 +10,14 @@ import SwiftData
     var today: () -> String
     /// 转任务时的来源戳（原界面沿 CaptureStamp 与偏好）；隔离环境注入固定值。
     var sourceBundleID: () -> String
-    /// 协调者的带键摘要（L6）；正文基线只存 HMAC，不存明文。
+    /// 协调者的带键摘要；正文基线只存 HMAC，不存明文。
     var digest: CommandTextDigest
 }
 
-/// 手记类指令共用的读取、保护判定与显示规则。只有普通手记直接执行（2026-10-21 决策 1）：
+/// 手记类指令共用的读取、保护判定与显示规则。只有普通手记直接执行（2026-10-21 用户决定）：
 /// 受保护（加密、私密标记、挂私密标签）的目标在读取正文之前就拒绝，面板改为“打开原手记页”。
 @MainActor enum DiaryCommandSpecs {
-    /// 正文（L-M1b 受控借用）：新建与改写。默认不装配，只在隔离 QA 测试里显式传给 SimpleCommandAdapter。
+    /// 正文（受控借用）：新建与改写。默认不装配，只在隔离 QA 测试里显式传给 SimpleCommandAdapter。
     static func longText(_ dependencies: DiaryCommandDependencies) -> [any SimpleCommandSpec] {
         [DiaryCreateSpec(dependencies: dependencies), DiaryBodySpec(dependencies: dependencies)]
     }
@@ -48,7 +48,7 @@ import SwiftData
         return main.isEmpty ? "—" : String(main.prefix(40))
     }
 
-    /// 长文两条（新建、改写正文）的行标题只用归属日：标题行就是正文，预览、接受与回执里不能出现正文（L-M1b）。
+    /// 长文两条（新建、改写正文）的行标题只用归属日：标题行就是正文，预览、接受与回执里不能出现正文。
     static func dayTitle(_ dayKey: String) -> String { dayKey }
 
     /// 正文只给带键摘要与字数，不存明文；摘要只用于冲突比较。

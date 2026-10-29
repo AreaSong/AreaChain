@@ -1,6 +1,6 @@
 import Foundation
 
-/// 记录范围只供显式调用方选择，不擅自给 1A 目录增加另一条路径。
+/// 记录范围只供显式调用方选择，不擅自给指令目录增加另一条路径。
 enum ContentQueryScopeSelection: Equatable {
     case global
     case catalog(CommandContentScope)

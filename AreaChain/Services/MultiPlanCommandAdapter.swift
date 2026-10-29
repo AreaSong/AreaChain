@@ -49,7 +49,7 @@ import Foundation
     }
 
     func family(for command: CommandID) throws -> CommandMultiPlanFamily {
-        // 需要独立确认的指令（回收、转换，以及合并批 M-2 的标签回收／恢复、附件回收）只能单项执行。
+        // 需要独立确认的指令（回收、转换，以及标签回收／恢复、附件回收）只能单项执行。
         if CommandTrashEdit.commands.contains(command.rawValue) || CommandConvertEdit.commands.contains(command.rawValue)
             || CommandCatalog.standard.command(id: command)?.interactions.contains(.independentConfirmation) == true {
             throw CommandMultiPlanIssue.independentConfirmation

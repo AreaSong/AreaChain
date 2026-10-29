@@ -192,7 +192,7 @@ enum ClipboardHistoryKeys {
         }
     }
 
-    /// 复制／粘贴的唯一实现在 ClipboardHistoryActions（合并批 M-2 抽出）；这里只装配共享会话与小窗。
+    /// 复制／粘贴的唯一实现在 ClipboardHistoryActions；这里只装配共享会话与小窗。
     static func commit(id: UUID, plain: Bool, paste: Bool, inPanel: Bool) {
         ClipboardHistoryActions(session: ClipboardHistorySession.shared, window: ClipboardHistoryPanel.shared.window)
             .commit(id: id, plain: plain, paste: paste, inPanel: inPanel)

@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// 合并批 M-4 B：手记正文的两条长文指令。正文只在准备期由托管同步读宿主草稿；封存后输入只剩印记，写入只经
+/// 手记正文的两条长文指令。正文只在准备期由托管同步读宿主草稿；封存后输入只剩印记，写入只经
 /// CommandLongTextEscrow.swift 里 DiaryWriteService 的借用出口。本文件是除托管文件外唯一可引用该出口的地方
 /// （check_workflow 的 long-text-loan 按符号放行）。预览逐行列出会派生的标签（含手记预置分类）与 @附件。
 @MainActor enum DiaryBodyRows {
@@ -29,7 +29,7 @@ import SwiftData
 }
 
 /// diary.create：新建普通手记，沿手记页快速新增的“自动分类”（标题／正文分隔、#标签含预置分类）。
-/// 要关联私密标签或保存后会变成受保护时整条拒绝并引导到原手记页（决策 1、2）。新手记身份在准备时分配一次。
+/// 要关联私密标签或保存后会变成受保护时整条拒绝并引导到原手记页（2026-10-21 用户决定）。新手记身份在准备时分配一次。
 @MainActor struct DiaryCreateSpec: SimpleLongTextCommandSpec, SimpleCommandCallSpec {
     let dependencies: DiaryCommandDependencies
     let command = CommandID(rawValue: "diary.create")
@@ -136,7 +136,7 @@ import SwiftData
 }
 
 /// diary.body：普通手记全文替换或追加（clear 因目录 body 不允许空值，在静态校验就被拒），沿原 editDiary：
-/// 合并正文里的 #标签、关联 @附件。冲突基线是正文的带键摘要（L6）与标签；已有正文超过 64KiB、目标受保护、
+/// 合并正文里的 #标签、关联 @附件。冲突基线是正文的带键摘要与标签；已有正文超过 64KiB、目标受保护、
 /// 改写后会变成受保护，都改为打开原手记页。走共用独立确认（目录要求），只能单项。
 @MainActor struct DiaryBodySpec: SimpleLongTextCommandSpec, SimpleCommandCallSpec {
     let dependencies: DiaryCommandDependencies

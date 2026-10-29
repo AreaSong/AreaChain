@@ -92,7 +92,7 @@ struct TrashTombstoneGroup: Equatable, Identifiable, CustomStringConvertible, Cu
 }
 
 struct TrashTombstoneResponse: Equatable, CustomStringConvertible, CustomDebugStringConvertible {
-    /// 每个安全可见对象仅存一份；groups 仅引用身份，供 2H-2 独立命中提升。
+    /// 每个安全可见对象仅存一份；groups 仅引用身份，供独立命中提升使用。
     let objects: [TrashTombstone]
     let groups: [TrashTombstoneGroup]
     let diagnostics: [TrashTombstoneDiagnostic]

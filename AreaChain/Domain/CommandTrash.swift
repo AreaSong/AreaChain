@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// T-M4 回收只开放可恢复软删；永久删除、恢复和多项计划继续关闭。
+/// 回收只开放可恢复软删；永久删除、恢复和多项计划继续关闭。
 enum CommandTrashEdit: String, CaseIterable, Equatable {
     case todo = "todo.trash", subtask = "subtask.delete", routine = "routine.trash", batch = "batch.trash"
 
@@ -42,7 +42,7 @@ struct CommandTrashCounts: Equatable {
     let targets: Int
     let subtasks: Int
     let attachments: Int
-    /// 带备注的目标数（合并批 M-1 B）：备注随对象一起进回收站，只用于确认说明，不另计写入实体。
+    /// 带备注的目标数：备注随对象一起进回收站，只用于确认说明，不另计写入实体。
     var notes = 0
     var total: Int { targets + subtasks + attachments }
     var limit: Int { CommandBatchWriteSet.Counts.entityLimit }

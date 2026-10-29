@@ -132,7 +132,7 @@ extension DiaryNoteCard {
     func beginEditing() {
         PrivacyAccess.withDiary(entry, requiresUnlock: editingSession?.needsUnlock == true, vault: privacyVault) { current in
             // 无宿主存储时会话的附件入口（粘贴按钮、编辑器贴图）全部关闭，不会暂存附件；会话仍按原默认存储构造，
-            // 正文保存里的 @附件 关联与私密加密批处理会照旧落共享目录，登记为 §9.102 后续缺口。
+            // 正文保存里的 @附件 关联与私密加密批处理会照旧落共享目录，是已登记的后续缺口（见 docs/unified-search-commands.md 的“隔离宿主附件写入与删除不落共享目录”）。
             _ = drafts.begin(current, context: modelContext, vault: privacyVault,
                              attachmentStore: attachmentStore ?? AttachmentStore.shared)
             showsEditConflict = false

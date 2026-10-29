@@ -35,7 +35,7 @@ struct CommandClipboardCapturePreview: Equatable, CustomStringConvertible, Custo
 
 /// 提交结果。saved 只在保存成功后出现；unknown 表示保存已调用但结果不明，需先核对，不自动重试。
 struct CommandClipboardCaptureFacts: Equatable, CustomStringConvertible, CustomDebugStringConvertible {
-    /// protectedTag：剪贴板文字里有私密或预设标签，指令按 L7 整条不写（原界面菜单栏入口仍跳过标签照常保存）。
+    /// protectedTag：剪贴板文字里有私密或预设标签，指令整条不写（原界面菜单栏入口仍跳过标签照常保存）。
     enum State: String, Equatable { case notSubmitted, empty, saved, unknown, protectedTag }
     enum Kind: String, Equatable { case text, image }
     let draft: CommandDraftStamp

@@ -1,8 +1,8 @@
 import Foundation
 
-/// 合并批 M-3 B、C：窗口与面板、总览统计、退出，以及直接执行的立即锁定。它们不建草稿、不进计划，
+/// 窗口与面板、总览统计、退出，以及直接执行的立即锁定。它们不建草稿、不进计划，
 /// 走导航面板的“预览 → 回车”；本类型只做纯解析，执行由显式装配的工作台宿主完成（默认不装配）。
-/// 合并批 M-4 起另含手记编辑会话的保存／重载／舍弃（只作用于已打开的普通手记小窗，复用 DiaryEditorSession）
+/// 另含手记编辑会话的保存／重载／舍弃（只作用于已打开的普通手记小窗，复用 DiaryEditorSession）
 /// 与普通手记复制（原卡片的 PrivateClipboard 路径）。
 enum CommandSystemAction: Equatable {
     case workspaceOpen, workspaceReveal, workspaceClose, overlayToggle, overlayMode(String)

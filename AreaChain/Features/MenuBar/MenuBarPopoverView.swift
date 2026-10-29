@@ -107,7 +107,7 @@ struct MenuBarPopoverView: View {
             guard !toolbar.isSearching else { return }
             focusCurrentInput()
         }
-        // 筛选只有 filterSession 一份；任务页签把它派生进菜单栏搜索的今日页自动条件，手记页签不作用于结果（M-7F）。
+        // 筛选只有 filterSession 一份；任务页签把它派生进菜单栏搜索的今日页自动条件，手记页签不作用于结果。
         .onChange(of: searchPageFilter, initial: true) { _, filter in unified?.refreshTodayPageFilter(filter) }
         .onChange(of: unified.map(ObjectIdentifier.init)) { _, _ in unified?.refreshTodayPageFilter(searchPageFilter) }
         .onReceive(NotificationCenter.default.publisher(for: .focusCapture)) { _ in

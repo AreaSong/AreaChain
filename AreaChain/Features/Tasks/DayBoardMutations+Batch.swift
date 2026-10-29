@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 extension DayBoardMutations {
-    /// 合并批 M-3 C：回收站恢复经 TrashRestoreService 唯一写入（与 trash.restore 共用）；仓储仍取本类型的可替换工厂。
+    /// 回收站恢复经 TrashRestoreService 唯一写入（与 trash.restore 共用）；仓储仍取本类型的可替换工厂。
     static func restorer(for ctx: ModelContext?) -> TrashRestoreService {
         .init(tasks: taskRepo(for: ctx), routines: routineRepo(for: ctx), diaries: diaryRepo(for: ctx), catalog: catalogRepo(for: ctx))
     }

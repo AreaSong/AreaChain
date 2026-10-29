@@ -1,7 +1,7 @@
 import AppKit
 import SwiftData
 
-/// 合并批 M-6：正式版统一搜索的真实依赖，只在 application 分支由 AppDelegate 交给 UnifiedSearchProduction。
+/// 正式版统一搜索的真实依赖，只在 application 分支由 AppDelegate 交给 UnifiedSearchProduction。
 /// 这里只构造闭包与引用共享单例；闭包里的系统调用（提醒授权、日历、粘贴、窗口、退出）只在执行对应指令时才运行。
 @MainActor enum UnifiedSearchLiveServices {
     static func make() -> UnifiedSearchProductionServices {

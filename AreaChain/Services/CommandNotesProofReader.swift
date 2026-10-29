@@ -1,13 +1,13 @@
 import Foundation
 import SwiftData
 
-/// L8（合并批 M-1 B）：无备注证明的唯一入口。适配器自己读对象备注，用协调者的带键摘要（L6，`simples.textDigest`）
+/// 无备注证明的唯一入口。适配器自己读对象备注，用协调者的带键摘要（`simples.textDigest`）
 /// 给出证明，不再信任来源所有者的 notes 枚举；只留摘要，不存、不传备注明文。
 /// “无备注”与 TaskCopyContent.notes 同口径：去掉首尾空白后为空。
 @MainActor enum CommandNotesProofReader {
     /// 放宽“普通无备注”门槛的指令（用户 2026-10-20 确认）：字段类不读写备注；回收、转换在确认面板列出备注去向；
     /// 复制本就包含备注。不在此列的一律仍要求无备注——尤其 todo.title／subtask.title：标题里 `//` 派生备注另行定界
-    /// （§9.94 第 8 条 ④）；完成、建标签与子任务类指令本批未列入，保持原门槛。
+    /// （见 docs/unified-search-commands.md 的“普通无备注”门槛）；完成、建标签与子任务类指令未列入，保持原门槛。
     static let allowsNotes: Set<String> = [
         "todo.move", "todo.priority", "todo.reminder", "todo.tags", "todo.due", "batch.move", "batch.tags",
         "todo.trash", "routine.trash", "batch.trash", "todo.toRoutine", "routine.toTodo", "todo.copy",
@@ -39,7 +39,7 @@ import SwiftData
                 let rows = try context.fetch(FetchDescriptor<TodoItem>(predicate: #Predicate { $0.id == id }))
                 return rows.count == 1 ? proof(rows[0].notes, key: key) : .unreadable
             case .routine, .routineOccurrence:
-                // 执行实例的 id 是习惯定义的 UUID（N-M1 的 routineOccurrence 身份），备注属于定义本身。
+                // 执行实例的 id 是习惯定义的 UUID（routineOccurrence 身份），备注属于定义本身。
                 let rows = try context.fetch(FetchDescriptor<DailyRoutine>(predicate: #Predicate { $0.id == id }))
                 return rows.count == 1 ? proof(rows[0].notes, key: key) : .unreadable
             case .subtask:

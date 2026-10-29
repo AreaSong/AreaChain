@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// X-1 简单修改指令的共用骨架：普通、无依赖、无创建输出、一次仓储调用即可完成的单目标、固定多目标或无目标指令。
+/// 简单修改指令的共用骨架：普通、无依赖、无创建输出、一次仓储调用即可完成的单目标、固定多目标或无目标指令。
 /// 每个指令只提供目标形状、资格读取、参数到仓储调用的映射和文案；计划戳、冻结、事务、回执与未知核对都在骨架里。
 enum CommandSimpleShape: Equatable {
     case none
@@ -10,7 +10,7 @@ enum CommandSimpleShape: Equatable {
     case fixed(CommandObjectType)
     /// 单个对象，类型可以是集合里的任一种（如同一天混排的待办或习惯）。
     case singleAny(Set<CommandObjectType>)
-    /// 合并批 M-2：显式固定集合，对象可以是集合里的任意几种（如从待办、习惯、子任务、手记上解绑标签）。
+    /// 显式固定集合，对象可以是集合里的任意几种（如从待办、习惯、子任务、手记上解绑标签）。
     case fixedAny(Set<CommandObjectType>)
 
     func allows(_ targets: CommandDraftTargets) -> Bool {
@@ -37,25 +37,25 @@ enum CommandSimpleIssue: Error, Equatable {
     case invalidTarget(CommandSimpleProblem)
     /// 上次保存结果未知且尚未核对：同一对象不能再准备，避免未核实就重试。
     case verificationRequired
-    /// 合并批 M-2：需要独立确认的指令还没有在共用确认面板里确认（或确认已被撤销）。
+    /// 需要独立确认的指令还没有在共用确认面板里确认（或确认已被撤销）。
     case confirmationRequired
 }
 
 enum CommandSimpleProblem: String, Equatable {
     case missing, duplicate, deleted, protected, empty, nameTaken, incompleteOrder, changed
-    /// T-M6：来源不是普通内容、位置越界、父任务不符、不在那天的清单里、跨“带子任务”分组、正文超限、
+    /// 来源不是普通内容、位置越界、父任务不符、不在那天的清单里、跨“带子任务”分组、正文超限、
     /// 没有可延期对象、日期不是今天、目标超过总量上限、快速新增解析不出内容。
     case protectedSource, outOfRange, parentMismatch, notListed, crossesGroup, tooLong, nothingToMove, notToday, tooMany, untitled
-    /// L-M1b：正文解析出私密或预置标签（L7）；托管正文因锁定、遮罩或隐私变化不再借出（须返回编辑后重新预览）。
+    /// 正文解析出私密或预置标签（整条不可执行）；托管正文因锁定、遮罩或隐私变化不再借出（须返回编辑后重新预览）。
     case protectedTag, locked
-    /// 合并批 M-2：要恢复的对象不在回收站里。
+    /// 要恢复的对象不在回收站里。
     case notTrashed
-    /// 合并批 M-3：附件的拥有者也在回收站里（或已不存在），附件不能单独恢复。
+    /// 附件的拥有者也在回收站里（或已不存在），附件不能单独恢复。
     case ownerTrashed
-    /// 合并批 M-4：只有普通手记直接执行。目标受保护或保存后会变成受保护、要给手记加私密标签、已有正文超过长文上限，
+    /// 只有普通手记直接执行。目标受保护或保存后会变成受保护、要给手记加私密标签、已有正文超过长文上限，
     /// 都改为打开原手记页完成（不读取或解密受保护正文）。
     case protectedDiary, diaryPrivateTag, diaryTooLong
-    /// 合并批 M-4：手记没有可保存或可转换的正文。
+    /// 手记没有可保存或可转换的正文。
     case diaryEmpty
 
     /// 这些原因在面板里提供“打开原手记页”。
@@ -71,7 +71,7 @@ enum CommandSimpleDisplay: Equatable {
 struct CommandSimpleNotice: Equatable {
     let key: String
     let title: String
-    /// 为真时整条指令不可执行（如 L7 私密标签）；预览照常列出原因，接受被拒。
+    /// 为真时整条指令不可执行（如私密标签）；预览照常列出原因，接受被拒。
     var blocking = false
 }
 
@@ -174,7 +174,7 @@ struct CommandSimplePreview: Equatable, CustomStringConvertible, CustomDebugStri
         let draft = item.draft
         guard item.atomicGroup == nil, item.links.predecessors.isEmpty, item.links.results.isEmpty,
               item.hasSupportedOrigins, item.executionOrigin == nil else { throw CommandSimpleIssue.unsupportedPlan }
-        // 封存前的长文草稿只放开“普通、未托管的正文”（L1）；受保护、required、unknown 与计划里的印记仍拒绝。
+        // 封存前的长文草稿只放开“普通、未托管的正文”；受保护、required、unknown 与计划里的印记仍拒绝。
         let exportable = longText ? !draft.blocksUnprotectedTransfer && draft.longTextImprints.isEmpty
             : !draft.blocksUnprotectedExport
         guard exportable, draft.protectionRequirement == .ordinary,
@@ -219,9 +219,9 @@ struct CommandSimpleVerification: Equatable {
 
 @MainActor final class CommandSimpleRegistry {
     var preparing: [String: CommandHostOwnership] = [:]
-    /// 协调者持有的带键摘要（L6）；随协调者存在，只在内存。
+    /// 协调者持有的带键摘要；随协调者存在，只在内存。
     let textDigest = CommandTextDigest()
-    /// 合并批 M-2：需要独立确认的简单指令沿共享的确认登记（见 CommandSimpleConfirmation.swift）。
+    /// 需要独立确认的简单指令沿共享的确认登记（见 CommandSimpleConfirmation.swift）。
     let confirmations = CommandIndependentConfirmationLedger<CommandSimpleConfirmationSummary>()
     private(set) var acceptances: [UUID: CommandSimpleAcceptance] = [:]
     private var invoked: Set<UUID> = []

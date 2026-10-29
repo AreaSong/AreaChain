@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// 属性命令沿用普通来源证明与目录规则；只采样实际影响字段。备注只读来取带键摘要（L8），不进入预览明文。
+/// 属性命令沿用普通来源证明与目录规则；只采样实际影响字段。备注只读来取带键摘要，不进入预览明文。
 @MainActor final class TaskFieldCommandReader {
     unowned let environment: TaskTitleCommandEnvironment
     private let id = UUID()
@@ -90,7 +90,7 @@ import SwiftData
         try consumption?.output.validate(context: ObjectIdentifier(environment.context),
                                          storage: ObjectIdentifier(environment.context.container), record: todo.persistentModelID)
         guard todo.modelContext === environment.context, todo.deletedAt == nil else { throw CommandTaskTitlePreviewIssue.deletedTarget }
-        // 空标题只检查既有关联的 D3 资格，不解析任务标题或产生标签效果。
+        // 空标题只检查既有关联的标签普通资格，不解析任务标题或产生标签效果。
         _ = try CommandTaskTitleTags.merge(rawIDs: todo.tagIDs, title: "", catalog: catalog)
         let edit = try TaskFieldEdit(command: item.draft.commandID, argument: item.draft.arguments[0])
         let original: TaskFieldEdit
@@ -120,7 +120,7 @@ import SwiftData
                                                        lookup: CommandTaskTagLookup(catalog))
     }
 
-    /// L8：自读备注取带键摘要；字段类（move／priority／reminder／tags／due）允许带备注，完成与建标签仍要求无备注。
+    /// 自读备注取带键摘要；字段类（move／priority／reminder／tags／due）允许带备注，完成与建标签仍要求无备注。
     /// 摘要随来源证明进入预览，执行前复核时备注被改即 stale。
     private func notesProof(_ target: CommandObjectReference, command: CommandID) throws -> CommandNotesProof {
         let notes = CommandNotesProofReader.proof(of: .init(type: .todo, id: target.id), in: environment.context,

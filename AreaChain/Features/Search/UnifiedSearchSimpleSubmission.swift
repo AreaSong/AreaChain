@@ -13,7 +13,7 @@ struct UnifiedSearchSimpleSubmission: View {
             if let failure = controller.simpleFailure {
                 Text(LocalizedStringKey(failure)).font(DaybookType.caption).fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("unified.simple.issue")
-                // 合并批 M-4：受保护手记、加私密标签与超长正文都在原手记页完成（沿 M-3 打开原页面的手记目的地）。
+                // 受保护手记、加私密标签与超长正文都在原手记页完成（沿“打开原页面”的手记目的地）。
                 if UnifiedSearchSimpleCopy.opensDiaryPage(failure) {
                     UnifiedSearchPlanButton(title: "unified.simple.open.diaryPage", identifier: "unified.simple.openDiaryPage") {
                         controller.openDiaryOriginalPage(source)
@@ -39,7 +39,7 @@ struct UnifiedSearchSimpleSubmission: View {
                 }.accessibilityElement(children: .contain).accessibilityIdentifier("unified.simple.values")
                 if accepted { Text("unified.simple.accepted").font(DaybookType.caption) }
                 else if !preview.executable {
-                    // L7：私密或预置标签使整条不可执行；原因已逐个列在上方，不提供接受。
+                    // 私密或预置标签使整条不可执行；原因已逐个列在上方，不提供接受。
                     Text("unified.simple.blocked").font(DaybookType.caption).fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier("unified.simple.blocked")
                 } else {

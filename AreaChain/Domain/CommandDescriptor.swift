@@ -115,7 +115,7 @@ struct CommandDescriptor: Identifiable, Equatable, Sendable {
         }
     }
 
-    // 阶段 1A 故意没有 wired 分支，目录完整不意味着任意适配已接通。
+    // 目录故意没有 wired 分支，目录完整不意味着任意适配已接通。
     var isExecutable: Bool { false }
     var canEnterOrdinaryQueue: Bool { isExecutable && queue == .eligibleAfterWiring }
 

@@ -99,7 +99,7 @@ extension CommandHandoffCoordinator {
         guard !simples.wasInvoked(accepted.id) else { throw CommandSimpleIssue.alreadyInvoked }
         let invocation = try claimRuntimeInvocation(request.operation, attempt: request.attempt, expecting: request.lease)
         simples.markInvoked(accepted.id)
-        // 确认只用一次：执行开始即撤销（合并批 M-2）。
+        // 确认只用一次：执行开始即撤销。
         simples.confirmations.revoke(acceptanceID: accepted.id)
         return invocation
     }

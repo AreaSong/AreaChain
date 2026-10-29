@@ -1,8 +1,8 @@
 import Foundation
 
-/// 合并批 M-2 C～D：附件与剪贴板页面指令里需要控制器出面的那一步（打开查阅、窗口与系统剪贴板动作）。
+/// 附件与剪贴板页面指令里需要控制器出面的那一步（打开查阅、窗口与系统剪贴板动作）。
 extension UnifiedSearchController {
-    /// image.preview：沿 N-M2 的普通图片查阅打开，不另开查看器。指令事件会推进租约、使当前结果的展示许可失效，
+    /// image.preview：沿普通图片查阅打开，不另开查看器。指令事件会推进租约、使当前结果的展示许可失效，
     /// 因此先同返回搜索一样恢复展示并按当前查询重读；图片仍在当前结果里可见才打开（WorkspaceContentSession 的门禁不变）。
     func openImageCommand(_ image: CommandObjectReference, source: UnifiedSearchBuffer) throws {
         guard navigationRouter?.contents != nil, let pages = pageCommands, contentCommandTask == nil else {
@@ -28,7 +28,7 @@ extension UnifiedSearchController {
         }
     }
 
-    /// 小窗的打开、关闭与返回工作台沿小窗现有窗口管理（只有一个窗口）；返回工作台再沿 N-M1 显示剪贴板页。
+    /// 小窗的打开、关闭与返回工作台沿小窗现有窗口管理（只有一个窗口）；返回工作台再经导航显示剪贴板页。
     func executeClipboardWindow(_ window: CommandClipboardWindow, parsed: CommandPathResult, source: UnifiedSearchBuffer,
                                 pages: WorkspacePageCommands) {
         guard parsed.state == .command, parsed.arguments.isEmpty else { navigationMessage = "unified.page.invalidArguments"; return }

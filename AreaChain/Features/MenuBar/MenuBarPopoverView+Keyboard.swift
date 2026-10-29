@@ -35,7 +35,7 @@ extension MenuBarPopoverView {
 
         // 搜索组合来自快捷键页。停用或改成别的键之后，原来的 ⌘F 不再聚焦。
         if search.matches(event) {
-            // ⌘F 是显式动作：遮罩时经统一搜索唯一的恢复入口解除并重读；浮层重新打开本身不恢复（修复批 M-7G）。
+            // ⌘F 是显式动作：遮罩时经统一搜索唯一的恢复入口解除并重读；浮层重新打开本身不恢复。
             if let unified { unified.resumeForExplicitAction(source: unified.buffer) }
             toolbar.focusSearch()
             return nil

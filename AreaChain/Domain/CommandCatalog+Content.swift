@@ -17,7 +17,7 @@ extension CommandCatalogBuilder {
                 .targets([.diary]).requiring([.unsavedChangesConfirmation]),
             entry("diary.tags", "/diaries/tags", .modification, "J1:tags J2:tags",
                   [tags])
-                // 合并批 M-4 决策 2：普通标签直接执行，加私密标签（隐私转换）拒绝并引导到原手记页；认证只为受保护手记。
+                // 普通标签直接执行，加私密标签（隐私转换）拒绝并引导到原手记页；认证只为受保护手记。
                 .targets([.diary], batch: .explicitMultiple).ordinary().requiring([.authentication]),
             entry("diary.pinned", "/diaries/pinned", .modification, "J2:pin J2:unpin",
                   [p(.enabled, .boolean)])
@@ -49,7 +49,7 @@ extension CommandCatalogBuilder {
             entry("tag.color", "/tags/color", .modification, "G1:color",
                   [p(.color, .choice(TagColorToken.allCases.map { CommandChoice(value: $0.rawValue) }))])
                 .targets([.tag], batch: .explicitMultiple).ordinary(),
-            // 合并批 M-1 D：与三个任务排序指令一致，用 1 起的 position 表达新位置，不依赖选择器的登记顺序；一次移动一项。
+            // 与三个任务排序指令一致，用 1 起的 position 表达新位置，不依赖选择器的登记顺序；一次移动一项。
             entry("tag.order", "/tags/order", .modification, "G1:order",
                   [p(.position, .number(0...Double(Int.max), integer: true))])
                 .targets([.tag]).ordinary(),
@@ -61,7 +61,7 @@ extension CommandCatalogBuilder {
                 .scope(.trash),
             entry("tag.merge", "/tags/merge", .modification, "G2:merge",
                   [p(.destination, .object([.tag]))])
-                // 合并批 M-2：按用户决策 3 解决——只合并普通标签，来源或目标里有私密标签整条拒绝（去原标签页做）。
+                // 按用户决定：只合并普通标签，来源或目标里有私密标签整条拒绝（去原标签页做）。
                 .targets([.tag], batch: .explicitMultiple).ordinary(),
             entry("tag.unlinkObject", "/tags/unlink-object", .modification, "G2:unlinkObject",
                   [p(.tags, .tags)])
@@ -70,7 +70,7 @@ extension CommandCatalogBuilder {
                 .targets([.tag]).unavailable("globalUnlink"),
             entry("tag.trash", "/tags/trash", .modification, "G2:trash")
                 .targets([.tag]).ordinary().requiring([.independentConfirmation]),
-            // 合并批 M-2：恢复是数据修改（撤回软删），与回收一样入普通计划（仍只单项执行、须独立确认）。
+            // 恢复是数据修改（撤回软删），与回收一样入普通计划（仍只单项执行、须独立确认）。
             entry("tag.restore", "/tags/restore", .modification, "G2:restore")
                 .targets([.tag]).ordinary().requiring([.independentConfirmation]),
             entry("tag.delete", "/tags/delete", .systemAction, "G2:delete")

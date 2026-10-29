@@ -84,7 +84,7 @@ struct DiaryNoteCard: View {
     @State var confirmsUnprotect = false
 
     var privacyVault: PrivacyVault { vault ?? .shared }
-    /// 附件写入所用存储；隔离宿主没有存储时为 nil，附件入口禁用（§9.102）。
+    /// 附件写入所用存储；隔离宿主没有存储时为 nil，附件入口禁用。
     var attachmentStore: AttachmentStore? { WorkspaceAttachmentStorage.resolve(hostContext)?.store }
     var drafts: DiaryCardDrafts { draftStore ?? localDrafts }
     var editingSession: DiaryEditorSession? { drafts.editor(for: entry.id) }

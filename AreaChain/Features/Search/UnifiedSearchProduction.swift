@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-/// 统一搜索的唯一运行时入口（合并批 M-6 接入，收尾批 M-7 起是工作台与菜单栏唯一的搜索）。启动时建立唯一装配；
+/// 统一搜索的唯一运行时入口，也是工作台与菜单栏唯一的搜索。启动时建立唯一装配；
 /// 装配失败时两个宿主的搜索框显示一句不阻塞的说明，应用其余部分照常，之后任一偏好变化都会重试。
 /// 装配本身不读库、不申请任何系统权限；只有执行对应指令时才可能触发授权。
 @Observable @MainActor final class UnifiedSearchProduction {

@@ -1,6 +1,6 @@
 import Foundation
 
-/// 仅识别从 UTF-16 位置 0 开始的独立斜杠输入。混合内容查询留给 1B-2。
+/// 仅识别从 UTF-16 位置 0 开始的独立斜杠输入。混合内容查询不在这里识别。
 struct CommandPathParser {
     var catalog = CommandCatalog.standard
 

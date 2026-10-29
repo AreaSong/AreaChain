@@ -119,7 +119,7 @@ private struct UnifiedSearchPlanRow: View {
 
     private var diagnostics: some View {
         let result = check.items.first { $0.item == item.stamp }
-        // 普通长文经托管执行（L-M1b）：计划层的守卫仍报 protectedContent，这里改列草稿自身的静态检查，不误称“不支持”。
+        // 普通长文经托管执行：计划层的守卫仍报 protectedContent，这里改列草稿自身的静态检查，不误称“不支持”。
         let draftCheck = controller.escrowsLongText(item.draft) ? item.draft.check() : nil
         let arguments = draftCheck?.argumentIssues ?? result?.arguments ?? []
         let targets = draftCheck?.targetIssues ?? result?.targets ?? []

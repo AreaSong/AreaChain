@@ -152,7 +152,7 @@ extension UnifiedSearchProductionAssembly {
         return environment
     }
 
-    // MARK: - 简单指令规格（X-1 骨架的全部已实现消费者）
+    // MARK: - 简单指令规格（简单指令骨架的全部已实现消费者）
 
     private func simpleSpecs() -> [any SimpleCommandSpec] {
         let digest = coordinator.textDigest

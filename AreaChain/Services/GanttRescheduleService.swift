@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// 安排页改期的唯一写入入口（合并批 M-2 A 从 GanttRescheduling 抽出）：拖动提交与 gantt.shift 共用。
+/// 安排页改期的唯一写入入口（从 GanttRescheduling 抽出）：拖动提交与 gantt.shift 共用。
 /// 事务边界由调用方给出；本入口只做资格核对、按页面同一规则推出整组移动，以及逐项调原仓储 moveTodo。
 @MainActor enum GanttRescheduleService {
     /// 拖动期间发生改期、完成或删除时，不用旧快照覆盖较新的任务状态。

@@ -1,6 +1,6 @@
 import Foundation
 
-/// 合并批 M-2：看板与标签页里原本放在页面 `@State` 的状态。只在显式宿主（WorkspaceHostContext）里由宿主持有，
+/// 看板与标签页里原本放在页面 `@State` 的状态。只在显式宿主（WorkspaceHostContext）里由宿主持有，
 /// 页面读写这一份、页面指令也只写这一份，不另存副本；默认生产入口和菜单栏仍用页面自己的 `@State`。
 /// 离开对应页面即复位（见 WorkspaceNavigation.releasePageMemory），与页面卸载时 `@State` 重建一致。
 struct WorkspaceBoardPageState: Equatable {

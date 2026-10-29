@@ -2,7 +2,7 @@ import SwiftData
 import SwiftUI
 
 struct UnifiedSearchNavigationPanel: View {
-    /// 合并批 M-2：带日期参数的看板导航与 inspector.day 共用同一个日期选择。
+    /// 带日期参数的看板导航与 inspector.day 共用同一个日期选择。
     static let boardDayCommands: Set<String> = ["calendar.day", "calendar.dayList", "quadrant.day"]
     @Bindable var controller: UnifiedSearchController
     @Environment(\.calendar) private var calendar
@@ -87,7 +87,7 @@ struct UnifiedSearchWorkspaceInput: View {
     var minimumWidth: CGFloat?
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
     var body: some View {
-        // `#` 候选沿旧顶栏搜索：全部存活标签（修复批 M-7F）。
+        // `#` 候选沿旧顶栏搜索：全部存活标签。
         UnifiedSearchInput(buffer: controller.buffer, focused: $controller.inputFocused,
                            actions: controller.actions, reset: controller.inputReset, showsStatus: false,
                            minimumWidth: minimumWidth, availableTags: Catalog.liveTags(tags).map(\.name))

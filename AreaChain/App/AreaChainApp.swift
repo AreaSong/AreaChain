@@ -24,7 +24,7 @@ extension FirstLaunchSeeder {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     var terminationPolicy = AppStartup.requireAllowed()
-    /// 合并批 M-6：统一搜索 app.quit 经 confirmTerminationForCommand 走原确认；只在 application 分支设置。
+    /// 统一搜索 app.quit 经 confirmTerminationForCommand 走原确认；只在 application 分支设置。
     static weak var current: AppDelegate?
     private var terminationConfirmed = false
     var terminationLocale: () -> Locale = { AppPreferences.shared.resolvedLocale }
@@ -46,7 +46,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         AppWindows.workspaceViewProvider = {
             AnyView(
-                // 合并批 M-6：开关开时取唯一装配点的工作台控制器，关时与原入口相同。
+                // 开关开时取唯一装配点的工作台控制器，关时与原入口相同。
                 UnifiedSearchWorkspaceRoot()
                     .appChrome()
                     .modelContainer(Persistence.session.container)

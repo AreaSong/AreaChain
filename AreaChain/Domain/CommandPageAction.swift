@@ -1,6 +1,6 @@
 import Foundation
 
-/// 合并批 M-1 C：任务页的交互与只读查询指令。它们只改页面状态或读数据，不进计划、不建 Run、不写库；
+/// 任务页的交互与只读查询指令。它们只改页面状态或读数据，不进计划、不建 Run、不写库；
 /// 执行由显式装配的页面宿主完成，绑定当前页面，页面不对时拒绝而不切页。本类型只做纯解析。
 enum CommandPageAction: Equatable {
     enum Section: String, Equatable { case today, yesterday, upcoming }
@@ -14,16 +14,16 @@ enum CommandPageAction: Equatable {
     case kind(ItemKindScope)
     case status(todo: TodoStatusScope?, routine: RoutineStatusScope?)
     case streak(routine: UUID, Streak, day: String)
-    /// 合并批 M-2 A：日历月／周、安排页选择，以及看板修改指令转交给已有执行。
+    /// 日历月／周、安排页选择，以及看板修改指令转交给已有执行。
     case calendarMode(CommandBoardSpan)
     case ganttSelect(CommandGanttSelectMode, [CommandObjectReference])
     case transfer(CommandBoardTransfer)
-    /// 合并批 M-2 B：取消标签页的新建或改名草稿；标签只读查询。
+    /// 取消标签页的新建或改名草稿；标签只读查询。
     case tagCancel
     case tagQuery(CommandTagQuery)
-    /// 合并批 M-2 C：图片浏览与原图查阅。
+    /// 图片浏览与原图查阅。
     case image(CommandImageAction)
-    /// 合并批 M-2 D：剪贴板历史的浏览、搜索、复制、粘贴、置顶与小窗置顶。
+    /// 剪贴板历史的浏览、搜索、复制、粘贴、置顶与小窗置顶。
     case clipboard(CommandClipboardAction)
 
     static let commands: Set<String> = Set([
@@ -169,10 +169,10 @@ enum CommandPageIssue: Error, Equatable {
     case pageUnavailable, nothingToCancel, notInList, missing, stale
     /// 今日区始终展开，没有可收起的状态。
     case todaySectionFixed
-    /// 合并批 M-2：日历新建的备注须在新建待办里填写；页面上没有这一项可执行。
+    /// 日历新建的备注须在新建待办里填写；页面上没有这一项可执行。
     case notesUnsupported
-    /// 合并批 M-2：受保护内容（加密、敏感手记、需解锁）不在指令里打开或读取。
+    /// 受保护内容（加密、敏感手记、需解锁）不在指令里打开或读取。
     case protectedContent
-    /// 合并批 M-2 D：写系统剪贴板失败（不报“已复制”）；剪贴板历史保存失败（不报“已置顶”）。
+    /// 写系统剪贴板失败（不报“已复制”）；剪贴板历史保存失败（不报“已置顶”）。
     case copyFailed, saveFailed
 }

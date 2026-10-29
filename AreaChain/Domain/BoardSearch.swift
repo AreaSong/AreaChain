@@ -42,7 +42,7 @@ struct BoardSearchPrivacy {
 
     static func protected(diaries: [DiaryEntry], tags: [TagItem], locale: Locale) -> BoardSearchPrivacy {
         BoardSearchPrivacy(
-            // 搜索读取侧与统一搜索同一判定（M-6R）：旧 #密码 标记与“密码”名标签仍隐藏标题。
+            // 搜索读取侧与统一搜索同一判定：旧 #密码 标记与“密码”名标签仍隐藏标题。
             sensitiveDiaryIDs: Set(diaries.filter { DiaryPrivacy.isSearchSensitive($0.snapshot, text: $0.text, tags: tags) }.map(\.id)),
             privateTagIDs: Set(tags.filter(\.isPrivateDiary).map(\.id)),
             placeholder: L10n.string("diary.private.title", locale: locale)

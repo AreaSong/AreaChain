@@ -1,13 +1,13 @@
 import Foundation
 
-/// 合并批 M-2 A：看板三页的页面指令。状态都写页面自己的那一份——日期在共享 BoardSelection，
+/// 看板三页的页面指令。状态都写页面自己的那一份——日期在共享 BoardSelection，
 /// 日历月／周、安排页月份与选择在显式宿主的 `boardPages`——不另存副本；页面不对时拒绝而不切页。
 extension WorkspacePageCommands {
     func supportsBoardNavigation(_ command: CommandID) -> Bool {
         CommandBoardNavigation.commands.contains(command.rawValue)
     }
 
-    /// 导航类（不建草稿）：核对页面、只写一次页面状态；显示由调用方沿 N-M1 navigate(.page) 完成。
+    /// 导航类（不建草稿）：核对页面、只写一次页面状态；显示由调用方经导航 navigate(.page) 完成。
     /// 检查器两条只核对焦点项在页面投影里，再沿页面自己的 inspect 写法打开（同 QuadrantPage／GanttPage）。
     func applyBoardNavigation(_ action: CommandBoardNavigation, inspecting target: CommandObjectReference?) throws -> WorkspaceTab {
         let page = try requireBoardPage(action.page)

@@ -132,7 +132,7 @@ final class TaskTitleCommandPreviewReader {
         guard todo.id == input.target.id, todo.modelContext === context else { throw CommandTaskTitlePreviewIssue.invalidTarget }
         guard todo.deletedAt == nil else { throw CommandTaskTitlePreviewIssue.deletedTarget }
         let tags = try CommandTaskTitleTags.merge(rawIDs: todo.tagIDs, title: input.title, catalog: catalog)
-        // 资格先于标题投影；备注只经来源闭包的带键摘要证明（L8），这里不读取 notes，也不调用包含正文的完整 snapshot。
+        // 资格先于标题投影；备注只经来源闭包的带键摘要证明，这里不读取 notes，也不调用包含正文的完整 snapshot。
         var values: [TaskTitleField: TaskTitleFieldValue] = [.title: .text(todo.title), .tagIDs: .text(todo.tagIDs)]
         if input.edit.priority != nil {
             values[.isImportant] = .flag(todo.isImportant)

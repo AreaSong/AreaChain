@@ -1,6 +1,6 @@
 import Foundation
 
-/// 合并批 M-2 A：看板三页（日历、四象限、安排）的导航指令。它们只改页面的日期／月份状态，不写库；
+/// 看板三页（日历、四象限、安排）的导航指令。它们只改页面的日期／月份状态，不写库；
 /// 由显式装配的页面宿主执行，页面不对时拒绝而不切页。本类型只做纯解析与纯日期推算。
 enum CommandBoardNavigation: Equatable {
     case calendarStep(forward: Bool), calendarToday, calendarDay(String), calendarDayList(String)

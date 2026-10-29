@@ -112,7 +112,7 @@ enum CatalogChoices {
         context: ModelContext,
         storage: WorkspaceAttachmentStorage? = .resolve(nil)
     ) -> TaskAttachmentContext {
-        // 写入落在宿主决定的存储；隔离宿主没有存储时菜单禁用、回调不写任何目录（§9.102）。
+        // 写入落在宿主决定的存储；隔离宿主没有存储时菜单禁用、回调不写任何目录。
         let store = storage?.store
         return TaskAttachmentContext(
             items: attachments(ownerID: ownerID, in: index, ownerKind: ownerKind),

@@ -238,7 +238,7 @@ struct TaskDetailAssetsSectionView: View {
         let taskAttachments = attachments.filter {
             $0.ownerID == props.ownerID && $0.ownerKind == props.ownerKind.rawValue && $0.deletedAt == nil
         }
-        // 写入落在宿主决定的存储；隔离宿主没有存储时两个入口禁用，不回退共享目录（§9.102）。
+        // 写入落在宿主决定的存储；隔离宿主没有存储时两个入口禁用，不回退共享目录。
         let store = WorkspaceAttachmentStorage.resolve(hostContext)?.store
         return VStack(alignment: .leading, spacing: 6) {
             HStack {

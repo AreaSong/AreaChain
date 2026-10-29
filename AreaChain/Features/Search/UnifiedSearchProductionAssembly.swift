@@ -1,7 +1,7 @@
 import AppKit
 import SwiftData
 
-/// 合并批 M-6：正式版统一搜索的系统副作用。全部只在用户执行对应指令时才被调用：
+/// 正式版统一搜索的系统副作用。全部只在用户执行对应指令时才被调用：
 /// 装配与启动都不调用其中任何一项，因此不会触发通知、日历或辅助功能授权。
 @MainActor struct UnifiedSearchProductionEffects {
     /// 保存成功后的提醒／日历／小组件刷新，与原界面 `BoardEvents.Dependencies.production` 同一路径。
@@ -47,9 +47,9 @@ import SwiftData
     var effects: UnifiedSearchProductionEffects
 }
 
-/// 合并批 M-6：正式版里唯一构造统一搜索（协调者、读取会话、各指令适配器与规格、页面宿主、导航路由、控制器）的地方。
+/// 正式版里唯一构造统一搜索（协调者、读取会话、各指令适配器与规格、页面宿主、导航路由、控制器）的地方。
 /// check_workflow 的 unified-search-assembly 守卫保证生产代码只在本文件与 +Commands 扩展里构造这些类型。
-/// 构造失败时 `attempt` 返回失败，宿主搜索框显示不可用说明（收尾批 M-7 删除旧搜索后没有退回入口）。
+/// 构造失败时 `attempt` 返回失败，宿主搜索框显示不可用说明（没有退回旧搜索的入口）。
 @MainActor final class UnifiedSearchProductionAssembly {
     static let workspaceHost = "workspace"
     static let menubarHost = "menubar"

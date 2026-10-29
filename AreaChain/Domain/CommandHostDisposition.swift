@@ -1,6 +1,6 @@
 import Foundation
 
-/// 修复批 M-7G：一条指令在当前宿主里怎么处理。只是判断结果的值，判断本身唯一在
+/// 一条指令在当前宿主里怎么处理。只是判断结果的值，判断本身唯一在
 /// `UnifiedSearchController.disposition(for:)`（沿与 Return 相同的真实路由）；候选标签、状态行与目录级用例都读这一个结果。
 enum CommandHostDisposition: Equatable, Sendable {
     /// Return 开始草稿，预览后确认（已装配适配器）。

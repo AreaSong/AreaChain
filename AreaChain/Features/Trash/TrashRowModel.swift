@@ -170,7 +170,7 @@ struct TrashRow: Identifiable {
     var deletedAt: Date
     var restore: @MainActor () -> Void
     var purge: @MainActor () -> Bool
-    /// 隔离宿主没有附件存储时为 false：清除会级联删附件文件，不能落到共享目录（§9.102）。
+    /// 隔离宿主没有附件存储时为 false：清除会级联删附件文件，不能落到共享目录。
     var canPurge: Bool = true
     var removeFromStore: @MainActor (ModelContext) throws -> Void
     var purgesOwner: AttachmentOwnerKey? = nil

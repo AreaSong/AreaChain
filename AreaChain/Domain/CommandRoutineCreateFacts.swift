@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// 原事实保留创建身份；显式 P-M2 才发布类型化输出，外部步骤仍单独判断。
+/// 原事实保留创建身份；只有显式装配类型化创建输出时才发布类型化输出，外部步骤仍单独判断。
 struct CommandRoutineCreateFacts: Equatable, CustomStringConvertible, CustomDebugStringConvertible {
     enum State: Equatable { case pending, notSubmitted, saved, unknown }
     let creationID: UUID

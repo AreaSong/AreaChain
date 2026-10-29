@@ -1,6 +1,6 @@
 import Foundation
 
-/// X-1 简单指令的预览、接受、提交与未知核对只是原 Plan/Run 之外的不可编辑投影；草稿与计划仍归 Coordinator。
+/// 简单指令的预览、接受、提交与未知核对只是原 Plan/Run 之外的不可编辑投影；草稿与计划仍归 Coordinator。
 extension UnifiedSearchController {
     var showsSimple: Bool {
         let drafts = (operations?.allDrafts ?? []) + (plan?.items.map(\.draft) ?? [])
