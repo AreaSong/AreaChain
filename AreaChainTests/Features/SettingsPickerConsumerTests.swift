@@ -121,7 +121,7 @@ struct SettingsPickerConsumerTests {
             if appearance == .system { try await Task.sleep(for: .seconds(1)) }
             let expectedDark = appearance == .system ? systemDark : appearance == .dark
             if appearance == .system && !systemDark {
-                withKnownIssue("B 原生 Picker 对照同样失败：dark→system 后环境仍深色，见工程手册第四阶段 B") {
+                withKnownIssue("B 原生 Picker 对照同样失败：dark→system 后环境仍深色") {
                     #expect(hasText("environment:en:light", in: window))
                 }
             } else {

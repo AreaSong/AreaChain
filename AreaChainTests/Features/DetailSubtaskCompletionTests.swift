@@ -99,7 +99,7 @@ struct DetailSubtaskCompletionTests {
         print("DETAIL_ROLLBACK pixelsEqual=\(try Fixture.pixels(window) == before) count0=\(Fixture.strings(in: window).contains("0/2")) count1=\(Fixture.strings(in: window).contains("1/2"))")
         try Native.snapshot(window, name: "detail-completion-rollback")
         let restoredPixels = try Fixture.pixels(window)
-        withKnownIssue("H 前后对照：旧详情事务回滚后未自动刷新，见工程手册第三阶段 H") {
+        withKnownIssue("H 前后对照：旧详情事务回滚后未自动刷新") {
             #expect(restoredPixels == before)
             #expect(Fixture.strings(in: window).contains("0/2"))
         }
@@ -157,7 +157,7 @@ struct DetailSubtaskCompletionTests {
             (Native.value($0, "accessibilityLabel") as? String ?? "").contains("#合成标签")
         })
         try await Native.click(chip, in: window)
-        withKnownIssue("H 前后对照：原标题覆盖层下的合成标签点击未移除，见工程手册第三阶段 H") {
+        withKnownIssue("H 前后对照：原标题覆盖层下的合成标签点击未移除") {
             #expect(!TagIDList.contains(fixture.subtasks[0].tagIDs, tag.id))
         }
         #expect(fixture.toggles.count == 1 && fixture.deletes == 0 && fixture.reorders == 0)

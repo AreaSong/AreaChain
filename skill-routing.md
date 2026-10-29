@@ -48,7 +48,7 @@
 - 生命周期质量、注释、安全、性能、测试、交付和维护读 [质量门禁](docs/quality-gates.md)；性能数字再读 [`docs/performance-baselines.json`](docs/performance-baselines.json)。
 - 构建、脚本、恢复或诊断读 `docs/quality-gates.md` 的相关章节；签名、安装、回退与发行准备读 `docs/signing.md`。
 - 需要新增或修改界面时读 [组件目录](docs/component-catalog.md) 的相关条目及实际调用方；不能只看组件名。
-- `component-catalog.md` 和 `architecture.md` 按组件分节，篇幅较长：先按标题或锚点检索，只读本次相关章节，不整篇载入。各阶段与批次的历史验收记录不在当前文档里，需要追溯时用 `git show 6bc1f72:docs/engineering.md`（阶段验收记录）或统一搜索权威设计开头给出的 `git show` 查看。
+- `component-catalog.md` 是按领域分组的索引表，先按组件名或符号检索再读源码与调用方；`architecture.md` 只讲分层、数据、保存、隐私与窗口。各阶段与批次的历史验收记录不在当前文档里，需要追溯时用 `git show 6bc1f72:docs/engineering.md`（阶段验收记录）或统一搜索权威设计开头给出的 `git show` 查看。
 
 ### 3. 选择技能
 

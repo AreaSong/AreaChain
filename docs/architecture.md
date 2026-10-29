@@ -181,7 +181,7 @@ AreaChain/
 
 `AreaChainEntry.main` 在 SwiftUI App 及其属性包装器构造、持久化之前调用 `AppStartup.requireAllowed()`；App.init、Delegate 和 Commands 复用同一冻结决策。编译符号与签名 plist 的 schema／role／QA identifier 必须一致；合法 XCTest 要求标志存在（允许空值）且 dyld 已加载测试注入库。拒绝为无内容类别诊断及退出码78，不退生产依赖；合法测试仅建立无自动保存的内存容器。正常 application 身份保持默认生产路径，用注入工厂验证兼容，不能启动日用应用验证该分支。旧包不能追认；该门禁防止 QA 启动偏离，不是抗恶意代码注入的认证机制。证据与限制见 C-M2。
 
-自动化系统探测只查询随机不存在的钥匙串条目，禁止提示和写入；它不是实际创建、读取、撤销的证明。QA 使用 `AreaChain.entitlements`，不具备受限钥匙串访问组，因此上述命令只适合非钥匙串 PrivacyQA。隔离真实钥匙串须走开发签名注入的 `AreaChain.SystemUnlock.entitlements`，见工程手册 PHASE-6 补证。真实启用前应另行确认系统密钥、取消、重启／重编译与签名兼容，再确认真实数据迁移；不得为通过验收改变访问控制或默默改签名／权限。上述命令不安装应用，普通 `build.sh` 仍只构建验签；安装入口另见签名说明。
+自动化系统探测只查询随机不存在的钥匙串条目，禁止提示和写入；它不是实际创建、读取、撤销的证明。QA 使用 `AreaChain.entitlements`，不具备受限钥匙串访问组，因此上述命令只适合非钥匙串 PrivacyQA。隔离真实钥匙串须走开发签名注入的 `AreaChain.SystemUnlock.entitlements`，当时的补证记录见 `git show 6bc1f72:docs/engineering.md` 的 PHASE-6 一节。真实启用前应另行确认系统密钥、取消、重启／重编译与签名兼容，再确认真实数据迁移；不得为通过验收改变访问控制或默默改签名／权限。上述命令不安装应用，普通 `build.sh` 仍只构建验签；安装入口另见签名说明。
 
 `SystemVaultIntegrationTests` 是默认跳过的真实钥匙串入口，须同时提供 QA Bundle ID、显式授权标志、随机 UUID 和测试阶段。它使用独立服务名，按创建、读取、主动取消、重编译后读取、清理分阶段运行；取消阶段必须收到用户取消，不能把程序超时计为通过。只持久化测试标识、密钥摘要和初始构建版本，不保存明文测试密钥。普通测试不得开启该入口；临时验收配置运行后关闭授权标志。
 

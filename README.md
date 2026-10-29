@@ -33,7 +33,7 @@ AreaChain 是专为 macOS 打造的个人任务看板与习惯打卡助手：菜
   - SwiftData 7 张表：重复事项、打卡、一次性事项、子任务、手记、标签、附件。没有项目表。旧 JSON 里的项目字段会被忽略，不会转成标签。普通 JSON 快照排除私密及旧密码遮罩手记，不含图片二进制；独立口令的加密备份包含全部记录与图片，可在新私密锁下恢复。
   - 可选把未完成临时待办同步到本机「AreaChain」日历（基于上次成功状态核对推拉，冲突保留，不收其它日历会议）。
 
-完整功能清单与产品边界见 [docs/features.md](docs/features.md)。
+产品定位、完整功能与边界见 [docs/features.md](docs/features.md)。
 使用说明与快捷键见 [docs/usage.md](docs/usage.md)。
 架构与数据模型见 [docs/architecture.md](docs/architecture.md)。
 共享组件与新增功能复用入口见 [docs/component-catalog.md](docs/component-catalog.md)。

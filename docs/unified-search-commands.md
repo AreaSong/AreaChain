@@ -386,7 +386,7 @@
 | [B1](#B1) | 日历导航与改期 | 已接正式版 | 已：calendar.mode／step／today／day／dayList（页面指令，月周与选中日写页面那一份）、calendar.create（转交 todo.create）；拖拽改期沿 todo.move；calendar.step 只留 offset，月周跟随当前视图 |
 | [B2](#B2) | 四象限 | 已接正式版 | 已：quadrant.day／step／inspect（页面指令）、create／priority／complete／copy（转交 todo.create／todo.priority 或 routine.priority／todo.completion 或 occurrence.complete／todo.copy 标题段）；copy 不接习惯 |
 | [B3](#B3) | 安排页平移与完成 | 已接正式版 | 已：gantt.step／currentMonth／select／inspect（页面指令）、gantt.shift（GanttRescheduleService，一次事务、保留间隔、越出当月拒绝）、gantt.complete（转交 batch.completion） |
-| [J1](#J1) | 手记新建与正文 | 已接正式版＋打开原页面 | 已：diary.create（快速新增的自动分类）、diary.body replace／append（长文受控借用；clear 按目录静态拒绝）、diary.save／reload／discard（只作用于已打开的小窗会话）、diary.tags（见 J2）；打开原页面：受保护或保存后会变成受保护、加私密标签、超过 64KiB 的已有正文 → 手记页 |
+| [J1](#J1) | 手记新建与正文 | 已接正式版＋打开原页面 | 已：diary.create（快速新增：拆分标题／正文与 #标签）、diary.body replace／append（长文受控借用；clear 按目录静态拒绝）、diary.save／reload／discard（只作用于已打开的小窗会话）、diary.tags（见 J2）；打开原页面：受保护或保存后会变成受保护、加私密标签、超过 64KiB 的已有正文 → 手记页 |
 | [J2](#J2) | 手记组织 | 已接正式版＋打开原页面 | 已：diary.pinned、diary.move、diary.tags（普通标签加减／替换／清空；加私密标签拒绝）；打开原页面：diary.privateMark／reveal／mask 与受保护手记 → 手记页 |
 | [J3](#J3) | 手记复制、转任务、回收 | 已接正式版＋打开原页面 | 已：diary.copy（整篇／标题／备注，PrivateClipboard）、diary.toTodo、diary.trash（共用独立确认、只能单项）；打开原页面：受保护手记 → 手记页 |
 | [G1](#G1) | 标签新建、改名、颜色、排序、搜索与视图 | 已接正式版（部分） | 已：tag.create／rename／color、tag.order、tag.cancel、tag.search／view／deleted（取法即标签页的 TagListQuery）、go.tagList；未：新建时设为私密（需解锁） |

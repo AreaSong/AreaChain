@@ -77,7 +77,7 @@
 
 - 并发构建/测试默认沿原 `build/.build.lock` 等待最多 900 秒，取得锁后核对源码变化再继续；超时报告未完成，只有当前任务明确要求非等待时才立即退出。源码身份、运行后复核及历史记录边界统一见[并发构建与测试](docs/quality-gates.md#并发构建与测试)。
 - 仅改文档、协作规则、技能或组件目录：检查差异、引用路径、规则冲突与适用场景，运行 `python3 -B scripts/check_workflow.py`（含技能格式），不因此运行整套应用或安装流程。
-- 文档/技能引用、Domain 显式 UI 导入或项目技能共享边界受影响时，运行 `python3 -B scripts/check_workflow.py`；修改该检查器时运行其定向测试及 `scripts/tests` 回归。该脚本不读取个人配置、不启动应用，也不证明完整依赖图、技能发现或远端 CI 通过，详见工程手册。
+- 文档/技能引用、Domain 显式 UI 导入或项目技能共享边界受影响时，运行 `python3 -B scripts/check_workflow.py`；修改该检查器时运行其定向测试及 `scripts/tests` 回归。该脚本不读取个人配置、不启动应用，也不证明完整依赖图、技能发现或远端 CI 通过，详见[质量门禁的检查器范围](docs/quality-gates.md#检查器的范围与边界)。
 - Swift 变更：先选相关测试，按真实调用方补充，不因改了共享层就默认跑整层或全量；需要编译验证时运行 `./scripts/build.sh`。此命令只构建并验签 Debug，不安装、不启动，也不替代运行验收。
 - 定向测试默认走门禁推导；需要手动指定时用 `python3 -B scripts/quality_gate.py --profile swift --only-testing AreaChainTests/DayBoardLogicTests`（自动分前台／后台轮、走隔离 QA）。全量回归用 `--profile full`，只在替换日常应用之前或用户明确要求时运行，前台轮期间需离开电脑。直接 `./scripts/build.sh test` 使用与日用应用同一标识的开发宿主，不作为原生测试的验收结果。普通测试不得启用真实钥匙串授权。
 - 构建、签名或应用管理脚本变更：运行 `python3 -B -m unittest discover -s scripts/tests -v`，Shell 脚本另做语法检查。这些隔离测试不代替真实安装、系统认证或恢复验收。
