@@ -65,7 +65,7 @@ import Testing
         let path = kind == 0 ? "/tasks/move" : kind == 1 ? "/tasks/priority" : "/tasks/reminder"
         editor.insertText(path, replacementRange: .init(location: 0, length: editor.string.utf16.count))
         try await host.settle()
-        try await host.key(48, "\t")
+        try await host.key(36, "\r")
         try await host.clickCompositionControl("unified.objects.choose.target")
         await fixture.controller.objectSelectionTask?.value
         try await host.settle()

@@ -37,7 +37,7 @@ import Testing
         let editor = try host.editor
         editor.insertText(path, replacementRange: .init(location: 0, length: editor.string.utf16.count))
         try await host.settle()
-        try await host.key(48, "\t")
+        try await host.key(36, "\r")
     }
 
     /// 经原参数文本框输入名字：原生插入文本后 Return 确认，与其他短文本参数同一入口。

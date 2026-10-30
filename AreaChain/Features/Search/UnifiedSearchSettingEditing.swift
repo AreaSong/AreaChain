@@ -189,6 +189,19 @@ extension UnifiedSearchController {
         } catch { recordSettingFailure(error) }
     }
 
+    /// 已成功的设置结果不需要再做决定：开始下一条指令时直接释放，不挡住它，也不清输入框。
+    /// 失败、结果未知、冲突或还能重试显示的结果仍留着，由用户在结果里处理。
+    @discardableResult
+    func releaseSucceededSettingResult() -> Bool {
+        guard !settingSubmitting, let report = settingReport, let unit = settingExecution?.units.first,
+              unit.state == .succeeded,
+              localSettings?.canRetryPresentation(report.receipt.attempt, expecting: buffer.lease) != true else { return false }
+        do {
+            try coordinator.send(.releaseExecution(report.operation.execution), expecting: buffer.lease)
+            return true
+        } catch { return false }
+    }
+
     private func recordSettingFailure(_ error: Error) {
         settingFailure = .init(source: buffer, issue: error as? LocalSettingCommandIssue ?? .stale)
         refreshOperationPresentation()

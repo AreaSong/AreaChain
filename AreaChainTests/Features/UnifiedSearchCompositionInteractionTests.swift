@@ -15,6 +15,8 @@ struct UnifiedSearchCompositionInteractionTests {
         (try host.editor).insertText("/tasks/a", replacementRange: (try host.editor).selectedRange())
         try await host.settle()
         try await host.key(48, "\t")
+        #expect(try host.editor.string == "/tasks/add", "Tab 只补全路径")
+        try await host.key(36, "\r")
         let editor = try await host.focusParameter(.title)
         editor.insertText("Native #new #restore !p1 @09:30", replacementRange: editor.selectedRange())
         try await host.settle()

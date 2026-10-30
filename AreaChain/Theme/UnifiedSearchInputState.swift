@@ -221,8 +221,36 @@ final class UnifiedSearchInputState {
         return buffer.text == edit.text
     }
 
+    /// Tab 只补文字、一次一层：候选还有下一层（子项，或能写进路径的取值）时补上 `/`，随后列出下一层；
+    /// 走普通编辑，不开始草稿、不执行。Return 仍是接受候选。
+    func complete(_ candidate: CommandPathCandidate, source: UnifiedSearchCompletion) -> Bool {
+        guard source.source == buffer, source.selection == lastSelection,
+              completion?.source == source.source, completion?.result == source.result,
+              let editor, !editor.hasMarkedText(),
+              let edit = source.result.accepting(candidate, in: editor.string, hasMarkedText: false) else { return false }
+        let text = edit.text as NSString
+        let followedBySlash = edit.cursorLocation < text.length
+            && text.substring(with: NSRange(location: edit.cursorLocation, length: 1)) == "/"
+        let insertion = candidate.insertText + (!followedBySlash && hasNextLevel(candidate) ? "/" : "")
+        let current = (editor.string as NSString).substring(with: candidate.replacementRange)
+        guard insertion != current else { return true }
+        field?.window?.makeFirstResponder(field)
+        editor.breakUndoCoalescing()
+        editor.insertText(insertion, replacementRange: candidate.replacementRange)
+        editor.setSelectedRange(NSRange(location: candidate.replacementRange.location + insertion.utf16.count, length: 0))
+        changed(editor)
+        editor.breakUndoCoalescing()
+        return true
+    }
+
+    private func hasNextLevel(_ candidate: CommandPathCandidate) -> Bool {
+        if case .setArgument = candidate.intent { return false }
+        return !parser.catalog.children(of: candidate.command.id).isEmpty
+            || CommandPathArguments.parameter(for: candidate.command) != nil
+    }
+
     /// 路径已完整写出的指令级候选（complete／chooseParameter）接受后文字不变，Return 再“接受”只会原地重复、
-    /// 永远发不出 .open；此时 Return 改发 .open（Tab 仍接受）。参数值候选（setArgument）照常接受：接受才把参数写进草稿。
+    /// 永远发不出 .open；此时 Return 改发 .open。参数值候选（setArgument）照常接受：接受才把参数写进草稿。
     static func isUnchangedCommand(_ candidate: CommandPathCandidate, in text: String) -> Bool {
         switch candidate.intent {
         case .complete, .chooseParameter:
@@ -251,6 +279,13 @@ final class UnifiedSearchInputState {
             if suggestions.isActive {
                 if down { suggestions.selectNext() } else { suggestions.selectPrevious() }
             } else { actions.intent(.results(down ? 1 : -1), buffer) }
+            return true
+        }
+        // 只在写指令路径时逐级补全；参数值候选（parameter 非 nil）的 Tab 仍按接受处理。
+        if selector == #selector(NSResponder.insertTab(_:)), parameter == nil, !showsSyntax, let source = completion, suggestions.isActive,
+           let selected = suggestions.selectedCandidate(),
+           let candidate = source.result.candidates.first(where: { $0.id == selected.id }) {
+            _ = complete(candidate, source: source)
             return true
         }
         if selector == #selector(NSResponder.insertTab(_:)) || selector == #selector(NSResponder.insertNewline(_:)) {

@@ -132,6 +132,10 @@ extension UnifiedSearchController {
             || disposition(for: id) == .workspaceHandoff {
             return navigationInput(text ?? CommandCatalog.standard.command(id: id)!.path)
         }
+        // 释放已成功的结果会刷新宿主状态，原缓冲随之过期：用同一文字重新发布后再开始。
+        if validates(source), releaseSucceededSettingResult(), let fresh = publishOperation(text: source.text) {
+            return beginOperation(id, source: fresh, text: text, argument: argument)
+        }
         guard validates(source), operationVisible, let state = operations,
               let command = CommandCatalog.standard.command(id: id),
               command.category != .group, command.category != .scope, state.pending == nil, plan?.editing == nil,

@@ -143,7 +143,7 @@ import Testing
         let editor = try host.editor
         editor.insertText("/routines/capture", replacementRange: .init(location: 0, length: editor.string.utf16.count))
         try await host.settle()
-        try await host.key(48, "\t")
+        try await host.key(36, "\r")
         try await f.type("晨跑 · Run #普通 @07:00 // 备注 \(Self.sentinel)", into: .body, host: host)
         let accepted = try await f.prepareAndAccept(host, name: "capture-\(style)")
         let creation = try #require(accepted.preview.creation)

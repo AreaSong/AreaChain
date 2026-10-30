@@ -62,7 +62,7 @@ struct UnifiedSearchSettingInteractionTests {
         let old = try #require(state.completion)
         let candidate = try #require(old.result.candidates.first { $0.command.id.rawValue == UnifiedSearchSettingSamples.ids[index] })
         state.suggestions.selectedIndex = try #require(old.result.candidates.firstIndex(of: candidate))
-        try await host.settingKey(48, "\t", step: "completion-\(index)")
+        try await host.settingKey(36, "\r", step: "completion-\(index)")
         let draft = try fixture.draft
         #expect(draft.baseline.preference != nil && draft.arguments.isEmpty)
         #expect(fixture.io.writes.isEmpty)

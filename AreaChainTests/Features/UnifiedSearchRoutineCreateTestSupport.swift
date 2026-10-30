@@ -27,7 +27,7 @@ import Testing
         let editor = try host.editor
         editor.insertText("/routines/add", replacementRange: .init(location: 0, length: editor.string.utf16.count))
         try await host.settle()
-        try await host.key(48, "\t")
+        try await host.key(36, "\r")
         #expect(controller.editingDraft?.commandID.rawValue == "routine.create")
         #expect(controller.editingDraft?.targets == CommandDraftTargets.none && controller.objectSelection == nil)
     }

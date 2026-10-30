@@ -71,6 +71,33 @@ struct UnifiedSearchSettingContractTests {
         #expect(fixture.io.writes.count == 1)
     }
 
+    /// 已成功的结果不需要再做决定：直接开始下一条指令时释放它，不报“上一个操作还没完成”，也不重复写入。
+    @Test func succeededResultDoesNotBlockTheNextCommand() throws {
+        let fixture = try UnifiedSearchSettingFixture()
+        defer { fixture.stop() }
+        try fixture.start()
+        fixture.submit()
+        #expect(try fixture.unit.state == .succeeded && fixture.controller.settingExecution != nil)
+        try fixture.results.startOperation("setting.appearance")
+        #expect(fixture.controller.settingExecution == nil)
+        #expect(fixture.controller.operations?.active?.commandID.rawValue == "setting.appearance")
+        #expect(fixture.controller.navigationMessage != "unified.gate.busy")
+        #expect(fixture.io.writes == [.language(.english)])
+    }
+
+    /// 失败（这里是展示失败、可重试）的结果仍要用户在结果里处理：开始下一条指令被挡，结果保留。
+    @Test func failedResultStillBlocksTheNextCommand() throws {
+        let fixture = try UnifiedSearchSettingFixture()
+        defer { fixture.stop() }
+        try fixture.start("setting.appearance", value: .choice("dark"))
+        fixture.io.failAppearance = true
+        fixture.submit()
+        #expect(try fixture.unit.state == .failed)
+        let response = fixture.controller.beginOperation(.init(rawValue: "setting.language"), source: fixture.controller.buffer)
+        #expect(response == nil && fixture.controller.settingExecution != nil)
+        #expect(fixture.controller.navigationMessage == "unified.gate.busy")
+    }
+
     @Test func planOnlySubmitsAndMixedOrMultiplePlansNeverPartiallyWrite() throws {
         for count in [1, 2] {
             let fixture = try UnifiedSearchSettingFixture()

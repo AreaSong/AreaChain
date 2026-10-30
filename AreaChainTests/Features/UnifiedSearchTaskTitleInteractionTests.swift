@@ -13,7 +13,7 @@ struct UnifiedSearchTaskTitleInteractionTests {
         let editor = try host.editor
         editor.insertText("/tasks/title", replacementRange: .init(location: 0, length: editor.string.utf16.count))
         try await host.settle()
-        try await host.key(48, "\t")
+        try await host.key(36, "\r")
         try #require(fixture.controller.editingDraft?.commandID.rawValue == "todo.title")
         try await host.selectTitleTarget(fixture, keyboard: commandReturn)
         #expect(fixture.controller.editingDraft?.baseline == CommandDraftBaseline())
