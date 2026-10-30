@@ -82,7 +82,6 @@ struct UnifiedSearchOperationPreview: View {
                             || controller.showsConvert || controller.showsSimple)
                             && controller.settingExecution != nil) {
                     Text(verbatim: command.name(locale: locale)).font(DaybookType.body.weight(.semibold))
-                    Text(verbatim: command.summary(locale: locale)).font(DaybookType.caption)
                     ForEach(command.parameters, id: \.id) { parameter in
                         Text(verbatim: L10n.format(parameter.id.nameKey, locale: locale) + " · "
                             + L10n.format(parameter.required ? "unified.operation.required" : "unified.operation.optional", locale: locale))
@@ -103,13 +102,21 @@ struct UnifiedSearchOperationPreview: View {
         .accessibilityIdentifier("unified.operation.preview")
     }
 
+    /// 标题区只回答“要做什么、会变成什么样、怎么确认”：指令名、具体预览与按钮；
+    /// 参数不完整、需要认证或后续填写等只在发生时说明，状态性与实现层说明不显示。
     private func header(_ command: CommandDescriptor, draft: CommandDraft, source: UnifiedSearchBuffer) -> some View {
-        VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
-            Text("unified.plan.active").font(DaybookType.micro)
+        let preview = UnifiedSearchOperationCopy.preview(command, draft: draft, locale: locale, calendar: calendar)
+        return VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
             Text(verbatim: command.name(locale: locale)).font(DaybookType.body.weight(.semibold))
-            Text(verbatim: command.summary(locale: locale)).font(DaybookType.caption)
-            Text(draft.check().staticallyValid ? "unified.operation.complete" : "unified.operation.incomplete")
-                .font(DaybookType.caption)
+            if !preview.isEmpty {
+                Text(verbatim: preview).font(DaybookType.body)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("unified.operation.preview.summary")
+            }
+            if !draft.check().staticallyValid {
+                Text("unified.operation.incomplete").font(DaybookType.caption)
+                    .foregroundStyle(DaybookPalette.status.pending)
+            }
             if !command.interactions.isDisjoint(with: [.secureInput, .authentication, .freshAuthentication]) {
                 Text("unified.operation.secure").font(DaybookType.caption)
             }
@@ -125,8 +132,6 @@ struct UnifiedSearchOperationPreview: View {
                 Text(verbatim: L10n.format("unified.objects.count", locale: locale, draft.targets.objects.count))
                     .font(DaybookType.caption)
             }
-            Text(verbatim: summary(command, draft: draft)).font(DaybookType.caption)
-                .lineLimit(2).help(summary(command, draft: draft))
             HStack {
                 Button(controller.operationExpanded ? "unified.operation.collapse" : "unified.operation.expand") {
                     guard controller.validates(source) else { return }
@@ -135,26 +140,20 @@ struct UnifiedSearchOperationPreview: View {
                     if !controller.operationExpanded { disclosureFocused = true }
                 }
                 .buttonStyle(DaybookButtonStyle(.quiet, size: .compact)).focused($disclosureFocused)
+                .help(Text("unified.operation.draftOnly"))
                 .accessibilityIdentifier("unified.operation.disclosure")
-                Text("unified.operation.draftOnly").font(DaybookType.micro)
+                Button("unified.plan.enqueue") { _ = controller.enqueue(draft.stamp, source: source) }
+                    .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
+                    .accessibilityIdentifier("unified.plan.enqueue")
             }
-            Button("unified.plan.enqueue") { _ = controller.enqueue(draft.stamp, source: source) }
-                .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
-                .accessibilityIdentifier("unified.plan.enqueue")
-            if draft.baseline.preference != nil || draft.baseline.preferenceGroup != nil { Text("unified.setting.baseline").font(DaybookType.caption) }
-            else if !draft.baseline.values.isEmpty { Text("unified.operation.syntheticBaseline").font(DaybookType.caption) }
-            if command.id.rawValue == "todo.create", controller.taskCreate?.supports(command.id) == true {
-                Text("unified.task.pending").font(DaybookType.caption)
-            } else {
-            Text(LocalizedStringKey(controller.hasSettingAdapter && controller.supportsSetting(command.id)
-                                    ? "unified.setting.pending" : controller.operationMessage)).font(DaybookType.caption)
-                .foregroundStyle(DaybookPalette.text.secondary)
+            // 设置与新建任务的待提交状态由各自的提交区说明；这里只留执行反馈（例如过期、被挡）。
+            if !(controller.hasSettingAdapter && controller.supportsSetting(command.id)),
+               !(command.id.rawValue == "todo.create" && controller.taskCreate?.supports(command.id) == true),
+               controller.operationMessage != "unified.operation.notExecuted" {
+                Text(LocalizedStringKey(controller.operationMessage)).font(DaybookType.caption)
+                    .foregroundStyle(DaybookPalette.text.secondary)
             }
         }
-    }
-
-    private func summary(_ command: CommandDescriptor, draft: CommandDraft) -> String {
-        UnifiedSearchOperationCopy.summary(command, draft: draft, locale: locale, calendar: calendar)
     }
 
     private func validation(_ draft: CommandDraft) -> some View {
@@ -188,7 +187,7 @@ struct UnifiedSearchOperationPreview: View {
                     Button { controller.restoreOperation(draft.stamp, source: source) } label: {
                         VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
                             Text(verbatim: command.name(locale: locale))
-                            let preview = summary(command, draft: draft)
+                            let preview = UnifiedSearchOperationCopy.summary(command, draft: draft, locale: locale, calendar: calendar)
                             if !preview.isEmpty { Text(verbatim: preview).font(DaybookType.caption).lineLimit(2) }
                         }
                     }

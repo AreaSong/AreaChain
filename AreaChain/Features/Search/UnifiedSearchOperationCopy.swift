@@ -12,6 +12,17 @@ enum UnifiedSearchOperationCopy {
         }.joined(separator: " · ")
     }
 
+    /// 标题区的一句具体预览：单值设置有读到的当前值时写成“当前 → 新值”，其余沿用参数摘要。
+    static func preview(_ command: CommandDescriptor, draft: CommandDraft, locale: Locale, calendar: Calendar) -> String {
+        if let current = draft.baseline.preference?.memory, command.parameters.count == 1,
+           let argument = draft.arguments.first(where: { $0.parameter == command.parameters[0].id }),
+           argument.operation.requiresValue {
+            return self.value(current, locale: locale, calendar: calendar) + " → "
+                + self.value(argument.value, locale: locale, calendar: calendar)
+        }
+        return summary(command, draft: draft, locale: locale, calendar: calendar)
+    }
+
     static func raw(_ value: CommandValue?) -> String {
         switch value {
         case .shortText(let text): text

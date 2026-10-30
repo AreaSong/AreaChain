@@ -42873,23 +42873,6 @@
         }
       }
     },
-    "unified.operation.complete": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Parameter shape validated"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "普通参数形状已通过校验"
-          }
-        }
-      }
-    },
     "unified.operation.decimal": {
       "extractionState": "manual",
       "localizations": {
@@ -42930,13 +42913,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "In-memory draft"
+            "value": "This draft lives only while the app is running and is not saved."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "运行内草稿"
+            "value": "草稿只在本次运行中保留，不会保存。"
           }
         }
       }
@@ -43491,13 +43474,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Requires a separate secure input or authentication flow; not available here"
+            "value": "Needs a separate secure input or authentication; not available in search."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "需要独立的安全输入或认证流程，本阶段不提供"
+            "value": "需要单独的安全输入或身份验证，搜索里不提供。"
           }
         }
       }
@@ -43566,23 +43549,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "切换操作前如何处理当前草稿？"
-          }
-        }
-      }
-    },
-    "unified.operation.syntheticBaseline": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Current values come from an explicitly injected synthetic baseline"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "当前值来自明确注入的合成基线"
           }
         }
       }
@@ -44297,23 +44263,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "请先打开「%@」页；指令不会替你切换页面。"
-          }
-        }
-      }
-    },
-    "unified.plan.active": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Active draft"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "当前活动草稿"
           }
         }
       }
@@ -48190,23 +48139,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "请填写有效值后再应用设置。"
-          }
-        }
-      }
-    },
-    "unified.setting.baseline": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Current value read from these preferences"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已读取本次设置的当前值"
           }
         }
       }
