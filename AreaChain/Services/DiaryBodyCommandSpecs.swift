@@ -29,7 +29,7 @@ import SwiftData
 }
 
 /// diary.create：新建普通手记，沿手记页快速新增的“自动分类”（标题／正文分隔、#标签含预置分类）。
-/// 要关联私密标签或保存后会变成受保护时整条拒绝并引导到原手记页（2026-10-21 用户决定）。新手记身份在准备时分配一次。
+/// 要关联私密标签或保存后会变成受保护时整条拒绝并引导到原手记页（用户决定）。新手记身份在准备时分配一次。
 @MainActor struct DiaryCreateSpec: SimpleLongTextCommandSpec, SimpleCommandCallSpec {
     let dependencies: DiaryCommandDependencies
     let command = CommandID(rawValue: "diary.create")

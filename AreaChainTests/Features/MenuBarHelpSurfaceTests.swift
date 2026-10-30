@@ -224,7 +224,7 @@ struct MenuBarHelpSurfaceTests {
         #expect(!support.container.mainContext.hasChanges)
     }
 
-    // 悬停沿用原断言，独立于本轮三个目标；本轮不重跑或修补。
+    // 悬停沿用原断言，与本文件其他用例的目标无关。
     @Test func productionHelpNativeHover() async throws {
         let support = try SettingsButtonTestSupport()
         defer { support.cleanup() }

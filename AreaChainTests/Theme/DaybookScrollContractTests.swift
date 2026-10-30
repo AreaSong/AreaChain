@@ -26,7 +26,7 @@ struct DaybookScrollContractTests {
         #expect(target.featherHeight == height)
         let concrete = String(reflecting: V.self)
         print("SCROLL_CONTRACT enabled=\(target.featherEdges) height=\(target.featherHeight) type=\(concrete)")
-        // 阶段 E 将羽化放入持有 scope 的 modifier，共用 Host 目标；公开参数仍由同一入口传递。
+        // 羽化放在持有 scope 的 modifier 里，共用 Host 目标；公开参数仍由同一入口传递。
         // 冻结新的静态组合；真实指示器策略、内容身份/焦点/偏移另由原生测试证明。
         let original = ScrollView { Text("Synthetic") }
         if hidden {

@@ -23,7 +23,7 @@ struct InputSyntaxPersistenceTests {
         let tag = try #require(tags.first)
         #expect(tags.map(\.name) == ["密码"])
         #expect(entry.text == text)
-        // “密码”名标签本身即敏感（2026-10-23 恢复 0789245 之前的规则），再标私密也仍敏感。
+        // “密码”名标签本身即敏感（用户决定），再标私密也仍敏感。
         #expect(DiaryPrivacy.isSensitive(entry.snapshot, tags: tags))
         tag.isPrivateDiary = true
         #expect(DiaryPrivacy.isSensitive(entry.snapshot, tags: tags))

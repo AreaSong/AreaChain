@@ -1,7 +1,7 @@
 import SwiftUI
 @testable import AreaChain
 
-/// 阶段 D 移动前的绘制基线，仅供等价性回归；生产只使用 Theme 公共实现。
+/// 星期圆点移入 Theme 之前的绘制基线，仅供等价性回归；生产只使用 Theme 公共实现。
 struct WeekdayPickerBaseline: View {
     var resolvedMask: Int
     var onUpdateMask: (Int) -> Void

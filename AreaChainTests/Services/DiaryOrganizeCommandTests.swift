@@ -4,7 +4,7 @@ import Testing
 @testable import AreaChain
 
 /// J2：记录置顶、改日、普通标签直接执行（沿原仓储与原菜单）；加私密标签拒绝并引导到原手记页；
-/// 受保护手记改为打开原手记页且不读正文；diary.tags 的未决项已解决；“私密”标记、显示、遮罩只在原页面对照里。
+/// 受保护手记打开原手记页且不读正文；“私密”标记、显示、遮罩只在原页面对照里。
 @Suite(.serialized) @MainActor struct DiaryOrganizeCommandTests {
     static func targets(_ entries: [DiaryEntry]) -> [CommandObjectReference] { entries.map { .init(type: .diary, id: $0.id) } }
 

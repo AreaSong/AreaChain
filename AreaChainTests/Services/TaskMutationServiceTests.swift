@@ -163,7 +163,7 @@ struct TaskMutationServiceTests {
         #expect(try fixture.readTodos().count == 1)
     }
 
-    /// 用户 2026-10-20 确认：文字里的私密标签不再关联；页面传入的预设标签 ID 不是文字解析，照旧保留。
+    /// 用户决定：文字里的私密标签不关联；页面传入的预设标签 ID 不是文字解析，照旧保留。
     @Test func textPrivateTagIsSkippedButPassedPresetIDIsKept() throws {
         let fixture = try TaskCaptureFixture()
         let tag = TagItem(name: "原任务标签", sortOrder: 0)

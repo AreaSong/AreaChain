@@ -9,7 +9,7 @@ enum DiaryPrivacy {
         return isEditing ? .editing : .text
     }
     /// 卡片、小窗、总览、搜索、导出与备份共用的展示敏感判定：isPrivate、关联私密标签，
-    /// 以及旧 `#密码`／`#password` 正文标记与关联“密码”名标签（2026-10-23 用户决定恢复 0789245 之前的规则）。
+    /// 以及旧 `#密码`／`#password` 正文标记与关联“密码”名标签（用户决定）。
     static func isSensitive(_ entry: DiarySnapshot, tags: [TagItem]) -> Bool {
         entry.isPrivate || hasLegacyPrivateMarker(entry.text) || tags.contains {
             ($0.isPrivateDiary || DiaryMemoTags.isPasswordName($0.name)) && TagIDList.contains(entry.tagIDs, $0.id)
@@ -59,7 +59,7 @@ enum DiaryPrivacy {
 
     /// 统一搜索与旧搜索读取侧（正文、片段、图片关联、查阅）的敏感判定，失败即关闭：在 isSensitive 之上
     /// 再把正文写出或关键字命中的私密标签名当敏感。只收紧读取，不改写入；requiresProtection 不加关键字，
-    /// 以免 0789245 之后写入的普通手记在 DiaryContent.read 上被判损坏。
+    /// 以免不带关键字保护写入的普通手记在 DiaryContent.read 上被判损坏。
     static func isSearchSensitive(_ entry: DiarySnapshot, text: String, tags: [TagItem]) -> Bool {
         var readable = entry
         readable.text = text

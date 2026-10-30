@@ -14,7 +14,7 @@ import SwiftData
     var digest: CommandTextDigest
 }
 
-/// 手记类指令共用的读取、保护判定与显示规则。只有普通手记直接执行（2026-10-21 用户决定）：
+/// 手记类指令共用的读取、保护判定与显示规则。只有普通手记直接执行（用户决定）：
 /// 受保护（加密、私密标记、挂私密标签）的目标在读取正文之前就拒绝，面板改为“打开原手记页”。
 @MainActor enum DiaryCommandSpecs {
     /// 正文（受控借用）：新建与改写。默认不装配，只在隔离 QA 测试里显式传给 SimpleCommandAdapter。

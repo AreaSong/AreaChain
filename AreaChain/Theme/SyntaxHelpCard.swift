@@ -2,8 +2,6 @@
 //  SyntaxHelpCard.swift
 //  AreaChain
 //
-//  Created by Antigravity on 2026-09-10.
-//
 
 import SwiftUI
 

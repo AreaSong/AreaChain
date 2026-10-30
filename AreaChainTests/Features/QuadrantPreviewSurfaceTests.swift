@@ -37,7 +37,7 @@ struct QuadrantPreviewSurfaceTests {
         #expect(surface.borderOpacity == 0.9 && surface.borderWidth == 0.8)
         #expect(surface.borderColor == DaybookPalette.border.default.opacity(0.9))
         #expect(surface.shape.style == .continuous && surface.radius == DaybookRadius.small)
-        // 旧 RowBubble 默认装饰与本轮旧预览逐项一致，复用冻结装饰，不复制完整预览业务。
+        // 旧 RowBubble 默认装饰与旧预览逐项一致，复用冻结装饰，不复制完整预览业务。
         let content = Text(verbatim: "Synthetic\n合成正文").frame(width: 260, height: 110)
             .overlay(alignment: .topTrailing) { Color.red.frame(width: 8, height: 8).offset(x: 4, y: -4) }
         let old = support.window(content.modifier(OriginalRowBubbleSurface()).padding(32), scheme: scheme,

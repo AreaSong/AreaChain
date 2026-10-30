@@ -5,7 +5,7 @@ import Testing
 
 /// 唯一装配点；没有开关，启动即装配、失败可重试。纯程序化，不开窗口、不发键鼠事件。
 @Suite(.serialized, .tags(.backgroundWindow)) @MainActor struct UnifiedSearchProductionAssemblyTests {
-    /// 旧开关键留在 UserDefaults 不迁移，代码不再读取——存着“关”也照样装配。
+    /// 旧开关键留在 UserDefaults 不迁移，代码不读取——存着“关”也照样装配。
     @Test func legacyPreferenceKeyIsIgnored() throws {
         let fixture = try UnifiedSearchProductionFixture()
         defer { fixture.cleanup() }
@@ -50,7 +50,7 @@ import Testing
         #expect(own.store !== AttachmentStore.shared && own.ordinaryOnly && own.root != nil)
     }
 
-    /// 装配失败不再无声——记录失败供宿主搜索框提示；仍失败时保持失败，偏好变化后重试成功即清除。
+    /// 装配失败会记录下来，供宿主搜索框提示；仍失败时保持失败，偏好变化后重试成功即清除。
     @Test func assemblyFailureIsRecordedAndClearedOnRetry() throws {
         let fixture = try UnifiedSearchProductionFixture()
         defer { fixture.cleanup() }

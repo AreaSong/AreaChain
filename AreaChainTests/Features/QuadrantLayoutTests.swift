@@ -252,7 +252,7 @@ private final class QuadrantLayoutHost {
         try addItems(counts: counts, day: day)
         // SwiftUI 按需生成无障碍树，仅为当前测试宿主启用完整控件信息。
         NSApp.accessibilitySetValue(true, forAttribute: NSAccessibility.Attribute(rawValue: "AXEnhancedUserInterface"))
-        // QuadrantChip 自 5a83284 起读取 AppPreferences；与 SystemPageHost 的缺省一致注入共享偏好（QA 宿主的独立域）。
+        // QuadrantChip 读取 AppPreferences；与 SystemPageHost 的缺省一致注入共享偏好（QA 宿主的独立域）。
         let host = NSHostingView(rootView: QuadrantPage(todayKey: day)
             .modelContainer(container)
             .environment(AppPreferences.shared)

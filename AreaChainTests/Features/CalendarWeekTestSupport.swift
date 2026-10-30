@@ -82,7 +82,7 @@ final class CalendarWeekTestSupport {
     }
 }
 
-/// 冻结阶段 E 之前的列头，仅供原生像素/命中对照；生产绘制始终只有公共入口。
+/// 冻结周列头接入公共日期格之前的绘制，仅供原生像素/命中对照；生产绘制始终只有公共入口。
 struct CalendarWeekHeaderBaseline: View {
     var day: String
     var action: () -> Void = {}

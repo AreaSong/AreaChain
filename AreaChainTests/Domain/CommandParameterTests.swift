@@ -142,7 +142,7 @@ struct CommandParameterTests {
             .init(parameter: .destination, operation: .assign, value: .object(reference))
         ], command: merge)
         #expect(issues.contains(.incompatibleTargets))
-        // tag.merge 已按用户决定解决（目录已声明），不再报 unavailable；目标与来源相同仍不兼容。
+        // tag.merge 目录已声明（用户决定），不报 unavailable；目标与来源相同仍不兼容。
         #expect(!issues.contains(.unavailable))
         let selection = try #require(catalog.command(path: "/gantt/select"))
         #expect(CommandArgumentValidation.issues(for: [

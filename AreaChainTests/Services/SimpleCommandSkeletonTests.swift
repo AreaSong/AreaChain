@@ -18,7 +18,7 @@ import Testing
 
     @Test func unresolvedOrUnavailableCatalogEntriesAreNeverAssembled() throws {
         let f = try SimpleCommandFixture()
-        // tag.merge 已按用户决定（涉及私密标签整条拒绝）解决，不再是未决项。
+        // tag.merge 涉及私密标签整条拒绝（用户决定），不是未决项。
         #expect(CommandCatalog.standard.command(id: .init(rawValue: "tag.merge"))?.availability == .declared)
         for (id, availability) in [("tag.cleanup", "unresolved"), ("tag.unlinkGlobal", "unavailable")] {
             let descriptor = try #require(CommandCatalog.standard.command(id: .init(rawValue: id)))

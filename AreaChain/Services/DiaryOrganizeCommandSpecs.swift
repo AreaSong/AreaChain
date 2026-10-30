@@ -85,7 +85,7 @@ extension DiaryCommandSpecs {
     }
 }
 
-/// diary.tags（2026-10-21 用户决定，解决原未决的 privateTagTransition）：普通标签的加、减、整体替换与清空直接执行，
+/// diary.tags（用户决定）：普通标签的加、减、整体替换与清空直接执行，
 /// 逐个沿原菜单的 toggleTag；要加私密标签等于隐私转换，整条拒绝并引导到原手记页。移除标签不会解除已有保护
 /// （产品规则），而受保护手记本就改为打开原页面。搜索不能创建标签：只接已有的活标签。
 @MainActor struct DiaryTagsSpec: SimpleCommandSpec {
