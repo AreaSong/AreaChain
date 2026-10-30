@@ -244,6 +244,30 @@ struct TagHelpSurfaceConsumerTests {
             try OverlaySurfaceTestSupport.record(window, name: "e-help-direct-native-hover")
         }
     }
+
+    /// 「查看全部指令」只在宿主传入回调时出现；点击只走回调，不碰示例、标记或关闭。
+    @Test(arguments: [false, true])
+    func allCommandsLinkFollowsCallback(hasCallback: Bool) async throws {
+        let support = try SettingsButtonTestSupport()
+        defer { support.cleanup() }
+        let probe = HelpActionProbe()
+        var opened = 0
+        let window = support.window(SyntaxExpandableCard(isExpanded: Binding(get: { probe.expanded }, set: { probe.expanded = $0 }),
+            onSelectToken: { probe.tokens.append($0) }, onSelectExample: { probe.examples.append($0) },
+            onShowAllCommands: hasCallback ? { opened += 1 } : nil),
+            size: NSSize(width: 400, height: 360))
+        defer { SystemPageHost.release(window) }
+        try await NativeSyntaxUI.prepareFocus(in: window)
+        try await SystemPageHost.settle(window)
+        let title = L10n.string("syntax.guide.allCommands", locale: Locale(identifier: "en"))
+        let link = SettingsButtonTestSupport.buttons(in: window).first { node in
+            ["accessibilityLabel", "accessibilityTitle"].contains { (SettingsButtonTestSupport.value(node, $0) as? String) == title }
+        }
+        #expect((link != nil) == hasCallback)
+        guard let link else { return }
+        try await clickHelp(link, in: window, delivery: "send")
+        #expect(opened == 1 && probe.expanded && probe.tokens.isEmpty && probe.examples.isEmpty)
+    }
 }
 
 @MainActor

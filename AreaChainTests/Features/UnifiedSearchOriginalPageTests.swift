@@ -120,9 +120,12 @@ import Testing
         try await fixture.go("/help/page")
         #expect(fixture.controller.navigationMessage == "unified.help.page.none")
         #expect(fixture.controller.returnSearch == nil, "帮助不导航")
+        // help.syntax 打开「搜索与指令」页（只导航、不弹帮助卡）；帮助卡留给不带参数的 help.example。
         try await fixture.go("/help/syntax")
-        #expect(fixture.controller.helpCardPresented)
-        fixture.controller.helpCardPresented = false
+        #expect(fixture.router.mounted("page.searchGuide"))
+        #expect(!fixture.controller.helpCardPresented)
+        #expect(fixture.controller.navigationMessage == "unified.navigation.displayed")
+        try await fixture.back()
         try await fixture.go("/help/example")
         #expect(fixture.controller.helpCardPresented)
         #expect(fixture.controller.navigationMessage == "unified.help.example.choose")
