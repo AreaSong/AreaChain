@@ -294,6 +294,8 @@ final class UnifiedSearchController {
             return
         }
         if intent == .escape, editingParameter != nil { finishParameter(source); return }
+        // 结果区让位时看不见选中项，方向键不能移动它。
+        if hidesResultsForCommand, case .results = intent { return }
         guard let publication = try? session.presentation() else { return }
         let version = publication.pagination.snapshot.version
         switch intent {

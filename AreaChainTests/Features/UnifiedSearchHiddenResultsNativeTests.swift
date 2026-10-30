@@ -7,7 +7,9 @@ import Testing
 /// 关闭工作台被挡与菜单栏转交被挡的说明块在中英文、浅深色、正常与最小窗口下的截图（人工逐张查看）。
 /// 前台套件：发真实鼠标与键盘事件，不打 .backgroundWindow。只用内存库与合成文字。
 @Suite(.serialized) @MainActor struct UnifiedSearchHiddenResultsNativeTests {
-    @Test func hiddenResultsTakeNoClickOrTab() async throws {
+    /// 系统动作与不取结果的设置指令都让位，两者共用同一判断。
+    @Test(arguments: ["/window/workspace/reveal", "/setting/appearance/dark"])
+    func hiddenResultsTakeNoClickOrTab(path: String) async throws {
         let fixture = try UnifiedSearchNavigationFixture()
         defer { fixture.stop() }
         let fakes = SystemCommandFakes()
@@ -22,7 +24,12 @@ import Testing
         let frames = SettingsButtonTestSupport.elements(boundary).compactMap { try? SettingsButtonTestSupport.frame($0, in: window) }
             .filter { $0.width > 2 && $0.height > 2 }
         try #require(!frames.isEmpty, "结果区应有可交互元素")
-        try await fixture.enter("/window/workspace/reveal")
+        try await fixture.enter(path)
+        // 修改类指令按 Return 开始草稿、面板出现后才让位；导航类一打完就有面板。
+        if !fixture.controller.isNavigationInput {
+            fixture.controller.intent(.open, source: fixture.controller.buffer)
+            try await fixture.settle()
+        }
         try #require(fixture.controller.hidesResultsForCommand)
         let content = try #require(window.contentView)
         for frame in frames.prefix(40) {
@@ -31,11 +38,14 @@ import Testing
             #expect(!Self.inside(hit, boundary), "命中落在隐藏的结果上：\(hit)")
         }
         // 真实点击结果区下半部（面板之外的位置）：不打开任何结果、不导航。
-        let lower = try #require(frames.max { $0.minY > $1.minY })
-        try await Self.click(NSPoint(x: lower.midX, y: lower.midY), in: window)
-        try await fixture.settle()
-        #expect(fixture.controller.returnSearch == nil && fixture.router.destination == nil)
-        #expect(try fixture.session.presentation().pagination.browse.active == before.browse.active)
+        // 修改类草稿的面板铺满整块结果区，同一位置的点击属于面板控件，命中测试已证明到不了结果，这里只在导航输入时点。
+        if fixture.controller.isNavigationInput {
+            let lower = try #require(frames.max { $0.minY > $1.minY })
+            try await Self.click(NSPoint(x: lower.midX, y: lower.midY), in: window)
+            try await fixture.settle()
+            #expect(fixture.controller.returnSearch == nil && fixture.router.destination == nil)
+            #expect(try fixture.session.presentation().pagination.browse.active == before.browse.active)
+        }
         // Tab 走完整个键盘环，焦点不进入结果区。
         let field = try #require(SettingsButtonTestSupport.elements(window.contentView).compactMap { $0 as? NSTextField }
             .first { $0.cell is UnifiedSearchFieldCell && !UnifiedSearchFocusHost.insideOperation($0) })

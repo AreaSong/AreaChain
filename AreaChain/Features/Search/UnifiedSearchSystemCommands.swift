@@ -13,8 +13,30 @@ extension UnifiedSearchController {
     /// 有未完成的指令草稿或待执行列表时，关闭工作台会丢掉它们；先要求在搜索里完成或放弃。
     var hasUnsavedCommandWork: Bool { operations?.active != nil || plan?.items.isEmpty == false }
 
-    /// 不读搜索结果的系统动作输入期间，结果区让位给面板，避免看起来像要作用于这些结果。
-    var hidesResultsForCommand: Bool { systemAction.map { !$0.readsSearchResults } ?? false }
+    /// 指令不从搜索结果取对象、且操作面板已经显示时，结果区让位给面板，避免看起来像要作用于这些结果。
+    /// 操作面板未显示（例如手打路径尚未按 Return 开始、也没有待执行列表）时不让位，免得中部空白。
+    /// 系统动作看 readsSearchResults；其余指令见 ignoresSearchResults。这是让位的唯一判断。
+    var hidesResultsForCommand: Bool {
+        guard MenuBarUnifiedSearchContent.showsOperation(self),
+              let command = CommandPathParser().parse(.init(text: buffer.text)).command else { return false }
+        if CommandSystemAction.commands.contains(command.id.rawValue) { return systemAction.map { !$0.readsSearchResults } ?? false }
+        return Self.ignoresSearchResults(command)
+    }
+
+    /// 查询、范围与分组的输出就是结果，不让位；有对象参数（含 target）的指令要在结果里挑选，也不让位。
+    /// occurrence.inspect 没有对象参数，却取当前焦点结果里的习惯（navigationRoute 的 routineDay），同样要看得见结果。
+    static func ignoresSearchResults(_ command: CommandDescriptor) -> Bool {
+        guard [.modification, .navigation, .interaction, .systemAction].contains(command.category),
+              !focusedResultCommands.contains(command.id.rawValue) else { return false }
+        return !command.parameters.contains {
+            switch $0.type {
+            case .object, .objects: true
+            default: false
+            }
+        }
+    }
+
+    static let focusedResultCommands: Set<String> = ["occurrence.inspect"]
 
     /// 关闭工作台在有未完成指令工作时不可执行；面板常驻说明原因，执行按钮随之禁用。
     var systemActionBlocked: Bool { systemAction == .workspaceClose && hasUnsavedCommandWork }

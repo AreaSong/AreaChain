@@ -72,8 +72,9 @@ struct UnifiedSearchWorkspaceContent: View {
             UnifiedSearchResults(controller: controller)
                 .unifiedSearchYieldsToCommand(controller)
             if MenuBarUnifiedSearchContent.showsOperation(controller), !controller.hidesResultsForCommand {
+                // 要在结果里挑对象时上下分栏：面板至少 260pt、可随窗口伸展，内容过长在面板内滚动。
                 UnifiedSearchOperationPanel(controller: controller)
-                    .frame(height: 260)
+                    .frame(minHeight: 260, maxHeight: .infinity)
             }
         }
         .padding(DaybookSpacing.md)
@@ -136,7 +137,7 @@ extension UnifiedSearchController {
 }
 
 extension View {
-    /// 不读结果的系统指令输入期间：结果区保持挂载（滚动与选择不丢）但隐藏，操作面板占用结果区整块空间。
+    /// 指令不取结果期间：结果区保持挂载（滚动与选择不丢）但隐藏，操作面板占用结果区整块空间。
     func unifiedSearchYieldsToCommand(_ controller: UnifiedSearchController) -> some View {
         let yields = controller.hidesResultsForCommand
         return opacity(yields ? 0 : 1)
