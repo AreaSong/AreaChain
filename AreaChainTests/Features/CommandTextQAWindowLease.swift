@@ -3,7 +3,7 @@ import Darwin
 import Testing
 @testable import AreaChain
 
-/// 仅本批 XCTest 的就绪元数据，不保存正文；不能授予启动应用或桌面连接权限。
+/// 仅本次 XCTest 运行的就绪元数据，不保存正文；不能授予启动应用或桌面连接权限。
 @MainActor final class CommandTextQAWindowLease {
     enum Failure: Error { case missingXCTest, invalidRunner, wrongBundle, wrongDirectory, missingTestRuntime }
     static let test = "CommandTextInteractiveTests/nativeInputWindow()"

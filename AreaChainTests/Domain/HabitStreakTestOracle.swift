@@ -168,7 +168,7 @@ struct EmpiricalPRNG {
     }
 }
 
-/// PHASE-3A 冻结的逐日游标：只给等价测试对照，不作为产品入口。
+/// 连击算法优化前冻结的逐日游标：只给等价测试对照，不作为产品入口。
 enum HabitStreakNaiveCursor {
     static func calculate(
         routine: RoutineSnapshot,

@@ -106,7 +106,7 @@ struct PrivacySecureInputTests {
         print("Secure same-value retry lengths=\(Secure.fields(sheet).map { $0.stringValue.count }) editors=\(Secure.fields(sheet).map { $0.currentEditor()?.string.count ?? -1 })")
         try Native.snapshot(sheet, name: "secure-same-value-\(configuration)")
         // 原生基线 original.xcresult 已复现；保留失败证据，不用额外状态/重建绕过。
-        withKnownIssue("原 SecureField 同值重试后确认字段残留，见工程记录第七阶段 B", isIntermittent: true) {
+        withKnownIssue("原 SecureField 同值重试后确认字段残留", isIntermittent: true) {
             #expect(Secure.fields(sheet).allSatisfy { $0.stringValue.isEmpty })
         }
         probe.finish()

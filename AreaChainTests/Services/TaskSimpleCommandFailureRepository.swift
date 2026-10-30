@@ -22,7 +22,7 @@ import Testing
     func addTodo(_ params: CreateTodoParams) throws -> TodoItem { throw unexpected() }
 
     private func unexpected() -> Error {
-        Issue.record("T-M6 失败夹具不应调用其他业务入口")
+        Issue.record("简单指令失败夹具不应调用其他业务入口")
         return CocoaError(.featureUnsupported)
     }
 

@@ -22,7 +22,7 @@ import Testing
         let controls = CommandTextInteractiveControls(fixture: f, synthetic: synthetic)
         let window = NSWindow(contentViewController: NSHostingController(rootView: CommandTextInteractiveView(controls: controls)))
         window.isReleasedWhenClosed = false
-        window.title = "AreaChain C-M1-R — 长段输入验收"
+        window.title = "AreaChain 长文参数 — 长段输入验收"
         window.setContentSize(NSSize(width: 820, height: 700))
         defer { SystemPageHost.release(window); window.close() }
         NSApp.setActivationPolicy(.regular)
@@ -123,7 +123,7 @@ private struct CommandTextInteractiveView: View {
     @Bindable var controls: CommandTextInteractiveControls
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("C-M1-R 受保护合成长段验收").font(.headline)
+            Text("长文参数：受保护合成长段验收").font(.headline)
             HStack {
                 Button("锁定合成 vault") { controls.lock() }
                 Button("解锁合成 vault") { Task { await controls.unlock() } }

@@ -225,7 +225,7 @@ struct DetailTimePickerTests {
         #expect(fixture.todo.remindMinutes == 720 && fixture.todo.dueMinutes == 600)
         #expect(fixture.routine.remindMinutes == 720 && fixture.todo.dayKey == "2026-10-02")
         if !native {
-            withKnownIssue("第五阶段 B 两项旧问题：仅外层失败事务＋AX 同步提前渲染 nil 后未自然回显；未修复，见第十阶段 H") {
+            withKnownIssue("两项旧问题：仅外层失败事务＋AX 同步提前渲染 nil 后未自然回显；未修复") {
                 _ = try Detail.button("row.time.clear", due: due, locale: "en", in: window)
             }
             // 若按钮已恢复，文字要求仍是普通断言，不扩充旧 known issue 去吸收新失败。

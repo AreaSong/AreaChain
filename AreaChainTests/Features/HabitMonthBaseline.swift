@@ -2,7 +2,7 @@ import SwiftData
 import SwiftUI
 @testable import AreaChain
 
-/// 第六阶段 C 修改前冻结的绘制；仅供与真实生产组件做几何和像素对照。
+/// 习惯月历接入公共日期格之前冻结的绘制；仅供与真实生产组件做几何和像素对照。
 struct HabitMonthBaseline: View {
     var routine: DailyRoutine
     var inspectDayKey: String

@@ -220,7 +220,7 @@ struct CalendarSpanConsumerTests {
         try await host.switchSpan(.week)
         #expect(host.window.firstResponder is NSWindow)
         try await host.key(124)
-        // 第十阶段 F 关闭旧缺陷：切换后第一次方向键必须生效，不能补 Escape。
+        // 回归旧缺陷：切换后第一次方向键必须生效，不能补 Escape。
         #expect(host.selectedKey == "2026-10-01")
         try host.assertSpan(.week)
         try await host.key(36, chars: "\r")

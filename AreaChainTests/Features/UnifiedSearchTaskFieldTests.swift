@@ -39,7 +39,7 @@ import Testing
         case .move(let day): #expect(todo.dayKey == day && todo.remindMinutes == 420)
         case .priority(let important, let urgent): #expect(todo.isImportant == important && todo.isUrgent == urgent)
         case .reminder(let minutes): #expect(todo.remindMinutes == minutes && todo.dayKey == "2026-10-05")
-        default: Issue.record("T-M1 夹具不接受后续字段")
+        default: Issue.record("字段夹具不接受后续字段")
         }
         #expect(todo.title == "原标题" && todo.tagIDs == io.base.live.id.uuidString && todo.isDone)
         if kind != 0 { #expect(todo.dayKey == "2026-10-05") }
@@ -203,7 +203,7 @@ import Testing
     @Test(arguments: [false, true]) func nativeTitleRepresentativeLayout(compact: Bool) async throws {
         let fixture = try UnifiedSearchTaskTitleFixture()
         defer { fixture.stop() }
-        try await fixture.start("T-M1 long title 中英文标题 #恢复 !p1 @09:30")
+        try await fixture.start("Task long title 中英文标题 #恢复 !p1 @09:30")
         let host = try await fixture.host(layout: compact ? .compact : .standard, width: compact ? 304 : 444,
                                           locale: compact ? "en" : "zh-Hans", dark: compact)
         defer { host.close() }

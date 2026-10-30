@@ -1,7 +1,7 @@
 import SwiftUI
 @testable import AreaChain
 
-// 冻结第六阶段 B 接入前的呈现，用同一隔离宿主比较真实内边距和命中边界。
+// 冻结主月网格接入公共日格之前的呈现，用同一隔离宿主比较真实内边距和命中边界。
 struct CalendarMonthGridBaseline: View {
     @Environment(\.locale) private var locale
     @Environment(\.calendar) private var calendar

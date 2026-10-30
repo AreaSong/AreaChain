@@ -1,7 +1,7 @@
 import Foundation
 @testable import AreaChain
 
-/// 冻结 PHASE-3D 之前的逐条打卡查找与按习惯重建逾期索引，只给等价测试对照，不是产品入口。
+/// 冻结索引优化之前的逐条打卡查找与按习惯重建逾期索引，只给等价测试对照，不是产品入口。
 enum CatalogSearchOracle {
     static func matchingListedRoutines(
         _ items: [DailyRoutine],

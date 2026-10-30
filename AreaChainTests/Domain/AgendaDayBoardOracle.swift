@@ -1,7 +1,7 @@
 import Foundation
 @testable import AreaChain
 
-/// 冻结 PHASE-3B 之前的逐日/逐条扫描，只给等价测试对照，不是产品入口。
+/// 冻结投影优化之前的逐日/逐条扫描，只给等价测试对照，不是产品入口。
 enum AgendaDayBoardOracle {
     static func openScheduledDays(
         _ routine: RoutineSnapshot,

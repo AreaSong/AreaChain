@@ -1,7 +1,7 @@
 import Foundation
 @testable import AreaChain
 
-/// 冻结 PHASE-3C 之前的按日×习惯扫描，只给等价测试对照，不是产品入口。
+/// 冻结总览投影优化之前的按日×习惯扫描，只给等价测试对照，不是产品入口。
 enum DashboardProjectionOracle {
     static func project(
         todos: [TodoSnapshot],

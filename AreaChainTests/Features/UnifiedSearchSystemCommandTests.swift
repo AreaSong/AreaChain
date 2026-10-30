@@ -51,7 +51,7 @@ import Testing
         try await run(fixture)
         #expect(fixture.router.mounted("page.dashboard"))
         #expect((fakes.dismisses, fakes.activations, fakes.shows) == (1, 1, 1))
-        #expect(fixture.controller.returnSearch != nil, "沿 N-M1 导航，保留返回票据")
+        #expect(fixture.controller.returnSearch != nil, "沿导航路径打开，保留返回票据")
         try await fixture.go("/window/workspace/reveal")
         #expect(fakes.shows == 2 && fixture.router.mounted("page.dashboard"))
         try await fixture.go("/window/overlay/toggle")
@@ -135,7 +135,7 @@ import Testing
         #expect(fixture.controller.navigationMessage == "unified.system.diary.draftProtected")
         #expect(fixture.saves == saves)
         #expect(try fixture.context.fetchCount(FetchDescriptor<DiaryEntry>()) == 2)
-        #expect(CommandSystemAction.commands.contains("diaryWindow.save"), "合并批 M-4 已接小窗会话保存")
+        #expect(CommandSystemAction.commands.contains("diaryWindow.save"), "小窗会话保存已接入系统指令")
     }
 
     @Test func statsMatchDashboardAndHidePrivateDiaries() async throws {

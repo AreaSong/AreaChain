@@ -47,7 +47,7 @@ import Testing
         #expect(f.count("save") == 0 && f.base.todo.notes == Self.edited)
     }
 
-    /// 完成与建标签本批未放宽，仍要求无备注。
+    /// 完成与建标签未放宽，仍要求无备注。
     @Test func completionStillRequiresNoNotes() throws {
         let f = try fieldFixture()
         #expect(throws: TaskTitleCommandIssue.notesNotSupported) { try f.accept("todo.completion", TaskCompletionTagsDueFixture.completion(false)) }

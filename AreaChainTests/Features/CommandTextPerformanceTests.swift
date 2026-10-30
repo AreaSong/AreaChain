@@ -54,7 +54,7 @@ struct CommandTextPerformanceTests {
     }
 
     /// 引擎取舍依据：默认 legacy 引擎在上限内最大单段的“打开到首键可用”和“首次组词”。
-    /// 普通先、受保护后，在同一测试进程内各一次；3 秒只是本批是否下调上限的判断线，不是产品预算。
+    /// 普通先、受保护后，在同一测试进程内各一次；3 秒只是判断是否下调上限的参考线，不是产品预算。
     @Test(.serialized, arguments: [false, true])
     func defaultEngineLimitOpenAndFirstComposition(protected: Bool) async throws {
         let f = try ProtectedDraftFixture(configured: protected)

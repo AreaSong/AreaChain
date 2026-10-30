@@ -35,7 +35,7 @@ import Testing
         }
         try await f.base.settle()
         guard case .image(_, let filename, let owner, _)? = f.content.content else {
-            Issue.record("应沿 N-M2 打开图片：\(String(describing: f.content.failure)) page=\(String(describing: f.controller.pageFailure))"); return
+            Issue.record("应按普通图片查阅打开图片：\(String(describing: f.content.failure)) page=\(String(describing: f.controller.pageFailure))"); return
         }
         #expect(filename == "合成山景.png" && owner == .init(type: .todo, id: f.base.todo.id))
         try f.assertNoWrites()
