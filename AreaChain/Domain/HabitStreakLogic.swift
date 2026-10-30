@@ -24,7 +24,7 @@ public struct StreakResult: Equatable, Sendable {
 
 enum HabitStreakLogic {
     /// 一次 `calculate` 只扫传入的 `checks` 一遍。map 仍是 O(U)；索引路径另排序 O(U) 个规范键，
-    /// 不再为创建日到今天的每个空日分配 key。产品进程 RSS 未建立。
+    /// 不为创建日到今天的每个空日分配 key。产品进程 RSS 未建立。
     static func calculate(
         routine: RoutineSnapshot,
         checks: [CheckSnapshot],

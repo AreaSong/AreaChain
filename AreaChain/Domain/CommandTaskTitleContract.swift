@@ -5,7 +5,7 @@ enum TaskTitleCommandIssue: Error, Equatable {
     case sourceUnavailable, sourceChanged, notesNotSupported, catalogChanged, fieldsChanged(Set<TaskTitleField>)
 }
 
-/// 普通证明（revision、protection）来自受控来源所有者；备注证明不再由所有者给出：
+/// 普通证明（revision、protection）来自受控来源所有者；备注证明不由所有者给出：
 /// 适配器自己读对象备注，填入 `notes`。证明随资格一起参与相等比较，执行期间备注被改即判定冲突。
 struct CommandTaskTitleEligibility: Equatable {
     let revision: UUID

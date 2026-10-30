@@ -83,7 +83,7 @@ final class SwiftDataCatalogRepository: CatalogRepositoryProtocol {
     }
 
     func ensurePresetTags() throws {
-        // 已取消内置预设标签，不再自动种子生成。
+        // 不预置任何内置标签。
     }
 
     func updateTag(id: UUID, name: String?, sortOrder: Int?, colorToken: String?) throws {

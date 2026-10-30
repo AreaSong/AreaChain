@@ -56,7 +56,7 @@ struct WorkspaceTodayView: View {
                             composerFocused = true
                         }
                     ),
-                    // 写入共享筛选会话；工作台过滤条是否出现不再取决于这个 binding 是否存在。
+                    // 写入共享筛选会话；工作台过滤条是否出现不取决于这个 binding 是否存在。
                     externalFilter: Binding(
                         get: { filterSession.filters.tasks },
                         set: { writeTaskFilter($0) }

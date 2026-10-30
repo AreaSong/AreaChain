@@ -174,7 +174,7 @@ import SwiftData
 }
 
 /// tag.order → reorderTags(orderedIDs:)：全部活标签（同标签页拖动的口径）中把目标移到 position 指定的位置。
-/// 与 subtask／routine／tasks.order 一致用 position，不再把选择器登记顺序当新顺序。
+/// 与 subtask／routine／tasks.order 一致用 position，不把选择器登记顺序当新顺序。
 @MainActor struct TagOrderSpec: SimpleCommandSpec {
     let repository: TagCommandSpecs.Repository
     let command = CommandID(rawValue: "tag.order")

@@ -67,7 +67,7 @@ import Testing
         #expect(fixture.controller.operations?.active != nil)
         _ = fixture.controller.navigationInput("/window/workspace/close")
         #expect(fixture.controller.systemActionBlocked && fixture.controller.hidesResultsForCommand)
-        // 被挡时候选标签不再写“Return 前往”；Return 不关工作台，但要给一句明确的拒绝反馈。
+        // 被挡时候选标签不写“Return 前往”；Return 不关工作台，但要给一句明确的拒绝反馈。
         #expect(fixture.controller.disposition(for: .init(rawValue: "workspace.close")) == .blockedByUnsavedWork)
         fixture.controller.executeNavigation(source: fixture.controller.buffer)
         #expect(fixture.controller.navigationMessage == UnifiedSearchController.closeRefusedKey)

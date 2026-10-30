@@ -182,7 +182,7 @@ struct UnifiedSearchLongTextTests {
             for key in ["unified.longText.clearOversized", "unified.longText.openOwner"] {
                 #expect(L10n.format(key, locale: Locale(identifier: locale)) != key)
             }
-            // 习惯引导用长文专用措辞，不再借用图片拥有者文案。
+            // 习惯引导用长文专用措辞，不借用图片拥有者文案。
             let routine = L10n.format("unified.longText.ownerNeedsDay", locale: Locale(identifier: locale))
             let image = L10n.format("unified.content.ownerNeedsDay", locale: Locale(identifier: locale))
             #expect(routine != "unified.longText.ownerNeedsDay" && routine != image)

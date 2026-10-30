@@ -45,7 +45,7 @@ import Testing
         #expect(host.controller.operations?.active?.commandID.rawValue == "setting.appearance")
         #expect(host.operationPanelShown)
         try await host.switchAwayAndBack()
-        // 面板随遮罩撤下；回到窗口后按 Return 恢复并重新出面板，不再静默。
+        // 面板随遮罩撤下；回到窗口后按 Return 恢复并重新出面板，不静默。
         #expect(!host.operationPanelShown)
         try await host.pressReturnUntil { host.operationPanelShown }
         #expect(host.operationPanelShown)
@@ -181,7 +181,7 @@ import Testing
     }
 
     /// 从搜索导航到目的地（持有返回票据）后输入修改类指令：Return／⌘Return 先回到搜索页并保留指令，再出面板；
-    /// 点“返回搜索”也不再用保留查询覆盖正在输入的指令。
+    /// 点“返回搜索”也不用保留查询覆盖正在输入的指令。
     @Test(arguments: [false, true]) func commandOnNavigatedDestinationReturnsToSearch(command: Bool) async throws {
         let host = try UnifiedSearchFocusHost(.workspace)
         defer { host.close() }

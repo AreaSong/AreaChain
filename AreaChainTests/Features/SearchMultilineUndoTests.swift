@@ -47,7 +47,7 @@ struct SearchMultilineUndoTests {
         try await SearchMultilineBoundaryTests.key(command: true, code: 6, text: "z", in: fixture.window)
         trace.record("\(kind).keyboard.undo")
         #expect(editor.string.isEmpty)
-        // 预提交的单行 payload 不再需要原生第二次整段归一化；旧中间态见冻结诊断。
+        // 预提交的单行 payload 不需要原生第二次整段归一化；中间态见冻结诊断。
         #expect(!trace.events.contains { $0.query.contains("//") || $0.editor == "/ 乙" })
         #expect(field.stringValue.isEmpty && trace.coordinator.parent.text.isEmpty)
         #expect(editor.selectedRange() == NSRange(location: 0, length: 0))

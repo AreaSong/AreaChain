@@ -56,7 +56,7 @@ import SwiftData
         return (bars, moves)
     }
 
-    /// 写后核对只读冻结的行：读的是当前日期，不再要求仍在原月份。
+    /// 写后核对只读冻结的行：读的是当前日期，不要求仍在原月份。
     func observe(_ call: CommandSimpleCall, in context: ModelContext) throws -> CommandSimpleState {
         guard call.frozen != nil else {
             let (_, days) = try parameters(call.input)

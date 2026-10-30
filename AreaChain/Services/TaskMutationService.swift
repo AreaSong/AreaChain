@@ -95,7 +95,7 @@ enum TaskMutationService {
         let source: CommandTaskCreateSource
     }
 
-    /// 不再解析原文，clear/remove/cancel 的最终值不能被旧捕获规则覆盖。
+    /// 不解析原文，clear/remove/cancel 的最终值不能被旧捕获规则覆盖。
     static func createComposed(_ input: ComposedInput, in context: ModelContext, dependencies: Dependencies) -> Creation {
         let result = Creation()
         return create(in: context, dependencies: dependencies, result: result) {

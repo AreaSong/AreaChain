@@ -65,12 +65,12 @@
     {
       "test": "PasswordRetryDiagnosticTests.fixedEntryWholeAndInPlace",
       "firstSeen": "d77da2e",
-      "reason": "K 诊断：安全字段同值替换后残留（诊断型用例，按设计保留失败）"
+      "reason": "安全字段同值替换诊断：替换后残留（诊断型用例，按设计保留失败）"
     },
     {
       "test": "PasswordRetryDiagnosticTests.productionSheetBoundedMatrix",
       "firstSeen": "d77da2e",
-      "reason": "K 诊断：安全字段同值替换后残留（诊断型用例，按设计保留失败）"
+      "reason": "安全字段同值替换诊断：替换后残留（诊断型用例，按设计保留失败）"
     },
     {
       "test": "PrivacyAutolockPickerTests.layoutOptionsAndEscape",

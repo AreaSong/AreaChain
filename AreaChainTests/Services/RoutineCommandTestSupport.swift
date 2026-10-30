@@ -13,7 +13,7 @@ import Testing
     var inputRevision = UUID()
     var targetProtection = CommandProtectionRequirement.ordinary
     var inputProtection = CommandProtectionRequirement.ordinary
-    /// 切换真实备注状态（见 SyntheticNotesSwitch）；不再由来源所有者声明。
+    /// 切换真实备注状态（见 SyntheticNotesSwitch）；不由来源所有者声明。
     let notesSwitch = SyntheticNotesSwitch()
     var notes: SyntheticNotes {
         get { notesSwitch.state }

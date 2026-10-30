@@ -245,7 +245,7 @@ enum Classification {
         return true
     }
 
-    /// 日清单里的重复事项已经落在看板日上。日期筛选用这一天，不再把所有非逾期范围都当成匹配。
+    /// 日清单里的重复事项已经落在看板日上。日期筛选用这一天，不把所有非逾期范围都当成匹配。
     /// 因此当天不算逾期；昨天未完成的重复事项在逾期筛选下仍然保留。
     static func matchesListedRoutine(
         _ bits: ClassifyBits,
@@ -296,7 +296,7 @@ enum Classification {
         return left < right
     }
 
-    /// 同一天里带子任务的未完成大任务优先分组置顶，组内按手动顺序优先，创建时间作平局。四象限和提醒时刻不再决定先后。
+    /// 同一天里带子任务的未完成大任务优先分组置顶，组内按手动顺序优先，创建时间作平局。四象限和提醒时刻不决定先后。
     static func precedes(_ left: BoardSortKey, _ right: BoardSortKey) -> Bool {
         if left.dayKey != right.dayKey {
             return dayKeyPrecedes(left.dayKey, right.dayKey)

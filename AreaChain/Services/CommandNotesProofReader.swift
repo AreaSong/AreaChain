@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 /// 无备注证明的唯一入口。适配器自己读对象备注，用协调者的带键摘要（`simples.textDigest`）
-/// 给出证明，不再信任来源所有者的 notes 枚举；只留摘要，不存、不传备注明文。
+/// 给出证明，不信任来源所有者的 notes 枚举；只留摘要，不存、不传备注明文。
 /// “无备注”与 TaskCopyContent.notes 同口径：去掉首尾空白后为空。
 @MainActor enum CommandNotesProofReader {
     /// 放宽“普通无备注”门槛的指令（用户决定）：字段类不读写备注；回收、转换在确认面板列出备注去向；

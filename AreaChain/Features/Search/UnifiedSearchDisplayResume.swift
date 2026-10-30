@@ -70,7 +70,7 @@ extension UnifiedSearchController {
         (try? coordinator.host(buffer.lease.ownership.hostID).session.query.binding) == .independent(.privacyInvalidated)
     }
 
-    /// 门禁拒绝不再静默：在两宿主共用的反馈行里给一句不阻塞的原因（中英文）。
+    /// 门禁拒绝时不静默：在两宿主共用的反馈行里给一句不阻塞的原因（中英文）。
     func reportGate(_ error: Error? = nil) {
         navigationMessage = gateMessage(error)
     }

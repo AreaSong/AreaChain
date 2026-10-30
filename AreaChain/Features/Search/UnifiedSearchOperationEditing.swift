@@ -120,7 +120,7 @@ extension UnifiedSearchController {
               let command = CommandCatalog.standard.command(id: id),
               command.category != .group, command.category != .scope, state.pending == nil, plan?.editing == nil,
               !settingSubmitting, settingExecution == nil else {
-            // 不再静默：门禁拒绝时给出一句原因；分组与范围本就不开始操作，不提示。
+            // 门禁拒绝时给出一句原因；分组与范围本就不开始操作，不提示。
             if CommandCatalog.standard.command(id: id).map({ $0.category != .group && $0.category != .scope }) == true {
                 reportGate()
             }
