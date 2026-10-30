@@ -98,6 +98,22 @@ extension UnifiedSearchController {
         }
     }
 
+    /// Return 开始草稿与工作台接到转交共用：路径尾段解析出的参数（单参数指令至多一个）沿接受参数候选的同一校验带进草稿；
+    /// 同一指令已有草稿时改写这个参数，与接受参数值候选一致。没有可用参数时只开始草稿。
+    @discardableResult
+    func beginTypedOperation(_ id: CommandID, source: UnifiedSearchBuffer) -> UnifiedSearchBuffer? {
+        let parsed = CommandPathParser().parse(.init(text: source.text))
+        guard parsed.command?.id == id,
+              let argument = parsed.arguments.first(where: { acceptsTypedArgument($0, for: id) }) else {
+            // 尾段无效或没有尾段时不传原文，输入框规范成指令路径，与空草稿一致。
+            return beginOperation(id, source: source)
+        }
+        if editingDraft?.commandID == id, let stamp = source.operation {
+            return sendOperation(.edit(stamp, argument), source: source, text: source.text)
+        }
+        return beginOperation(id, source: source, text: source.text, argument: argument)
+    }
+
     /// 参数值候选与转交来的路径参数共用的校验：参数属于这条指令、可在面板里编辑、值与操作合法。
     func acceptsTypedArgument(_ argument: CommandArgument, for id: CommandID) -> Bool {
         guard let command = CommandCatalog.standard.command(id: id),

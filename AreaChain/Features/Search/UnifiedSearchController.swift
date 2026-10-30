@@ -290,7 +290,7 @@ final class UnifiedSearchController {
         }
         if intent == .open, isCommandInput {
             if editingParameter != nil { finishParameter(source) }
-            else if let command = browsedCommand { _ = beginOperation(command.id, source: source) }
+            else if let command = browsedCommand { beginTypedOperation(command.id, source: source) }
             return
         }
         if intent == .escape, editingParameter != nil { finishParameter(source); return }

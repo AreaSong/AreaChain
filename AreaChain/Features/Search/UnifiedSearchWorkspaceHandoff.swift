@@ -27,9 +27,7 @@ extension UnifiedSearchController {
         guard let command = parsed.command else { return }
         if isNavigationInput { intent(.open, source: buffer); return }
         if returnThenContinue({ [weak self] _ in self?.openHandedOffCommand() }) { return }
-        // 路径尾段只对单参数指令解析出参数，至多一个；不走 intent(.open)，因为它开草稿时不带路径里的参数。
-        let argument = parsed.arguments.first { acceptsTypedArgument($0, for: command.id) }
-        beginOperation(command.id, source: buffer, text: buffer.text, argument: argument)
+        beginTypedOperation(command.id, source: buffer)
     }
 
     /// 工作台有未完成的指令草稿或待执行列表：转交不写入、不替换它们，只显示工作台自己的被挡说明（与关闭工作台被挡同一块）。
