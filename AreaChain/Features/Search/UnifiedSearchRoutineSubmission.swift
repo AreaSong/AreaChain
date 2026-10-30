@@ -66,8 +66,7 @@ struct UnifiedSearchRoutineSubmission: View {
                 if !values.isEmpty {
                     Text(verbatim: values).font(DaybookType.body).accessibilityIdentifier("unified.routine.savedValues")
                 }
-                Text(facts.publication == .returned && !facts.publicationFailed ? "unified.task.published" : "unified.routine.publicationIssue")
-                    .font(DaybookType.caption)
+                if !(facts.publication == .returned && !facts.publicationFailed) { Text("unified.routine.publicationIssue").font(DaybookType.caption) }
                 if let tags = facts.savedTagIDs {
                     Text(verbatim: L10n.format("unified.routine.savedTagCount", locale: locale, tags.count))
                         .font(DaybookType.caption).accessibilityIdentifier("unified.routine.savedTagCount")

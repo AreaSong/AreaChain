@@ -94,8 +94,7 @@ struct UnifiedSearchBatchSubmission: View {
                 .font(DaybookType.caption)
             if facts.state == .saved {
                 if let counts = facts.writeSet?.counts { UnifiedSearchBatchWriteCounts(counts: counts) }
-                Text(facts.publication == .returned && !facts.publicationFailed ? "unified.task.published" : "unified.field.publicationIssue")
-                    .font(DaybookType.caption)
+                if !(facts.publication == .returned && !facts.publicationFailed) { Text("unified.field.publicationIssue").font(DaybookType.caption) }
                 if facts.registrationFailed { Text("unified.field.registrationIssue").font(DaybookType.caption) }
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: DaybookSpacing.sm) {

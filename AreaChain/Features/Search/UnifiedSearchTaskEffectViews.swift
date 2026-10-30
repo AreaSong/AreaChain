@@ -29,7 +29,8 @@ struct UnifiedSearchTaskTagEffects: View {
     }
 }
 
-/// 只呈现实际调用与已知处理结果；请求返回不等于授权、送达或同步成功。
+/// 保存后的提醒、日历与授权反馈：正常时不说话，只在被拒绝或失败时用一句白话说明（请求返回不等于送达或同步成功，
+/// 所以“已请求”本身不作为成功展示）。调用参数保留给各提交区沿用同一入口。
 struct UnifiedSearchTaskExternalFeedback: View {
     let authorizationCall: String
     let authorizationResult: String
@@ -37,26 +38,13 @@ struct UnifiedSearchTaskExternalFeedback: View {
     let calendarRequested: Bool?
     let unit: CommandExecutionUnit
     var externalResults: [CommandExternalEffect: CommandExternalResult]?
-    @Environment(\.locale) private var locale
 
     var body: some View {
+        let results = externalResults ?? unit.effects
         VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
-            Text("unified.composition.fake")
-            Text(verbatim: L10n.format("unified.composition.authorization", locale: locale,
-                L10n.format("unified.composition.call." + authorizationCall, locale: locale),
-                L10n.format("unified.composition.authorization." + authorizationResult, locale: locale)))
-            Text(verbatim: external("notification", requested: notificationRequested,
-                                   result: (externalResults ?? unit.effects)[.notification]))
-            Text(verbatim: external("calendar", requested: calendarRequested,
-                                   result: (externalResults ?? unit.effects)[.calendar]))
+            if authorizationResult == "denied" { Text("unified.composition.authorizationDenied") }
+            if results[.notification] == .failed { Text("unified.composition.notificationFailed") }
+            if results[.calendar] == .failed { Text("unified.composition.calendarFailed") }
         }.font(DaybookType.caption).fixedSize(horizontal: false, vertical: true)
-    }
-
-    private func external(_ name: String, requested: Bool?, result: CommandExternalResult?) -> String {
-        let request = requested == true ? "returned" : requested == false ? "notCalled" : "unknown"
-        let key = result == .succeeded ? "succeeded" : result == .failed ? "failed" : "unknown"
-        return L10n.format("unified.composition." + name, locale: locale,
-            L10n.format("unified.composition.call." + request, locale: locale),
-            L10n.format("unified.composition.external." + key, locale: locale))
     }
 }

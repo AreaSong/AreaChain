@@ -49,8 +49,7 @@ struct UnifiedSearchSubtaskSubmission: View {
                 .font(DaybookType.body).accessibilityIdentifier("unified.subtask.status")
             if facts.state == .saved {
                 if let title = facts.savedTitle { Text(verbatim: title).font(DaybookType.body) }
-                Text(facts.publication == .returned && !facts.publicationFailed ? "unified.task.published" : "unified.subtask.publicationIssue")
-                    .font(DaybookType.caption)
+                if !(facts.publication == .returned && !facts.publicationFailed) { Text("unified.subtask.publicationIssue").font(DaybookType.caption) }
                 if let tags = facts.savedTagIDs {
                     Text(verbatim: L10n.format("unified.subtask.savedTagCount", locale: locale, tags.count))
                         .font(DaybookType.caption).accessibilityIdentifier("unified.subtask.savedTagCount")

@@ -55,16 +55,10 @@ struct UnifiedSearchTaskCreateSubmission: View {
         VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
             Text(LocalizedStringKey(UnifiedSearchTaskCreateCopy.result(facts)))
                 .font(DaybookType.body).accessibilityIdentifier("unified.task.status")
-            if facts.state == .saved, let savedID = facts.savedID {
-                Text(verbatim: savedID.uuidString).font(DaybookType.micro)
-                    .textSelection(.enabled).accessibilityIdentifier("unified.task.savedID")
-                Text(LocalizedStringKey(facts.publication == .returned && !facts.publicationFailed
-                    ? "unified.task.published" : "unified.task.publicationIssue")).font(DaybookType.caption)
+            if facts.state == .saved, facts.savedID != nil {
+                if !(facts.publication == .returned && !facts.publicationFailed) { Text("unified.task.publicationIssue").font(DaybookType.caption) }
                 if facts.registrationFailed { Text("unified.task.registrationIssue").font(DaybookType.caption) }
-                Text(facts.refreshRequested ? "unified.task.refreshRequested" : "unified.task.refreshUnconfirmed")
-                    .font(DaybookType.caption)
-                Text("unified.task.externalLimit").font(DaybookType.caption)
-                if unit.effects.values.contains(.failed) { Text("unified.task.externalFailed").font(DaybookType.caption) }
+                if !facts.refreshRequested { Text("unified.task.refreshUnconfirmed").font(DaybookType.caption) }
                 if let effects = facts.savedTagEffects {
                     Text(verbatim: L10n.format("unified.composition.savedTags", locale: locale,
                         effects.filter { $0 == .createAndAssociate }.count,

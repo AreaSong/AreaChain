@@ -57,8 +57,7 @@ struct UnifiedSearchClipboardCaptureSubmission: View {
             if facts.state == .saved, let kind = facts.kind {
                 Text(LocalizedStringKey("unified.clipboardCapture.kind." + kind.rawValue)).font(DaybookType.caption)
                     .accessibilityIdentifier("unified.clipboardCapture.kind")
-                Text(facts.publication == .returned ? "unified.task.published" : "unified.field.publicationIssue")
-                    .font(DaybookType.caption)
+                if !(facts.publication == .returned) { Text("unified.field.publicationIssue").font(DaybookType.caption) }
             }
         }
     }

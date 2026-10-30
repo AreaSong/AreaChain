@@ -68,8 +68,7 @@ struct UnifiedSearchConvertSubmission: View {
                     controller.openConvertedObject(facts, source: source)
                 }
                 Text("unified.convert.restoreHint").font(DaybookType.caption).fixedSize(horizontal: false, vertical: true)
-                Text(facts.publication == .returned && !facts.publicationFailed ? "unified.task.published" : "unified.field.publicationIssue")
-                    .font(DaybookType.caption)
+                if !(facts.publication == .returned && !facts.publicationFailed) { Text("unified.field.publicationIssue").font(DaybookType.caption) }
                 if facts.registrationFailed { Text("unified.field.registrationIssue").font(DaybookType.caption) }
                 ForEach(facts.external, id: \.target) { external in
                     UnifiedSearchTaskExternalFeedback(authorizationCall: "notCalled", authorizationResult: "unknown",

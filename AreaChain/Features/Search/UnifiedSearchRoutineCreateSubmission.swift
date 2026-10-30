@@ -57,13 +57,12 @@ struct UnifiedSearchRoutineCreateSubmission: View {
         VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
             Text(LocalizedStringKey("unified.routineCreate." + String(describing: facts.state)))
                 .font(DaybookType.body).accessibilityIdentifier("unified.routineCreate.status")
-            if let object = facts.createdObject, let saved = facts.savedRoutine {
-                Text(verbatim: object.id.uuidString).font(DaybookType.micro).accessibilityIdentifier("unified.routineCreate.savedID")
+            if facts.createdObject != nil, let saved = facts.savedRoutine {
                 Text(verbatim: saved.title).font(DaybookType.body)
                 Text(verbatim: WeekdayMask.selectedLabels(saved.weekdayMask, locale: locale, calendar: calendar))
                 Text(verbatim: Copy.priority(.init(isImportant: saved.isImportant, isUrgent: saved.isUrgent)) + " · "
                     + (saved.remindMinutes.map(Copy.time) ?? L10n.format("unified.field.noReminder", locale: locale)))
-                Text(facts.publication == .returned && !facts.publicationFailed ? "unified.task.published" : "unified.routine.publicationIssue")
+                if !(facts.publication == .returned && !facts.publicationFailed) { Text("unified.routine.publicationIssue") }
                 if facts.registrationFailed { Text("unified.routine.registrationIssue") }
                 if let tags = facts.savedTagEffects {
                     Text(verbatim: L10n.format("unified.routineCreate.savedTags", locale: locale,

@@ -114,9 +114,8 @@ struct UnifiedSearchMultiPlanSubmission: View {
                 ? "unified.multi.awaitingConfirmation" : UnifiedSearchMultiPlanCopy.status(unit)))
                 .font(DaybookType.body.weight(.medium))
             if unit.local == .committed && unit.state != .succeeded { Text("unified.multi.saved").font(DaybookType.caption) }
-            if let object = unit.taskCreation?.savedID ?? unit.routineCreation?.savedID ?? unit.subtask?.createdObject?.id {
-                Text(verbatim: object.uuidString).font(DaybookType.micro).textSelection(.enabled)
-            }
+            // 这一步成功时不逐项列出后续处理；没成功时才说明哪一项出了问题。
+            if unit.state != .succeeded {
             ForEach(unit.effects.keys.sorted { $0.rawValue < $1.rawValue }, id: \.self) { effect in
                 if let result = unit.effects[effect] {
                     Text(verbatim: L10n.format("unified.multi.effect." + effect.rawValue, locale: locale) + ": "
@@ -124,7 +123,8 @@ struct UnifiedSearchMultiPlanSubmission: View {
                         .font(DaybookType.caption)
                 }
             }
-            if unit.attempt > 0 {
+            }
+            if unit.attempt > 1 {
                 Text(verbatim: L10n.format("unified.multi.attempts", locale: locale, Int(unit.attempt))).font(DaybookType.micro)
             }
             if unit.validationFailedBeforeInvocation { Text("unified.multi.validationFailed").font(DaybookType.caption) }

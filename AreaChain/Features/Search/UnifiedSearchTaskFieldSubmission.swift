@@ -64,8 +64,7 @@ struct UnifiedSearchTaskFieldSubmission: View {
             Text(LocalizedStringKey("unified.field." + (facts.state == .pending ? "pendingResult" : String(describing: facts.state))))
                 .font(DaybookType.body).accessibilityIdentifier("unified.field.status")
             if facts.state == .saved {
-                Text(facts.publication == .returned && !facts.publicationFailed ? "unified.task.published" : "unified.field.publicationIssue")
-                    .font(DaybookType.caption)
+                if !(facts.publication == .returned && !facts.publicationFailed) { Text("unified.field.publicationIssue").font(DaybookType.caption) }
                 if let children = facts.completedSubtaskIDs {
                     Text(verbatim: L10n.format("unified.field.childrenSaved", locale: locale, children.count)).font(DaybookType.caption)
                 }

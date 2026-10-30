@@ -37185,13 +37185,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Accept batch effects"
+            "value": "Confirm batch changes"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "接受整批影响"
+            "value": "确认整批变化"
           }
         }
       }
@@ -37202,13 +37202,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "All target effects accepted; ready for the final check."
+            "value": "Batch changes confirmed; they're checked once more before saving."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已接受整份目标影响，提交前仍会统一核对。"
+            "value": "已确认整批变化，保存前还会统一核对。"
           }
         }
       }
@@ -37235,13 +37235,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Any conflict rejects the whole batch. A transaction failure rolls back all changes."
+            "value": "If any item conflicts, nothing is saved; a failed save undoes the whole batch."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "任一目标冲突则整项拒绝；事务失败共同回滚。"
+            "value": "有一项冲突就整批不保存；保存失败会全部撤回。"
           }
         }
       }
@@ -37252,13 +37252,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Read every target’s actual values before accepting. Previewing does not save."
+            "value": "Each item's current value is read before you confirm. Previewing doesn't save."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "接受前读取每项目标的真实原值；预览不保存。"
+            "value": "确认前会先读取每一项现在的值；预览不会保存。"
           }
         }
       }
@@ -37302,13 +37302,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The tag catalog changed or a selected tag is not live. Select tags and prepare again."
+            "value": "The tag list changed or a selected tag was deleted. Choose tags and preview again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "标签目录已变化或所选标签已删除。请重新选择标签并预览。"
+            "value": "标签列表已变化或所选标签已删除，请重新选择标签并预览。"
           }
         }
       }
@@ -37454,13 +37454,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The original targets and parameters remain in this run. No automatic retry, splitting, or undo."
+            "value": "These targets and settings are kept. Nothing is retried, split or undone automatically."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "原目标与参数保留在本次运行中，不自动重试、拆批或撤销。"
+            "value": "这次的目标和参数会保留，不会自动重试、拆开或撤销。"
           }
         }
       }
@@ -37505,13 +37505,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Original values differ; inspect each target below."
+            "value": "These items have different current values. Check each one below."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "原值为多个不同值，请逐项检查。"
+            "value": "这些项现在的值各不相同，请逐项查看。"
           }
         }
       }
@@ -37522,13 +37522,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "All targets already match. Nothing saved or published."
+            "value": "All targets already match; nothing was saved."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "全部目标已满足，无保存或发布。"
+            "value": "全部目标都已是目标值，没有保存。"
           }
         }
       }
@@ -37590,13 +37590,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Preview batch effects"
+            "value": "Preview batch changes"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "预览整批影响"
+            "value": "预览整批变化"
           }
         }
       }
@@ -37607,13 +37607,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Identity, source, or affected values changed."
+            "value": "This item changed or moved. Choose it again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "实体身份、来源或影响字段已变化。"
+            "value": "这一项已被修改或换了位置，请重新选择。"
           }
         }
       }
@@ -37641,13 +37641,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Multiple records have this typed identity."
+            "value": "Duplicate records were found. Check them on their page."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "此类型身份对应多条记录。"
+            "value": "找到重复的记录，请到原页面检查。"
           }
         }
       }
@@ -37658,13 +37658,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Subtask identities or parent relationships are inconsistent."
+            "value": "The subtask's parent changed. Choose again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "子项身份或父子关系不一致。"
+            "value": "子任务和父任务的关系变了，请重新选择。"
           }
         }
       }
@@ -37760,7 +37760,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Remove target and prepare again"
+            "value": "Remove target and preview again"
           }
         },
         "zh-Hans": {
@@ -37794,13 +37794,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Targets changed. Preview and accept the new fixed set again."
+            "value": "Targets changed. Preview and confirm again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "目标已改变，请重新预览并接受新的固定集合。"
+            "value": "目标已改变，请重新预览并确认。"
           }
         }
       }
@@ -37862,13 +37862,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Parameters are complete. Preview and accept the batch effects."
+            "value": "Ready. Preview and confirm the batch changes."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "参数完整，请预览并接受整批影响。"
+            "value": "已填好，请预览并确认这一批的变化。"
           }
         }
       }
@@ -37896,7 +37896,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The whole batch was rejected. Review the affected targets and prepare again."
+            "value": "The whole batch was rejected. Review the affected targets and preview again."
           }
         },
         "zh-Hans": {
@@ -37930,13 +37930,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The common save result is unknown. Keep this run; do not retry or split it."
+            "value": "It's unclear whether this was saved. Check on the original page and don't repeat it."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "共同保存结果未知。保留本次运行，不能重试或拆分重放。"
+            "value": "不确定是否已保存。请到原页面确认，不要重复操作。"
           }
         }
       }
@@ -37947,13 +37947,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The planned changes conflict for the same entity. Review the targets and prepare again."
+            "value": "One record would be set to different values. Check the targets and preview again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "同一实体的拟定变化不一致。请检查目标并重新准备。"
+            "value": "同一条记录被设成了不同的值，请检查目标后重新预览。"
           }
         }
       }
@@ -37964,13 +37964,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Selected %lld · Changing %lld · Entity writes %lld / %lld"
+            "value": "Selected %lld · Changing %lld · Saving %lld / %lld records"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已选 %lld 项 · 变化 %lld 项 · 写入实体 %lld / %lld"
+            "value": "已选 %lld 项 · 变化 %lld 项 · 将保存 %lld / %lld 条记录"
           }
         }
       }
@@ -37980,13 +37980,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Too many entity changes. Remove targets, then preview and accept again. Nothing will be split or submitted."
+            "value": "Too many records would change. Remove some targets, then preview and confirm again. Nothing is saved in parts."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "变化实体超过上限。请移除部分目标，重新预览并接受；不会拆批或提交子集。"
+            "value": "一次改动的记录太多，请移除部分目标后重新预览并确认；不会拆开保存。"
           }
         }
       }
@@ -38133,13 +38133,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Step 2 is blocked: step 1 or its required effects are not confirmed successful. Unknown results cannot be replayed."
+            "value": "Step 1 isn't confirmed yet, so step 2 waits. If unsure, check on the original page and don't repeat it."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "第二步被阻断：第一步或其必要外部步骤尚未确认成功。结果未知时不能重放。"
+            "value": "第一步还没确认成功，第二步先不执行。不确定时请到原页面确认，不要重复操作。"
           }
         }
       }
@@ -38184,13 +38184,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Step 2 will modify the task created by step 1. Its real baseline is read after creation."
+            "value": "Step 2 changes the task created in step 1; its values are read after it's created."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "第二步将修改第一步创建的任务；创建成功后才读取真实原值。"
+            "value": "第二步会修改第一步新建的任务，任务建好后才会读取它的值。"
           }
         }
       }
@@ -38201,13 +38201,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Step 1 accepts only a plain title and task date. Queue both steps and bind step 2 to the creation output."
+            "value": "Step 1 can only be a plain title and date. Add both steps to the list and have step 2 use the task created in step 1."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "第一步仅接受普通标题和任务日期。请将两步入列，并将第二步目标绑定到创建输出。"
+            "value": "第一步只能是普通标题和日期。请把两步都加入列表，并让第二步使用第一步新建的任务。"
           }
         }
       }
@@ -38218,13 +38218,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Prepare step 1"
+            "value": "Preview step 1"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "准备第一步"
+            "value": "预览第一步"
           }
         }
       }
@@ -38235,13 +38235,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Review the actual task for step 2"
+            "value": "Review the task step 2 will change"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "检查第二步的真实任务影响"
+            "value": "检查第二步要修改的任务"
           }
         }
       }
@@ -38252,13 +38252,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Step 1 is prepared. Step 2 still needs a new review and confirmation after creation."
+            "value": "Step 1 is previewed. After the task is created, step 2 still needs checking and confirming."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "第一步已准备。创建后仍需重新检查并确认第二步。"
+            "value": "第一步已预览。任务建好后，还需要再检查并确认第二步。"
           }
         }
       }
@@ -38286,13 +38286,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Only exactly two steps are supported: plain task creation → title change using its real output. Other shapes or parameters cannot run."
+            "value": "Only “create a task, then rename it” is supported here."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "仅支持正好两步：普通任务创建 → 使用其真实输出修改标题。其他形状或参数不可执行。"
+            "value": "这里只支持“新建任务，然后改它的标题”这两步。"
           }
         }
       }
@@ -38337,13 +38337,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Task created. Waiting for a fresh review and explicit confirmation of step 2."
+            "value": "Task created. Review and confirm step 2."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "任务已创建，等待检查真实影响并明确确认第二步。"
+            "value": "任务已创建，请检查并确认第二步。"
           }
         }
       }
@@ -38371,7 +38371,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Accept these task and tag changes"
+            "value": "Confirm these task and tag changes"
           }
         },
         "zh-Hans": {
@@ -38405,13 +38405,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tag identities or names are ambiguous. No same-name item will be chosen automatically."
+            "value": "Several tags share this name. Rename one on the Tags page or pick another."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "标签身份或名字有歧义，不能任取同名项。"
+            "value": "有同名标签，无法确定用哪一个，请换个写法或到标签页处理。"
           }
         }
       }
@@ -38450,172 +38450,19 @@
         }
       }
     },
-    "unified.composition.authorization": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fake authorization request: %@ · Known result: %@"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "模拟授权请求：%@ · 已知结果：%@"
-          }
-        }
-      }
-    },
-    "unified.composition.authorization.denied": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Simulated denial"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "模拟拒绝"
-          }
-        }
-      }
-    },
-    "unified.composition.authorization.granted": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Simulated grant"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "模拟允许"
-          }
-        }
-      }
-    },
-    "unified.composition.authorization.unknown": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Unknown"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "未知"
-          }
-        }
-      }
-    },
-    "unified.composition.calendar": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Calendar refresh request: %@ · Fake processing: %@"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "日历刷新请求：%@ · 模拟处理：%@"
-          }
-        }
-      }
-    },
-    "unified.composition.call.called": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Called; return unconfirmed"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已调用，未确认返回"
-          }
-        }
-      }
-    },
-    "unified.composition.call.notCalled": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Not requested"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "未请求"
-          }
-        }
-      }
-    },
-    "unified.composition.call.returned": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Requested and returned"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已请求并返回"
-          }
-        }
-      }
-    },
-    "unified.composition.call.unknown": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Unconfirmed"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "未确认"
-          }
-        }
-      }
-    },
     "unified.composition.catalog": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The tag catalog lacks complete coverage or identity information."
+            "value": "The tag list couldn't be fully read. Try again later."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "标签目录缺少完整覆盖或身份信息，无法准备。"
+            "value": "标签列表暂时读不全，请稍后再试。"
           }
         }
       }
@@ -38705,74 +38552,6 @@
         }
       }
     },
-    "unified.composition.external.failed": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fake processing failed"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "模拟处理失败"
-          }
-        }
-      }
-    },
-    "unified.composition.external.succeeded": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fake processing completed"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "模拟处理完成"
-          }
-        }
-      }
-    },
-    "unified.composition.external.unknown": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Unknown"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "未知"
-          }
-        }
-      }
-    },
-    "unified.composition.fake": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The following feedback is from isolated fake consumers, not real system authorization, notification delivery or calendar sync."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "以下为隔离 fake 消费者反馈，不代表真实系统授权、通知送达或日历同步。"
-          }
-        }
-      }
-    },
     "unified.composition.fieldSources": {
       "extractionState": "manual",
       "localizations": {
@@ -38796,13 +38575,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Final transaction effects"
+            "value": "What will change"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "最终事务效果"
+            "value": "将会发生的变化"
           }
         }
       }
@@ -38847,13 +38626,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "A selected tag identity no longer exists. Review the original parameters."
+            "value": "A selected tag no longer exists. Choose again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "指定的标签身份已不存在，请查看原参数。"
+            "value": "选中的标签已不存在，请重新选择。"
           }
         }
       }
@@ -38926,36 +38705,19 @@
         }
       }
     },
-    "unified.composition.notification": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Notification refresh request: %@ · Fake processing: %@"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "通知刷新请求：%@ · 模拟处理：%@"
-          }
-        }
-      }
-    },
     "unified.composition.prepare": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Prepare final effects"
+            "value": "Preview changes"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "准备最终效果"
+            "value": "预览变化"
           }
         }
       }
@@ -38983,13 +38745,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This entry accepts only ordinary task content and an ordinary source. Protected or unknown content cannot be submitted."
+            "value": "Only plain tasks can be created here. Protected or unrecognized content can't be submitted."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "此入口只接受普通任务内容与普通来源；保护或未知内容不能提交。"
+            "value": "这里只能新建普通任务；受保护或无法识别的内容不能提交。"
           }
         }
       }
@@ -39068,13 +38830,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Task and tags saved together: %lld created, %lld restored, %lld live tags linked."
+            "value": "Task and tags saved together: %lld created, %lld restored, %lld existing tags linked."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "任务和标签已共同保存：新建 %lld、恢复 %lld、关联活标签 %lld。"
+            "value": "任务和标签已一起保存：新建 %lld 个、恢复 %lld 个、关联现有标签 %lld 个。"
           }
         }
       }
@@ -39085,13 +38847,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The preview is out of date. Prepare it again."
+            "value": "The preview is out of date. Preview it again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "预览已过期，请重新准备。"
+            "value": "预览已过期，请重新预览。"
           }
         }
       }
@@ -39153,13 +38915,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "When you're done, prepare to review the changes."
+            "value": "When you're done, preview to review the changes."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "填好后先准备，查看将要发生的变化。"
+            "value": "填好后先预览，查看将要发生的变化。"
           }
         }
       }
@@ -39254,13 +39016,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Owner navigation is checked separately from image preview"
+            "value": "The owning record and the image preview open separately."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "所属记录与图片预览分别核验"
+            "value": "所属记录和图片预览分开打开。"
           }
         }
       }
@@ -39372,7 +39134,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "These changes are accepted. Nothing is saved yet. Next: Save changes."
+            "value": "These changes are confirmed. Nothing is saved yet. Next: Save changes."
           }
         },
         "zh-Hans": {
@@ -39389,13 +39151,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Current values have not been reliably read. Select a target and prepare changes."
+            "value": "Current values haven't been read yet. Select a target and preview the changes."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "尚无可靠的当前值，请选择目标并准备影响。"
+            "value": "还没读到当前值，请选择目标并预览变化。"
           }
         }
       }
@@ -39406,13 +39168,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: the tag catalog changed. Prepare and accept the changes again."
+            "value": "Not saved: the tag list changed. Preview and confirm the changes again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：标签目录已变化，请重新准备并确认影响。"
+            "value": "没有保存：标签列表已变化，请重新预览并确认变化。"
           }
         }
       }
@@ -39508,13 +39270,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reopening keeps subtask states. This command does not register undo."
+            "value": "Reopening keeps subtask states. This can't be undone after saving."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "重新打开保持子任务状态。本命令不登记执行后撤销。"
+            "value": "重新打开不会改变子任务的状态；这里保存后不能撤销。"
           }
         }
       }
@@ -39525,13 +39287,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: other edits are unsaved. They have been kept; finish them before reviewing again."
+            "value": "Not saved: other changes aren't saved yet. Your changes are kept; review the changes again after handling them."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：上下文还有未保存编辑，原修改已保留；处理后请重新查看影响。"
+            "value": "没有保存：还有别的修改没保存，你的修改已保留。处理后请重新查看变化。"
           }
         }
       }
@@ -39542,30 +39304,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: this isolated environment is unavailable."
+            "value": "Not saved: saving isn't available here right now. Try again later."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：当前隔离环境不可用。"
-          }
-        }
-      }
-    },
-    "unified.field.externalFailed": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Changes remain saved locally. A notification or calendar consumer reported failure."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "本地修改仍已保存；通知或日历消费者报告失败。"
+            "value": "没有保存：这里暂时不能保存，请稍后再试。"
           }
         }
       }
@@ -39576,13 +39321,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: a field involved in this edit changed. Review the current values again."
+            "value": "Not saved: a field involved in this edit changed. Review the current values again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：本次影响字段已变化，请重新查看当前值。"
+            "value": "没有保存：涉及的字段已变化，请重新查看当前值。"
           }
         }
       }
@@ -39610,13 +39355,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The original run and input are retained. Return to plan, retry and undo after execution are not available."
+            "value": "Your input is kept. Going back to the list, retrying and undoing aren't available."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "原运行与输入保留；暂不支持返回计划、重试或执行后撤销。"
+            "value": "这次的输入会保留；暂不支持返回列表、重试或撤销。"
           }
         }
       }
@@ -39661,13 +39406,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Field input keeps its original syntax. Prepare changes to read the current task; notes and line breaks cannot be submitted."
+            "value": "Saved as typed. Previewing reads the current task; notes and line breaks can't be submitted here."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "属性输入保留原始语法。准备影响后读取当前任务；备注和换行不能提交。"
+            "value": "按原样保存。预览时会读取当前任务；备注和换行不能在这里提交。"
           }
         }
       }
@@ -39694,13 +39439,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "All effects already match. No save or publication is needed."
+            "value": "Everything already matches. Nothing needs saving."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "全部效果已满足，无需保存或发布。"
+            "value": "都已是目标值，不需要保存。"
           }
         }
       }
@@ -39762,13 +39507,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Changes were not submitted. Review the reason below."
+            "value": "Changes weren't saved. Review the reason below."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "修改未提交，请查看下方原因。"
+            "value": "修改没有保存，请查看下方原因。"
           }
         }
       }
@@ -39779,13 +39524,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: notes, note separators and line breaks are unsupported. The original input is kept."
+            "value": "Not saved: notes, note separators and line breaks are unsupported. The original input is kept."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：不支持备注、备注分隔符或换行，已保留原输入。"
+            "value": "没有保存：不支持备注、备注分隔符或换行，已保留原输入。"
           }
         }
       }
@@ -39830,13 +39575,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fields without field syntax stay unchanged. Dates and completion state are not edited here."
+            "value": "Fields you didn't write stay unchanged. Dates and completion state aren't edited here."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未由属性语法影响的字段保持不变；此次不修改日期和完成态。"
+            "value": "没有写到的字段保持不变；这里不修改日期和完成状态。"
           }
         }
       }
@@ -39847,13 +39592,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Preview the task changes before accepting and saving."
+            "value": "Preview the task changes, then confirm and save."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "查看任务真实影响，明确接受后保存。"
+            "value": "预览任务的变化，确认后再保存。"
           }
         }
       }
@@ -39881,13 +39626,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Prepare changes"
+            "value": "Preview changes"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "准备影响"
+            "value": "预览变化"
           }
         }
       }
@@ -39898,7 +39643,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Only the previewed fields and related effects change."
+            "value": "Only the previewed fields and related changes are modified."
           }
         },
         "zh-Hans": {
@@ -39915,13 +39660,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Changes are saved locally; publication was not confirmed. Do not save them again."
+            "value": "Saved, but other views may not have updated yet. Don't save again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "修改已在本地保存，发布尚未确认；不要再次保存。"
+            "value": "已保存，但其他页面可能还没更新；不要再次保存。"
           }
         }
       }
@@ -39932,13 +39677,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Changes are saved locally; result registration needs checking."
+            "value": "Saved, but this result couldn't be recorded. Check on the original page."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "修改已在本地保存，结果登记需要核对。"
+            "value": "已保存，但这次结果没能记录下来，请到原页面确认。"
           }
         }
       }
@@ -40000,13 +39745,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: the ordinary task source changed or is unavailable. Review the target again."
+            "value": "Not saved: the ordinary task source changed or is unavailable. Review the target again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：普通任务来源已变化或不可用，请重新查看目标。"
+            "value": "没有保存：普通任务来源已变化或不可用，请重新查看目标。"
           }
         }
       }
@@ -40017,13 +39762,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This preview or acceptance is no longer current. Keep your input and prepare the changes again."
+            "value": "The preview expired. Your input is kept; preview again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "此预览或接受已失效。输入已保留，请重新准备影响。"
+            "value": "预览已过期，你的输入已保留，请重新预览。"
           }
         }
       }
@@ -40034,13 +39779,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: current task values could not be read."
+            "value": "Not saved: current task values could not be read."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：无法读取当前任务值。"
+            "value": "没有保存：无法读取当前任务值。"
           }
         }
       }
@@ -40068,13 +39813,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: a tag is protected, ambiguous or incomplete. Review the task and tags again."
+            "value": "Not saved: a tag is protected, ambiguous or incomplete. Review the task and tags again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：标签受保护、存在歧义或资料不完整，请重新查看任务与标签。"
+            "value": "没有保存：标签受保护、存在歧义或资料不完整，请重新查看任务与标签。"
           }
         }
       }
@@ -40153,13 +39898,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: the target is missing, deleted, duplicated or invalid. Select it again."
+            "value": "Not saved: the target was deleted, duplicated or is invalid. Choose it again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：目标缺失、已删除、身份重复或无效，请重新选择。"
+            "value": "没有保存：目标已删除、重复或无效，请重新选择。"
           }
         }
       }
@@ -40187,13 +39932,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Result needs verification. Ordinary retry is disabled."
+            "value": "It's unclear whether this was saved. Check on the original page and don't repeat it."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "结果待核实，禁止普通重试。"
+            "value": "不确定是否已保存。请到原页面确认，不要重复操作。"
           }
         }
       }
@@ -40238,13 +39983,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The target identity is ambiguous. The original result remains unknown."
+            "value": "Multiple matching records were found, so the save still can't be confirmed. Check on the original page."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "目标身份有歧义；原结果仍为未知。"
+            "value": "找到多条相同的记录，仍无法确认是否已保存。请到原页面检查。"
           }
         }
       }
@@ -40289,13 +40034,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The target could not be safely verified. The original result remains unknown."
+            "value": "The record can't be read right now, so the save still can't be confirmed. Check on the original page."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "无法安全核验目标；原结果仍为未知。"
+            "value": "暂时读不到这条记录，仍无法确认是否已保存。请到原页面检查。"
           }
         }
       }
@@ -40306,13 +40051,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The file backend is not writable. Verification is required; settings will not be migrated or recovered automatically."
+            "value": "The settings file can't be written right now. Check it first; nothing is migrated or restored automatically."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "文件后端尚不可写，需要核验；不会自动迁移设置或恢复文件。"
+            "value": "设置文件暂时不能写入，请先检查；不会自动迁移或恢复。"
           }
         }
       }
@@ -40357,13 +40102,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The plan contains duplicate settings. Keep all items and edit the plan before preparing."
+            "value": "The list has duplicate settings. All are kept; edit the list before previewing."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "计划含重复设置；已保留全部项目，请先编辑计划。"
+            "value": "列表里有重复的设置，已全部保留，请先编辑列表。"
           }
         }
       }
@@ -40374,13 +40119,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Included in the same save"
+            "value": "Saved with this group"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "属于同一次共同保存"
+            "value": "和这一组一起保存"
           }
         }
       }
@@ -40408,13 +40153,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Baseline missing or no longer valid. Explicitly prepare the settings again."
+            "value": "Current settings need to be read again. Preview once more."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "基线缺失或已失效，请明确重新准备设置。"
+            "value": "需要重新读取当前设置，请再预览一次。"
           }
         }
       }
@@ -40459,13 +40204,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Prepare the pending settings together before saving."
+            "value": "After previewing, the settings in the list are saved together."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "准备后，一次共同保存计划内的设置。"
+            "value": "预览后，列表里的设置会一起保存。"
           }
         }
       }
@@ -40476,13 +40221,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Prepare to save together"
+            "value": "Preview this group"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "准备共同保存"
+            "value": "预览这一组"
           }
         }
       }
@@ -40493,13 +40238,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The group was saved. Applying its presentation is incomplete."
+            "value": "The group was saved, but the app hasn't switched over yet."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "整组已保存，展示应用未完成。"
+            "value": "这一组已保存，但界面还没切换过来。"
           }
         }
       }
@@ -40510,13 +40255,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Group baseline is valid. All members will share one save."
+            "value": "These settings will be saved together."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "组基线有效，所有成员属于同一次共同保存。"
+            "value": "这一组设置会一起保存。"
           }
         }
       }
@@ -40527,13 +40272,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The backend is not writable and requires verification. The group has not been saved."
+            "value": "The settings file can't be written right now; this group isn't saved. Check it first."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "后端不可写，需要核验；整组尚未保存。"
+            "value": "设置文件暂时不能写入，这一组还没保存。请先检查。"
           }
         }
       }
@@ -40612,13 +40357,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The group was saved. Later changes have replaced its pending presentation."
+            "value": "The group was saved; a later change has replaced it."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "整组已保存；待应用的旧展示已被后续修改替代。"
+            "value": "这一组已保存；后来的修改已替换了它。"
           }
         }
       }
@@ -40646,13 +40391,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Save result unknown. Verify the original submission before continuing."
+            "value": "It's unclear whether this was saved. Check before continuing."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "结果待核实，请核验原提交后再继续。"
+            "value": "不确定是否已保存，请先检查再继续。"
           }
         }
       }
@@ -40663,13 +40408,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Verify result"
+            "value": "Check result"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "核验结果"
+            "value": "检查结果"
           }
         }
       }
@@ -40680,13 +40425,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Verification checks this exact submission. It does not save again; an uncertain result keeps the original run."
+            "value": "Only checks whether this save succeeded; it doesn't save again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "核验只检查本次精确提交，不会再次保存；仍不确定时保留原运行。"
+            "value": "只检查这一次是否保存成功，不会再保存一遍。"
           }
         }
       }
@@ -40900,13 +40645,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "New input was accepted and retained. Its display has been revoked."
+            "value": "Your new input is kept in the draft but hidden for now."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "新输入已接收并保留；当前显示已撤销。"
+            "value": "新输入已保存在草稿里，暂时不显示。"
           }
         }
       }
@@ -41031,13 +40776,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Protection failed. The original draft remains unprotected."
+            "value": "Protection failed. The draft is still here but isn't protected."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "保护失败；原草稿仍在，尚未受保护。"
+            "value": "保护失败，草稿还在，但没有受到保护。"
           }
         }
       }
@@ -41081,13 +40826,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ordinary in-memory draft. Not encrypted or written to disk."
+            "value": "Plain draft: not encrypted and not written to disk."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "运行内普通草稿；未加密，不写入磁盘。"
+            "value": "普通草稿：不加密，也不写入磁盘。"
           }
         }
       }
@@ -41129,13 +40874,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Protected draft. Accepted input has an encrypted recovery point."
+            "value": "Protected draft: each change is kept encrypted so it can be recovered."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "受保护草稿；每次接受输入前建立加密恢复点。"
+            "value": "受保护草稿：每次输入都会加密留存，便于恢复。"
           }
         }
       }
@@ -41264,13 +41009,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Awaiting confirmation of actual effects"
+            "value": "Waiting for you to confirm the changes"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "等待确认真实影响"
+            "value": "等待确认变化"
           }
         }
       }
@@ -41287,7 +41032,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "重新核验设置存储"
+            "value": "重新检查设置存储"
           }
         }
       }
@@ -41315,13 +41060,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Runs in list order. Each command, batch, or settings group commits separately. Saved units are never replayed."
+            "value": "Runs in list order. Each step saves on its own; saved steps aren't done again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "按列表顺序执行。单项、批量与设置组分别提交，已保存单元不会重放。"
+            "value": "按列表顺序执行；每一步分别保存，已保存的不会再做一遍。"
           }
         }
       }
@@ -41332,13 +41077,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cancel this unstarted unit"
+            "value": "Cancel this step (not started)"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "取消此未启动单元"
+            "value": "取消这一步（尚未开始）"
           }
         }
       }
@@ -41355,7 +41100,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已取消未启动单元"
+            "value": "这一步在开始前已取消"
           }
         }
       }
@@ -41366,13 +41111,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Review updated effects or the newly created target"
+            "value": "Review the updated changes or the newly created item"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "请核对变化后的影响或新建的真实目标"
+            "value": "请核对变化后的结果或新建的对象"
           }
         }
       }
@@ -41383,13 +41128,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Accept these effects and continue"
+            "value": "Confirm these changes and continue"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "确认本次影响并继续"
+            "value": "确认这一步的变化并继续"
           }
         }
       }
@@ -41400,13 +41145,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Add explicit dependency"
+            "value": "Make it depend on an earlier item"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "添加显式依赖"
+            "value": "设为依赖前一项"
           }
         }
       }
@@ -41451,13 +41196,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Settings presentation"
+            "value": "Applying to the app"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "设置展示"
+            "value": "界面切换"
           }
         }
       }
@@ -41468,13 +41213,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Local publication"
+            "value": "Updating other views"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "本地发布"
+            "value": "其他页面更新"
           }
         }
       }
@@ -41570,13 +41315,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Local save kept · external result unknown"
+            "value": "Saved · unclear whether some follow-up updates finished"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "保留本地保存 · 外部结果未知"
+            "value": "已保存 · 部分后续更新是否完成不确定"
           }
         }
       }
@@ -41587,13 +41332,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Failed · saved results retained"
+            "value": "Failed · saved parts are kept"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "失败 · 已保存结果保留"
+            "value": "失败 · 已保存的部分保留"
           }
         }
       }
@@ -41604,13 +41349,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Every unit rechecks its fixed targets and accepted effects before writing."
+            "value": "Each item is checked again before saving."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "每个单元写入前重新核验固定目标与已接受的影响。"
+            "value": "保存前会再次核对每一项。"
           }
         }
       }
@@ -41621,13 +41366,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Commit adjacent settings together"
+            "value": "Save adjacent settings together"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "相邻设置共同提交"
+            "value": "相邻的设置一起保存"
           }
         }
       }
@@ -41672,13 +41417,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The object will come from a saved creation. Review and accept its real effects before continuing."
+            "value": "This item comes from something created earlier. Preview and confirm the changes before continuing."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "对象来自确定保存的创建。请在继续前预览并确认其真实影响。"
+            "value": "对象来自前面新建的内容，继续前请预览并确认变化。"
           }
         }
       }
@@ -41706,13 +41451,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%d of %d units finished"
+            "value": "%d of %d steps finished"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已完成 %d / %d 个单元"
+            "value": "已完成 %d / %d 步"
           }
         }
       }
@@ -41723,13 +41468,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Continue unexecuted units"
+            "value": "Continue the remaining steps"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "继续未执行单元"
+            "value": "继续执行剩下的步骤"
           }
         }
       }
@@ -41740,13 +41485,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Retry this uncommitted unit"
+            "value": "Retry this step (not saved yet)"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "重试此未提交单元"
+            "value": "重试这一步（尚未保存）"
           }
         }
       }
@@ -41757,13 +41502,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Review remaining effects again"
+            "value": "Preview the remaining changes again"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "重新预览剩余影响"
+            "value": "重新预览剩下的变化"
           }
         }
       }
@@ -41774,13 +41519,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This history and recovery are available only during this running app session. Hiding the panel does not cancel saved results."
+            "value": "This history is kept only while the app is open. Closing the panel doesn't undo saved changes."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "历史与恢复仅在本次应用运行内保留。收起面板不会撤销已保存结果。"
+            "value": "这里的记录只在应用打开期间保留；收起面板不会撤销已保存的内容。"
           }
         }
       }
@@ -41825,7 +41570,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Accept and execute plan"
+            "value": "Confirm and run the list"
           }
         },
         "zh-Hans": {
@@ -41893,13 +41638,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Unit %d · %d command(s)"
+            "value": "Step %d · %d command(s)"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "单元 %d · %d 项命令"
+            "value": "第 %d 步 · %d 条指令"
           }
         }
       }
@@ -41910,13 +41655,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Local commit unknown — entire plan paused"
+            "value": "Unclear whether it saved — the whole list is paused"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "本地提交未知，整份计划已暂停"
+            "value": "不确定是否已保存，整个列表已暂停"
           }
         }
       }
@@ -41927,13 +41672,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No further writes or ordinary retries are allowed. Current object values cannot prove whether the earlier transaction committed."
+            "value": "It's unclear whether the earlier step saved, so the rest is paused. Check on the original page and don't repeat it."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "后续写入和普通重试均已阻止。当前对象值不能证明原事务是否提交。"
+            "value": "不确定之前那一步是否已保存，后续步骤已暂停。请到原页面确认，不要重复操作。"
           }
         }
       }
@@ -41944,13 +41689,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Review all targets, dependencies, and changes before execution."
+            "value": "Preview all targets, dependencies and changes before running."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "执行前请预览全部目标、依赖与实际影响。"
+            "value": "执行前请预览全部目标、依赖和变化。"
           }
         }
       }
@@ -41961,13 +41706,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Revalidation failed before invocation. No local write was attempted; the frozen intent is retained."
+            "value": "The pre-save check failed. Nothing was written and your content is kept."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "调用前重新核验未通过，尚未尝试本地写入，原冻结意图已保留。"
+            "value": "保存前检查没通过，什么都没写入，你的内容已保留。"
           }
         }
       }
@@ -42318,7 +42063,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Accept selection"
+            "value": "Confirm selection"
           }
         },
         "zh-Hans": {
@@ -42471,13 +42216,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Results are incomplete (coverage or read budget). You can select known objects; all results cannot be accepted."
+            "value": "Not all results could be read. You can choose the ones shown, but not “all results”."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "查询有覆盖或读取预算缺口。可明确选择已知对象，不能接受为全部结果。"
+            "value": "结果没有全部读出来，只能选择已显示的对象，不能“全选全部”。"
           }
         }
       }
@@ -42488,7 +42233,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "↑↓ navigate · Space select · Return/Tab accept · Esc cancel"
+            "value": "↑↓ navigate · Space select · Return/Tab confirm · Esc cancel"
           }
         },
         "zh-Hans": {
@@ -42556,13 +42301,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Object details cannot currently be confirmed. The fixed identity is retained and requires rechecking."
+            "value": "These items can't be confirmed right now. Check again later."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "暂时无法确认对象明细；保留固定身份，需要重新核验。"
+            "value": "暂时无法确认这些对象，请稍后重新检查。"
           }
         }
       }
@@ -42658,13 +42403,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Selection expired. The current draft is unchanged; choose again."
+            "value": "This selection expired. Choose again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "本次选择已失效。当前草稿未改动，请重新选择。"
+            "value": "这次选择已过期，请重新选择。"
           }
         }
       }
@@ -42709,13 +42454,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Selection includes an unavailable source. Remove it explicitly or choose again."
+            "value": "The selection includes something not supported here. Remove it or choose again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "选择包含尚未适配的来源。请主动移除或改选。"
+            "value": "选择里有这里不支持的内容，请移除或重新选择。"
           }
         }
       }
@@ -42879,13 +42624,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This draft lives only while the app is running and is not saved."
+            "value": "This draft is kept only while the app is open and isn't saved."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "草稿只在本次运行中保留，不会保存。"
+            "value": "草稿只在应用打开期间保留，不会保存。"
           }
         }
       }
@@ -43151,13 +42896,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Assign"
+            "value": "Set to"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "赋值"
+            "value": "设为"
           }
         }
       }
@@ -43270,13 +43015,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Unspecified (keep current)"
+            "value": "Don't change (keep current)"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未指定（保持原值）"
+            "value": "不修改（保持现在的值）"
           }
         }
       }
@@ -43423,13 +43168,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Retained operation drafts"
+            "value": "Saved-for-later commands"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已保留的操作草稿"
+            "value": "暂存的操作"
           }
         }
       }
@@ -43440,13 +43185,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Needs a separate secure input or authentication; not available in search."
+            "value": "Needs a password or identity check, which search can't do. Use the original page."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "需要单独的安全输入或身份验证，搜索里不提供。"
+            "value": "需要输入密码或验证身份，搜索里不能完成，请到原页面操作。"
           }
         }
       }
@@ -43491,13 +43236,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Execution is not available. Your parameters remain in this draft."
+            "value": "This can't run right now. What you entered is kept."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "暂不可执行。参数仍保留在本次草稿中。"
+            "value": "暂时不能执行，你填的内容已保留。"
           }
         }
       }
@@ -44222,13 +43967,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Added to the pending list; the plan now owns this draft."
+            "value": "Added to the pending list."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已加入待执行列表，草稿现由计划唯一持有。"
+            "value": "已加入待执行列表。"
           }
         }
       }
@@ -44239,13 +43984,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Synthetic atomic group · no transaction guarantee is connected"
+            "value": "This group can't be saved together yet"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "合成原子组 · 尚未接入真实事务保证"
+            "value": "这一组暂时不能一起保存"
           }
         }
       }
@@ -44256,13 +44001,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Finish editing this item or resolve the pending draft switch first."
+            "value": "Finish editing this item, or answer the pending switch, first."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "请先收起此项编辑或处理待决的草稿切换。"
+            "value": "请先结束这一项的编辑，或处理正在等待的切换。"
           }
         }
       }
@@ -44426,13 +44171,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This item belongs to an atomic group. The requested change is not allowed."
+            "value": "This item is part of a group that saves together, so it can't be changed on its own."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "此项属于原子组，不允许此变更。"
+            "value": "这一项属于一起保存的组，不能单独这样改。"
           }
         }
       }
@@ -44477,13 +44222,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Accept merge"
+            "value": "Confirm merge"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "接受合并"
+            "value": "确认合并"
           }
         }
       }
@@ -44494,13 +44239,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No matching, reliable original values are available. Both items were kept."
+            "value": "The current values can't be confirmed to match, so both items are kept."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "缺少一致可靠的原值依据，已保留两项。"
+            "value": "无法确认两项的当前值是否一致，两项都保留。"
           }
         }
       }
@@ -44562,13 +44307,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Merge the adjacent assignments? Keep the earlier baseline and use these final values:"
+            "value": "Merge these two adjacent items? The merged item will use these values:"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "合并相邻赋值项？保留前项基线，最终采用以下字段和值："
+            "value": "把相邻的两项合并成一项？合并后采用下面的值："
           }
         }
       }
@@ -44579,13 +44324,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This operation is not a supported assignment merge. Sequential changes were kept."
+            "value": "This kind of change can't be merged, so both items are kept in order."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "此操作不支持赋值合并，已保留顺序修改。"
+            "value": "这类操作不能合并，已按顺序保留两项。"
           }
         }
       }
@@ -44681,13 +44426,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Uses a future output. Remove its reference before entering a direct value."
+            "value": "This uses the earlier item's result. To type a value, stop depending on it first."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "使用未来输出；填写直接值前须先解除引用。"
+            "value": "这一项用的是前一项的结果；要直接填写，请先取消依赖。"
           }
         }
       }
@@ -44766,13 +44511,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Predecessor missing"
+            "value": "The item it depends on is missing"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "前置项缺失"
+            "value": "它依赖的前一项不见了"
           }
         }
       }
@@ -44783,13 +44528,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Predecessor must come first"
+            "value": "The item it depends on must come first"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "前置项必须排在前面"
+            "value": "它依赖的那一项要排在前面"
           }
         }
       }
@@ -44800,13 +44545,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Remove output reference"
+            "value": "Stop depending on the earlier item"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "解除输出引用"
+            "value": "不再依赖前一项"
           }
         }
       }
@@ -44817,13 +44562,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Output reference is outdated. Reselect the producer to refresh it."
+            "value": "The earlier item it depends on changed. Choose it again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "输出引用已过期，请重新选择前置项以刷新。"
+            "value": "依赖的前一项已变化，请重新选择它。"
           }
         }
       }
@@ -44885,13 +44630,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Remove · keep draft"
+            "value": "Remove from list (keep it)"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "移出列表并保留草稿"
+            "value": "移出列表（保留内容）"
           }
         }
       }
@@ -44902,13 +44647,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Removed from the list and kept as a retained draft."
+            "value": "Removed from the list; the content is kept."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已移出列表并保留草稿。"
+            "value": "已移出列表，内容已保留。"
           }
         }
       }
@@ -44919,13 +44664,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Shape checked · not execution approval"
+            "value": "Filled in; it's checked again before running."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "形状校验成立 · 尚未获得执行许可"
+            "value": "已填好，执行前还会再检查。"
           }
         }
       }
@@ -44953,13 +44698,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Remove explicit dependency"
+            "value": "Remove dependency"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "解除显式依赖"
+            "value": "取消依赖"
           }
         }
       }
@@ -45123,13 +44868,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Deleted · Related context (not a match)"
+            "value": "Deleted · related item (not matched)"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已删除 · 关联上下文（未命中）"
+            "value": "已删除 · 相关内容（未匹配）"
           }
         }
       }
@@ -45361,13 +45106,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hide related context"
+            "value": "Hide related items"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "收起关联上下文"
+            "value": "收起相关内容"
           }
         }
       }
@@ -45463,13 +45208,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Load more related context"
+            "value": "Load more related items"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "加载更多关联上下文"
+            "value": "加载更多相关内容"
           }
         }
       }
@@ -45888,13 +45633,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Show related context that did not match"
+            "value": "Show related items that didn't match"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "显示未命中的关联上下文"
+            "value": "显示未匹配的相关内容"
           }
         }
       }
@@ -46160,13 +45905,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Local changes are saved. Finish the pending external work in the original run before returning."
+            "value": "Local changes are saved, but an external step is still pending. Finish it in the original result first."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "本地修改已经保存，请先在原运行中处理待完成的外部工作。"
+            "value": "本地修改已保存，还有一步外部操作没完成，请先在原结果里处理。"
           }
         }
       }
@@ -46177,13 +45922,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Original run facts · read only"
+            "value": "Earlier run (read only)"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "原运行事实 · 只读"
+            "value": "之前的执行记录（只读）"
           }
         }
       }
@@ -46211,13 +45956,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apply only the final assignment once. Intermediate effects will not run. Review and accept the updated plan before execution."
+            "value": "After merging, only the final value is saved once; the values in between don't apply. Preview and confirm again before running."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "只提交最后赋值一次，不执行中间效果。执行前须重新预览并接受更新后的计划。"
+            "value": "合并后只按最后的值保存一次，中间的值不会生效。执行前请重新预览并确认。"
           }
         }
       }
@@ -46245,13 +45990,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Review the current values for every remaining step and accept again. Saved and no-change steps will not replay."
+            "value": "Confirm the current values for the remaining steps. Saved or unchanged steps aren't done again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "重新读取并确认全部剩余步骤的当前值；已保存和无需修改的成功步骤不会重放。"
+            "value": "请重新确认剩下各步的当前值；已保存和不需要修改的步骤不会再做一遍。"
           }
         }
       }
@@ -46296,13 +46041,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Resolve these consumers before removing their producer:"
+            "value": "Before removing this item, handle the items that depend on it:"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "移除生产者前，请明确处理以下消费者的引用或依赖："
+            "value": "移除这一项前，请先处理依赖它的这些项："
           }
         }
       }
@@ -46330,13 +46075,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Requires proven unsubmitted work. Unknown commits and pending external work must be resolved in the original run."
+            "value": "Only parts that definitely weren't saved can be edited again. Handle uncertain ones in the original result."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "仅限已证明未提交的剩余内容；提交未知或外部待处理时，继续使用原运行的恢复入口。"
+            "value": "只有确定没保存的部分才能拿回来修改；不确定的请在原结果里处理。"
           }
         }
       }
@@ -46347,13 +46092,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The remaining work is busy or cannot yet be proven unsubmitted. The original run and its contents are retained."
+            "value": "The remaining content is busy or might already be saved, so it's all kept."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "剩余内容正在占用中，或尚不能证明未提交；已保留原运行及全部内容。"
+            "value": "剩下的内容正在处理，或还不能确定是否已保存，已全部保留。"
           }
         }
       }
@@ -46364,13 +46109,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Accept habit changes"
+            "value": "Confirm habit changes"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "接受习惯修改"
+            "value": "确认习惯修改"
           }
         }
       }
@@ -46381,13 +46126,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Effect accepted. Save when ready."
+            "value": "Confirmed. Save when ready."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已接受此影响，可保存。"
+            "value": "已确认，可以保存。"
           }
         }
       }
@@ -46398,13 +46143,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Prepare the actual field and tag effects before accepting."
+            "value": "Preview the field and tag changes before confirming."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "请先准备实际字段与标签效果，再明确接受。"
+            "value": "请先预览字段和标签的变化，再确认。"
           }
         }
       }
@@ -46415,13 +46160,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: the tag catalog changed. Prepare and accept the changes again."
+            "value": "Not saved: the tag list changed. Preview and confirm the changes again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：标签目录已变化，请重新准备并确认影响。"
+            "value": "没有保存：标签列表已变化，请重新预览并确认变化。"
           }
         }
       }
@@ -46449,13 +46194,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The effective days match; saving will normalize the stored schedule fields."
+            "value": "The active days stay the same; saving tidies up the old schedule settings."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "有效星期相同；保存将规范化原有排程兼容字段。"
+            "value": "生效的星期不变；保存时会整理旧的排程设置。"
           }
         }
       }
@@ -46466,13 +46211,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: other edits are unsaved. They have been kept; finish them before reviewing again."
+            "value": "Not saved: other changes aren't saved yet. Your changes are kept; review the changes again after handling them."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：上下文还有未保存编辑，原修改已保留；处理后请重新查看影响。"
+            "value": "没有保存：还有别的修改没保存，你的修改已保留。处理后请重新查看变化。"
           }
         }
       }
@@ -46517,13 +46262,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: this isolated environment is unavailable."
+            "value": "Not saved: saving isn't available here right now. Try again later."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：当前隔离环境不可用。"
+            "value": "没有保存：这里暂时不能保存，请稍后再试。"
           }
         }
       }
@@ -46551,13 +46296,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Review and accept the actual habit changes below before saving."
+            "value": "Review and confirm the habit changes below, then save."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "请在下方核对并接受实际习惯修改，再保存。"
+            "value": "请在下方核对并确认习惯的修改，再保存。"
           }
         }
       }
@@ -46568,13 +46313,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The original input and execution facts are retained."
+            "value": "Your input and this result are kept."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "原输入和执行事实已保留。"
+            "value": "你的输入和这次结果已保留。"
           }
         }
       }
@@ -46704,13 +46449,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The reserved routine definition was not found. This does not prove the earlier save failed."
+            "value": "This routine wasn't found, but that doesn't mean it wasn't saved. Check on the original page and don't repeat it."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未找到原固定习惯定义身份，这不能证明先前保存失败。"
+            "value": "没找到这个习惯，但这不代表之前没保存。请到原页面确认，不要重复操作。"
           }
         }
       }
@@ -46721,13 +46466,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "More than one routine definition has this identity. Saving remains blocked."
+            "value": "Duplicate routines were found, so nothing is saved. Check them on their page."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "此习惯定义身份存在重复，继续禁止重放。"
+            "value": "找到重复的习惯，暂不保存。请到原页面检查。"
           }
         }
       }
@@ -46738,13 +46483,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "One live routine definition has this identity. Its presence does not prove the earlier save succeeded."
+            "value": "This routine exists, but whether the earlier save succeeded still can't be confirmed. Check on the original page."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "找到该身份的唯一活习惯定义，但当前存在不证明先前提交成功。"
+            "value": "找到了这个习惯，但仍无法确认之前那次是否保存成功。请到原页面确认。"
           }
         }
       }
@@ -46772,13 +46517,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The original routine definition could not be safely verified. The result remains unknown."
+            "value": "The routine can't be read right now, so the save can't be confirmed. Check on the original page."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "无法安全核验原习惯定义，保存结果仍未知。"
+            "value": "暂时读不到这个习惯，仍无法确认是否已保存。请到原页面确认。"
           }
         }
       }
@@ -46806,13 +46551,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Saved locally; change notification did not complete."
+            "value": "Saved, but other views may not have updated yet."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已在本地保存，变更通知未完成。"
+            "value": "已保存，但其他页面可能还没更新。"
           }
         }
       }
@@ -46823,13 +46568,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Saved locally; result registration reported an issue."
+            "value": "Saved, but this result couldn't be recorded. Check on the original page."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已在本地保存，结果登记发生异常。"
+            "value": "已保存，但这次结果没能记录下来，请到原页面确认。"
           }
         }
       }
@@ -46840,13 +46585,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The habit does not belong to this storage context."
+            "value": "This routine isn't in the current data. Choose again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "习惯不属于当前存储上下文。"
+            "value": "这个习惯不在当前的数据里，请重新选择。"
           }
         }
       }
@@ -46959,13 +46704,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This preview or acceptance has expired. Review the current change again."
+            "value": "The preview or confirmation expired. Review it again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "此预览或接受已过期，请重新核对当前变更。"
+            "value": "预览或确认已过期，请重新核对。"
           }
         }
       }
@@ -46976,13 +46721,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: current routine definition values could not be read."
+            "value": "Not saved: current routine definition values could not be read."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：无法读取当前习惯定义值。"
+            "value": "没有保存：无法读取当前习惯定义值。"
           }
         }
       }
@@ -46993,13 +46738,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: a tag is protected, ambiguous or incomplete. Review the routine definition and tags again."
+            "value": "Not saved: a tag is protected, ambiguous or incomplete. Review the routine definition and tags again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：标签受保护、存在歧义或资料不完整，请重新查看习惯定义与标签。"
+            "value": "没有保存：标签受保护、存在歧义或资料不完整，请重新查看习惯定义与标签。"
           }
         }
       }
@@ -47010,13 +46755,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: the target is missing, deleted, duplicated or invalid. Select it again."
+            "value": "Not saved: the target was deleted, duplicated or is invalid. Choose it again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：目标缺失、已删除、身份重复或无效，请重新选择。"
+            "value": "没有保存：目标已删除、重复或无效，请重新选择。"
           }
         }
       }
@@ -47044,13 +46789,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Routine save result is unknown. Verify the original object; do not replay."
+            "value": "It's unclear whether the routine was saved. Check on the original page and don't repeat it."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "习惯定义保存结果未知。请核验原对象，不要重复执行。"
+            "value": "不确定习惯是否已保存。请到原页面确认，不要重复操作。"
           }
         }
       }
@@ -47061,13 +46806,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Accept routine creation"
+            "value": "Confirm these changes"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "接受习惯新增效果"
+            "value": "确认这些变化"
           }
         }
       }
@@ -47112,13 +46857,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The creation day changed. Preview and accept again."
+            "value": "The creation date changed. Preview and confirm again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "创建日期已变化，请重新预览并接受。"
+            "value": "创建日期已变化，请重新预览并确认。"
           }
         }
       }
@@ -47146,13 +46891,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This run retains its input and result. Repeated actions do not create another routine."
+            "value": "This content is kept. Repeating won't create another routine."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "原运行保留输入与结果；重复操作不会另建习惯。"
+            "value": "这次的内容会保留；重复点击不会再新建一个习惯。"
           }
         }
       }
@@ -47214,13 +46959,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Preview routine creation"
+            "value": "Preview new routine"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "预览习惯新增效果"
+            "value": "预览新增的习惯"
           }
         }
       }
@@ -47248,13 +46993,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Routine and tags saved together: %lld created, %lld restored, %lld live tags linked."
+            "value": "Routine and tags saved together: %lld created, %lld restored, %lld existing tags linked."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "习惯与标签已共同保存：新建 %lld 个、恢复 %lld 个、关联现有标签 %lld 个。"
+            "value": "习惯和标签已一起保存：新建 %lld 个、恢复 %lld 个、关联现有标签 %lld 个。"
           }
         }
       }
@@ -47282,13 +47027,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This preview is no longer valid. Preview and accept again."
+            "value": "The preview expired. Preview and confirm again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "这份预览已失效，请重新预览并接受。"
+            "value": "预览已过期，请重新预览并确认。"
           }
         }
       }
@@ -47316,13 +47061,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Creation result is unknown. Keep this identity and verify; do not create again."
+            "value": "It's unclear whether it was created. Check on the original page and don't create it again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "新增结果未知。请保留本次身份并核验，不要再次创建。"
+            "value": "不确定是否已新建。请到原页面确认，不要再次新建。"
           }
         }
       }
@@ -47418,13 +47163,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Prepare and review the availability, dates and record changes before accepting."
+            "value": "Preview the on/off, date and record changes before confirming."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "请先查看启停、日期和记录的实际影响，再明确接受。"
+            "value": "请先预览启停、日期和记录的变化，再确认。"
           }
         }
       }
@@ -47503,13 +47248,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Backfill and occurrence details"
+            "value": "Backfill and check-in details"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "补录与执行日影响明细"
+            "value": "补录和打卡的变化明细"
           }
         }
       }
@@ -47571,13 +47316,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This date has multiple physical records. This command cannot choose the first or modify them together."
+            "value": "This day has duplicate check-ins. Fix them on the original page."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "该日有多条物理记录，本批不选择首条或批量修改。"
+            "value": "这一天有重复的打卡记录，请到原页面处理。"
           }
         }
       }
@@ -47605,13 +47350,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Incomplete records, physical identities or relationships prevent safe changes. Your input is retained."
+            "value": "Check-in records couldn't be fully read, so nothing can change yet. Your input is kept."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "记录读取或物理身份／关系不完整，无法准备安全写集。原输入保留。"
+            "value": "打卡记录读取不完整，暂时不能修改，你的输入已保留。"
           }
         }
       }
@@ -47639,13 +47384,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The date is invalid or the creation date is unreliable."
+            "value": "The date is invalid or the creation date is unreliable, so changes can't be previewed."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "日期无效或创建日不可靠，无法准备影响。"
+            "value": "日期无效或创建日期不可靠，无法预览变化。"
           }
         }
       }
@@ -47724,13 +47469,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The complete target effect is already present. Nothing will be saved."
+            "value": "Already in the target state. Nothing needs saving."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已是完整目标效果，无需保存。"
+            "value": "已经是目标状态，不需要保存。"
           }
         }
       }
@@ -47962,13 +47707,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The original definition, exact changes and reserved record IDs are retained. Current presence cannot prove the transaction succeeded. Do not replay."
+            "value": "It's unclear whether this was saved. Check on the original page and don't repeat it."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已保留原定义、精确写集和新增记录身份；当前存在性不能证明共同事务曾成功，不可重放。"
+            "value": "不确定是否已保存。请到原页面确认，不要重复操作。"
           }
         }
       }
@@ -47979,13 +47724,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The habit state save needs verification."
+            "value": "It's unclear whether the habit state was saved. Check on the original page and don't repeat it."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "习惯状态保存结果待核实。"
+            "value": "不确定习惯状态是否已保存。请到原页面确认，不要重复操作。"
           }
         }
       }
@@ -48217,13 +47962,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Only one independent setting can be applied. Remove groups, dependencies and output references first."
+            "value": "Only one standalone setting can be applied at a time. Ungroup it and remove its dependencies first."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "只支持独立的单项设置，请先解除分组、依赖和输出引用。"
+            "value": "一次只能应用一项单独的设置，请先拆开分组和依赖。"
           }
         }
       }
@@ -48251,13 +47996,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This result cannot be retried. The original execution facts are kept."
+            "value": "This result can't be retried. It's kept here."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "此结果不能重试，原执行事实已保留。"
+            "value": "这个结果不能重试，已保留。"
           }
         }
       }
@@ -48268,13 +48013,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Original value"
+            "value": "Previous value"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "原值"
+            "value": "原来的值"
           }
         }
       }
@@ -48336,13 +48081,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Setting written; display update is incomplete"
+            "value": "Setting saved, but the app hasn't switched over yet"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "设置已写入，展示应用尚未完成"
+            "value": "设置已保存，但界面还没切换过来"
           }
         }
       }
@@ -48387,13 +48132,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The stored value was read back and matched at submission."
+            "value": "Saved, and the write was confirmed."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "本次提交时，偏好存储读回值已核对一致。"
+            "value": "已保存，并已确认写入成功。"
           }
         }
       }
@@ -48421,13 +48166,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Retry display update only"
+            "value": "Apply to the app again"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "仅重试展示应用"
+            "value": "重新应用到界面"
           }
         }
       }
@@ -48472,13 +48217,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apply one setting at a time: one active draft with an empty list, or one list item with no active draft."
+            "value": "Apply one setting at a time. Remove the other settings from the list first."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "一次只能应用一项设置：活动草稿与已有计划不能同时提交，计划中也不能有多项。"
+            "value": "一次只能应用一项设置，请把列表里的其他设置先移出去。"
           }
         }
       }
@@ -48506,13 +48251,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "A later change replaced this setting; the earlier display step will not be replayed."
+            "value": "A later change replaced this setting, so the old value won't be applied again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "此设置已被后续修改替代，旧展示步骤不再重放。"
+            "value": "这项设置已被后来的修改替换，不会再套用旧的值。"
           }
         }
       }
@@ -48574,13 +48319,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Result needs verification"
+            "value": "Unclear whether it saved"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "结果待核实"
+            "value": "不确定是否已保存"
           }
         }
       }
@@ -48591,13 +48336,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "A write was attempted, but its result cannot be confirmed. Keep this result for verification; submitting or replaying it is unavailable."
+            "value": "Saving was attempted but the result can't be confirmed. Check the Settings page and don't repeat it."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已尝试写入，但无法确认本次写入结果。请保留此结果以供核实，当前不能再次提交或重放。"
+            "value": "已尝试保存，但无法确认结果。请到设置页查看，不要重复操作。"
           }
         }
       }
@@ -48642,13 +48387,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Accept subtask effect"
+            "value": "Confirm subtask changes"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "接受子任务影响"
+            "value": "确认子任务变化"
           }
         }
       }
@@ -48659,13 +48404,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Effect accepted. Save when ready."
+            "value": "Confirmed. Save when ready."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已接受此影响，可保存。"
+            "value": "已确认，可以保存。"
           }
         }
       }
@@ -48693,13 +48438,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Review the actual subtask effect before saving."
+            "value": "Preview the subtask change first."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "请先预览子任务的实际影响。"
+            "value": "请先预览子任务的变化。"
           }
         }
       }
@@ -48710,13 +48455,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: the tag catalog changed. Prepare and accept the changes again."
+            "value": "Not saved: the tag list changed. Preview and confirm the changes again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：标签目录已变化，请重新准备并确认影响。"
+            "value": "没有保存：标签列表已变化，请重新预览并确认变化。"
           }
         }
       }
@@ -48761,13 +48506,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: other edits are unsaved. They have been kept; finish them before reviewing again."
+            "value": "Not saved: other changes aren't saved yet. Your changes are kept; review the changes again after handling them."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：上下文还有未保存编辑，原修改已保留；处理后请重新查看影响。"
+            "value": "没有保存：还有别的修改没保存，你的修改已保留。处理后请重新查看变化。"
           }
         }
       }
@@ -48778,13 +48523,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: this isolated environment is unavailable."
+            "value": "Not saved: saving isn't available here right now. Try again later."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：当前隔离环境不可用。"
+            "value": "没有保存：这里暂时不能保存，请稍后再试。"
           }
         }
       }
@@ -48795,13 +48540,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The parent or subtask is missing, deleted, duplicated or no longer belongs here."
+            "value": "The parent or subtask was deleted, duplicated or moved. Choose again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "父任务或子任务缺失、已删除、身份重复或所属关系已变化。"
+            "value": "父任务或子任务已删除、重复或不再属于这里，请重新选择。"
           }
         }
       }
@@ -48829,13 +48574,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This run retains its original input and result. It will not be submitted again."
+            "value": "This content is kept and won't be submitted again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "本次运行保留原输入与结果，不会重复提交。"
+            "value": "这次的内容会保留，不会重复提交。"
           }
         }
       }
@@ -48897,13 +48642,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The parent has notes or its note status is unknown. This entry only accepts verified parents without notes."
+            "value": "The parent has notes, or it's unclear whether it does. Only parents without notes are supported here."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "父任务含备注或备注状态未知；此入口仅支持已核实无备注的父任务。"
+            "value": "父任务有备注，或无法确认是否有备注；这里只支持没有备注的父任务。"
           }
         }
       }
@@ -48931,13 +48676,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Review one subtask change, then accept and save."
+            "value": "Review one subtask change, then confirm and save."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "核对一项子任务变更，接受后再保存。"
+            "value": "核对一项子任务的变化，确认后再保存。"
           }
         }
       }
@@ -48965,13 +48710,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Preview subtask effect"
+            "value": "Preview subtask changes"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "预览子任务影响"
+            "value": "预览子任务变化"
           }
         }
       }
@@ -48982,13 +48727,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The reserved subtask was not found. This does not prove the earlier save failed."
+            "value": "This subtask wasn't found, but that doesn't mean it wasn't saved. Check on the original page and don't repeat it."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未找到原固定子任务身份，这不能证明先前保存失败。"
+            "value": "没找到这个子任务，但这不代表之前没保存。请到原页面确认，不要重复操作。"
           }
         }
       }
@@ -48999,13 +48744,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "More than one subtask has this identity. Saving remains blocked."
+            "value": "Duplicate subtasks were found, so nothing is saved. Check them on their page."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "此子任务身份存在重复，继续禁止重放。"
+            "value": "找到重复的子任务，暂不保存。请到原页面检查。"
           }
         }
       }
@@ -49016,13 +48761,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "One live subtask has this identity. Its presence does not prove the earlier save succeeded."
+            "value": "This subtask exists, but whether the earlier save succeeded still can't be confirmed. Check on the original page."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "找到该身份的唯一活子任务，但当前存在不证明先前提交成功。"
+            "value": "找到了这个子任务，但仍无法确认之前那次是否保存成功。请到原页面确认。"
           }
         }
       }
@@ -49050,13 +48795,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The original subtask could not be safely verified. The result remains unknown."
+            "value": "The subtask can't be read right now, so the save can't be confirmed. Check on the original page."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "无法安全核验原子任务，保存结果仍未知。"
+            "value": "暂时读不到这个子任务，仍无法确认是否已保存。请到原页面确认。"
           }
         }
       }
@@ -49084,13 +48829,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Saved locally; change notification did not complete."
+            "value": "Saved, but other views may not have updated yet."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已在本地保存，变更通知未完成。"
+            "value": "已保存，但其他页面可能还没更新。"
           }
         }
       }
@@ -49101,13 +48846,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Saved locally; result registration reported an issue."
+            "value": "Saved, but this result couldn't be recorded. Check on the original page."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已在本地保存，结果登记发生异常。"
+            "value": "已保存，但这次结果没能记录下来，请到原页面确认。"
           }
         }
       }
@@ -49203,13 +48948,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This preview or acceptance has expired. Review the current change again."
+            "value": "The preview or confirmation expired. Review it again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "此预览或接受已过期，请重新核对当前变更。"
+            "value": "预览或确认已过期，请重新核对。"
           }
         }
       }
@@ -49220,13 +48965,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: current subtask values could not be read."
+            "value": "Not saved: current subtask values could not be read."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：无法读取当前子任务值。"
+            "value": "没有保存：无法读取当前子任务值。"
           }
         }
       }
@@ -49237,13 +48982,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: a tag is protected, ambiguous or incomplete. Review the subtask and tags again."
+            "value": "Not saved: a tag is protected, ambiguous or incomplete. Review the subtask and tags again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：标签受保护、存在歧义或资料不完整，请重新查看子任务与标签。"
+            "value": "没有保存：标签受保护、存在歧义或资料不完整，请重新查看子任务与标签。"
           }
         }
       }
@@ -49271,13 +49016,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: the target is missing, deleted, duplicated or invalid. Select it again."
+            "value": "Not saved: the target was deleted, duplicated or is invalid. Choose it again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：目标缺失、已删除、身份重复或无效，请重新选择。"
+            "value": "没有保存：目标已删除、重复或无效，请重新选择。"
           }
         }
       }
@@ -49339,13 +49084,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Subtask save result is unknown. Verify the original object; do not replay."
+            "value": "It's unclear whether the subtask was saved. Check on the original page and don't repeat it."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "子任务保存结果未知。请核验原对象，不要重复执行。"
+            "value": "不确定子任务是否已保存。请到原页面确认，不要重复操作。"
           }
         }
       }
@@ -49458,13 +49203,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Multiple records exist for this ID. The result remains unknown."
+            "value": "Duplicate tasks were found, so the save still can't be confirmed. Check on the original page."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "此 ID 存在多条记录，结果仍待核实。"
+            "value": "找到重复的任务，仍无法确认是否已保存。请到原页面检查。"
           }
         }
       }
@@ -49492,47 +49237,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Uncommitted changes exist in the context. Nothing was saved or rolled back; inputs are retained."
+            "value": "Other changes aren't saved yet, so this wasn't saved. Your input is kept; handle those changes first."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "上下文存在未提交修改。未自动保存或回滚，输入仍保留。"
-          }
-        }
-      }
-    },
-    "unified.task.externalFailed": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "A subsequent system-consumer step failed. The saved task remains."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "后续系统消费者步骤失败；已保存任务仍保留。"
-          }
-        }
-      }
-    },
-    "unified.task.externalLimit": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "A refresh request does not confirm reminder delivery or calendar synchronization."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "刷新请求不代表提醒已送达或日历已同步。"
+            "value": "还有别的修改没保存，这次没有保存，你的输入已保留。请先处理那些修改。"
           }
         }
       }
@@ -49543,13 +49254,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The original run retains this content. Safe return, retry and external-step recovery are not available in this stage."
+            "value": "The content is kept. Going back and retrying aren't available, and reminders or the calendar won't be redone automatically."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "内容保留在原运行中。本阶段不提供安全返回、重试或外部步骤恢复。"
+            "value": "内容会保留；暂不支持返回、重试，提醒或日历也不会自动补做。"
           }
         }
       }
@@ -49577,13 +49288,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: local creation did not complete. Original content is retained."
+            "value": "Not saved: local creation did not complete. Original content is retained."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：本地创建未完成，原内容已保留。"
+            "value": "没有保存：本地创建未完成，原内容已保留。"
           }
         }
       }
@@ -49594,13 +49305,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Requires a single active draft with an empty plan, or one plan item. Finish parameter and plan editing first."
+            "value": "Finish editing the fields and the list before creating the task."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "需要单活动草稿且计划为空，或唯一计划项。请先结束参数与计划编辑。"
+            "value": "请先结束参数和列表的编辑，再创建任务。"
           }
         }
       }
@@ -49645,13 +49356,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Prepare task"
+            "value": "Preview task"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "准备任务"
+            "value": "预览任务"
           }
         }
       }
@@ -49662,30 +49373,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The task was saved; change publication is incomplete or unconfirmed."
+            "value": "The task was saved, but other views may not have updated yet."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "任务已保存；变更发布未完成或尚未确认。"
-          }
-        }
-      }
-    },
-    "unified.task.published": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The local change event was published."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "本地变更事件已发布。"
+            "value": "任务已保存，但其他页面可能还没更新。"
           }
         }
       }
@@ -49696,30 +49390,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "One plain title and an explicitly selected date. Prepare or create to continue."
+            "value": "One plain title and a chosen date. Preview or create it."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "单个普通纯标题与明确选择的日期。可准备或创建。"
-          }
-        }
-      }
-    },
-    "unified.task.refreshRequested": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "A refresh request was issued."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已发出刷新请求。"
+            "value": "一个普通标题和选好的日期，可以预览或直接创建。"
           }
         }
       }
@@ -49730,13 +49407,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Refresh request completion is unconfirmed."
+            "value": "Reminders and the calendar may not have updated yet."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "刷新请求尚未确认完成。"
+            "value": "提醒和日历可能还没更新。"
           }
         }
       }
@@ -49747,13 +49424,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The task was saved; a subsequent registration callback failed."
+            "value": "Saved, but this result couldn't be recorded. Check on the original page."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "任务已保存；后续登记回调失败。"
+            "value": "已保存，但这次结果没能记录下来，请到原页面确认。"
           }
         }
       }
@@ -49781,13 +49458,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "One live record currently exists for this ID. This does not prove the historical submission."
+            "value": "This task exists, but whether the earlier save succeeded still can't be confirmed. Check on the original page."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "此 ID 当前有一条有效记录；不证明历史提交成功。"
+            "value": "找到了这条任务，但仍无法确认之前那次是否保存成功。请到原页面确认。"
           }
         }
       }
@@ -49815,13 +49492,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Capture source marking is enabled; this source is frozen for creation."
+            "value": "The capture source will be marked; this creation uses the current source."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已启用捕获来源标记；此来源已冻结供创建使用。"
+            "value": "会标记捕获来源；这次创建使用当前来源。"
           }
         }
       }
@@ -49849,13 +49526,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Source marking has not been sampled. Prepare to review it; Create samples and validates it before saving."
+            "value": "The capture source hasn't been read yet. Preview to see it; Create reads and checks it before saving."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "尚未采样来源标记。准备后可查看；创建会在保存前采样并核对。"
+            "value": "还没读取捕获来源。预览后可以看到；创建时会在保存前读取并核对。"
           }
         }
       }
@@ -49866,13 +49543,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This preparation or event is no longer valid. Content and reserved identity are retained; no automatic retry is available."
+            "value": "This preview expired. Your content is kept; preview again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "准备或事件已失效。内容及预留身份仍保留，不提供自动重试。"
+            "value": "这次预览已过期，内容已保留，请重新预览。"
           }
         }
       }
@@ -49883,13 +49560,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The isolated store or reserved identity cannot be validated. Creation is blocked."
+            "value": "Storage can't be confirmed right now, so creation is blocked. Try again later."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "无法核对隔离存储或预留身份，已阻止创建。"
+            "value": "暂时无法确认存储状态，已阻止创建。请稍后再试。"
           }
         }
       }
@@ -49934,13 +49611,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Creation result unknown. Do not create again."
+            "value": "It's unclear whether it was created. Check on the original page and don't create it again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "创建结果待核实，禁止再次创建。"
+            "value": "不确定是否已创建。请到原页面确认，不要再次创建。"
           }
         }
       }
@@ -49951,13 +49628,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The record cannot be read. The result remains unknown."
+            "value": "The task can't be read right now, so the save can't be confirmed. Check on the original page."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "无法读取当前记录，结果仍待核实。"
+            "value": "暂时读不到这条任务，仍无法确认是否已保存。请到原页面确认。"
           }
         }
       }
@@ -49968,13 +49645,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Verify current record"
+            "value": "Check current record"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "核验当前记录"
+            "value": "检查当前记录"
           }
         }
       }
@@ -49985,7 +49662,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Accept these title and tag changes"
+            "value": "Confirm these title and tag changes"
           }
         },
         "zh-Hans": {
@@ -50002,7 +49679,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "These changes are accepted. Nothing is saved yet. Next: Save changes."
+            "value": "These changes are confirmed. Nothing is saved yet. Next: Save changes."
           }
         },
         "zh-Hans": {
@@ -50019,13 +49696,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Current values have not been reliably read. Select a target and prepare changes."
+            "value": "Current values haven't been read yet. Select a target and preview the changes."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "尚无可靠的当前值，请选择目标并准备影响。"
+            "value": "还没读到当前值，请选择目标并预览变化。"
           }
         }
       }
@@ -50036,13 +49713,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: the tag catalog changed. Prepare and accept the changes again."
+            "value": "Not saved: the tag list changed. Preview and confirm the changes again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：标签目录已变化，请重新准备并确认影响。"
+            "value": "没有保存：标签列表已变化，请重新预览并确认变化。"
           }
         }
       }
@@ -50087,13 +49764,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: other edits are unsaved. They have been kept; finish them before reviewing again."
+            "value": "Not saved: other changes aren't saved yet. Your changes are kept; review the changes again after handling them."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：上下文还有未保存编辑，原修改已保留；处理后请重新查看影响。"
+            "value": "没有保存：还有别的修改没保存，你的修改已保留。处理后请重新查看变化。"
           }
         }
       }
@@ -50104,30 +49781,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: this isolated environment is unavailable."
+            "value": "Not saved: saving isn't available here right now. Try again later."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：当前隔离环境不可用。"
-          }
-        }
-      }
-    },
-    "unified.title.externalFailed": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Changes remain saved locally. A notification or calendar consumer reported failure."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "本地修改仍已保存；通知或日历消费者报告失败。"
+            "value": "没有保存：这里暂时不能保存，请稍后再试。"
           }
         }
       }
@@ -50138,13 +49798,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: a field involved in this edit changed. Review the current values again."
+            "value": "Not saved: a field involved in this edit changed. Review the current values again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：本次影响字段已变化，请重新查看当前值。"
+            "value": "没有保存：涉及的字段已变化，请重新查看当前值。"
           }
         }
       }
@@ -50172,13 +49832,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The original run and input are retained. Return to plan, retry and undo after execution are not available."
+            "value": "Your input is kept. Going back to the list, retrying and undoing aren't available."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "原运行与输入保留；暂不支持返回计划、重试或执行后撤销。"
+            "value": "这次的输入会保留；暂不支持返回列表、重试或撤销。"
           }
         }
       }
@@ -50206,13 +49866,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: enter a nonempty, single-line ordinary title. The original input is kept."
+            "value": "Not saved: enter a nonempty, single-line ordinary title. The original input is kept."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：请输入非空、单行的普通标题；原输入已保留。"
+            "value": "没有保存：请输入非空、单行的普通标题；原输入已保留。"
           }
         }
       }
@@ -50223,13 +49883,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Title input keeps its original syntax. Prepare changes to read the current task; notes and line breaks cannot be submitted."
+            "value": "The title is saved as typed. Previewing reads the current task; notes and line breaks can't be submitted here."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "标题输入保留原始语法。准备影响后读取当前任务；备注和换行不能提交。"
+            "value": "标题按原样保存。预览时会读取当前任务；备注和换行不能在这里提交。"
           }
         }
       }
@@ -50257,13 +49917,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No actual changes. Nothing was saved or published."
+            "value": "No actual change; nothing was saved."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "没有实际变化，未保存、未发布。"
+            "value": "没有实际变化，没有保存。"
           }
         }
       }
@@ -50308,13 +49968,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Changes were not submitted. Review the reason below."
+            "value": "Changes weren't saved. Review the reason below."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "修改未提交，请查看下方原因。"
+            "value": "修改没有保存，请查看下方原因。"
           }
         }
       }
@@ -50325,13 +49985,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: notes, note separators and line breaks are unsupported. The original input is kept."
+            "value": "Not saved: notes, note separators and line breaks are unsupported. The original input is kept."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：不支持备注、备注分隔符或换行，已保留原输入。"
+            "value": "没有保存：不支持备注、备注分隔符或换行，已保留原输入。"
           }
         }
       }
@@ -50359,13 +50019,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fields without title syntax stay unchanged. Dates and completion state are not edited here."
+            "value": "Fields not written in the title stay unchanged. Dates and completion state aren't edited here."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未由标题语法影响的字段保持不变；此次不修改日期和完成态。"
+            "value": "标题里没写到的字段保持不变；这里不修改日期和完成状态。"
           }
         }
       }
@@ -50376,13 +50036,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Select one task, enter a title, then review its changes."
+            "value": "Select one task, enter a title, then preview the changes."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "选择一个任务，输入标题，再查看修改影响。"
+            "value": "选择一个任务，输入标题，再预览变化。"
           }
         }
       }
@@ -50410,13 +50070,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Prepare changes"
+            "value": "Preview changes"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "准备影响"
+            "value": "预览变化"
           }
         }
       }
@@ -50427,13 +50087,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Changes are saved locally; publication was not confirmed. Do not save them again."
+            "value": "Saved, but other views may not have updated yet. Don't save again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "修改已在本地保存，发布尚未确认；不要再次保存。"
+            "value": "已保存，但其他页面可能还没更新；不要再次保存。"
           }
         }
       }
@@ -50444,13 +50104,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Changes are saved locally; result registration needs checking."
+            "value": "Saved, but this result couldn't be recorded. Check on the original page."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "修改已在本地保存，结果登记需要核对。"
+            "value": "已保存，但这次结果没能记录下来，请到原页面确认。"
           }
         }
       }
@@ -50495,13 +50155,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Only one independent title change for one existing task is supported. Close the current element before preparing."
+            "value": "Only one existing task's title can be changed here. Finish the current edit before previewing."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "仅支持一个既有任务的独立标题修改；准备前请结束当前要素编辑。"
+            "value": "这里只能修改一个已有任务的标题；预览前请先结束当前编辑。"
           }
         }
       }
@@ -50512,13 +50172,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: the ordinary task source changed or is unavailable. Review the target again."
+            "value": "Not saved: the ordinary task source changed or is unavailable. Review the target again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：普通任务来源已变化或不可用，请重新查看目标。"
+            "value": "没有保存：普通任务来源已变化或不可用，请重新查看目标。"
           }
         }
       }
@@ -50529,13 +50189,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This preview or acceptance is no longer current. Keep your input and prepare the changes again."
+            "value": "The preview expired. Your input is kept; preview again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "此预览或接受已失效。输入已保留，请重新准备影响。"
+            "value": "预览已过期，你的输入已保留，请重新预览。"
           }
         }
       }
@@ -50546,13 +50206,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: current task values could not be read."
+            "value": "Not saved: current task values could not be read."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：无法读取当前任务值。"
+            "value": "没有保存：无法读取当前任务值。"
           }
         }
       }
@@ -50563,13 +50223,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: a tag is protected, ambiguous or incomplete. Review the task and tags again."
+            "value": "Not saved: a tag is protected, ambiguous or incomplete. Review the task and tags again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：标签受保护、存在歧义或资料不完整，请重新查看任务与标签。"
+            "value": "没有保存：标签受保护、存在歧义或资料不完整，请重新查看任务与标签。"
           }
         }
       }
@@ -50597,13 +50257,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not submitted: the target is missing, deleted, duplicated or invalid. Select it again."
+            "value": "Not saved: the target was deleted, duplicated or is invalid. Choose it again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未提交：目标缺失、已删除、身份重复或无效，请重新选择。"
+            "value": "没有保存：目标已删除、重复或无效，请重新选择。"
           }
         }
       }
@@ -50631,13 +50291,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Result needs verification. Ordinary retry is disabled."
+            "value": "It's unclear whether this was saved. Check on the original page and don't repeat it."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "结果待核实，禁止普通重试。"
+            "value": "不确定是否已保存。请到原页面确认，不要重复操作。"
           }
         }
       }
@@ -50682,13 +50342,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The target identity is ambiguous. The original result remains unknown."
+            "value": "Multiple matching records were found, so the save still can't be confirmed. Check on the original page."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "目标身份有歧义；原结果仍为未知。"
+            "value": "找到多条相同的记录，仍无法确认是否已保存。请到原页面检查。"
           }
         }
       }
@@ -50733,13 +50393,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The target could not be safely verified. The original result remains unknown."
+            "value": "The record can't be read right now, so the save still can't be confirmed. Check on the original page."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "无法安全核验目标；原结果仍为未知。"
+            "value": "暂时读不到这条记录，仍无法确认是否已保存。请到原页面检查。"
           }
         }
       }
@@ -52053,13 +51713,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The trash preview is out of date. Prepare it again and review the targets."
+            "value": "The trash preview is out of date. Preview it again and review the targets."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "回收预览已过期。请重新准备并检查目标。"
+            "value": "回收预览已过期。请重新预览并检查目标。"
           }
         }
       }
@@ -52121,13 +51781,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "A target changed, was removed, or is no longer eligible. Nothing was moved to Trash. Prepare again."
+            "value": "A target changed, was removed, or is no longer eligible. Nothing was moved to Trash. Preview again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "有目标已被修改、删除或不再符合条件，未移动任何内容。请重新准备。"
+            "value": "有目标已被修改、删除或不再符合条件，未移动任何内容。请重新预览。"
           }
         }
       }
@@ -52138,13 +51798,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Accept the trash effects before reviewing the confirmation."
+            "value": "Confirm what will be trashed first, then give the final confirmation."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "请先接受回收影响，再进入确认。"
+            "value": "请先确认要回收的内容，再做最后确认。"
           }
         }
       }
@@ -52155,13 +51815,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This batch would move more than 4,000 items at once. Remove some targets and prepare again."
+            "value": "This batch would move more than 4,000 items at once. Remove some targets and preview again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "这批会一次移动超过 4000 项，请移除部分目标后重新准备。"
+            "value": "这批会一次移动超过 4000 项，请移除部分目标后重新预览。"
           }
         }
       }
@@ -52172,13 +51832,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Targets changed. Prepare and accept again."
+            "value": "Targets changed. Preview and confirm again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "目标已改变，请重新准备并接受。"
+            "value": "目标已改变，请重新预览并确认。"
           }
         }
       }
@@ -52206,13 +51866,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This target’s identity is ambiguous."
+            "value": "Duplicate records were found. Check them in the Trash."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "该目标身份不唯一。"
+            "value": "找到重复的记录，请到回收站检查。"
           }
         }
       }
@@ -52325,13 +51985,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Trash: prepare, accept, then confirm separately"
+            "value": "Trash: preview and confirm, then give the final confirmation"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "回收：先准备、接受，再单独确认"
+            "value": "回收：先预览并确认，再做最后确认"
           }
         }
       }
@@ -52427,13 +52087,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This result stays in the current run until you continue."
+            "value": "The result stays here until you continue."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "结果保留在本次运行中，直到你继续操作。"
+            "value": "结果会保留，直到你继续操作。"
           }
         }
       }
@@ -52444,13 +52104,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Effects accepted. Review to confirm."
+            "value": "Confirmed. Give the final confirmation."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已接受影响，请进入确认。"
+            "value": "已确认，请做最后确认。"
           }
         }
       }
@@ -52461,13 +52121,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Accept trash effects"
+            "value": "Confirm items to trash"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "接受回收影响"
+            "value": "确认要回收的内容"
           }
         }
       }
@@ -52478,13 +52138,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Prepare to read the current targets."
+            "value": "Preview to read the current targets."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "准备后读取当前目标。"
+            "value": "预览后读取当前目标。"
           }
         }
       }
@@ -52495,13 +52155,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Prepare trash"
+            "value": "Preview items to trash"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "准备回收"
+            "value": "预览要回收的内容"
           }
         }
       }
@@ -52699,13 +52359,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The copy preview is out of date. Prepare it again."
+            "value": "The copy preview is out of date. Preview it again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "复制预览已过期，请重新准备。"
+            "value": "复制预览已过期，请重新预览。"
           }
         }
       }
@@ -52852,13 +52512,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Prepare to read the task’s current text."
+            "value": "Preview to read the task’s current text."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "准备后读取任务当前文字。"
+            "value": "预览后读取任务当前文字。"
           }
         }
       }
@@ -52869,13 +52529,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Prepare copy"
+            "value": "Preview copy"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "准备复制"
+            "value": "预览复制内容"
           }
         }
       }
@@ -52954,13 +52614,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Convert: prepare, accept, then confirm separately"
+            "value": "Convert: preview and confirm, then give the final confirmation"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "转换：先准备、接受，再单独确认"
+            "value": "转换：先预览并确认，再做最后确认"
           }
         }
       }
@@ -52988,13 +52648,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Prepare conversion"
+            "value": "Preview conversion"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "准备转换"
+            "value": "预览转换"
           }
         }
       }
@@ -53005,13 +52665,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Accept conversion effects"
+            "value": "Confirm these changes"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "接受转换影响"
+            "value": "确认这些变化"
           }
         }
       }
@@ -53022,13 +52682,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Effects accepted. Review to confirm."
+            "value": "Changes confirmed. Give the final confirmation."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已接受影响，请进入确认。"
+            "value": "已确认变化，请做最后确认。"
           }
         }
       }
@@ -53039,13 +52699,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Prepare to read the current item and what will change."
+            "value": "Preview to read the current item and what will change."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "准备后读取当前对象和将发生的变化。"
+            "value": "预览后读取当前对象和将发生的变化。"
           }
         }
       }
@@ -53056,13 +52716,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The item changed or the preview expired. Prepare again."
+            "value": "The item changed or the preview expired. Preview again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "对象已变化或预览已失效，请重新准备。"
+            "value": "对象已变化或预览已失效，请重新预览。"
           }
         }
       }
@@ -53124,7 +52784,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Convert"
+            "value": "Convert now"
           }
         },
         "zh-Hans": {
@@ -53192,13 +52852,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Accept the conversion effects first."
+            "value": "Confirm the conversion changes first."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "请先接受转换影响。"
+            "value": "请先确认转换的变化。"
           }
         }
       }
@@ -53243,13 +52903,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "More than one item has this identity; nothing was changed."
+            "value": "Duplicate records were found; nothing was changed. Check them on their page."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "有多个对象使用同一身份，未做改动。"
+            "value": "找到重复的记录，没有做任何修改。请到原页面检查。"
           }
         }
       }
@@ -53345,13 +53005,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The item changed after the preview. Prepare again."
+            "value": "The item changed after the preview. Preview again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "预览后对象已变化，请重新准备。"
+            "value": "预览后对象已变化，请重新预览。"
           }
         }
       }
@@ -53566,13 +53226,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Checked: not converted. The original is unchanged and no new item was found. You can prepare again."
+            "value": "Checked: not converted. The original is unchanged and no new item was found. You can preview again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "核对结果：未转换。原对象未变，也没有新对象，可以重新准备。"
+            "value": "核对结果：未转换。原对象未变，也没有新对象，可以重新预览。"
           }
         }
       }
@@ -53600,13 +53260,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This result stays in the current run until you continue."
+            "value": "The result stays here until you continue."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "结果保留在本次运行中，直到你继续操作。"
+            "value": "结果会保留，直到你继续操作。"
           }
         }
       }
@@ -53855,13 +53515,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Simple change, prepare to see its effect"
+            "value": "Simple change — preview to see its effect"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "简单修改，先准备查看效果"
+            "value": "简单修改，先预览查看效果"
           }
         }
       }
@@ -53889,13 +53549,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Prepare change"
+            "value": "Preview change"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "准备修改"
+            "value": "预览修改"
           }
         }
       }
@@ -53906,13 +53566,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Accept preview"
+            "value": "Confirm this change"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "接受预览"
+            "value": "确认这次修改"
           }
         }
       }
@@ -53923,13 +53583,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Preview accepted. Saving writes exactly this change."
+            "value": "Confirmed. Saving writes only this change."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已接受预览；保存只写入这份修改。"
+            "value": "已确认；保存时只会写入这次修改。"
           }
         }
       }
@@ -53940,13 +53600,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Prepare first to read the current values."
+            "value": "Preview first to read the current values."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "先准备，读出当前值。"
+            "value": "先预览，读出当前值。"
           }
         }
       }
@@ -53957,13 +53617,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The objects or values changed. Prepare again."
+            "value": "The objects or values changed. Preview again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "对象或数值已变化，请重新准备。"
+            "value": "对象或数值已变化，请重新预览。"
           }
         }
       }
@@ -54110,13 +53770,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "More than one object has this identity. Nothing was changed."
+            "value": "Duplicate records were found; nothing was changed. Check them on their page."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "有多个对象使用同一身份，未做修改。"
+            "value": "找到重复的记录，没有做任何修改。请到原页面检查。"
           }
         }
       }
@@ -54212,13 +53872,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The objects changed after the preview. Prepare again."
+            "value": "The objects changed after the preview. Preview again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "预览后对象已变化，请重新准备。"
+            "value": "预览后对象已变化，请重新预览。"
           }
         }
       }
@@ -54382,13 +54042,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The current state matches neither the preview nor the original. Review it where the item lives."
+            "value": "The current state doesn't match what was expected. Check it on its page."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "当前状态与预览和原值都不一致，请到对象所在页面查看。"
+            "value": "现在的状态和预期都不一样，请到原页面查看。"
           }
         }
       }
@@ -55317,13 +54977,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Prepare first. The clipboard is not read yet."
+            "value": "Preview first. The clipboard is not read yet."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "先准备；此时不会读取剪贴板。"
+            "value": "先预览；此时不会读取剪贴板。"
           }
         }
       }
@@ -55334,13 +54994,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Prepare"
+            "value": "Preview"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "准备"
+            "value": "预览"
           }
         }
       }
@@ -55385,13 +55045,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The draft or date changed. Prepare again."
+            "value": "The content or date changed. Preview again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "草稿或日期已变化，请重新准备。"
+            "value": "内容或日期已变化，请重新预览。"
           }
         }
       }
@@ -55538,13 +55198,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "More than one task has this identity. Review it on the Today page."
+            "value": "More than one matching task was found. Check the Today page."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "有多个待办使用同一身份，请到今日页查看。"
+            "value": "找到多条相同的待办，请到今日页查看。"
           }
         }
       }
@@ -56422,13 +56082,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Copied, and the paste keystroke was sent. Whether the other app pasted it isn't reported back."
+            "value": "Copied; paste was sent. Whether the other app accepted it can't be confirmed."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已复制并发送粘贴按键；目标应用是否粘贴成功没有回执。"
+            "value": "已复制并发出粘贴；对方应用是否粘贴成功无法确认。"
           }
         }
       }
@@ -57935,13 +57595,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Locks private content now. Protected previews, borrowed text and access are revoked, as with Lock Now."
+            "value": "Locks private content now. Open private previews and text close too, same as Lock Now."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "立即锁定私密内容；受保护的预览、借用与访问资格随之撤销，与“立即锁定”相同。"
+            "value": "立即锁定私密内容；已打开的私密预览和正文会一并收起，和“立即锁定”相同。"
           }
         }
       }
@@ -60305,6 +59965,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "当前已是%@，应用不会有变化。"
+          }
+        }
+      }
+    },
+    "unified.composition.authorizationDenied": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifications aren't allowed, so reminders won't appear. You can turn them on in System Settings."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有通知权限，提醒不会弹出。可在系统设置里开启。"
+          }
+        }
+      }
+    },
+    "unified.composition.notificationFailed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The reminder couldn't be updated. Check the reminder time on the task."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "提醒没能更新，请到任务里检查提醒时间。"
+          }
+        }
+      }
+    },
+    "unified.composition.calendarFailed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The calendar couldn't sync. You can retry calendar sync in Settings later."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "日历没能同步，可稍后在设置里重试日历同步。"
           }
         }
       }

@@ -61,15 +61,12 @@ struct UnifiedSearchTaskTitleSubmission: View {
                 Text(verbatim: raw).font(DaybookType.caption).fixedSize(horizontal: false, vertical: true)
             }
             if facts.state == .saved {
-                Text(facts.publication == .returned && !facts.publicationFailed
-                    ? "unified.task.published" : "unified.title.publicationIssue").font(DaybookType.caption)
+                if !(facts.publication == .returned && !facts.publicationFailed) { Text("unified.title.publicationIssue").font(DaybookType.caption) }
                 if facts.registrationFailed { Text("unified.title.registrationIssue").font(DaybookType.caption) }
-                Text(facts.refreshRequested ? "unified.task.refreshRequested" : "unified.task.refreshUnconfirmed")
-                    .font(DaybookType.caption)
+                if !facts.refreshRequested { Text("unified.task.refreshUnconfirmed").font(DaybookType.caption) }
                 UnifiedSearchTaskExternalFeedback(authorizationCall: String(describing: facts.authorizationRequest),
                     authorizationResult: String(describing: facts.authorizationResult),
                     notificationRequested: facts.notificationRequested, calendarRequested: facts.calendarRequested, unit: unit)
-                if unit.effects.values.contains(.failed) { Text("unified.title.externalFailed").font(DaybookType.caption) }
                 if let effects = facts.savedTagEffects {
                     Text(verbatim: L10n.format("unified.composition.savedTags", locale: locale,
                         effects.filter { $0 == .createAndAssociate }.count,
