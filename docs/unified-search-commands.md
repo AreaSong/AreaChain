@@ -327,6 +327,7 @@
 - **恢复三处旧行为**：正式版检查器标题、子任务、备注失焦即保存（按 `WorkspaceHostContext.isIsolated` 判断，隔离宿主仍只留草稿）；普通文字下出 `#`／`!`／`@` 候选，搜索不创建标签；菜单栏任务筛选派生进自动条件、不回写。裸时刻、结果上空格切换完成、Esc 清空查询保持现状。
 - **页内筛选有意保留**：页内筛选只缩小当前页，统一搜索跨全应用查找与执行指令；页内筛选不并进统一搜索，也不与统一查询双向同步。条件是普通词匹配与统一搜索同源。
 - **阶段 6 有意不做**：系统、隐私、永久删除、导入备份恢复等流程维持“打开原页面”，不在指令里直接执行；某一项确有需要时单独立项。
+- **搜索与指令说明页**：工作台侧栏「系统」里的「搜索与指令」页是指令的使用说明，help.syntax 与语法帮助卡的「查看全部指令」都通向它；完整目录只显示指令名称与路径、不显示 summary，不可用的照样列出并弱化，处理方式只读 `disposition(for:)`，示例只预填不执行。
 - **两宿主指令去处**：菜单栏不能执行的指令转交工作台，唯一入口 `UnifiedSearchProductionAssembly.revealWorkspaceThenWrite`；工作台有未完成草稿或待执行列表时不写入，菜单栏原文字保留。锁定后再输入用宿主注入的可信页面重建查询，旧文字与条件不恢复。
 
 
@@ -396,7 +397,7 @@
 | [N3](#N3) | 检查器与选择 | 已接正式版 | 已：inspector.open／inspector.day（已复核）、selection.all／clear（沿页面投影）、inspector.close（沿检查器关闭按钮，先失焦保存） |
 | [N4](#N4) | 手记小窗 | 已接正式版 | 已：diaryWindow.open（受保护手记拒绝）／draft（不写入，受保护草稿留给原页面）／pinned／close（沿小窗原有确认）、diaryWindow.save（复用小窗会话保存，受保护会话只前置小窗） |
 | [N5](#N5) | 总览统计 | 已接正式版 | 已：stats.* 八项只读（DashboardStatsReader，与总览页同一投影，私密手记口径不变）、stats.openDay、活动行打开（沿总览路由；stats.openActivity 指向 stats.activity 的列表） |
-| [N6](#N6) | 帮助与示例 | 打开原页面 | help.syntax（语法帮助卡）、help.page（来时页面的说明）、help.example（只预填示例到搜索框，不执行） |
+| [N6](#N6) | 帮助与示例 | 打开原页面 | help.syntax（打开工作台「搜索与指令」页）、help.page（来时页面的说明）、help.example（只预填示例到搜索框，不执行；不带示例时弹语法帮助卡） |
 | [N7](#N7) | 版本、反馈与链接 | 打开原页面 | support.* 七条 → 设置“版本／支持／关于”分节；不在指令里打开外部网址 |
 | [N8](#N8) | 退出与未保存确认 | 已接正式版 | 已：app.quit 走 AppDelegate.applicationShouldTerminate 的原有确认（含未保存手记），同意后才调注入的 terminate |
 
