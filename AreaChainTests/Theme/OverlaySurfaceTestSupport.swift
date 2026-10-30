@@ -3,7 +3,7 @@ import SwiftUI
 import Testing
 @testable import AreaChain
 
-/// C 阶段冻结的迁移前绘制，只用于测试对照；不复制候选内容或生产宿主。
+/// 冻结候选浮层迁移前的绘制，只用于测试对照；不复制候选内容或生产宿主。
 struct OriginalOverlaySurface: ViewModifier {
     var attributes = false
     var presented = true
@@ -31,7 +31,7 @@ struct OriginalOverlaySurface: ViewModifier {
     }
 }
 
-/// D 阶段只冻结手记主卡装饰；内容、悬停和业务仍直接挂载生产组件。
+/// 只冻结手记主卡装饰；内容、悬停和业务仍直接挂载生产组件。
 struct OriginalDiaryPreviewSurface: ViewModifier {
     var presented = true
 
@@ -50,7 +50,7 @@ struct OriginalDiaryPreviewSurface: ViewModifier {
     }
 }
 
-/// E 阶段冻结原标签详情/帮助外壳，不借用新公共边框值，避免对照随实现一起变化。
+/// 冻结原标签详情/帮助外壳，不借用新公共边框值，避免对照随实现一起变化。
 struct OriginalDetailSurface: ViewModifier {
     var help = false
 

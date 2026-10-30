@@ -1,7 +1,7 @@
 import AppKit
 import Testing
 
-/// E 补验专用诊断；不改变共享 helper 的时序、焦点或坐标政策。
+/// 浮层事件归属的专用诊断；不改变共享 helper 的时序、焦点或坐标政策。
 @MainActor
 enum SurfaceEventTestSupport {
     static func note(_ message: String) {

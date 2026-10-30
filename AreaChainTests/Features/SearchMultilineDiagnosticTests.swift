@@ -7,7 +7,7 @@ import Testing
 @Suite(.serialized) @MainActor
 struct SearchMultilineDiagnosticTests {
     @Test func frozenOriginalUndoTrace() {
-        // I 诊断包 keyboard.xcresult 的历史片段；不是要求新实现再产生残留。
+        // 诊断包 keyboard.xcresult 里的片段；不是要求新实现再产生残留。
         let restoredIntermediate = "甲\n乙"
         let rewrittenIntermediate = "甲 // 乙"
         let remaining = (rewrittenIntermediate as NSString).substring(from: restoredIntermediate.utf16.count)

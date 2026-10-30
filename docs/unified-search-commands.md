@@ -403,7 +403,7 @@
 
 只记仍未解决的问题；关闭某条时删去对应行。
 
-- **用户验收**：日用版逐域试用由用户进行；真实库、真实附件目录、真实钥匙串与真实系统授权均未在执行会话里验证。替换日常应用前的全量回归按用户确认视为完成，明细未入库。
+- **用户验收**：日用版逐域试用由用户进行；真实库、真实附件目录、真实钥匙串与真实系统授权均未在隔离验证中覆盖。
 - **人工与平台验收**：真人输入法、VoiceOver、最低支持系统、真实多窗口、原生截图逐类查看均未做；工作台操作面板里的按钮在原生用例中改用 AXPress 验证，真实鼠标点击未验证。
 - **正常签名构建**：正常开发描述文件到期后正常构建记为阻塞，不续签、不改个人签名配置；当前到期时间用 `security cms -D -i` 读内嵌描述文件核对。Widget 内嵌描述文件签名后被替换、导致正常构建签名核验失败的问题仍记为阻塞。
 - **页面筛选与查询**：页内搜索合并、页面筛选与查询的其余双向同步未做；菜单栏手记页签的标签筛选不作用于搜索结果（菜单栏搜索页面固定为今日任务，筛选胶囊只在任务页签显示）。
@@ -416,20 +416,20 @@
 - **目录未决项**：tag.cleanup（预置标签范围）、backup.export（无锁可达性）未定稿。来源：[§9.4](#94-未决问题与单独授权边界)。
 - **现状差距**：备份未配置锁的可达性、剪贴板历史读取失败返回空、重置吞掉删除错误。来源：[§9.4](#94-未决问题与单独授权边界)。
 - **性能**：读取仍在主线程同步进行；新查询延迟、长文编辑、最大候选规模与内存均未建立基线。来源：[§9.3](#93-后续回归入口与证据缺口)。
-- **已知历史问题**：标题多目标面板消失的根因未判定；DetailSubtaskCompletionTests 两项 Expected Failure 保留；原生日期格按钮在统一搜索测试宿主里找不到标识（`nativeBooleanWeekdaysDayAndTime` 等）；`SubtaskModelTests.addTagSkipsDiaryPresetNames` 在未改动 HEAD 上同样失败。
-- **待批准的低级整改**：任务域指令补复核留下的 9 条低级整改，待单独批准的修复批次。
+- **未查明的问题**：标题多目标面板消失的根因未判定；DetailSubtaskCompletionTests 两项按已知问题标注；原生日期格按钮在统一搜索测试宿主里找不到标识（`nativeBooleanWeekdaysDayAndTime` 等）。
+- **待批准的低级整改**：任务域指令有 9 条低级整改，待单独批准后修复。
 
 ### 既有失败
 
-逐条登记在 [`scripts/known_test_failures.json`](../scripts/known_test_failures.json)（门禁只改变归类，测试照常运行）。现存 32 条，首次复现提交都是 d77da2e（统一搜索接入正式版之前的基线，未再向前二分）：CalendarSpanConsumerTests（3）、CalendarWeekConsumerTests、CalendarWeekLayoutTests（2）、DashboardScrollTests、DaybookScrollNativeTests、DiaryTitleHoverTests（2）、MenuBarHelpSurfaceTests、MenuBarStatusImageTests、PasswordRetryDiagnosticTests（2，诊断型）、PrivacyAutolockPickerTests（2）、PrivacyButtonConsumerTests、ScrollAssemblyConsumerTests、SearchMultilineDiagnosticTests、UnifiedSearchOperationInteractionTests、UnifiedSearchSettingInteractionTests、WeekdayConsumerBaselineTests、WorkspaceInspectorSizingTests（2）、WorkspaceMenuConsumerTests、WorkspaceRenderingTests、YesterdayCardActionTests（3）、YesterdayCardConsumerTests（3）。
+逐条登记在 [`scripts/known_test_failures.json`](../scripts/known_test_failures.json)（门禁只改变归类，测试照常运行）。共 32 条，每条的首次复现提交与原因见登记表：CalendarSpanConsumerTests（3）、CalendarWeekConsumerTests、CalendarWeekLayoutTests（2）、DashboardScrollTests、DaybookScrollNativeTests、DiaryTitleHoverTests（2）、MenuBarHelpSurfaceTests、MenuBarStatusImageTests、PasswordRetryDiagnosticTests（2，诊断型）、PrivacyAutolockPickerTests（2）、PrivacyButtonConsumerTests、ScrollAssemblyConsumerTests、SearchMultilineDiagnosticTests、UnifiedSearchOperationInteractionTests、UnifiedSearchSettingInteractionTests、WeekdayConsumerBaselineTests、WorkspaceInspectorSizingTests（2）、WorkspaceMenuConsumerTests、WorkspaceRenderingTests、YesterdayCardActionTests（3）、YesterdayCardConsumerTests（3）。
 
 - 各批只跑定向测试；全量回归只在替换日常应用之前或用户明确要求时运行（见[质量门禁](quality-gates.md)）。
-- 焦点前置失败（拿不到 key window）在桌面空闲重跑后通过的不登记；TagHelpSurfaceConsumerTests 两项基线失败现已通过；DashboardRenderingTests 的 segv 两次对照都未复现。
+- 焦点前置失败（拿不到 key window）在桌面空闲重跑后通过的不登记。
 
 ### 补复核待办
 
 - **仍待复核**：阶段 2 只读数据、阶段 4 共享界面、普通设置指令、普通任务新增与标题指令，以及复制与回收、待办与重复事项互转。
-- **已复核通过**的部分在上表各行标注“已复核”；各轮复核结论与记录在案的低级意见见对应提交说明。
+- **已复核通过**的部分在上表各行标注“已复核”。
 
 ### 每批最少必读
 

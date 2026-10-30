@@ -295,7 +295,7 @@ private struct FrozenFloatingSurface: ViewModifier {
     }
 }
 
-// 只在 E 补验中分离原装饰层，生产 API 不增加诊断开关。
+// 只在这组诊断里分离原装饰层，生产 API 不增加诊断开关。
 enum SurfacePointerDecoration: String {
     case plain, frozen, current, hidden, background, border, nonHittableBorder
 }

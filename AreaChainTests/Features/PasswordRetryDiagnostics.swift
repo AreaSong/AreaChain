@@ -3,7 +3,7 @@ import SwiftUI
 import Testing
 @testable import AreaChain
 
-/// K 阶段只读取合成输入的布尔与长度；编号仅在本次窗口内用于比较身份。
+/// 只读取合成输入的布尔与长度；编号仅在本次窗口内用于比较身份。
 @MainActor
 final class PasswordRetryDiagnostics {
     typealias Secure = SecureInputTestSupport
@@ -42,7 +42,7 @@ final class PasswordRetryDiagnostics {
     func enabled(_ key: String, in window: NSWindow) -> Bool {
         guard let button = try? Native.button(key, in: window),
               let result = button.value(forKey: "accessibilityEnabled") as? Bool else {
-            Issue.record("K 按钮启用状态不可读取")
+            Issue.record("按钮启用状态不可读取")
             return false
         }
         return result
@@ -272,7 +272,7 @@ final class PasswordReplacementObservation {
         print("SecureK controlOutcome run=\(trace.run) observed=true bindingEmpty=\(bindingEmpty) nativeEmpty=\(nativeEmpty) clearPassed=\(bindingEmpty && nativeEmpty) actionsCorrect=\(actionsCorrect) samples=\(samples)")
         #expect(bindingEmpty && actionsCorrect)
         // 残留依旧使清空要求失败；观测完成不借 known issue 转成通过。
-        #expect(nativeEmpty, "K 同宿主安全字段/editor 清空要求")
+        #expect(nativeEmpty, "同宿主安全字段/editor 清空要求")
         try SettingsButtonTestSupport.snapshot(window, name: "K-control-\(trace.run)-stable")
         sample("cache-after-outcome")
         let cacheUnchanged = nativeEmpty == (field.stringValue.isEmpty && editor.string.isEmpty)

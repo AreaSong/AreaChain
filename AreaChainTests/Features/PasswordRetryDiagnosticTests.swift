@@ -132,7 +132,7 @@ struct PasswordRetryDiagnosticTests {
         print("SecureK outcome run=\(scenario.testDescription) residue=\(residue) calls=\(probe.calls) correct=\(probe.correctInput)")
         try Native.snapshot(sheet, name: "K-\(scenario.testDescription)-stable")
         if scenario.busyInput == 1 && !scenario.keyboard && probe.confirmation {
-            withKnownIssue("K 诊断保留 B 的同值全量替换清空要求", isIntermittent: true) {
+            withKnownIssue("诊断保留同值全量替换清空要求", isIntermittent: true) {
                 #expect(!residue)
             }
         } else { #expect(!residue) }
