@@ -8,7 +8,7 @@ struct ContentQueryPageLocation: Equatable {
 }
 
 enum ContentQueryPage: Equatable {
-    case overview, settings, shortcuts, privacy, backup
+    case overview, settings, shortcuts, searchGuide, privacy, backup
     case today(BoardFilter)
     case pending(lane: PendingLane, filter: BoardFilter)
     case items(ItemsListingQuery)
@@ -35,7 +35,7 @@ struct ContentQueryPageContext: Equatable {
 enum ContentQueryPageMapping {
     static func defaults(_ context: ContentQueryPageContext) -> [ContentQueryConditionValue] {
         switch context.page {
-        case .overview, .settings, .shortcuts, .privacy, .backup: return []
+        case .overview, .settings, .shortcuts, .searchGuide, .privacy, .backup: return []
         case .today(let filter):
             var values = board(filter, context: context, evaluation: .listedDay, reminders: true)
             if filter.dateScope == .all { values.append(day(context.todayKey)) }

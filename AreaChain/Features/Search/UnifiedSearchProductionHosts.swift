@@ -9,6 +9,7 @@ struct UnifiedSearchWorkspaceRoot: View {
     var body: some View {
         if let assembly = production.assembly, let controller = assembly.workspace {
             MainSplitWorkspaceView(navigation: assembly.services.navigation, search: controller,
+                                   menubarSearch: assembly.menubar,
                                    hostContext: assembly.hostContext, presentsSearchOnAppear: false)
                 .background { UnifiedSearchFocusShortcut(controller: controller) }
                 .id(production.generation)

@@ -11,6 +11,8 @@ struct SyntaxExpandableCard: View {
     var context: SyntaxInputContext = .capture
     var onSelectToken: (String) -> Void
     var onSelectExample: ((String) -> Void)? = nil
+    /// 非 nil 时底部显示「查看全部指令」；去哪里由宿主决定，Theme 层不碰窗口与导航。
+    var onShowAllCommands: (() -> Void)? = nil
 
     @State private var hoveredToken: String? = nil
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -33,6 +35,18 @@ struct SyntaxExpandableCard: View {
             complexExampleBar
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6.5)
+
+            if let onShowAllCommands {
+                DaybookDivider(opacity: 0.35)
+                    .padding(.horizontal, 12)
+
+                Button("syntax.guide.allCommands", action: onShowAllCommands)
+                    .buttonStyle(DaybookButtonStyle(.prominent, size: .compact))
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, DaybookSpacing.xs)
+                    .accessibilityIdentifier("syntax.guide.allCommands")
+            }
         }
         .frame(width: DaybookMetrics.Window.popoverWidth - 24)
         .daybookSurface(floating: .syntaxHelp)

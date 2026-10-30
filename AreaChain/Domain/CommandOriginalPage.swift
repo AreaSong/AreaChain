@@ -9,8 +9,8 @@ struct CommandOriginalPage: Equatable, Sendable {
         case page(String, focusesTrash: Bool = false)
         /// 当前结果焦点项的详情（沿 inspector.open 的解析与导航）；手记对象打开手记页。
         case object
-        /// 语法帮助卡、原页面说明、示例预填（只放进搜索框，不执行）。
-        case syntaxHelp, pageHelp, example
+        /// 原页面说明、示例预填（只放进搜索框，不执行）。
+        case pageHelp, example
         /// 通知横幅上的动作：搜索里没有对应通知，只提供跳到其他指令的入口，不另写执行。
         case useInstead([CommandID])
     }
@@ -79,7 +79,7 @@ struct CommandOriginalPage: Equatable, Sendable {
         add("backup.export backup.inspect backup.preview backup.restore", .page("dataBackup"), note: "backup")
         add("recovery.status recovery.resetQuit", .page("dataBackup"), note: "recovery")
         // N6：帮助
-        add("help.syntax", .syntaxHelp, note: "syntaxHelp", finishes: false)
+        add("help.syntax", .page("searchGuide"), note: "searchGuide", finishes: false)
         add("help.page", .pageHelp, note: "pageHelp", finishes: false)
         add("help.example", .example, note: "example", finishes: false)
         // N7：版本、支持、关于（不在指令里打开外部网址）

@@ -120,6 +120,7 @@ struct WorkspaceSidebarView: View {
         Section("sidebar.system") {
             tabRow(.settings)
             tabRow(.shortcuts)
+            tabRow(.searchGuide)
             tabRow(.privacy)
             tabRow(.dataBackup)
             tabRow(.trash)

@@ -57113,23 +57113,6 @@
         }
       }
     },
-    "command.originalPage.note.syntaxHelp": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Shows the syntax help card. Nothing is changed."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "显示语法帮助卡，不做任何修改。"
-          }
-        }
-      }
-    },
     "command.originalPage.note.pageHelp": {
       "extractionState": "manual",
       "localizations": {
@@ -57177,23 +57160,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "查看语法帮助"
-          }
-        }
-      }
-    },
-    "unified.help.syntax.shown": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Syntax help is open."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "语法帮助已打开。"
           }
         }
       }
@@ -59370,6 +59336,1094 @@
           "stringUnit": {
             "state": "translated",
             "value": "原页面"
+          }
+        }
+      }
+    },
+    "tab.searchGuide": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search & Commands"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索与指令"
+          }
+        }
+      }
+    },
+    "command.originalPage.note.searchGuide": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens the Search & Commands page. Nothing is changed."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开「搜索与指令」页，不做任何修改。"
+          }
+        }
+      }
+    },
+    "syntax.guide.allCommands": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See all commands"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "查看全部指令"
+          }
+        }
+      }
+    },
+    "searchGuide.hostsUnavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search isn’t available in one of the windows right now, so its column shows “—”."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "有一个窗口的搜索暂时不可用，对应一列显示“—”。"
+          }
+        }
+      }
+    },
+    "searchGuide.basics.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Basics"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "基本用法"
+          }
+        }
+      }
+    },
+    "searchGuide.basics.focus": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Press ⌘F (changeable on the Shortcuts page) to focus the search field at the top of the workspace or the bottom of the menu bar."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按 ⌘F（可在快捷键页修改）聚焦工作台顶栏或菜单栏底栏的搜索框。"
+          }
+        }
+      }
+    },
+    "searchGuide.basics.search": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type to search everything: tasks, subtasks, active routines, notes, tags and image file names."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "直接打字即可搜索全部内容：待办、子任务、启用习惯、手记、标签和图片文件名。"
+          }
+        }
+      }
+    },
+    "searchGuide.basics.command": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start with / to find a command. After / you can also type a keyword or alias in English or Chinese."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "以 / 开头查找指令；/ 后面也可以写中文关键词或别名。"
+          }
+        }
+      }
+    },
+    "searchGuide.basics.preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Commands that change data show a preview first and only save after you confirm."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "会写入数据的指令先显示预览，确认后才保存。"
+          }
+        }
+      }
+    },
+    "searchGuide.basics.menubar": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some commands can’t run in the menu bar; there, Return opens the workspace and finishes them there."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "菜单栏里有些指令不能直接执行，按 Return 会打开工作台并在那里完成。"
+          }
+        }
+      }
+    },
+    "searchGuide.conditions.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search conditions"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索条件速查"
+          }
+        }
+      }
+    },
+    "searchGuide.condition.word.token": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "meeting"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "会议"
+          }
+        }
+      }
+    },
+    "searchGuide.condition.word": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plain words match titles and content."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "普通词：匹配标题与内容。"
+          }
+        }
+      }
+    },
+    "searchGuide.condition.phrase.token": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "\"weekly notes\""
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "\"周会 纪要\""
+          }
+        }
+      }
+    },
+    "searchGuide.condition.phrase": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quotes match the exact phrase."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "加引号：按整个短语匹配。"
+          }
+        }
+      }
+    },
+    "searchGuide.condition.exclude.token": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "-draft"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "-草稿"
+          }
+        }
+      }
+    },
+    "searchGuide.condition.exclude": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A leading minus excludes results containing the word."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "前面加减号：排除含这个词的结果。"
+          }
+        }
+      }
+    },
+    "searchGuide.condition.tag.token": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "#work"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "#工作"
+          }
+        }
+      }
+    },
+    "searchGuide.condition.tag": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limit to a tag; you can write several. Search never creates tags."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "限定标签，可写多个；搜索不会新建标签。"
+          }
+        }
+      }
+    },
+    "searchGuide.condition.priority": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limit to a priority."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "限定优先级。"
+          }
+        }
+      }
+    },
+    "searchGuide.condition.time": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limit to a reminder time; the time needs the @."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "限定提醒时刻，时刻要带 @。"
+          }
+        }
+      }
+    },
+    "searchGuide.condition.date": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limit to a date or a range, e.g. date:2026-10-01..2026-10-07."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "限定日期或日期范围，例如 date:2026-10-01..2026-10-07。"
+          }
+        }
+      }
+    },
+    "searchGuide.condition.on": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limit to a single day a routine is due, e.g. on:2026-10-01."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "限定习惯的某一个执行日，例如 on:2026-10-01。"
+          }
+        }
+      }
+    },
+    "searchGuide.condition.image": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only items with images."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "只看带图片的内容。"
+          }
+        }
+      }
+    },
+    "searchGuide.condition.explicit": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clipboard history and the trash are only searched when you write these."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剪贴板记录与回收站只有显式写出才会搜索。"
+          }
+        }
+      }
+    },
+    "searchGuide.featured.group.tasks": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Common commands · Tasks"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "常用指令 · 任务"
+          }
+        }
+      }
+    },
+    "searchGuide.featured.group.routines": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Common commands · Routines"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "常用指令 · 习惯"
+          }
+        }
+      }
+    },
+    "searchGuide.featured.group.diaries": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Common commands · Notes"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "常用指令 · 手记"
+          }
+        }
+      }
+    },
+    "searchGuide.featured.group.tags": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Common commands · Tags"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "常用指令 · 标签"
+          }
+        }
+      }
+    },
+    "searchGuide.featured.group.clipboard": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Common commands · Clipboard"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "常用指令 · 剪贴板"
+          }
+        }
+      }
+    },
+    "searchGuide.featured.group.navigation": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Common commands · Navigation"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "常用指令 · 导航"
+          }
+        }
+      }
+    },
+    "searchGuide.featured.group.system": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Common commands · System"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "常用指令 · 系统"
+          }
+        }
+      }
+    },
+    "searchGuide.featured.todo.create.summary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a task with a title, day, tags, reminder or priority. Press Return, then fill it in the panel."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新建任务，可带标题、日期、标签、提醒或优先级。回车后在面板里填写。"
+          }
+        }
+      }
+    },
+    "searchGuide.featured.todo.move.summary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move tasks to another day. Press Return, then fill it in the panel."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "把任务改到另一天。回车后在面板里填写。"
+          }
+        }
+      }
+    },
+    "searchGuide.featured.todo.completion.summary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mark tasks done or not done. Press Return, then fill it in the panel."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "把任务标为完成或未完成。回车后在面板里填写。"
+          }
+        }
+      }
+    },
+    "searchGuide.featured.todo.priority.summary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set or clear the priority of tasks. Press Return, then fill it in the panel."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设置或清除任务的优先级。回车后在面板里填写。"
+          }
+        }
+      }
+    },
+    "searchGuide.featured.todo.tags.summary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add, remove or replace the tags of tasks. Press Return, then fill it in the panel."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "给任务添加、移除或替换标签。回车后在面板里填写。"
+          }
+        }
+      }
+    },
+    "searchGuide.featured.todo.reminder.summary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set or cancel a reminder time. Press Return, then fill it in the panel."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设置或取消提醒时刻。回车后在面板里填写。"
+          }
+        }
+      }
+    },
+    "searchGuide.featured.todo.due.summary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set or clear the due time of tasks. Press Return, then fill it in the panel."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设置或清除任务的截止时刻。回车后在面板里填写。"
+          }
+        }
+      }
+    },
+    "searchGuide.featured.todo.trash.summary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move tasks to the trash after you confirm."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确认后把任务移入回收站。"
+          }
+        }
+      }
+    },
+    "searchGuide.featured.tasks.postponeYesterday.summary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move yesterday’s unfinished tasks to a new day together. Press Return, then fill it in the panel."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "把昨天没完成的任务一起改到新的日期。回车后在面板里填写。"
+          }
+        }
+      }
+    },
+    "searchGuide.featured.batch.move.summary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move several tasks to the same day at once. Press Return, then fill it in the panel."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一次把多条任务改到同一天。回车后在面板里填写。"
+          }
+        }
+      }
+    },
+    "searchGuide.featured.routine.capture.summary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write a routine in plain words and add it. Press Return, then fill it in the panel."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用一句话写下习惯并添加。回车后在面板里填写。"
+          }
+        }
+      }
+    },
+    "searchGuide.featured.occurrence.complete.summary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check off a routine for one day."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "给习惯的某一天打卡。"
+          }
+        }
+      }
+    },
+    "searchGuide.featured.routine.enabled.summary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause or resume routines. Press Return, then fill it in the panel."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂停或恢复习惯。回车后在面板里填写。"
+          }
+        }
+      }
+    },
+    "searchGuide.featured.diary.create.summary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write a note for a day, with tags. Press Return, then fill it in the panel."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "为某一天写一条手记，可带标签。回车后在面板里填写。"
+          }
+        }
+      }
+    },
+    "searchGuide.featured.diary.toTodo.summary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn a note into a task after you confirm."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确认后把手记转成任务。"
+          }
+        }
+      }
+    },
+    "searchGuide.featured.tag.create.summary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a tag. Press Return, then fill it in the panel."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新建一个标签。回车后在面板里填写。"
+          }
+        }
+      }
+    },
+    "searchGuide.featured.tag.merge.summary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Merge tags into one; private tags are merged on the Tags page. Press Return, then fill it in the panel."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "把几个标签合并成一个；私密标签请在标签页合并。回车后在面板里填写。"
+          }
+        }
+      }
+    },
+    "searchGuide.featured.clipboard.search.summary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search clipboard history. Press Return, then fill it in the panel."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索剪贴板记录。回车后在面板里填写。"
+          }
+        }
+      }
+    },
+    "searchGuide.featured.clipboard.paste.summary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paste a clipboard item into the frontmost app."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "把一条剪贴板记录粘贴到前台应用。"
+          }
+        }
+      }
+    },
+    "searchGuide.featured.go.summary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Go to a workspace page: today, pending, calendar, settings and more. Return goes there."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "前往工作台的某一页：今日、待处理、日历、设置等，回车即前往。"
+          }
+        }
+      }
+    },
+    "searchGuide.featured.inspector.open.summary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open the details of the selected result."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开当前选中结果的详情。"
+          }
+        }
+      }
+    },
+    "searchGuide.featured.privacy.lock.summary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lock private content right away. Return runs it."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "立即锁定私密内容，回车即执行。"
+          }
+        }
+      }
+    },
+    "searchGuide.featured.setting.appearance.summary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switch light, dark or system appearance; the value can be written in the path."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "切换浅色、深色或跟随系统，取值可以直接写在路径里。"
+          }
+        }
+      }
+    },
+    "searchGuide.featured.trash.restore.summary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore an item from the trash after you confirm; protected content needs verification first."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确认后从回收站恢复一项；受保护内容需先验证。"
+          }
+        }
+      }
+    },
+    "searchGuide.example.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Puts this example in the workspace search field. Nothing runs."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "把示例填进工作台搜索框，不会执行。"
+          }
+        }
+      }
+    },
+    "searchGuide.example.label": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fill in example"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "填入示例"
+          }
+        }
+      }
+    },
+    "searchGuide.catalog.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All commands"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完整目录"
+          }
+        }
+      }
+    },
+    "searchGuide.catalog.hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grouped by where they live in the catalog. Each row shows how the workspace and the menu bar handle it; unavailable commands are dimmed with the reason."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按目录层级分组。每行标出工作台与菜单栏各自怎么处理；暂不可用的指令弱化显示并给出原因。"
+          }
+        }
+      }
+    },
+    "searchGuide.catalog.other": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "其他"
+          }
+        }
+      }
+    },
+    "searchGuide.host.workspace": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workspace"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "工作台"
+          }
+        }
+      }
+    },
+    "searchGuide.host.menubar": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menu bar"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "菜单栏"
+          }
+        }
+      }
+    },
+    "searchGuide.example.blocked": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The workspace search has an unfinished command draft or pending list, so examples can’t be filled in. Finish or discard it in the search field first."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "工作台搜索还有未完成的指令草稿或待执行列表，示例暂时不能填入；请先在搜索框里完成或放弃它。"
           }
         }
       }

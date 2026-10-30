@@ -27,6 +27,7 @@ extension WorkspaceNavigation {
             case .trash: page = .trash
             case .settings: page = .settings
             case .shortcuts: page = .shortcuts
+            case .searchGuide: page = .searchGuide
             }
         }
         return .init(location: .init(hostID: hostID, visitID: UUID().uuidString, reference: contentIdentity),

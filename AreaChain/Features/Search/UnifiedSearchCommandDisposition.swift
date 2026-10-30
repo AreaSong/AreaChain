@@ -71,7 +71,7 @@ extension UnifiedSearchController {
         switch destination {
         case .page(let raw, _): WorkspaceTab(rawValue: raw)?.titleKeyName ?? "unified.candidate.page.original"
         case .object: "unified.candidate.page.object"
-        case .syntaxHelp, .pageHelp, .example: "unified.candidate.page.help"
+        case .pageHelp, .example: "unified.candidate.page.help"
         case .useInstead: "unified.candidate.page.useInstead"
         }
     }

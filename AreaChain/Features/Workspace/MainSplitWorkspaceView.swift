@@ -7,14 +7,18 @@ import AppKit
 struct MainSplitWorkspaceView: View {
     @Bindable private var navigation: WorkspaceNavigation
     var search: UnifiedSearchController?
+    /// 只给「搜索与指令」页读菜单栏宿主的处理方式；nil 时该列显示“—”。
+    var menubarSearch: UnifiedSearchController?
     var hostContext: WorkspaceHostContext?
     /// 隔离宿主一出现就显示搜索页；正式版由 UnifiedSearchProduction 按当前查询决定，打开工作台仍落在原页面。
     var presentsSearchOnAppear = true
 
     init(navigation: WorkspaceNavigation? = nil, search: UnifiedSearchController? = nil,
+         menubarSearch: UnifiedSearchController? = nil,
          hostContext: WorkspaceHostContext? = nil, presentsSearchOnAppear: Bool = true) {
         self.navigation = navigation ?? .shared
         self.search = search
+        self.menubarSearch = menubarSearch
         self.hostContext = hostContext
         self.presentsSearchOnAppear = presentsSearchOnAppear
     }
@@ -305,6 +309,8 @@ struct MainSplitWorkspaceView: View {
             case .shortcuts:
                 ShortcutsSettingsView(store: hostContext?.shortcuts)
                     .disabled(isIsolatedHost)
+            case .searchGuide:
+                SearchGuidePage(workspace: search, menubar: menubarSearch)
             }
         }
     }

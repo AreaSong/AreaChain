@@ -17,6 +17,7 @@ enum WorkspaceTab: String, CaseIterable, Identifiable {
     case trash
     case settings
     case shortcuts
+    case searchGuide
 
     var id: String { rawValue }
 
@@ -41,6 +42,7 @@ enum WorkspaceTab: String, CaseIterable, Identifiable {
         case .trash: "window.trash"
         case .settings: "window.settings"
         case .shortcuts: "tab.shortcuts"
+        case .searchGuide: "tab.searchGuide"
         }
     }
 
@@ -62,6 +64,7 @@ enum WorkspaceTab: String, CaseIterable, Identifiable {
         case .trash: return "trash"
         case .settings: return "gearshape"
         case .shortcuts: return "keyboard"
+        case .searchGuide: return "text.magnifyingglass"
         }
     }
 }

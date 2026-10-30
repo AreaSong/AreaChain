@@ -16,9 +16,6 @@ extension UnifiedSearchController {
                 self.navigationMessage = route.finishesOnPage ? "unified.originalPage.displayed" : "unified.navigation.displayed"
             }
         case .object: openOriginalObject(route, command: command, source: source)
-        case .syntaxHelp:
-            helpCardPresented = true
-            navigationMessage = "unified.help.syntax.shown"
         case .pageHelp:
             navigationMessage = originalPageHelpKey == nil ? "unified.help.page.none" : "unified.help.page.shown"
         case .example:
@@ -33,11 +30,18 @@ extension UnifiedSearchController {
         }
     }
 
-    /// 只把示例放进搜索框，不执行、不查询；当前输入就是 help.example 本身，没有别的未保存内容会被覆盖。
+    /// 只把示例放进搜索框，不执行、不查询。调用方保证不会覆盖未保存内容：help.example 时当前输入就是它本身；
+    /// 「搜索与指令」页在有未完成指令草稿或待执行列表（hasUnsavedCommandWork）时不提供示例。
     func prefillExample(_ text: String) {
         helpCardPresented = false
         _ = navigationInput(text)
         navigationMessage = "unified.help.example.prefilled"
+    }
+
+    /// 帮助卡「查看全部指令」：与 `.page` 目的地同一条 navigate 路径，保留返回搜索的票据。
+    func showSearchGuide() {
+        helpCardPresented = false
+        navigate(.page(.searchGuide), source: buffer) { [weak self] _ in self?.navigationMessage = "unified.navigation.displayed" }
     }
 
     /// 回到搜索前所在页面的说明（页头 info 同一文案键）。
@@ -95,7 +99,8 @@ struct UnifiedSearchOriginalPageBlock: View {
         .popover(isPresented: $controller.helpCardPresented, arrowEdge: .bottom) {
             SyntaxExpandableCard(isExpanded: $controller.helpCardPresented, context: .capture,
                                  onSelectToken: { _ in controller.helpCardPresented = false },
-                                 onSelectExample: route.destination == .example ? { controller.prefillExample($0) } : nil)
+                                 onSelectExample: route.destination == .example ? { controller.prefillExample($0) } : nil,
+                                 onShowAllCommands: { controller.showSearchGuide() })
                 .padding(DaybookSpacing.sm)
         }
     }
@@ -115,7 +120,7 @@ struct UnifiedSearchOriginalPageBlock: View {
         case .object:
             Text("unified.originalPage.object").font(DaybookType.caption.weight(.semibold))
                 .accessibilityIdentifier("unified.originalPage.target")
-        case .syntaxHelp, .example:
+        case .example:
             Button("unified.help.syntax.show") { controller.helpCardPresented = true }
                 .buttonStyle(DaybookButtonStyle(.subtle))
                 .accessibilityIdentifier("unified.help.syntax.show")

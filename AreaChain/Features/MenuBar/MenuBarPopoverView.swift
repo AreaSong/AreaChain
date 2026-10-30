@@ -199,6 +199,10 @@ struct MenuBarPopoverView: View {
                     }
                     setTaskText(snippet)
                     captureFocused = true
+                },
+                onShowAllCommands: {
+                    showingSyntaxHelp = false
+                    AppWindows.openWorkspace(tab: .searchGuide)
                 }
             )
             .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous))
