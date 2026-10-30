@@ -200,6 +200,8 @@ final class UnifiedSearchController {
         guard validates(request.source) else { return nil }
         guard objectSelection == nil, !objectSelectionLoading, tagSelection == nil else { return nil }
         clearBlockedHandoff()
+        // 改了文字，上一次导航或执行留下的反馈（如“已返回原搜索”）就与当前输入无关；这次输入产生的新反馈在后面照常写入。
+        if request.text != buffer.text { navigationMessage = "unified.navigation.hint" }
         let state = CommandPathParser().parse(.init(text: request.text, cursorLocation: request.selection.location)).state
         let content = state == .ordinaryText || state == .scope
         // 改字是显式动作：遮罩时先恢复；普通文字随后按新文字重读，指令文字按保留的查询重读。

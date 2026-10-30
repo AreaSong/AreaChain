@@ -70,8 +70,10 @@ struct UnifiedSearchObjectField: View {
                    object.type == .routineOccurrence, controller.routine?.supports(command.id) == true {
                     UnifiedSearchRoutineOccurrenceDate(controller: controller, object: object, source: source)
                 }
-                Text(controller.routesBatch(command.id) ? "unified.batch.finalCheck" : "unified.objects.finalCheck")
-                    .font(DaybookType.caption)
+                // 只有批量保存有用户需要知道的约束（任一冲突整批不保存）；其余正常时不另作说明。
+                if controller.routesBatch(command.id) {
+                    Text("unified.batch.finalCheck").font(DaybookType.caption)
+                }
             }
         }
         .onChange(of: controller.objectReturnRevision) { _, _ in

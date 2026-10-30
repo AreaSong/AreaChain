@@ -67,9 +67,6 @@ struct UnifiedSearchResultsContent: View {
             let sort = page.snapshot.source.source
             Text(sort.applied == .relevance ? "unified.results.relevance" : "unified.results.recent")
                 .font(DaybookType.caption)
-            if sort.fallback != nil {
-                Text("unified.results.sortFallback").font(DaybookType.caption)
-            }
             if let primary = copy.reasons.first {
                 Text(LocalizedStringKey(primary)).font(DaybookType.caption)
                     .accessibilityIdentifier("unified.results.reason")
@@ -83,11 +80,14 @@ struct UnifiedSearchResultsContent: View {
             if !page.snapshot.diagnostics.isEmpty {
                 Text("unified.results.groupUnknown").font(DaybookType.caption)
             }
-            Group {
-                if layout == .compact { VStack(alignment: .leading) { selectionButtons } }
-                else { HStack { selectionButtons } }
+            // 多选只在已经选中结果后才有后续动作，平时不占位置。
+            if !page.browse.selected.isEmpty {
+                Group {
+                    if layout == .compact { VStack(alignment: .leading) { selectionButtons } }
+                    else { HStack { selectionButtons } }
+                }
+                .buttonStyle(DaybookButtonStyle(.quiet))
             }
-            .buttonStyle(DaybookButtonStyle(.quiet))
         }
         .foregroundStyle(DaybookPalette.text.secondary)
     }

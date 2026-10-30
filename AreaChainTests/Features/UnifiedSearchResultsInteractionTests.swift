@@ -45,6 +45,11 @@ struct UnifiedSearchResultsInteractionTests {
         try await host.start()
         let old = try fixture.page
         let source = fixture.controller.buffer
+        // 全选只在已选中结果后出现：先断言平时不占位置，再选中第一条。
+        #expect(!Self.hasNode("unified.results.selectVisible", in: host))
+        let first = try #require(old.snapshot.visible.first)
+        fixture.controller.browse(.init(version: old.snapshot.version, action: .select(first, true)), source: source)
+        try await host.settle()
         try await host.clickResult("unified.results.selectVisible")
         #expect(try fixture.page.browse.selected.count == 2)
         try await host.clickResult("unified.load.units")
@@ -81,6 +86,10 @@ struct UnifiedSearchResultsInteractionTests {
         #expect(try fixture.page.status.groups.first?.contexts.displayed == 4)
         try await host.clickResult("unified.load.members." + first.bestMatch.searchIdentifier)
         #expect(try fixture.page.status.hits.displayed == 6)
+        let member = try #require(fixture.page.snapshot.visible.first { !Set(first.context.map(\.object)).contains($0) })
+        fixture.controller.browse(.init(version: try fixture.page.snapshot.version, action: .select(member, true)),
+                                  source: fixture.controller.buffer)
+        try await host.settle()
         try await host.clickResult("unified.results.selectKnown")
         #expect(try fixture.page.browse.selected.count == 90)
         #expect(try fixture.page.browse.selected.isDisjoint(with: Set(first.context.map(\.object))))
@@ -273,6 +282,11 @@ struct UnifiedSearchResultsInteractionTests {
         try await host.start()
         _ = try await fixture.publish()
         try await host.settle()
+        // 全选按钮在已选中结果后才出现。
+        let page = try fixture.page
+        let first = try #require(page.snapshot.visible.first)
+        fixture.controller.browse(.init(version: page.snapshot.version, action: .select(first, true)), source: fixture.controller.buffer)
+        try await host.settle()
         let editor = try host.editor
         try await host.key(48, "\t")
         #expect(host.window.firstResponder !== editor)
@@ -281,5 +295,11 @@ struct UnifiedSearchResultsInteractionTests {
         try await host.key(48, "\t")
         try await host.key(49, " ")
         #expect(try fixture.page.browse.selected.count == 4)
+    }
+
+    static func hasNode(_ identifier: String, in host: UnifiedSearchTestHost) -> Bool {
+        SettingsButtonTestSupport.elements(host.window.contentView).contains {
+            SettingsButtonTestSupport.value($0, "accessibilityIdentifier") as? String == identifier
+        }
     }
 }

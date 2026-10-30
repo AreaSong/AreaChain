@@ -17,11 +17,12 @@ struct UnifiedSearchInputTests {
         let language = try #require(first.result.candidates.first { $0.command.id.rawValue == "setting.language" })
         state.suggestions.selectedIndex = try #require(first.result.candidates.firstIndex(of: language))
         let before = host.model.edits.count
+        // Tab 只补文字、一次一层：补到下一层并带上 `/`，随后列出可选取值。
         try await host.key(48, "\t")
-        #expect(host.model.buffer.text == "/setting/language")
+        #expect(host.model.buffer.text == "/setting/language/")
         #expect(host.model.edits.count == before + 1)
         let choices = try #require(state.completion)
-        let chinese = try #require(choices.result.candidates.first { $0.insertText == "/chinese" })
+        let chinese = try #require(choices.result.candidates.first { $0.insertText == "chinese" })
         state.suggestions.selectedIndex = try #require(choices.result.candidates.firstIndex(of: chinese))
         try await host.key(36, "\r")
         #expect(host.model.buffer.text == "/setting/language/chinese")

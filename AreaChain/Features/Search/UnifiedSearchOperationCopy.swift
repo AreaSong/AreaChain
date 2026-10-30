@@ -12,13 +12,18 @@ enum UnifiedSearchOperationCopy {
         }.joined(separator: " · ")
     }
 
-    /// 标题区的一句具体预览：单值设置有读到的当前值时写成“当前 → 新值”，其余沿用参数摘要。
+    /// 标题区的一句具体预览：单值设置读到当前值时写成“当前 → 新值”（还没选新值时为“当前 → 未填写”），其余沿用参数摘要。
     static func preview(_ command: CommandDescriptor, draft: CommandDraft, locale: Locale, calendar: Calendar) -> String {
-        if let current = draft.baseline.preference?.memory, command.parameters.count == 1,
-           let argument = draft.arguments.first(where: { $0.parameter == command.parameters[0].id }),
-           argument.operation.requiresValue {
-            return self.value(current, locale: locale, calendar: calendar) + " → "
-                + self.value(argument.value, locale: locale, calendar: calendar)
+        if let current = draft.baseline.preference?.memory, command.parameters.count == 1 {
+            // 有设置基线就是设置指令：两侧用设置页的同一套取值名（例如“跟随系统”）。
+            let next: String
+            if let argument = draft.arguments.first(where: { $0.parameter == command.parameters[0].id }),
+               argument.operation.requiresValue, argument.value != nil {
+                next = UnifiedSearchSettingCopy.value(argument.value, locale: locale, calendar: calendar)
+            } else {
+                next = L10n.format("unified.operation.unfilled", locale: locale)
+            }
+            return UnifiedSearchSettingCopy.value(current, locale: locale, calendar: calendar) + " → " + next
         }
         return summary(command, draft: draft, locale: locale, calendar: calendar)
     }

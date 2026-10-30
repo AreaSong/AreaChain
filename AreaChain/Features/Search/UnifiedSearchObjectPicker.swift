@@ -15,12 +15,10 @@ struct UnifiedSearchObjectPicker: View {
                controller.validatesObjectSelection(picker.stamp) {
                 UnifiedSearchBatchOccurrenceCalendar(controller: controller, object: object, picker: picker)
             } else {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
-                        Text("unified.objects.queryPreserved")
-                        Text(controller.allowsBatchOccurrenceSelection(command) ? "unified.batch.chooseExecutionDay" : "unified.objects.sourceLimit")
-                    }.font(DaybookType.caption)
-                }.frame(maxHeight: 68)
+                // 可选类型已在下方列出；只有批量打卡需要先说明要选执行日。
+                if controller.allowsBatchOccurrenceSelection(command) {
+                    Text("unified.batch.chooseExecutionDay").font(DaybookType.caption)
+                }
                 if let picker = controller.objectSelection, controller.validatesObjectSelection(picker.stamp) {
                     Text(verbatim: L10n.format("unified.objects.allowed", locale: locale) + " "
                         + controller.objectTypes(picker.location, command: command).map {

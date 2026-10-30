@@ -18,7 +18,7 @@ struct UnifiedSearchOperationInteractionTests {
         let old = try #require(state.completion)
         let command = try #require(old.result.candidates.first { $0.command.id.rawValue == "setting.language" })
         state.suggestions.selectedIndex = try #require(old.result.candidates.firstIndex(of: command))
-        try await host.key(48, "\t")
+        try await host.key(36, "\r")
         let draft = try fixture.draft
         #expect(draft.commandID.rawValue == "setting.language")
         let choices = try #require(state.completion)

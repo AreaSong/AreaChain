@@ -16,7 +16,7 @@ struct UnifiedSearchTaskCreateInteractionTests {
         let completion = try #require(state.completion)
         let candidate = try #require(completion.result.candidates.first { $0.command.id.rawValue == "todo.create" })
         state.suggestions.selectedIndex = try #require(completion.result.candidates.firstIndex(of: candidate))
-        try await host.key(48, "\t")
+        try await host.key(36, "\r")
         let draftID = try #require(fixture.controller.operations?.active?.id)
         let editor = try await host.focusParameter(.title)
         editor.insertText("Native synthetic task", replacementRange: editor.selectedRange())

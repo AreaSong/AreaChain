@@ -100,6 +100,21 @@ struct UnifiedSearchSettingPresentationTests {
         #expect(fixture.io.writes.isEmpty)
     }
 
+    /// 新值与当前值相同：提交前说明应用不会有变化；不写入。
+    @Test(arguments: ["en", "zh-Hans"]) func unchangedValueExplainsBeforeApply(locale: String) async throws {
+        let fixture = try UnifiedSearchSettingFixture(hostID: HandoffFixture.target)
+        defer { fixture.stop() }
+        fixture.prefs.appearance = .dark
+        fixture.io.resetCounts()
+        try fixture.start("setting.appearance", value: .choice("dark"))
+        let host = try await fixture.host(locale: locale)
+        defer { host.close() }
+        let dark = UnifiedSearchSettingCopy.value(.choice("dark"), locale: .init(identifier: locale), calendar: .current)
+        #expect(try host.settingStatus() == L10n.format("unified.setting.unchangedHint", locale: .init(identifier: locale), dark))
+        #expect(!host.hasSettingControl("unified.setting.finalCheck"))
+        #expect(fixture.io.writes.isEmpty)
+    }
+
     @Test func hostsLanguagesThemesAndMinimumWidths() async throws {
         for layout in UnifiedSearchInputLayout.allCases {
             for locale in ["en", "zh-Hans"] {
@@ -117,7 +132,8 @@ struct UnifiedSearchSettingPresentationTests {
                         try await SettingsButtonTestSupport.reveal(submit, in: host.window)
                         try SettingsButtonTestSupport.assertBounds([submit], in: host.window)
                         #expect(field.convert(field.bounds, to: nil) == anchor)
-                        #expect(try host.settingStatus() == L10n.format("unified.setting.pending", locale: .init(identifier: locale)))
+                        // 待提交是默认状态，不显示状态行。
+                        #expect(!host.hasSettingControl("unified.setting.status"))
                         let labels = SettingsButtonTestSupport.elements(host.window.contentView).compactMap {
                             SettingsButtonTestSupport.value($0, "accessibilityValue") as? String
                                 ?? SettingsButtonTestSupport.value($0, "accessibilityLabel") as? String

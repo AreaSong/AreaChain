@@ -37437,13 +37437,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "All fixed targets are checked together before saving; any conflict rejects the batch."
+            "value": "All targets are checked before saving; if any conflicts, nothing in the batch is saved."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "共同保存前统一核对全部固定目标；任一冲突则整项拒绝。"
+            "value": "保存前会统一核对全部目标；有一项冲突就整批不保存。"
           }
         }
       }
@@ -37913,13 +37913,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Batch execution is available only in an explicitly assembled isolated host."
+            "value": "This command isn't available here."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "仅显式装配的隔离宿主开放批量执行。"
+            "value": "这里暂不支持这条指令。"
           }
         }
       }
@@ -38320,13 +38320,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This isolated host has no two-step adapter."
+            "value": "This command isn't available here."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "当前隔离宿主未装配两步执行能力。"
+            "value": "这里暂不支持这条指令。"
           }
         }
       }
@@ -38388,13 +38388,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This version is accepted. Nothing is saved yet. Next: Create task."
+            "value": "Confirmed. It takes effect after you save."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已接受此版本；任务与标签尚未保存。下一步：创建任务。"
+            "value": "已确认，保存后才会生效。"
           }
         }
       }
@@ -38599,23 +38599,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "未确认"
-          }
-        }
-      }
-    },
-    "unified.composition.capability": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ordinary task composition: title, date, priority, reminder and tags."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已装配普通任务扩展：标题、日期、优先级、提醒与标签。"
           }
         }
       }
@@ -38915,13 +38898,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "These are proposed effects. Preparation and acceptance do not write data; reserved identities are not created records."
+            "value": "Not saved yet."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "这是拟执行效果；准备和接受均不写入，预留身份不表示已创建。"
+            "value": "还没有保存。"
           }
         }
       }
@@ -39102,13 +39085,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The effects or acceptance are stale. Review the original plan. Targets and acceptance will not change automatically; a reserved preparation cannot be replaced."
+            "value": "The preview is out of date. Prepare it again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "原效果或接受已失效，请重新查看原计划。不会自动改目标或重新接受；已登记的准备不可替换。"
+            "value": "预览已过期，请重新准备。"
           }
         }
       }
@@ -39170,13 +39153,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Finish parameter editing, then prepare final effects. Preparation moves the active draft into its plan."
+            "value": "When you're done, prepare to review the changes."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "请结束参数编辑，再准备最终效果；准备会将活动草稿移入原计划。"
+            "value": "填好后先准备，查看将要发生的变化。"
           }
         }
       }
@@ -39187,13 +39170,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This field is not supported. Its parameter is retained and blocks submission."
+            "value": "This field isn't supported here; filling it in blocks saving."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "此字段未装配；保留参数并阻止提交，不会忽略它。"
+            "value": "这里暂不支持填写这一项；填写后无法保存。"
           }
         }
       }
@@ -40187,13 +40170,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This isolated host does not support this task operation."
+            "value": "This command isn't available here."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "此隔离宿主未装配这项任务操作。"
+            "value": "这里暂不支持这条指令。"
           }
         }
       }
@@ -41876,13 +41859,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This plan is not ready. Check parameters, explicit dependencies, and assembled capabilities."
+            "value": "The list can't run yet. Check each item."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "计划尚不可执行，请检查参数、显式依赖及已装配能力。"
+            "value": "列表暂时不能执行，请检查各项参数。"
           }
         }
       }
@@ -42267,13 +42250,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The result or host changed. Refresh and try again."
+            "value": "The results changed. Search again and retry."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "结果或宿主已变化，请刷新后重试。"
+            "value": "结果已经变化，请重新搜索后再试。"
           }
         }
       }
@@ -42284,13 +42267,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Navigation is not connected in this host."
+            "value": "This command isn't available here."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "当前宿主尚未接通导航。"
+            "value": "这里暂不支持这条指令。"
           }
         }
       }
@@ -42301,13 +42284,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The destination host is unavailable."
+            "value": "The target window isn't available. Try again later."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "目标宿主不可用。"
+            "value": "目标窗口暂不可用，请稍后再试。"
           }
         }
       }
@@ -42318,13 +42301,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Opening this destination is not connected yet."
+            "value": "This item can't be opened from here yet."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "该目标的打开操作尚未接线。"
+            "value": "这类内容暂时不能从这里打开。"
           }
         }
       }
@@ -42437,13 +42420,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Draft only. Final existence and permission checks and execution are not connected."
+            "value": "Selected items are checked again before saving."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "仅更新草稿。真实执行前的存活、权限核验及执行尚未接线。"
+            "value": "保存前会再次核对所选对象。"
           }
         }
       }
@@ -42471,13 +42454,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Select candidates, then accept to update the draft."
+            "value": "Select items, then confirm."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "先临时选择，再确认写入草稿。"
+            "value": "选好后点确认。"
           }
         }
       }
@@ -42563,23 +42546,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "此位置支持明确选择多个对象。"
-          }
-        }
-      }
-    },
-    "unified.objects.queryPreserved": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Candidates use your current search. Cancel to edit the outer query; the draft is preserved."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "候选沿用当前搜索。取消选择后可修改外层查询，操作草稿保留。"
           }
         }
       }
@@ -42675,13 +42641,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Only ordinary tasks, subtasks, routines and dated occurrences have candidate adapters. Other sources are unavailable here."
+            "value": "Only tasks, subtasks, routines or a day's check-in can be chosen here."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "当前仅适配普通任务、子任务、习惯和指定日执行记录；其他对象来源在此不可用。"
+            "value": "这里只能选择待办、子任务、习惯或某天的打卡。"
           }
         }
       }
@@ -43651,23 +43617,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "当前值尚未读取"
-          }
-        }
-      }
-    },
-    "unified.operation.useInput": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Edit in the input above"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "在上方输入框填写"
           }
         }
       }
@@ -44681,13 +44630,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Execution is not connected. Parameters and dependencies still need current permission, object and business checks."
+            "value": "This command isn't available here."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "执行尚未接线；参数与依赖仍须完成最新权限、对象及业务检查。"
+            "value": "这里暂不支持这条指令。"
           }
         }
       }
@@ -45963,23 +45912,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "已跳过"
-          }
-        }
-      }
-    },
-    "unified.results.sortFallback": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No comparable search text; sorted by most recent"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "没有可用于相关性排序的关键词，已按最近排序"
           }
         }
       }
@@ -47367,13 +47299,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Routine creation is unavailable in this host."
+            "value": "This command isn't available here."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "此宿主尚未装配习惯新增。"
+            "value": "这里暂不支持这条指令。"
           }
         }
       }
@@ -48234,13 +48166,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "⌘Return applies this setting. Current values are checked again before writing."
+            "value": "⌘Return to apply"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "⌘Return 应用此设置；写入前会再次核对当前值。"
+            "value": "⌘Return 应用"
           }
         }
       }
@@ -49985,13 +49917,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Task creation is not explicitly connected."
+            "value": "This command isn't available here."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "尚未显式装配任务创建适配器。"
+            "value": "这里暂不支持这条指令。"
           }
         }
       }
@@ -50682,13 +50614,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Title saving is not connected in this host."
+            "value": "This command isn't available here."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "此宿主未装配标题保存能力。"
+            "value": "这里暂不支持这条指令。"
           }
         }
       }
@@ -54110,13 +54042,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This command is not available here."
+            "value": "This command isn't available here."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "这里没有装配此指令。"
+            "value": "这里暂不支持这条指令。"
           }
         }
       }
@@ -60356,6 +60288,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "工作台搜索还有未完成的指令草稿或待执行列表，示例暂时不能填入；请先在搜索框里完成或放弃它。"
+          }
+        }
+      }
+    },
+    "unified.setting.unchangedHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Already %@. Applying won't change anything."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前已是%@，应用不会有变化。"
           }
         }
       }

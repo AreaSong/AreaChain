@@ -24,8 +24,29 @@ import Testing
         let command = try #require(CommandCatalog.standard.command(id: draft.commandID))
         let current = try #require(draft.baseline.preference?.memory, "设置草稿应读到当前值")
         let preview = UnifiedSearchOperationCopy.preview(command, draft: draft, locale: locale, calendar: .current)
-        let dark = L10n.format(CommandChoice(value: "dark").nameKey, locale: locale)
-        #expect(preview == UnifiedSearchOperationCopy.value(current, locale: locale, calendar: .current) + " → " + dark)
+        // 设置指令两侧都用设置页的取值名（例如“跟随系统”）。
+        #expect(preview == UnifiedSearchSettingCopy.value(current, locale: locale, calendar: .current) + " → "
+            + UnifiedSearchSettingCopy.value(.choice("dark"), locale: locale, calendar: .current))
+    }
+
+    /// 还没选新值时也要看得到当前值：预览为“当前 → 未填写”。
+    @Test func settingPreviewWithoutValueShowsCurrent() throws {
+        let fixture = try UnifiedSearchProductionFixture()
+        defer { fixture.cleanup() }
+        let assembly = try fixture.assembly()
+        defer { assembly.discard() }
+        let controller = try #require(assembly.workspace)
+        let text = "/setting/language"
+        _ = controller.edit(.init(source: controller.buffer, text: text, selection: .init(location: text.utf16.count, length: 0)))
+        controller.intent(.open, source: controller.buffer)
+        let draft = try #require(controller.editingDraft)
+        #expect(draft.arguments.isEmpty)
+        let command = try #require(CommandCatalog.standard.command(id: draft.commandID))
+        let current = try #require(draft.baseline.preference?.memory, "设置草稿应读到当前值")
+        let locale = Locale(identifier: "zh-Hans")
+        #expect(UnifiedSearchOperationCopy.preview(command, draft: draft, locale: locale, calendar: .current)
+            == UnifiedSearchSettingCopy.value(current, locale: locale, calendar: .current) + " → "
+            + L10n.format("unified.operation.unfilled", locale: locale))
     }
 
     @Test func otherCommandsKeepParameterSummary() throws {

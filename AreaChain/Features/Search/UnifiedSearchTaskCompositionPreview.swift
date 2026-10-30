@@ -9,7 +9,6 @@ struct UnifiedSearchTaskCompositionPreview: View {
         let source = controller.buffer
         let preview = controller.currentTaskComposition
         VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
-            Text("unified.composition.capability").font(DaybookType.caption)
             if let preview {
                 UnifiedSearchTaskCreationImpact(preview: preview)
                 if controller.currentTaskAcceptance != nil {

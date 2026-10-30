@@ -4,6 +4,14 @@ import SwiftUI
 struct UnifiedSearchSettingSubmission: View {
     @Bindable var controller: UnifiedSearchController
     @Environment(\.locale) private var locale
+    @Environment(\.calendar) private var calendar
+
+    /// 新值与读到的当前值相同：先说明应用不会有变化；仍可应用，结果按原有“当前已是此设置”给出。
+    private var unchanged: Bool {
+        guard let draft = controller.settingDraft, let current = draft.baseline.preference?.memory,
+              let value = draft.arguments.first?.value else { return false }
+        return current == value
+    }
 
     var body: some View {
         let source = controller.buffer
@@ -65,10 +73,17 @@ struct UnifiedSearchSettingSubmission: View {
                 UnifiedSearchPlanButton(title: "unified.setting.reviewConflict", identifier: "unified.setting.reviewConflict") {
                     controller.requestSettingConflict(source: source)
                 }
-            } else {
-                Text(LocalizedStringKey(issue.map(UnifiedSearchSettingCopy.issue) ?? controller.settingMessage))
-                    .font(DaybookType.caption)
+            } else if let issue {
+                Text(LocalizedStringKey(UnifiedSearchSettingCopy.issue(issue))).font(DaybookType.caption)
                     .accessibilityIdentifier("unified.setting.status")
+            } else if controller.settingMessage != "unified.setting.pending" {
+                // 待提交是默认状态，不单独说明；只显示真正的反馈（例如已采用当前值、确认覆盖、当前已是此设置）。
+                Text(LocalizedStringKey(controller.settingMessage)).font(DaybookType.caption)
+                    .accessibilityIdentifier("unified.setting.status")
+            } else if unchanged {
+                Text(verbatim: L10n.format("unified.setting.unchangedHint", locale: locale,
+                    UnifiedSearchSettingCopy.value(controller.settingDraft?.arguments.first?.value, locale: locale, calendar: calendar)))
+                    .font(DaybookType.caption).accessibilityIdentifier("unified.setting.status")
             }
             if controller.hasSettingAdapter, controller.editingDraft?.baseline.preference == nil,
                controller.editingDraft.map({ controller.localSettings?.supports($0.commandID) == true }) == true {
@@ -81,7 +96,9 @@ struct UnifiedSearchSettingSubmission: View {
                 controller.requestOperationSubmit(source)
             }
             .disabled(controller.settingSubmitting || issue != nil || confirmation != nil)
-            if issue == nil { Text("unified.setting.finalCheck").font(DaybookType.micro) }
+            if issue == nil, !unchanged {
+                Text("unified.setting.finalCheck").font(DaybookType.micro).accessibilityIdentifier("unified.setting.finalCheck")
+            }
         }
     }
 

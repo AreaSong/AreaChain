@@ -34,7 +34,7 @@ struct UnifiedSearchParameterField: View {
                 UnifiedSearchObjectField(controller: controller, draft: draft, command: command,
                     location: parameter.id == .target ? .targets : .parameter(parameter.id), source: source)
             } else if controller.supportsTagField(parameter, command: command) {
-                operationPicker
+                if showsOperationPicker { operationPicker }
                 if context.operation.requiresValue {
                     Button("unified.tags.choose") { controller.beginTagSelection(source: source) }
                         .buttonStyle(DaybookButtonStyle(.quiet, size: .compact)).focusable().focused($tagsButtonFocused)
@@ -44,12 +44,8 @@ struct UnifiedSearchParameterField: View {
             } else if controller.supportsLongText(parameter) {
                 UnifiedSearchLongTextField(controller: controller, draft: draft, parameter: parameter, source: source)
             } else if supported {
-                operationPicker
+                if showsOperationPicker { operationPicker }
                 if context.operation.requiresValue { editor }
-                if parameter.type == .boolean || isChoice {
-                    Button("unified.operation.useInput") { controller.chooseParameter(parameter.id, source: source) }
-                        .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
-                }
             } else {
                 Text(LocalizedStringKey(UnifiedSearchOperationCopy.requirement(parameter, command: command)))
                     .font(DaybookType.caption).foregroundStyle(DaybookPalette.text.secondary)
@@ -79,7 +75,10 @@ struct UnifiedSearchParameterField: View {
         }
     }
 
-    private var isChoice: Bool { if case .choice = parameter.type { return true }; return false }
+    /// 必填且只有一种修改方式时，选择器没有可选项（“未指定”对必填参数不是有效终态），不显示。
+    private var showsOperationPicker: Bool {
+        !parameter.required || parameter.operations.subtracting([.unspecified]).count > 1
+    }
     private var isObject: Bool {
         switch parameter.type {
         case .object, .objects: return true
@@ -192,7 +191,8 @@ struct UnifiedSearchParameterField: View {
                 Text(verbatim: after).font(DaybookType.caption)
                     .fixedSize(horizontal: false, vertical: true)
             } else if controller.localSettings?.supports(command.id) == true {
-                UnifiedSearchSettingValues(before: draft.baseline.preference?.memory, after: argument?.value)
+                // 设置的“当前 → 新值”已由标题区预览给出，这里不重复。
+                EmptyView()
             } else {
                 Text(verbatim: before + " → " + after).font(DaybookType.caption)
                     .fixedSize(horizontal: false, vertical: true)
