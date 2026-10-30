@@ -173,6 +173,21 @@ struct SeederAndShellAdversarialTests {
         #expect(callCount == 2, "Each provider invocation must generate a fresh view to prevent stale view retention")
     }
 
+    /// 浮层不随 NSApp.appearance：显式浅色/深色要同步到浮层，跟随系统时交回菜单栏（nil）。
+    @Test func statusItemPopoverFollowsAppAppearance() {
+        let previous = NSApp.appearance
+        defer { NSApp.appearance = previous }
+        let popover = NSPopover()
+        NSApp.appearance = NSAppearance(named: .darkAqua)
+        let observation = StatusItemController.followAppAppearance(popover)
+        defer { observation.invalidate() }
+        #expect(popover.appearance?.name == .darkAqua, "建立时立即同步当前外观")
+        NSApp.appearance = NSAppearance(named: .aqua)
+        #expect(popover.appearance?.name == .aqua)
+        NSApp.appearance = nil
+        #expect(popover.appearance == nil)
+    }
+
     @Test func statusItemControllerToggleSafetyWhenUnattached() {
         let controller = StatusItemController.shared
         // Toggling before attach or when status item / container is nil must not crash

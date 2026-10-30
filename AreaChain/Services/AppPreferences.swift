@@ -459,6 +459,9 @@ final class AppPreferences {
     }
 }
 
+/// 外观只由 `LocalPreferenceEffects.applyAppearance` 写到 `NSApp.appearance`，这里不叠加 `preferredColorScheme`：
+/// SwiftUI 的 preferredColorScheme 从具体值变成 nil（跟随系统）时，窗口外观已恢复，环境里的 colorScheme
+/// 却要等窗口下一次激活才更新，界面会停在旧的深浅色。
 @MainActor
 struct AppChrome: ViewModifier {
     @Bindable var prefs: AppPreferences
@@ -471,7 +474,6 @@ struct AppChrome: ViewModifier {
         content
             .environment(prefs)
             .environment(\.locale, prefs.resolvedLocale)
-            .preferredColorScheme(prefs.resolvedColorScheme)
     }
 }
 

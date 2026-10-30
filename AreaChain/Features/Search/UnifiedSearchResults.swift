@@ -107,7 +107,8 @@ final class UnifiedSearchResultsBoundary: NSView {
             content = AnyView(DaybookEmptyState(title: LocalizedStringKey(controller.messageKey),
                                                 systemImage: "magnifyingglass", compact: layoutStyle == .compact))
         }
-        let root = AnyView(content.environment(\.locale, locale).preferredColorScheme(scheme))
+        // 嵌套 hosting 只设子树环境：preferredColorScheme 会写回所在窗口，把窗口锁在当时的深浅色。
+        let root = AnyView(content.environment(\.locale, locale).environment(\.colorScheme, scheme))
         if let hosting { hosting.rootView = root }
         else {
             let view = NSHostingView(rootView: root)

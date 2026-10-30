@@ -52,7 +52,7 @@ enum SystemPageHost {
         suppliedWindow: NSWindow? = nil
     ) -> NSWindow {
         NSApp.accessibilitySetValue(true, forAttribute: NSAccessibility.Attribute(rawValue: "AXEnhancedUserInterface"))
-        // 与生产 PanelWindowController 一致，preferredColorScheme 的撤销由 hosting controller 处理。
+        // 与生产 PanelWindowController 一致，用 hosting controller 承载根视图。
         let controller = usesHostingController ? NSHostingController(rootView: root) : nil
         let hosting = (controller?.view as? NSHostingView<Content>) ?? NSHostingView(rootView: root)
         hosting.safeAreaRegions = []

@@ -74,10 +74,12 @@ struct SettingsPickerConsumerTests {
         let observer = observe(state, fixture: fixture)
         defer { fixture.preferenceCenter.removeObserver(observer) }
         try await assertLocalized("en", prefs: fixture.prefs, in: window)
-        #expect(hasText("environment:en:light", in: window))
+        // 隔离偏好不写 NSApp.appearance，窗口外观来自进程；切换语言只看环境里的深浅色始终与窗口一致、不被改动。
+        let scheme = window.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? "dark" : "light"
+        #expect(hasText("environment:en:\(scheme)", in: window))
         try await choose("settings.language", option: "chinese", locale: "en", fixture: fixture, state: state, in: window)
         #expect(fixture.prefs.language == .chinese)
-        #expect(hasText("environment:zh-Hans:light", in: window))
+        #expect(hasText("environment:zh-Hans:\(scheme)", in: window))
         try await assertLocalized("zh-Hans", prefs: fixture.prefs, in: window)
         try Native.snapshot(window, name: "picker-dynamic-chinese")
         let count = state.notifications
@@ -88,12 +90,12 @@ struct SettingsPickerConsumerTests {
         #expect(fixture.defaults.string(forKey: AppPreferences.languageKey) == "english")
         #expect(stored(fixture).filter { $0.key != AppPreferences.languageKey } == before.filter { $0.key != AppPreferences.languageKey })
         try await assertLocalized("en", prefs: fixture.prefs, in: window)
-        #expect(hasText("environment:en:light", in: window))
+        #expect(hasText("environment:en:\(scheme)", in: window))
         try await choose("settings.language", option: "system", locale: "en", fixture: fixture, state: state, in: window)
         #expect(fixture.prefs.language == .system)
         let resolved = AppLanguage.system.resolvedCode()
         try await assertLocalized(resolved, prefs: fixture.prefs, in: window)
-        #expect(hasText("environment:\(resolved):light", in: window))
+        #expect(hasText("environment:\(resolved):\(scheme)", in: window))
         #expect(fixture.prefs.appearance == .light && fixture.prefs.quadrantTitleTruncation == .tail)
     }
 
@@ -119,14 +121,9 @@ struct SettingsPickerConsumerTests {
             let effective = window.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua])
             #expect(effective == (expected ?? NSApp.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua])))
             if appearance == .system { try await Task.sleep(for: .seconds(1)) }
+            // dark→system 时环境 colorScheme 必须立即跟随系统，不能等窗口重新激活。
             let expectedDark = appearance == .system ? systemDark : appearance == .dark
-            if appearance == .system && !systemDark {
-                withKnownIssue("原生 Picker 对照同样失败：dark→system 后环境仍深色") {
-                    #expect(hasText("environment:en:light", in: window))
-                }
-            } else {
-                #expect(hasText("environment:en:\(expectedDark ? "dark" : "light")", in: window))
-            }
+            #expect(hasText("environment:en:\(expectedDark ? "dark" : "light")", in: window))
             #expect(fixture.prefs.resolvedColorScheme == appearance.resolvedColorScheme)
             try await assertLocalized("en", prefs: fixture.prefs, in: window)
             try Native.snapshot(window, name: "picker-dynamic-\(appearance.rawValue)")
@@ -169,8 +166,13 @@ struct SettingsPickerConsumerTests {
             try await prepare(reopened)
             try await assertLocalized("zh-Hans", prefs: prefs, in: reopened)
             #expect(stored(fixture) == saved && state.notifications == count)
-            #expect(hasText("environment:zh-Hans:dark", in: reopened) && item.title == title)
+            #expect(item.title == title)
         }
+        // 外观的唯一出口是 applyAppearance（写 NSApp.appearance）：同一存储重建偏好时必须把保存的深色交给它。
+        var applied: [AppAppearance] = []
+        let rebuilt = AppPreferences(defaults: fixture.defaults,
+            effects: LocalPreferenceEffects(applyAppearance: { applied.append($0) }, post: { _ in }))
+        #expect(rebuilt.appearance == .dark && applied == [.dark])
     }
 
     @Test(arguments: ["en", "zh-Hans"], [ColorScheme.light, .dark])

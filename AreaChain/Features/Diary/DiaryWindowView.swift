@@ -376,7 +376,8 @@ private final class DiaryTitlebarPinBridgeNSView: NSView {
                 truncationMode: truncationMode, onPin: onPin
             )
             .environment(\.locale, locale)
-            .preferredColorScheme(colorScheme)
+            // 标题栏附件是嵌套 hosting：只设子树环境，preferredColorScheme 会把手记窗口锁在当时的深浅色。
+            .environment(\.colorScheme, colorScheme)
         )
         if let containerView {
             containerView.update(rootView: root, windowWidth: window.frame.width)

@@ -280,7 +280,7 @@ struct MenuBarHelpSurfaceTests {
     func helpWindow(_ support: SettingsButtonTestSupport, composer: BoardComposerSession,
                             toolbar: MenuBarToolbarState, search: MenuBarUnifiedSearchProbe? = nil,
                     configuration: (String, ColorScheme, CGFloat) = ("en", .light, 380)) -> NSWindow {
-        // 外层 AppChrome 读取随机测试偏好；只给子视图 preferredColorScheme 不足以切换宿主。
+        // 宿主外观沿生产路径由偏好的 live effects 写到 NSApp；子视图的 preferredColorScheme 同样作用于宿主窗口，两者取同一值。
         support.prefs.appearance = configuration.1 == .dark ? .dark : .light
         return SystemPageHost.preferenceWindow(
             MenuBarPopoverView(toolbar: toolbar, composer: composer, filterSession: BoardFilterSession(),

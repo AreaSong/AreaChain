@@ -17,6 +17,7 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
     private var didAttach = false
     private var globalEventMonitor: Any?
     private var resignActiveObserver: NSObjectProtocol?
+    private var appearanceObservation: NSKeyValueObservation?
 
     func attach(container: ModelContainer) {
         self.container = container
@@ -49,6 +50,15 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         popover.delegate = self
         popover.contentSize = DaybookMetrics.Window.popoverSize
         self.popover = popover
+        appearanceObservation = Self.followAppAppearance(popover)
+    }
+
+    /// 浮层外观默认跟状态栏按钮所在的菜单栏走，不随 NSApp.appearance；显式浅色/深色要逐次同步，
+    /// 跟随系统（nil）时交回菜单栏。
+    static func followAppAppearance(_ popover: NSPopover) -> NSKeyValueObservation {
+        NSApp.observe(\.appearance, options: [.initial, .new]) { [weak popover] app, _ in
+            MainActor.assumeIsolated { popover?.appearance = app.appearance }
+        }
     }
 
     private func observeBoardEvents() {

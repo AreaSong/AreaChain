@@ -55,8 +55,9 @@ final class UnifiedSearchOperationBoundary: NSView {
 
     func render() {
         guard let controller, controller.operationVisible else { removePresentation(); return }
+        // 同 UnifiedSearchResultsBoundary：嵌套 hosting 不用 preferredColorScheme，以免锁住所在窗口的外观。
         let root = AnyView(UnifiedSearchOperationPreview(controller: controller)
-            .environment(\.locale, locale).preferredColorScheme(scheme))
+            .environment(\.locale, locale).environment(\.colorScheme, scheme))
         if let hosting { hosting.rootView = root }
         else {
             let view = NSHostingView(rootView: root)
