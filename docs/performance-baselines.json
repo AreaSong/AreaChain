@@ -45,7 +45,7 @@
       "budget": null,
       "status": "not-established",
       "source": null,
-      "note": "索引路径内存仍是 O(U) map，另排序 O(U) 个规范键，不再为 D 个空日分配 key。产品与独立 App RSS 未建立，不以测试进程瞬时值冒充。"
+      "note": "索引路径内存仍是 O(U) map，另排序 O(U) 个规范键，不为 D 个空日分配 key。产品与独立 App RSS 未建立，不以测试进程瞬时值冒充。"
     },
     {
       "id": "agenda-overdue-routines-1000-days",

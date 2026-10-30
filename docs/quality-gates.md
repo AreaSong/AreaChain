@@ -37,7 +37,7 @@ python3 -B scripts/quality_gate.py --profile full
 python3 -B scripts/quality_gate.py --profile release
 ```
 
-`auto`（默认）根据当前差异选择最小适用范围。需要机器读取时加 `--format json`。定向测试由 [swift_test_scope.py](../scripts/swift_test_scope.py) 按变更文件逐个推导，不限文件数，改什么测什么，两类取并集：① 同名测试（`Foo.swift` → `FooTests.swift` 里声明或扩展的套件）；② 引用测试——变更文件声明的类型被哪些测试套件直接引用，夹具文件再展开一跳；只含扩展的文件（如 `extension UnifiedSearchController`）按扩展块里非私有、非通用的成员名直接匹配（不经夹具再展开），不把被扩展类型的全部使用者带上；出现在 30 个以上测试文件里的常见成员名（如 `accept`）没有区分度，跳过并在说明里列出。两类都找不到时不再按层目录兜底，列为无法推导：只编译并给出 `swift-test-scope` 提示。被大量测试引用的核心文件（超过 60 个测试类）不再跑全部直接引用，只跑同名测试加一组固定冒烟集（`SMOKE_SUITES`，覆盖统一搜索、任务、手记、隐私、菜单栏），说明里列出省略的引用数；整次推导超过 120 个测试类时同样收敛到同名测试（含被改测试文件自己的套件）加冒烟集。经协议、夹具链、运行时或被省略的引用间接受影响的测试，留给用 `--single` 替换日常应用之前的那次 `--profile full`。只看推导不运行时加 `--plan-only`（可配 `--format json`）。夹具无论单独成文件还是写在套件文件里（非 private 顶层类型）都会展开。改动测试文件时跑它声明或扩展的套件，加上经其共享夹具受影响的套件；删除的测试文件不需要运行。`AreaChain/` 下的非 Swift 资源按文件名找读取它的测试（如 `Localizable.xcstrings`），找不到算无法推导。兜底原因写进 `swift-tests` 的说明。
+`auto`（默认）根据当前差异选择最小适用范围。需要机器读取时加 `--format json`。定向测试由 [swift_test_scope.py](../scripts/swift_test_scope.py) 按变更文件逐个推导，不限文件数，改什么测什么，两类取并集：① 同名测试（`Foo.swift` → `FooTests.swift` 里声明或扩展的套件）；② 引用测试——变更文件声明的类型被哪些测试套件直接引用，夹具文件再展开一跳；只含扩展的文件（如 `extension UnifiedSearchController`）按扩展块里非私有、非通用的成员名直接匹配（不经夹具再展开），不把被扩展类型的全部使用者带上；出现在 30 个以上测试文件里的常见成员名（如 `accept`）没有区分度，跳过并在说明里列出。两类都找不到时不按层目录兜底，列为无法推导：只编译并给出 `swift-test-scope` 提示。被大量测试引用的核心文件（超过 60 个测试类）不跑全部直接引用，只跑同名测试加一组固定冒烟集（`SMOKE_SUITES`，覆盖统一搜索、任务、手记、隐私、菜单栏），说明里列出省略的引用数；整次推导超过 120 个测试类时同样收敛到同名测试（含被改测试文件自己的套件）加冒烟集。经协议、夹具链、运行时或被省略的引用间接受影响的测试，留给用 `--single` 替换日常应用之前的那次 `--profile full`。只看推导不运行时加 `--plan-only`（可配 `--format json`）。夹具无论单独成文件还是写在套件文件里（非 private 顶层类型）都会展开。改动测试文件时跑它声明或扩展的套件，加上经其共享夹具受影响的套件；删除的测试文件不需要运行。`AreaChain/` 下的非 Swift 资源按文件名找读取它的测试（如 `Localizable.xcstrings`），找不到算无法推导。兜底原因写进 `swift-tests` 的说明。
 
 全量只由 `--profile full` 或 `release` 触发，平时各批只跑定向测试；全量只在用 `--single` 替换日常应用之前或用户明确要求时跑一次。
 
@@ -45,19 +45,19 @@ python3 -B scripts/quality_gate.py --profile release
 
 全量之外，无法推导的变更（没有同名或直接引用测试的文件、工程配置）不会静默退回全量或整层，而是报 `swift-test-scope` 警告并列出文件，同时仍编译验签；需要时用 `--only-testing` 指定或改跑 `--profile full`。纯 UI 变更（只涉及 `AreaChain/Features/`、`AreaChain/Theme/`）推断为 `ui`：编译验签后只跑同名和引用测试（单个文件引用超过 60 个时只跑同名）；都没有时豁免测试，ui 下无法推导的文件只写进说明，不报警告。
 
-Swift 测试分两轮执行，各起一次标准隔离 QA 测试（`build.sh qa`：标识 `com.areachain.privacy-qa`、目录 `build/PrivacyQA`，首次全编译后增量复用，不碰日用应用的偏好；不带批次是因为隐私／钥匙串测试的宿主守卫要求标识精确等于它）。QA 宿主保持沙盒开启、不转发 Phase1 日志目录，所以登记的性能测试仍走 `build.sh test`（关闭沙盒、写 `phase1-logs`）以保持基线环境。测试只证明 QA 配置（`AREACHAIN_QA`）；门禁另跑一次 `build.sh build` 给日用配置的编译与验签证据：**前台轮**先跑需要前台 key window 的测试（模拟键鼠、输入法、焦点），期间不要操作电脑；**后台轮**只跑标了 `.tags(.backgroundWindow)` 的套件，窗口开在其他应用之后、不激活应用，可以照常用电脑。macOS 14 起应用让出前台后无法再强行抢回（`activate(ignoringOtherApps:)` 不再生效），所以两类不能混在一个测试进程里，也不能“先后台、要发事件再切前台”。套件里只要有一个用例发键鼠事件就不能打这个标签；标签是唯一开关：`SystemPageHost` 开窗、`UnifiedSearchNavigationFixture.start` 和 `UnifiedSearchTestHost.start` 读当前用例的套件标签，标了就只排窗不激活；导航夹具误发键鼠会直接报错，`SettingsButtonTestSupport.click` 等要求 key window 的动作也会失败。打标签前还要查 `extension 套件名` 所在的其他文件，扩展里有键鼠用例的套件不能进后台轮。混合套件（大部分程序化、少数发键鼠）的做法：原套件打标签留在后台轮，把发键鼠的用例移到同文件新建的前台套件（命名如 `UnifiedSearchNavigationClickTests`），用例内容不改。测试进程启动时系统仍可能把它拉到前台一次，点回自己的窗口即可。`build.sh qa` 默认开启前台守护（只选中 `.backgroundWindow` 套件时自动关闭，`--no-keep-front` 手动关闭；门禁前台轮显式 `--keep-front`、后台轮显式 `--no-keep-front`）：测试期间挂起 [keep_front.py](../scripts/keep_front.py)，只在用户空闲 5 秒以上、QA 应用正在运行却不在前台时，从测试进程外用 `open -b` 把它切回前台（macOS 14 起应用自己申请会被拒，Claude 等前台应用不让出时测试会一直等人点）；只接受 `com.areachain.privacy-qa…` 标识，开发宿主与日用应用同一标识，绝不激活；前 5 次切回在输出里记时间和原前台应用，结束时汇总总次数。测试结束、被中断（trap）、父进程被强制结束（守护每秒自查）或运行满 4 小时，守护都会退出。每轮测试超时：定向 30 分钟，`full`／`release` 3 小时。`build.sh test`／`qa` 用 `--skip-testing` 排除后台套件；直接调用 `build.sh` 时不会自动分轮。
+Swift 测试分两轮执行，各起一次标准隔离 QA 测试（`build.sh qa`：标识 `com.areachain.privacy-qa`、目录 `build/PrivacyQA`，首次全编译后增量复用，不碰日用应用的偏好；不带批次是因为隐私／钥匙串测试的宿主守卫要求标识精确等于它）。QA 宿主保持沙盒开启、不转发 Phase1 日志目录，所以登记的性能测试仍走 `build.sh test`（关闭沙盒、写 `phase1-logs`）以保持基线环境。测试只证明 QA 配置（`AREACHAIN_QA`）；门禁另跑一次 `build.sh build` 给日用配置的编译与验签证据：**前台轮**先跑需要前台 key window 的测试（模拟键鼠、输入法、焦点），期间不要操作电脑；**后台轮**只跑标了 `.tags(.backgroundWindow)` 的套件，窗口开在其他应用之后、不激活应用，可以照常用电脑。macOS 14 起应用让出前台后无法再强行抢回（`activate(ignoringOtherApps:)` 不生效），所以两类不能混在一个测试进程里，也不能“先后台、要发事件再切前台”。套件里只要有一个用例发键鼠事件就不能打这个标签；标签是唯一开关：`SystemPageHost` 开窗、`UnifiedSearchNavigationFixture.start` 和 `UnifiedSearchTestHost.start` 读当前用例的套件标签，标了就只排窗不激活；导航夹具误发键鼠会直接报错，`SettingsButtonTestSupport.click` 等要求 key window 的动作也会失败。打标签前还要查 `extension 套件名` 所在的其他文件，扩展里有键鼠用例的套件不能进后台轮。混合套件（大部分程序化、少数发键鼠）的做法：原套件打标签留在后台轮，把发键鼠的用例移到同文件新建的前台套件（命名如 `UnifiedSearchNavigationClickTests`），用例内容不改。测试进程启动时系统仍可能把它拉到前台一次，点回自己的窗口即可。`build.sh qa` 默认开启前台守护（只选中 `.backgroundWindow` 套件时自动关闭，`--no-keep-front` 手动关闭；门禁前台轮显式 `--keep-front`、后台轮显式 `--no-keep-front`）：测试期间挂起 [keep_front.py](../scripts/keep_front.py)，只在用户空闲 5 秒以上、QA 应用正在运行却不在前台时，从测试进程外用 `open -b` 把它切回前台（macOS 14 起应用自己申请会被拒，Claude 等前台应用不让出时测试会一直等人点）；只接受 `com.areachain.privacy-qa…` 标识，开发宿主与日用应用同一标识，绝不激活；前 5 次切回在输出里记时间和原前台应用，结束时汇总总次数。测试结束、被中断（trap）、父进程被强制结束（守护每秒自查）或运行满 4 小时，守护都会退出。每轮测试超时：定向 30 分钟，`full`／`release` 3 小时。`build.sh test`／`qa` 用 `--skip-testing` 排除后台套件；直接调用 `build.sh` 时不会自动分轮。
 
 推导只看源码文本：经协议、泛型或运行时间接使用的测试可能漏选，由替换日常应用之前的那次 `--profile full` 兜住。也可以通过 `--only-testing` 显式限定测试目标，或通过 `--build-only` 仅编译而不跑任何测试。脚本中的 `security-static` 和 `comment-contract` 分别守住可机械判断的安全与注释契约。SwiftLint、Xcode 编译和测试只属于 `swift`/`ui`/`performance`/`full`/`release` profile，静态 profile 不依赖 macOS 工具链，便于 Ubuntu CI 执行。非严格模式只扫描 `AreaChain` 与 `AreaChainTests`，不把 `.build` 生成文件混入历史债务；严格模式只阻断本次变更涉及的 SwiftLint 文件。警告默认不会伪装成失败，也不会阻断低风险文档任务；合并或发布前可使用 `--strict` 将警告升级为失败。
 
 ## 并发构建与测试
 
-后续任务默认复用仓库的 `build/.build.lock`：锁忙时在同一次申请中等待最多 900 秒，取得锁后继续；超时才停止本次构建或测试并报告未完成，不自动另起一轮等待。用户在当前任务明确要求非等待时才立即退出。历史阶段的“锁忙停止”“非等待申请”及其结果保留为当时记录，不作为新任务的默认策略。
+后续任务默认复用仓库的 `build/.build.lock`：锁忙时在同一次申请中等待最多 900 秒，取得锁后继续；超时才停止本次构建或测试并报告未完成，不自动另起一轮等待。用户在当前任务明确要求非等待时才立即退出。
 
 - 常规构建与测试使用 [build.sh](../scripts/build.sh) 的默认等待模式，不默认传 `--no-wait`。原 PrivacyQA 隔离命令继续使用同一把锁及相同的有界等待策略，保持完整目标、独立标识/目录、合成数据、真实授权变量清除和原生事件串行等原有要求；不能为套用普通测试命令而丢失隔离配置。
 - 不删除锁文件、换锁路径或终止其他任务来绕过等待。锁文件存在或其中的 PID 文本不能单独证明锁仍被占用；文件锁的实际状态才是依据。等待期间可继续无关只读检查，并及时报告等待状态。
 - 申请前记录本轮相关源码、测试、资源和构建配置的文件集合及内容摘要；取得锁后、启动构建或测试前再次核对，包括新增和删除的文件。若发生变化，先读取差异并调整受影响的测试范围，以当前源码建立本轮基线；存在会改变范围或验收结论的未决冲突时停止依赖该冲突的验证并说明原因，不覆盖他人的修改。
 - 执行后再次核对同一范围。构建锁只协调遵守它的构建/测试进程，不阻止其他对话编辑源码；运行期间相关文件改变时，不把该批结果直接算作最终源码通过，查明影响后重跑受影响检查。
-- 源码摘要与影响核对由执行验证的代理负责，`build.sh` 目前不自动完成这些步骤。脚本已有的 [锁竞争测试](../scripts/tests/test_build.py) 覆盖默认等待成功和显式非等待退出；这些隔离测试不证明所有对话已遵循规则，也不替代实际原生验收。
+- 源码摘要与影响核对由执行验证的代理负责，`build.sh` 不自动完成这些步骤。脚本已有的 [锁竞争测试](../scripts/tests/test_build.py) 覆盖默认等待成功和显式非等待退出；这些隔离测试不证明所有对话已遵循规则，也不替代实际原生验收。
 
 ## 状态语义
 
@@ -90,7 +90,7 @@ Swift 测试分两轮执行，各起一次标准隔离 QA 测试（`build.sh qa`
 
 ## CI 与本地证据
 
-`.github/workflows/quality.yml` 在 push 和 pull request 上运行不依赖 Swift 工具链的无凭据静态门禁，以及 macOS Debug 构建加全库 SwiftLint。macOS job 使用 `macos-15` 和 Xcode 16+ 能打开的工程格式；GitHub `macos-14` 会因 objectVersion 77 打不开本仓库。Swift 测试只在 `workflow_dispatch` 中运行，范围是 `HEAD^` 到 `HEAD` 差异推导出的定向测试，走 `build.sh qa`，不再因推导失败退回全量；该作业带 `--strict`，出现 `swift-test-scope` 警告会直接判失败，需要改用 `--profile full` 手动重跑。托管 runner 上该套件可能因无交互桌面而把 `build.sh test` 拖到 1800s 超时，不能把那次失败写成代码回归；全量 Swift 以本机质量门禁和隔离 PrivacyQA 为准。push 与手动 `workflow_dispatch` 使用不同的 concurrency 组，避免互相取消。`ci-contract` 只是关键标记守卫，不能替代 YAML 语义和远端执行验证。`main` 的分支保护只要求静态检查 `Static quality gates`，不要求评审，也不强制管理员遵守（避免检查名错误时锁死仓库）；它约束合并进 `main` 的 pull request，管理员直接 push 仍可绕过。工作流文件存在不等于 runner 已通过。
+`.github/workflows/quality.yml` 在 push 和 pull request 上运行不依赖 Swift 工具链的无凭据静态门禁，以及 macOS Debug 构建加全库 SwiftLint。macOS job 使用 `macos-15` 和 Xcode 16+ 能打开的工程格式；GitHub `macos-14` 会因 objectVersion 77 打不开本仓库。Swift 测试只在 `workflow_dispatch` 中运行，范围是 `HEAD^` 到 `HEAD` 差异推导出的定向测试，走 `build.sh qa`，推导失败时不退回全量；该作业带 `--strict`，出现 `swift-test-scope` 警告会直接判失败，需要改用 `--profile full` 手动重跑。托管 runner 上该套件可能因无交互桌面而把 `build.sh test` 拖到 1800s 超时，不能把那次失败写成代码回归；全量 Swift 以本机质量门禁和隔离 PrivacyQA 为准。push 与手动 `workflow_dispatch` 使用不同的 concurrency 组，避免互相取消。`ci-contract` 只是关键标记守卫，不能替代 YAML 语义和远端执行验证。`main` 的分支保护只要求静态检查 `Static quality gates`，不要求评审，也不强制管理员遵守（避免检查名错误时锁死仓库）；它约束合并进 `main` 的 pull request，管理员直接 push 仍可绕过。工作流文件存在不等于 runner 已通过。
 
 CI 与本地统一调用 `scripts/quality_gate.py`，不维护第二套检查逻辑。第三方 action 使用不可变 revision；修改 action、runner 或触发条件时要重新核对来源、权限和成本。
 
@@ -113,7 +113,7 @@ CI 与本地统一调用 `scripts/quality_gate.py`，不维护第二套检查逻
 ## 性能与可靠性
 
 - 任何性能数字都必须关联设备/系统、构建配置、数据规模、冷/热状态、样本和测量方法。
-- 现有局部阈值登记在 [`performance-baselines.json`](performance-baselines.json)；启动、大库重开、合成加密恢复、测试进程 RSS 安全网和重开增长目前是 Debug 合成数据的 `provisional` 上限。NSApplication 完整冷启动、独立 App 峰值内存和真实恢复仍未建立，不能猜数字。
+- 现有局部阈值登记在 [`performance-baselines.json`](performance-baselines.json)；启动、大库重开、合成加密恢复、测试进程 RSS 安全网和重开增长是 Debug 合成数据的 `provisional` 上限。NSApplication 完整冷启动、独立 App 峰值内存和真实恢复仍未建立，不能猜数字。
 - 性能优化必须同时通过功能、取消、资源释放和隐私回归；一次测试很快不等于没有泄漏或规模退化。
 - 失败、重试、部分提交、迟到结果、取消和恢复路径要说明状态所有者及可重复证据。
 
@@ -125,7 +125,7 @@ CI 与本地统一调用 `scripts/quality_gate.py`，不维护第二套检查逻
 |---|---|---|
 | 需求、范围与验收 | 用户结果→入口/契约→适用验收；[产品与功能](features.md)；需要判断，未自动判定需求 | 无已授权真实业务任务的全链路试跑 |
 | 架构、依赖与状态 | [架构边界](architecture.md#开发时的边界与状态核对)，沿符号追踪消费者；Domain 导入守卫 | 完整符号依赖图、所有权不由文本扫描证明 |
-| 实现、共用代码与重构 | 模块内→项目共享→跨项目库按实际收益选择；相关仓储/解析测试；本地行为测试与静态门禁可运行；远端执行未取证 | 尚未以新标准完成真实重构；不强行提取跨项目库 |
+| 实现、共用代码与重构 | 模块内→项目共享→跨项目库按实际收益选择；相关仓储/解析测试；本地行为测试与静态门禁可运行；远端执行未取证 | 不强行提取跨项目库 |
 | 界面、语言与交互 | [原生验收](architecture.md#隔离验收与真实启用门禁)、项目 UI/验证技能；Theme/Features 隔离测试已有 | 真实键盘/输入法/系统集成不可用离屏样例替代 |
 | 环境、配置与依赖 | 下文环境记录；核对工程、清单、来源/许可证、定向回归；部分构建配置检查；无工具链固定/CI | 尚无认证过的支持版本矩阵；无第三方包时不制造锁文件 |
 | Git、评审与 CI | 下文检查顺序；跨模块只读复核只走 Claude Code `verifier`（见技能路由）；本地检查与 `.github/workflows/quality.yml` 已接入；push/PR 跑静态和 macOS 编译+SwiftLint，完整 Swift 测试仍手动触发 | 完整 Swift 测试不在每次 push 上跑；分支保护仍只要求静态检查；管理员可绕过 |
@@ -166,7 +166,7 @@ CI 与本地统一调用 `scripts/quality_gate.py`，不维护第二套检查逻
 
 默认不扫描个人目录；本次确需验证个人规则时，显式加 `--personal-root <实际目录>`，范围只有该目录的 AGENTS、路由及自有 `areasong-development` 文档，不扫描其他技能/插件缓存。技能入口格式由本检查器的 `skill-format` 核对；受控新会话是否实际发现并调用技能仍是单独证据。
 
-检查器不解析完整 Markdown/Swift 语法，不验证引用内容正确性、远端网页、宏生成依赖或所有源码符号；未用尖括号包裹的括号路径等特殊链接、Swift 正则字面量等语法仍需人工/编译补充。不能靠跳过真实缺陷维持绿灯。项目技能的入口、文档及其中显式链接的文件须 Git 可见，允许目录与现有 `.gitignore` 对齐；以后新增共享技能时须同时检查范围，不能放开整个 `.agents`。
+检查器不解析完整 Markdown/Swift 语法，不验证引用内容正确性、远端网页、宏生成依赖或所有源码符号；未用尖括号包裹的括号路径等特殊链接、Swift 正则字面量等语法仍需人工/编译补充。不能靠跳过真实缺陷维持绿灯。项目技能的入口、文档及其中显式链接的文件须 Git 可见，允许目录与现有 `.gitignore` 对齐；新增共享技能时须同时检查范围，不能放开整个 `.agents`。
 
 合并前人工确认本次差异、适用测试和必需只读复核均有最终证据；未获授权不提交/推送。仓库已有质量工作流文件：无凭据的文档/脚本检查作为 push/PR 首层，macOS 编译/单测作为手动平台层，焦点敏感及真实系统验收另设受控门禁。工作流文件是否提交、runner 实际成功和远端 required checks 三者分开取证；本地不会擅自修改远端设置或凭据。
 
