@@ -8,7 +8,7 @@ import Testing
 /// 每条按实际行为归类，再断言与唯一判断入口 disposition(for:) 给出的类别一致（标签类别 = 实际行为）。不开窗口、不发键鼠事件。
 @Suite(.serialized, .tags(.backgroundWindow)) @MainActor struct UnifiedSearchCommandDispositionTests {
     /// navigated：导航入口接上了（未被拒为 unsupported／unassembled）。后台用例没有真实窗口，看不到导航完成反馈，
-    /// 因此不在这里区分“前往”与“打开原页面”，只要求标签落在这两类之一；不再用 CommandOriginalPage 表自证。
+    /// 因此不在这里区分“前往”与“打开原页面”，只要求标签落在这两类之一；不用 CommandOriginalPage 表自证。
     /// handedOff：菜单栏把同一文字交给工作台（显示工作台的副作用被调用、菜单栏没有建草稿）。
     enum Observed: String { case executable, navigated, handedOff, notWired }
 

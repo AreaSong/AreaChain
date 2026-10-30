@@ -315,7 +315,7 @@ final class DiaryEditorSession {
         var writtenIDs: [UUID] = []
         do {
             let saved = try ModelChanges.transaction(in: context, save: commit) {
-                // 保存里的 @附件关联与暂存附件写入同一存储；默认会话仍是共享目录，与原先一致。
+                // 保存里的 @附件关联与暂存附件写入同一存储；默认会话用共享目录。
                 let repository = SwiftDataDiaryRepository(context: context, vault: vault,
                     attachmentStore: (attachmentStore as? AttachmentStore) ?? .shared)
                 let entry: DiaryEntry
