@@ -17,6 +17,7 @@
 
 - 所有新对话先读 [技能路由](skill-routing.md)；新增控件、公共规则或界面时再读 [共享组件与复用目录](docs/component-catalog.md)，并沿实际调用方核对，不只按名称猜测。
 - 入口、环境要求和命令见 [README.md](README.md)；产品定位、功能与边界见 [docs/features.md](docs/features.md)。
+- 新增或修改任何可操作功能、页面或窗口时，先读 [统一动作设计](docs/unified-actions.md)。
 - 界面、快捷键和保存行为见 [docs/usage.md](docs/usage.md)；分层、数据与隔离验收见 [docs/architecture.md](docs/architecture.md)。
 - 质量门禁、覆盖缺口、工程环境、恢复演练与诊断方法见 [docs/quality-gates.md](docs/quality-gates.md)，发行准备见 [docs/signing.md](docs/signing.md)；通用标准由全局规则按需引用，项目手册只保存本项目证据、入口和缺口。
 - 触及构建、签名、安装或系统解锁时先读 [docs/signing.md](docs/signing.md)。不要把安装、启动或真实认证当作普通检查的隐含步骤。
@@ -31,6 +32,7 @@
 
 ## 新任务闭环
 
+- **新功能硬性约束**（细则唯一出处见 [统一动作设计的规则一节](docs/unified-actions.md#新功能必须满足的规则)）：任何可操作功能都要接入统一动作、能从统一搜索框执行；可见文案中英双语；界面只用 Daybook 令牌与自研组件；同一功能只保留一个页面或入口；界面不显示实现层说明。
 - 修改前先判断任务类型，检查工作区状态，并建立最小影响/复用表；没有完成复用检索，不先新增控件、领域规则、保存入口或平行状态。
 - 实施沿现有 `Domain → Services → Features → Theme` 责任方向进行；任务、手记、搜索、菜单栏和独立窗口的外观可以复用，提交、快捷键、隐私和草稿语义必须分别核对。
 - 修改后按影响选择验证：默认运行 `python3 -B scripts/quality_gate.py`，Swift 改动加 `--profile swift`——门禁按改动推导定向测试（改什么测什么），分前台轮／后台轮走隔离 QA；全量 `--profile full` 只在用 `--single` 替换日常应用之前或用户明确要求时运行，不作为每批或每个检查点的默认动作；核心文件与整次推导超上限时收敛到同名测试＋冒烟集，已知既有失败按 `scripts/known_test_failures.json` 单列；规则/技能/文档仍需 `python3 -B scripts/check_workflow.py`，Swift/UI 交给项目验收技能选择定向测试和构建。共享契约或跨模块行为变化只走一个复核入口：Claude Code `verifier` 子代理（见[指定只读复核入口](skill-routing.md#指定只读复核入口)）做只读核对，测试、构建和隔离原生交给 [areachain-verify](.agents/skills/areachain-verify/SKILL.md)。
