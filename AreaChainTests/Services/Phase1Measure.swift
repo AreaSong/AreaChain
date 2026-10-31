@@ -1,6 +1,6 @@
 import Foundation
 
-/// 阶段 1 只记录测量，不设产品预算。分位数在小样本上是近似值。
+/// 只记录测量，不设产品预算。分位数在小样本上是近似值。
 struct Phase1Sample: Codable {
     var scenario = ""
     var scale = 0

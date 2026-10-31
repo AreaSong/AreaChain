@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-// MARK: - L0 原始值
+// MARK: - 原始值
 
 enum DaybookSwatch {
     static let inkLight = (0.12, 0.12, 0.14)
@@ -24,7 +24,7 @@ enum DaybookSwatch {
     static let tagDark = (0.28, 0.78, 0.48)
 }
 
-// MARK: - L1 语义色
+// MARK: - 语义色
 // 页面（AreaChain/Features）以后只允许引用这里的名字：不得对颜色乘 opacity，不得直接用 Color.orange 等系统色。
 // 基准 = 菜单栏浮层任务页现状（用户决定）。聚焦色是 ink 35% 灰描边，不是蓝色。
 
@@ -155,7 +155,7 @@ enum DaybookPalette {
     /// 默认通用分类标签色（替换直接硬编码的 .systemIndigo）
     static let tagDefault = Color(nsColor: .systemIndigo)
 
-    /// 手记预置标签色。来源：Features/Diary/DiaryNoteCard.swift 的 DiaryTagChrome（P5 再把消费者迁过来，本阶段不动它）。
+    /// 手记预置标签色。来源：Features/Diary/DiaryNoteCard.swift 的 DiaryTagChrome（消费者仍在原处，迁移另行处理）。
     enum DiaryPreset {
         static let password = Color(nsColor: .systemRed)
         static let idea = Color(nsColor: .systemOrange)

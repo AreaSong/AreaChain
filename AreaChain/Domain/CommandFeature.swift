@@ -11,7 +11,7 @@ enum CommandFeature: String, CaseIterable, Sendable {
     case d1 = "D1", d2 = "D2", d3 = "D3", d4 = "D4"
     case n1 = "N1", n2 = "N2", n3 = "N3", n4 = "N4", n5 = "N5", n6 = "N6", n7 = "N7", n8 = "N8"
 
-    /// 对应权威设计第 8 节；原业务符号和安全差异继续在该单一来源维护。
+    /// 对应权威设计的用户功能覆盖映射；原业务符号和安全差异继续在该单一来源维护。
     var source: String { "docs/unified-search-commands.md#\(rawValue)" }
 }
 

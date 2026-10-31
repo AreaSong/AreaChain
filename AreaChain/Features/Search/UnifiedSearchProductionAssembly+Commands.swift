@@ -3,7 +3,7 @@ import SwiftData
 
 /// 唯一装配点的指令部分：各适配器与规格接真实依赖。所有写入只经原仓储与 ModelChanges，保存成功才发布；
 /// 设置类沿用当前正式版的偏好权威（AppPreferences 旧键 + LocalSettingCommandAdapter），不切文件后端、不迁移。
-/// 能力按前面各批已实现并复核的范围打开；系统类、永久删除类仍只在 CommandOriginalPage 里打开原页面，这里不装配执行。
+/// 能力只对已实现并复核的指令打开；系统类、永久删除类仍只在 CommandOriginalPage 里打开原页面，这里不装配执行。
 extension UnifiedSearchProductionAssembly {
     struct Commands {
         let settings: LocalSettingCommandAdapter

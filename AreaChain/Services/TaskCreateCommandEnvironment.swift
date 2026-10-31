@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// 本阶段只装配内存库、私有事件源与明确 fake 消费者，无生产默认依赖。
+/// 只装配内存库、私有事件源与明确 fake 消费者，无生产默认依赖。
 @MainActor final class TaskCreateCommandEnvironment {
     let id = UUID()
     let context: ModelContext

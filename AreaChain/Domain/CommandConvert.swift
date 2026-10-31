@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// T8 互转只开放单个普通无备注对象：新建新 UUID 的对象并让原对象进回收站，不就地改类型。
+/// 待办与习惯互转只开放单个普通无备注对象：新建新 UUID 的对象并让原对象进回收站，不就地改类型。
 enum CommandConvertEdit: String, CaseIterable, Equatable {
     case todoToRoutine = "todo.toRoutine", routineToTodo = "routine.toTodo"
 

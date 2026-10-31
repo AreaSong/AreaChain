@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// J3：转今天任务沿原规则、走共用独立确认、只能单项、重试不重复创建；回收走共用确认；
+/// 手记动作：转今天任务沿原规则、走共用独立确认、只能单项、重试不重复创建；回收走共用确认；
 /// 受保护或敏感手记拒绝且不读正文。
 @Suite(.serialized) @MainActor struct DiaryActionCommandTests {
     @Test func toTodoFollowsTheCardRuleAfterConfirmation() throws {

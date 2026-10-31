@@ -16,7 +16,7 @@ struct CommandCatalogTests {
 
     @Test func mappingManifestMatchesAuthoritativeDocument() throws {
         let text = try String(contentsOf: root.appendingPathComponent("docs/unified-search-commands.md"), encoding: .utf8)
-        // 后续交接也可提及 D1 等编号；完整性只核对权威第 8 节的映射清单。
+        // 完整性只核对权威设计里用户功能覆盖映射的清单，其他章节的提及不算。
         let start = try #require(text.range(of: "## 8. 用户功能覆盖映射"))
         let end = try #require(text.range(of: "## 9. 实施依赖、验收与未决项"))
         let manifest = String(text[start.upperBound..<end.lowerBound])

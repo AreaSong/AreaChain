@@ -1,6 +1,6 @@
 import Foundation
 
-/// T8 转换的预览、接受、独立确认与核对只是原 Plan/Run 之外的不可编辑投影；草稿与计划仍归 Coordinator。
+/// 互转的预览、接受、独立确认与核对只是原 Plan/Run 之外的不可编辑投影；草稿与计划仍归 Coordinator。
 extension UnifiedSearchController {
     var showsConvert: Bool {
         let drafts = (operations?.allDrafts ?? []) + (plan?.items.map(\.draft) ?? [])

@@ -46,6 +46,7 @@ class WorkflowCheckTests(unittest.TestCase):
             "skill-routing.md": "areachain-workflow areachain-ui areachain-verify docs/component-catalog.md docs/quality-gates.md 用户输入契约 三个项目技能 Claude Code `verifier`\n",
             "docs/quality-gates.md": "quality_gate.py performance-baselines.json security-static comment-contract\n",
             "docs/unified-search-commands.md": "现状总览 功能覆盖表 每批最少必读 ## 8. 用户功能覆盖映射\n",
+            "docs/unified-actions.md": "## 新功能必须满足的规则\n\n## 必须继承的安全规则\n",
             "docs/component-catalog.md": "TaskContentQueryReader DaybookInputShell DaybookTextField SyntaxTextField DaybookButtonStyle DaybookToggleStyle checkbox Checkbox DaybookStepper Stepper DaybookSegmentedControl DaybookSegmentOption DaybookSegmentedBar Segmented segmented DaybookPicker DaybookPickerOption formRow verbatim Picker ModernCheckbox inlineSubtask detailSubtask detailSubtaskSymbolSize Completion DaybookControlsPreview ControlsPreviewWindowController openControlsPreview settings.controlsPreview DaybookOverlaySamples daybookSurface TaskRow DayBoardList BoardFilter BoardSearch CommandCatalog DayKey AgendaProjection DayBoardPageProjection DayBoardCheckIndex DayBoardMutations ModelChanges PendingTrash BoardRowChrome BoardCommandStrip WorkspaceHeaderBar WorkspaceHeaderAction 新公共组件 UnifiedSearchUnavailableField\n",
         }
         contract_docs["docs/component-catalog.md"] += " AppLaunchPolicy AppStartup CommandTextSystem\n"
@@ -139,6 +140,8 @@ class WorkflowCheckTests(unittest.TestCase):
                 content += "skill-routing.md component-catalog.md areachain-verify quality-gates.md 用户无需调用本技能 skill-format\n"
             if name in ("areachain-workflow", "areachain-verify"):
                 content += "Claude Code `verifier`\n"
+            if name == "areachain-verify":
+                content += "unified-actions.md#新功能必须满足的规则\n"
             self.write(f".agents/skills/{name}/SKILL.md", content)
             self.write(f".agents/skills/{name}/agents/openai.yaml",
                        "interface:\n  display_name: Fixture\n  short_description: Isolated fixture\n")
@@ -312,6 +315,24 @@ class WorkflowCheckTests(unittest.TestCase):
         result = workflow.check_workflow_contract(self.root)
         self.assertEqual(result["status"], "failed")
         self.assertTrue(any("areachain-ui" in problem["message"] for problem in result["issues"]))
+
+    def test_unified_actions_rules_are_required_by_design_doc_and_verify_skill(self):
+        self.make_project()
+        self.assertIn("docs/unified-actions.md", workflow.REQUIRED_DOCS)
+        cases = (("docs/unified-actions.md", "## 新功能必须满足的规则"),
+                 ("docs/unified-actions.md", "## 必须继承的安全规则"),
+                 (".agents/skills/areachain-verify/SKILL.md", "unified-actions.md#新功能必须满足的规则"))
+        for relative, marker in cases:
+            with self.subTest(file=relative, marker=marker):
+                path = self.root / relative
+                original = path.read_text(encoding="utf-8")
+                self.assertEqual(workflow.check_workflow_contract(self.root)["status"], "passed")
+                path.write_text(original.replace(marker, ""), encoding="utf-8")
+                result = workflow.check_workflow_contract(self.root)
+                path.write_text(original, encoding="utf-8")
+                self.assertEqual(result["status"], "failed")
+                self.assertTrue(any(item["file"].endswith(relative) and marker in item["message"]
+                                    for item in result["issues"]))
 
     def test_workflow_contract_rejects_missing_designated_verifier_entry(self):
         self.make_project()
@@ -1527,6 +1548,27 @@ class WorkflowCheckTests(unittest.TestCase):
         self.assertEqual(workflow.check_progress_notes(self.root)["status"], "passed")
         self.write("AreaChain/Domain/Other.swift", "// 沿 X-1 骨架\n")
         self.assertEqual(len(workflow.check_progress_notes(self.root)["issues"]), 1)
+
+    def test_progress_notes_flag_numbering_codes_and_test_case_labels(self):
+        self.write("AreaChain/Domain/Sample.swift",
+                   "/// T8 互转只开放单个对象\n// G2、C3：永久删除\n// D1～D4：备份\n"
+                   "/// 对应权威设计第 8 节\n/// 本阶段只装配内存库\n/// 阶段 1 只记录测量\n"
+                   "/// T10 capture.clipboard 只读草稿\n/// 手记组织（J2）——置顶\n")
+        self.write("AreaChainTests/Domain/SampleTests.swift", "    // T1.1: streak grows\n        // Case A1: note is nil\n")
+        self.write("scripts/tool.py", "value = 1  # S7：快捷键\n")
+        result = workflow.check_progress_notes(self.root)
+        found = sorted((Path(item["file"]).name, item["line"]) for item in result["issues"])
+        self.assertEqual(found, [("Sample.swift", 1), ("Sample.swift", 2), ("Sample.swift", 3),
+                                 ("Sample.swift", 4), ("Sample.swift", 5), ("Sample.swift", 6),
+                                 ("Sample.swift", 7), ("Sample.swift", 8),
+                                 ("SampleTests.swift", 1), ("SampleTests.swift", 2), ("tool.py", 1)])
+
+    def test_progress_notes_keep_business_ordinals_and_priorities(self):
+        self.write("AreaChain/Domain/Sample.swift",
+                   "/// 同一天只保留第一条打卡；下键进入第二项\n// P1～P4 优先级，P4 不显示\n"
+                   "/// 只监视本批明确路径；第二轮属性变更重新建立跟踪\n// !p1 与 UTF-8、SHA256 都不是编号\n"
+                   "// MARK: - 原始值\n// 宽度 (A4) 纸张与 B2B 接口不是代号\n")
+        self.assertEqual(workflow.check_progress_notes(self.root)["status"], "passed")
 
     LOAN_ESCROW = (
         "@MainActor final class CommandLongTextLoan {\n"

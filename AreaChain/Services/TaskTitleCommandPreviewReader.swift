@@ -56,7 +56,7 @@ final class TaskTitleCommandPreviewReader {
                             catalog: catalog, impact: observation.impact, context: observation.followUp, chain: binding)
     }
 
-    /// 此核对仍不是授权：B2 必须再核验协调者实时 lease、干净 context、唯一身份并在同步边界写入。
+    /// 此核对仍不是授权：保存前必须再核验协调者实时 lease、干净 context、唯一身份并在同步边界写入。
     func validateCurrent(_ preview: CommandTaskTitlePreview, in host: CommandOwnedHost) throws -> CommandTaskTitlePreview {
         let current = try read(in: host, catalog: catalogReader.current())
         try preview.validateCurrent(current)

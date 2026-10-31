@@ -20,7 +20,7 @@ REQUIRED_DOCS = (
     "AGENTS.md", "README.md", "docs/README.md", "docs/architecture.md",
     "docs/signing.md", "skill-routing.md",
     "docs/component-catalog.md", "docs/quality-gates.md",
-    "docs/unified-search-commands.md",
+    "docs/unified-search-commands.md", "docs/unified-actions.md",
 )
 LINK = re.compile(r"\[[^\]\n]*\]\((?:<([^>\n]+)>|([^\s)]+))(?:\s+\"[^\"]*\")?\)")
 IMPORT = re.compile(r"\bimport\s+(?:(?:typealias|struct|class|enum|protocol|let|var|func)\s+)?(AppKit|SwiftUI|Cocoa)\b")
@@ -34,7 +34,7 @@ LIMITATIONS = [
     "component-catalog 只核对少量稳定入口的文件和符号仍存在；不把所有内部类型自动变成公共 API。",
     "ci-contract 只核对工作流中的关键文本标记与 checkout revision；不替代 GitHub Actions YAML 语义或远端运行验证。",
     "swift-file-size 只数源码行数，不判断函数是否该拆，也不证明行为等价。",
-    "progress-notes 只在注释里匹配批次、检查点与章节编号的字面模式（不含 scripts/tests，不拦决策代号）；不识别 Swift 字符串内插里的注释与 Shell 反斜杠转义的引号；不判断注释是否解释了原因。",
+    "progress-notes 只在注释里匹配批次、阶段、检查点、章节序号、功能与决策代号及测试用例编号的字面模式（不含 scripts/tests；P 开头的代号留给优先级，因此 P 开头的功能代号与优先级无法区分；不带序号的批次措辞也不识别）；不识别 Swift 字符串内插里的注释与 Shell 反斜杠转义的引号；不判断注释是否解释了原因。",
     "long-text-loan 只核对借用符号出现的文件与声明形状；不证明同文件代码不复制正文，也不替代运行时测试。",
     "unified-search-assembly 只匹配生产代码里“类型名(”与凭据签发的字面构造；不识别 .init 推断构造，也不证明运行时只装配一次。",
 ]
@@ -58,13 +58,14 @@ WORKFLOW_CONTRACT = {
         "quality-gates.md", "用户无需调用本技能", "skill-format",
         "Claude Code `verifier`",
     ),
-    ".agents/skills/areachain-verify/SKILL.md": ("Claude Code `verifier`",),
+    ".agents/skills/areachain-verify/SKILL.md": ("Claude Code `verifier`", "unified-actions.md#新功能必须满足的规则"),
     "docs/quality-gates.md": (
         "quality_gate.py", "performance-baselines.json", "security-static",
         "comment-contract",
     ),
     "docs/architecture.md": ("qa-compile", "--qa-batch", "Config/QA.xcconfig", "持久化之前"),
     "docs/unified-search-commands.md": ("现状总览", "功能覆盖表", "每批最少必读", "## 8. 用户功能覆盖映射"),
+    "docs/unified-actions.md": ("## 新功能必须满足的规则", "## 必须继承的安全规则"),
 }
 
 COMPONENT_ENTRIES = (
@@ -953,9 +954,19 @@ def check_swift_file_size(root, limit=500):
     return result("swift-file-size", checked, issues)
 
 
+_CN_NUMBER = "[0-9一二三四五六七八九十]+"
 PROGRESS_NOTE = re.compile(
     r"合并批|修复批次?|收尾批|提速基建|检查点 ?[A-Z]|里程碑 ?[A-Z]|[A-Z]-M[0-9][a-z]?|\bM-[0-9][A-Z]?\b"
-    r"|G-1[a-e]|\bX-1\b|\bZ-[12]\b|§ ?[0-9]+(?:\.[0-9]+)*")
+    r"|G-1[a-e]|\bX-1\b|\bZ-[12]\b|§ ?[0-9]+(?:\.[0-9]+)*"
+    # 文档章节、阶段与批次的序号；“第一条打卡”“本批路径”“第二轮迭代”这类业务描述不在内。
+    rf"|第 ?{_CN_NUMBER} ?(?:节|批|阶段|版)|(?:阶段|批次|里程碑|检查点|步骤) ?{_CN_NUMBER}"
+    r"|(?:本|上一?|下一?|这一)阶段"
+    # 字母加数字的功能或决策代号后接说明；P 开头的留给优先级。
+    r"|(?<![A-Za-z0-9_.!#@-])[A-OQ-Z][0-9]{1,2}(?:[～~–-][A-Z]?[0-9]{1,2})?(?=[：:、]|\s*[\u4e00-\u9fff]|\s+[a-z]+\.[a-zA-Z])"
+    # 全角括号里单独的字母数字代号；半角括号常写纸张、型号，不在内。
+    r"|（[A-OQ-Z][0-9]{1,2}）"
+    # 以“字母数字编号加冒号”开头的测试用例注释。
+    r"|^\s*(?:/{2,3}|#)\s*(?:Case\s+)?[A-Z][0-9]{1,2}(?:\.[0-9]+)?\s*:")
 PROGRESS_EXEMPT = "progress-note-exempt:"
 
 

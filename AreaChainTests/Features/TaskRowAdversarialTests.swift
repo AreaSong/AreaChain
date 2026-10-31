@@ -105,7 +105,7 @@ struct TaskRowAdversarialTests {
             locale: Locale(identifier: "zh_CN")
         )
 
-        // Case A1: Everyday routine completed (not skipped) -> default note is nil
+        // Everyday routine completed (not skipped) -> default note is nil
         let displayA1 = RoutineRowDisplayOptions(isDone: true, usesDefaultNote: true)
         let actionsA1 = RoutineRowActions(onSelect: { _ in }, onDelete: {}, onSkip: nil)
         let rowA1 = TaskRowFactory.routine(RoutineRowContext(
@@ -115,7 +115,7 @@ struct TaskRowAdversarialTests {
         #expect(rowA1.state.canSkip == false)
         #expect(rowA1.state.note == nil) // Everyday habit completed has no weekday restriction note
 
-        // Case A2: Weekdays-only routine completed -> default note shows weekday label
+        // Weekdays-only routine completed -> default note shows weekday label
         let weekdayRoutine = DailyRoutine(title: "Study", sortOrder: 1, createdDayKey: "2026-09-01", weekdaysOnly: true)
         context.insert(weekdayRoutine)
         let rowA2 = TaskRowFactory.routine(RoutineRowContext(
@@ -123,7 +123,7 @@ struct TaskRowAdversarialTests {
         ))
         #expect(rowA2.state.note != nil)
 
-        // Case A3: Explicit custom note overrides default note
+        // Explicit custom note overrides default note
         let displayA3 = RoutineRowDisplayOptions(isDone: true, note: "Custom Note", usesDefaultNote: true)
         let rowA3 = TaskRowFactory.routine(RoutineRowContext(
             routine: routine, schedule: schedule, catalogs: catalogContext, display: displayA3, actions: actionsA1

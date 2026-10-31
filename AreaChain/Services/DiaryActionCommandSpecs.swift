@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// 手记动作（J3）里写库的两条——转今天任务、回收；复制走原卡片的剪贴板路径，不进骨架。
+/// 手记动作里写库的两条——转今天任务、回收；复制走原卡片的剪贴板路径，不进骨架。
 extension DiaryCommandSpecs {
     /// 默认不装配，只在隔离 QA 测试里显式传给 SimpleCommandAdapter。
     static func actions(_ dependencies: DiaryCommandDependencies) -> [any SimpleCommandSpec] {

@@ -1,6 +1,6 @@
 import Foundation
 
-/// T10 capture.clipboard：目录是 systemAction／externalEffect（不入普通队列），因此沿 todo.copy 只读当前操作草稿、
+/// capture.clipboard：目录是 systemAction／externalEffect（不入普通队列），因此沿 todo.copy 只读当前操作草稿、
 /// 不建 Run。预览阶段不读剪贴板，只说明“将读取当前剪贴板”；读取只在用户明确提交后发生一次。
 enum ClipboardCaptureCommandIssue: Error, Equatable {
     case unassembled, unsupportedPlan, stale, alreadySubmitted, verificationRequired

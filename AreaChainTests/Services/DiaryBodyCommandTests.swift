@@ -3,7 +3,7 @@ import SwiftData
 import Testing
 @testable import AreaChain
 
-/// J1 服务层：diary.create／diary.body 经 prepare → accept →（确认）→ 托管封存 → 借用 → 提交；
+/// 手记正文服务层：diary.create／diary.body 经 prepare → accept →（确认）→ 托管封存 → 借用 → 提交；
 /// 只有普通手记直接执行，受保护目标在读取正文前拒绝，正文含私密标签被拒，超长已有正文改为打开原页面，
 /// 锁定后旧借用失效，哨兵正文不出现在预览、接受、Run、Facts、托管描述与追踪里。合成内存库与隔离保险箱。
 @Suite(.serialized) @MainActor struct DiaryBodyCommandTests {

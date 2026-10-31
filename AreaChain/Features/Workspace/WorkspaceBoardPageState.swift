@@ -14,7 +14,7 @@ struct WorkspaceBoardPageState: Equatable {
     var ganttOrder: [UUID] = []
 }
 
-/// 标签页的新建与改名草稿（G1 tag.cancel 取消的就是这两项）。
+/// 标签页的新建与改名草稿（tag.cancel 取消的就是这两项）。
 struct WorkspaceTagPageDrafts: Equatable {
     var createName = ""
     var renamingID: UUID?

@@ -41,7 +41,7 @@ struct CommandTaskCreateComposition: Equatable, CustomStringConvertible, CustomD
         priority.hasConflict ? nil : (priority.value ?? .init(isImportant: false, isUrgent: false))
     }
 
-    /// 对照仓储 addTodo 的有效内容条件；本阶段 notes 恒为空，p4/clear 不算有效元数据。
+    /// 对照仓储 addTodo 的有效内容条件；这里 notes 恒为空，p4/clear 不算有效元数据。
     var hasEffectiveContent: Bool {
         !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !tags.final.isEmpty
             || reminder.value != nil || priority.value?.isImportant == true || priority.value?.isUrgent == true

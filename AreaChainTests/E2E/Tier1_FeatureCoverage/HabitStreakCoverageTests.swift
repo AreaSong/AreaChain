@@ -27,7 +27,7 @@ struct HabitStreakCoverageTests {
         )
     }
 
-    // T1.1: Primary consecutive daily check-ins increment currentStreak and bestStreak
+    // Primary consecutive daily check-ins increment currentStreak and bestStreak
     @Test func consecutiveDailyCheckInsIncrementStreak() {
         let routine = makeRoutine(createdDayKey: "2026-09-01")
         let checks = (1...5).map { day in
@@ -48,7 +48,7 @@ struct HabitStreakCoverageTests {
         #expect(result.isSkippedToday == false)
     }
 
-    // T1.2: Missed scheduled day breaks current streak but preserves historical peak
+    // Missed scheduled day breaks current streak but preserves historical peak
     @Test func missedDayResetsCurrentStreakWhilePreservingHistoricalBest() {
         let routine = makeRoutine(createdDayKey: "2026-09-01")
         // Completed Day 1, 2, 3; Missed Day 4; Completed Day 5
@@ -71,7 +71,7 @@ struct HabitStreakCoverageTests {
         #expect(result.isCompletedToday == true)
     }
 
-    // T1.3: Weekday mask routine (Mon-Fri) bridges weekend off-days without breaking
+    // Weekday mask routine (Mon-Fri) bridges weekend off-days without breaking
     @Test func workdayHabitBridgesWeekendWithoutBreakingStreak() {
         // 2026-09-04 is Friday, 09-05 Saturday, 09-06 Sunday, 09-07 Monday
         let routine = makeRoutine(createdDayKey: "2026-09-04", weekdayMask: WeekdayMask.workdays)
@@ -101,7 +101,7 @@ struct HabitStreakCoverageTests {
         #expect(mondayEvening.isCompletedToday == true)
     }
 
-    // T1.4: Single skipped day bridges streak transparently without counting as missed
+    // Single skipped day bridges streak transparently without counting as missed
     @Test func singleSkippedDayBridgesStreakTransparently() {
         let routine = makeRoutine(createdDayKey: "2026-09-01")
         let checks = [
@@ -123,7 +123,7 @@ struct HabitStreakCoverageTests {
         #expect(result.isCompletedToday == true)
     }
 
-    // T1.5: Today in-progress preserves streak through yesterday
+    // Today in-progress preserves streak through yesterday
     @Test func todayInProgressPreservesStreakThroughYesterday() {
         let routine = makeRoutine(createdDayKey: "2026-09-01")
         let checks = (1...4).map { day in
@@ -143,7 +143,7 @@ struct HabitStreakCoverageTests {
         #expect(result.isCompletedToday == false)
     }
 
-    // T1.6: Days prior to routine creation date are ignored
+    // Days prior to routine creation date are ignored
     @Test func routineCreationDateBoundary() {
         let routine = makeRoutine(createdDayKey: "2026-09-03")
         let checks = [
@@ -162,7 +162,7 @@ struct HabitStreakCoverageTests {
         #expect(result.bestStreak == 2)
     }
 
-    // T1.7: Unscheduled off-day check-in counts as bonus completion
+    // Unscheduled off-day check-in counts as bonus completion
     @Test func offDayCompletionGrantsBonusStreakIncrement() {
         // Weekday routine (Mon-Fri) checked on Saturday (2026-09-05)
         let routine = makeRoutine(createdDayKey: "2026-09-04", weekdayMask: WeekdayMask.workdays)

@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// 手记组织（J2）——记录置顶、改日、普通标签。只有普通手记直接执行；“私密”标记、显示与遮罩
+/// 手记组织——记录置顶、改日、普通标签。只有普通手记直接执行；“私密”标记、显示与遮罩
 /// 在 CommandOriginalPage 里改为打开原手记页。
 extension DiaryCommandSpecs {
     /// 默认不装配，只在隔离 QA 测试里显式传给 SimpleCommandAdapter。

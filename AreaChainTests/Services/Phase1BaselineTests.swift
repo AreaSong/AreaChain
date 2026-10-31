@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import AreaChain
 
-/// 阶段 1 隔离合成数据性能基线。不设产品预算，失败只报告数字。
+/// 隔离合成数据的性能基线。不设产品预算，失败只报告数字。
 @Suite(.serialized)
 @MainActor
 struct Phase1BaselineTests {

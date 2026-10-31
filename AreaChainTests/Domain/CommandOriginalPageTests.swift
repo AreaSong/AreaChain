@@ -33,7 +33,7 @@ import Testing
     @Test func tableCoversExactlyTheDecidedCommands() throws {
         var wanted = Set(Self.expected.values.flatMap { $0 })
         let catalog = CommandCatalog.standard
-        // P1～P4 除 privacy.lock 外全部；D2、D3 全部。
+        // 隐私指令除 privacy.lock 外全部；数据交换与加密备份指令全部。
         wanted.formUnion(catalog.entries.map(\.id.rawValue).filter {
             ($0.hasPrefix("privacy.") && $0 != "privacy.lock") || $0.hasPrefix("data.") || $0.hasPrefix("backup.")
         })

@@ -13,7 +13,7 @@ import Testing
         return f
     }
 
-    /// C1 等价：同一查询与模式下，指令面板列出的结果与历史页（ClipboardHistoryBrowser 渲染的 visibleItems）逐行相同。
+    /// 剪贴板搜索等价：同一查询与模式下，指令面板列出的结果与历史页（ClipboardHistoryBrowser 渲染的 visibleItems）逐行相同。
     @Test(arguments: [0, 3]) func searchMatchesTheNativeHistoryBrowser(style: Int) async throws {
         let clipboard = try ClipboardCommandFixture()
         let f = try fixture(clipboard)

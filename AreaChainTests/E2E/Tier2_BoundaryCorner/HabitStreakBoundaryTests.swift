@@ -29,7 +29,7 @@ struct HabitStreakBoundaryTests {
         )
     }
 
-    // T2.1: Leap year boundary (Feb 28 -> Feb 29 -> Mar 01, 2028) maintains streak
+    // Leap year boundary (Feb 28 -> Feb 29 -> Mar 01, 2028) maintains streak
     @Test func leapYearBoundaryMaintainsStreak() {
         let routine = makeRoutine(createdDayKey: "2028-02-28")
         let checks = [
@@ -49,7 +49,7 @@ struct HabitStreakBoundaryTests {
         #expect(result.bestStreak == 3)
     }
 
-    // T2.2: Cross-year boundary (Dec 30, 2026 -> Dec 31, 2026 -> Jan 01, 2027) maintains streak
+    // Cross-year boundary (Dec 30, 2026 -> Dec 31, 2026 -> Jan 01, 2027) maintains streak
     @Test func crossYearBoundaryMaintainsStreak() {
         let routine = makeRoutine(createdDayKey: "2026-12-30")
         let checks = [
@@ -69,7 +69,7 @@ struct HabitStreakBoundaryTests {
         #expect(result.bestStreak == 3)
     }
 
-    // T2.3: Cross-month boundary across differing month lengths (Apr 30 -> May 01)
+    // Cross-month boundary across differing month lengths (Apr 30 -> May 01)
     @Test func crossMonthBoundary30To31Days() {
         let routine = makeRoutine(createdDayKey: "2026-04-29")
         let checks = [
@@ -89,7 +89,7 @@ struct HabitStreakBoundaryTests {
         #expect(result.bestStreak == 3)
     }
 
-    // T2.4: Multiple consecutive skipped days bridge streak across active days
+    // Multiple consecutive skipped days bridge streak across active days
     @Test func multipleConsecutiveSkipsBridgeStreak() {
         let routine = makeRoutine(createdDayKey: "2026-09-01")
         // Mon done, Tue-Thu skipped, Fri done
@@ -112,7 +112,7 @@ struct HabitStreakBoundaryTests {
         #expect(result.bestStreak == 2)
     }
 
-    // T2.5: Custom weekday mask (e.g. MWF = Mon/Wed/Fri = 0b0101010) bridges off-days
+    // Custom weekday mask (e.g. MWF = Mon/Wed/Fri = 0b0101010) bridges off-days
     @Test func customWeekdayMaskMWF() {
         // Mon=2, Wed=4, Fri=6 -> binary bits 1, 3, 5 = (1<<1) | (1<<3) | (1<<5) = 2 | 8 | 32 = 42 (0b0101010)
         let mwfMask = (1 << 1) | (1 << 3) | (1 << 5)
@@ -135,7 +135,7 @@ struct HabitStreakBoundaryTests {
         #expect(result.bestStreak == 3)
     }
 
-    // T2.6: Custom weekend-only habit (Sat/Sun = 0b1000001 = 65) bridges 5 weekdays
+    // Custom weekend-only habit (Sat/Sun = 0b1000001 = 65) bridges 5 weekdays
     @Test func customWeekendOnlyHabit() {
         let weekendMask = (1 << 0) | (1 << 6) // Sunday=1, Saturday=64 -> 65
         // 2026-09-05 is Saturday, 09-06 is Sunday, 09-12 is next Saturday
@@ -157,7 +157,7 @@ struct HabitStreakBoundaryTests {
         #expect(result.bestStreak == 3)
     }
 
-    // T2.7: Duplicate check records on the same dayKey deduplicate safely
+    // Duplicate check records on the same dayKey deduplicate safely
     @Test func duplicateChecksForSameDayDeduplicate() {
         let routine = makeRoutine(createdDayKey: "2026-09-01")
         let checks = [
@@ -178,7 +178,7 @@ struct HabitStreakBoundaryTests {
         #expect(result.bestStreak == 2)
     }
 
-    // T2.8: Conflicting checks on the same dayKey prioritize isDone: true
+    // Conflicting checks on the same dayKey prioritize isDone: true
     @Test func conflictingChecksResolvesToDone() {
         let routine = makeRoutine(createdDayKey: "2026-09-01")
         let checks = [
@@ -197,7 +197,7 @@ struct HabitStreakBoundaryTests {
         #expect(result.isCompletedToday == true)
     }
 
-    // T2.9: Routine created in the future (> todayKey) returns 0 streak
+    // Routine created in the future (> todayKey) returns 0 streak
     @Test func routineCreatedInFutureYieldsZeroStreak() {
         let routine = makeRoutine(createdDayKey: "2026-10-01")
         let checks = [
@@ -216,7 +216,7 @@ struct HabitStreakBoundaryTests {
         #expect(result.isDueToday == false)
     }
 
-    // T2.10: Deleted routine returns 0 streak
+    // Deleted routine returns 0 streak
     @Test func deletedRoutineYieldsZeroStreak() {
         let routine = makeRoutine(
             createdDayKey: "2026-09-01",

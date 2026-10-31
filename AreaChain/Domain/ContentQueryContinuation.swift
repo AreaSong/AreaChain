@@ -32,7 +32,7 @@ struct ContentQueryContinuationRemainder: Equatable {
     }
 }
 
-/// 调用方显式给下一预算，不自动倍增。默认上限取原预算的四倍以约束本阶段复算；不是产品容量保证。
+/// 调用方显式给下一预算，不自动倍增。默认上限取原预算的四倍以约束单次复算；不是产品容量保证。
 struct ContentQueryContinuationPolicy {
     static let technicalCeiling = RoutineOccurrenceQueryBudget(maxInputItems: 16_384, maxWork: 400_000, maxResults: 4_000)
     var maximum = technicalCeiling

@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// 待办与习惯互转的唯一业务入口：详情页按钮（经 DayBoardMutations）与 T8 指令共用。
+/// 待办与习惯互转的唯一业务入口：详情页按钮（经 DayBoardMutations）与互转指令共用。
 /// 总是新建新 UUID 的对象并软删原对象，不就地改类型；保存与发布由所在的 ModelChanges 决定。
 @MainActor
 enum ItemConversionService {

@@ -1,6 +1,6 @@
 import Foundation
 
-/// 独立确认的唯一绑定规则，回收与 T8 转换共用。确认只绑定接受时的计划戳、计划项、
+/// 独立确认的唯一绑定规则，回收与互转共用。确认只绑定接受时的计划戳、计划项、
 /// 固定目标与各指令提供的摘要；摘要来自同一份冻结预览，不重新取样。
 struct CommandIndependentConfirmation<Summary: Equatable>: Equatable, CustomStringConvertible,
     CustomDebugStringConvertible {

@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// 只读核验 T8 转换目标与随之变化的子任务、附件、打卡记录；不调用任何写入口。
+/// 只读核验互转目标与随之变化的子任务、附件、打卡记录；不调用任何写入口。
 /// 损失清单取自 ItemConversionService 与写入共用的同一组规则（活子任务、模板顺序、星期）。
 @MainActor final class ConvertCommandReader {
     unowned let environment: BatchCommandEnvironment
