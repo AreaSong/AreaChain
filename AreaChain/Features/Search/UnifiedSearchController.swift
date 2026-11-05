@@ -200,6 +200,7 @@ final class UnifiedSearchController {
         guard validates(request.source) else { return nil }
         guard objectSelection == nil, !objectSelectionLoading, tagSelection == nil else { return nil }
         clearBlockedHandoff()
+        cliSession.updateForInput(request.text)
         // 改了文字，上一次导航或执行留下的反馈（如“已返回原搜索”）就与当前输入无关；这次输入产生的新反馈在后面照常写入。
         if request.text != buffer.text { navigationMessage = "unified.navigation.hint" }
         let state = CommandPathParser().parse(.init(text: request.text, cursorLocation: request.selection.location)).state
@@ -251,6 +252,7 @@ final class UnifiedSearchController {
             return
         }
         if intent == .open, handOffToWorkspace(source) { return }
+        if handleCLIIntentIfApplicable(intent, source: source) { return }
         if returnForCommand(intent) { return }
         if isNavigationInput {
             if intent == .submit { return }
@@ -264,32 +266,7 @@ final class UnifiedSearchController {
             return
         }
         if intent == .submit { requestOperationSubmit(source); return }
-        if let picker = tagSelection {
-            switch intent {
-            case .escape: cancelTags(picker.id)
-            case .open: acceptTags(picker)
-            case .results(let direction): moveTag(direction > 0 ? 1 : -1, picker: picker)
-            case .selectActive: if let id = picker.active { toggleTag(id, picker: picker) }
-            case .submit: break
-            }
-            return
-        }
-        if let picker = objectSelection {
-            switch intent {
-            case .escape: cancelObjectSelection()
-            case .open: _ = acceptObjects(picker.stamp)
-            case .results(let direction):
-                browseObjects(.move(direction > 0 ? .next : .previous, inputEditing: false), stamp: picker.stamp)
-            case .selectActive:
-                if let active = picker.browse.active { toggleObject(active, stamp: picker.stamp) }
-            case .submit: break
-            }
-            return
-        }
-        if objectSelectionLoading {
-            if intent == .escape { cancelObjectSelection() }
-            return
-        }
+        if handlePickerIntent(intent) { return }
         if intent == .open, isCommandInput {
             if editingParameter != nil { finishParameter(source) }
             else if let command = browsedCommand { beginTypedOperation(command.id, source: source) }
@@ -310,6 +287,34 @@ final class UnifiedSearchController {
             browse(.init(version: version, action: .focusInput), source: source)
         case .submit, .selectActive: break
         }
+    }
+
+    private func handlePickerIntent(_ intent: UnifiedSearchIntent) -> Bool {
+        if let picker = tagSelection {
+            switch intent {
+            case .escape: cancelTags(picker.id)
+            case .open: acceptTags(picker)
+            case .results(let direction): moveTag(direction > 0 ? 1 : -1, picker: picker)
+            case .selectActive: if let id = picker.active { toggleTag(id, picker: picker) }
+            case .submit: break
+            }
+            return true
+        }
+        if let picker = objectSelection {
+            switch intent {
+            case .escape: cancelObjectSelection()
+            case .open: _ = acceptObjects(picker.stamp)
+            case .results(let direction):
+                browseObjects(.move(direction > 0 ? .next : .previous, inputEditing: false), stamp: picker.stamp)
+            case .selectActive:
+                if let active = picker.browse.active { toggleObject(active, stamp: picker.stamp) }
+            case .submit: break
+            }
+            return true
+        }
+        guard objectSelectionLoading else { return false }
+        if intent == .escape { cancelObjectSelection() }
+        return true
     }
 
     func browse(_ event: ContentQueryBrowseEvent, source: UnifiedSearchBuffer) {
@@ -346,16 +351,12 @@ final class UnifiedSearchController {
         revokeTaskTitle()
         revokeTaskComposition()
         cancelObjectSelection(returnFocus: false)
-        contentCommandTask?.cancel()
-        contentCommandTask = nil
-        resumeTask?.cancel()
-        resumeTask = nil
+        contentCommandTask?.cancel(); contentCommandTask = nil
+        resumeTask?.cancel(); resumeTask = nil
         task?.cancel()
         if let observer { session.displayUpdates.remove(observer) }
-        observer = nil
-        focusResults = nil
-        captureSearchScroll = nil
-        restoreSearchScroll = nil
+        observer = nil; focusResults = nil; captureSearchScroll = nil; restoreSearchScroll = nil
+        UnifiedSearchCLISession.removeSession(for: self)
         session.detach()
     }
 

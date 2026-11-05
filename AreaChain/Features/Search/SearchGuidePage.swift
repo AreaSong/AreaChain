@@ -7,6 +7,7 @@ struct SearchGuidePage: View {
     var workspace: UnifiedSearchController?
     var menubar: UnifiedSearchController?
     @State private var expanded: Set<String> = []
+    @Environment(\.locale) private var locale
 
     private static let sections = CommandCatalog.standard.guideSections()
 
@@ -32,6 +33,11 @@ struct SearchGuidePage: View {
     }
 
     private var hosts: SearchGuideHosts { .init(workspace: workspace, menubar: menubar) }
+
+    private var cliActionMetadata: [ActionMetadataDescriptor] {
+        StandardActionCatalog.bootstrapIfNeeded()
+        return ActionRegistry.shared.allMetadata
+    }
 
     private var basicsSection: some View {
         Section("searchGuide.basics.title") {
@@ -76,6 +82,32 @@ struct SearchGuidePage: View {
     private var catalogSection: some View {
         Section("searchGuide.catalog.title") {
             note("searchGuide.catalog.hint")
+            DisclosureGroup(isExpanded: binding("cli.baseActions")) {
+                ForEach(cliActionMetadata, id: \.id) { item in
+                    HStack(alignment: .firstTextBaseline, spacing: DaybookSpacing.sm) {
+                        Text(verbatim: item.localizedTitle(for: locale))
+                            .font(DaybookType.body)
+                            .foregroundStyle(DaybookPalette.text.primary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Text(verbatim: item.commandNames.prefix(2).map { "/\($0)" }.joined(separator: " · "))
+                            .font(DaybookType.caption.monospaced())
+                            .foregroundStyle(DaybookPalette.text.secondary)
+                            .lineLimit(1)
+                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityIdentifier("searchGuide.action." + item.id.rawValue)
+                }
+            } label: {
+                HStack(spacing: DaybookSpacing.xs) {
+                    Text(
+                        verbatim: locale.identifier.hasPrefix("zh")
+                            ? "Linux CLI 统一动作 (\(cliActionMetadata.count))"
+                            : "Linux CLI Unified Actions (\(cliActionMetadata.count))"
+                    )
+                    .font(DaybookType.body.weight(.semibold))
+                }
+            }
+            .accessibilityIdentifier("searchGuide.catalog.cli.baseActions")
             ForEach(Self.sections) { section in
                 DisclosureGroup(isExpanded: binding(section.id)) {
                     ForEach(section.commands) { command in

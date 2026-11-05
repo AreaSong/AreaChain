@@ -3,12 +3,24 @@ import SwiftUI
 
 /// 独立于工作台 provider；关闭即卸载展示树，重开使用调用方当前外观初值。
 @MainActor
-final class ControlsPreviewWindowController: NSObject, NSWindowDelegate {
+final class ControlsPreviewWindowController: BaseWindow {
     static let shared = ControlsPreviewWindowController()
     static let contentSize = NSSize(width: 760, height: 640)
     static let minimumContentSize = NSSize(width: 680, height: 560)
 
-    private(set) var hostedWindow: NSWindow?
+    override var windowID: String { "window.controlsPreview" }
+    override var windowCategory: String { "controlsPreview" }
+    override var windowTitle: String { hostedWindow?.title ?? "" }
+    override var minimumContentSize: NSSize { Self.minimumContentSize }
+    override var defaultContentSize: NSSize { Self.contentSize }
+    override var minSize: NSSize { Self.minimumContentSize }
+    override var defaultSize: NSSize { Self.contentSize }
+
+    override func openWindow() {
+        let localeID = AppPreferences.shared.resolvedLocale.identifier
+        let isDark = AppPreferences.shared.appearance == .dark
+        show(localeID: localeID, dark: isDark)
+    }
 
     func show(localeID: String, dark: Bool) {
         if hostedWindow == nil {
@@ -27,13 +39,17 @@ final class ControlsPreviewWindowController: NSObject, NSWindowDelegate {
                 })))
             window.setContentSize(Self.contentSize)
             window.center()
-            hostedWindow = window
+            attachHostedWindow(window)
+        }
+        if let window = hostedWindow {
+            attachHostedWindow(window)
+            registry.markActivated(self)
         }
         if hostedWindow?.isMiniaturized == true { hostedWindow?.deminiaturize(nil) }
         hostedWindow?.makeKeyAndOrderFront(nil)
     }
 
-    func windowWillClose(_ notification: Notification) {
+    override func windowWillClose(_ notification: Notification) {
         guard let closing = notification.object as? NSWindow, closing === hostedWindow else { return }
         closing.makeFirstResponder(nil)
         // AppKit 可延后释放 hosting controller；先撤去样例树以立即拆卸本地控件与监听。
@@ -44,7 +60,8 @@ final class ControlsPreviewWindowController: NSObject, NSWindowDelegate {
         closing.contentViewController = nil
         closing.contentView = nil
         closing.delegate = nil
-        hostedWindow = nil
+        detachHostedWindow()
+        super.windowWillClose(notification)
         AppWindows.resignIfIdle(closing: closing)
         DispatchQueue.main.async { [weak closing] in
             AppWindows.resignIfIdle(closing: closing)

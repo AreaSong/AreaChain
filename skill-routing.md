@@ -6,10 +6,10 @@
 
 本节是指定只读复核的唯一权威来源，其他文件只引用这里。
 
-- **入口**：共享契约、持久化语义、复杂状态、跨模块行为和高风险变更的指定只读复核，由 Claude Code `verifier` 子代理承担。它定义在本机 `~/.claude/agents/verifier.md`，运行在独立上下文中，只读。
+- **入口**：共享契约、持久化语义、复杂状态、跨模块行为和高风险变更的指定只读复核，由独立上下文的只读子代理承担：在 Claude Code 中使用 Claude Code `verifier` 子代理（定义在 `~/.claude/agents/verifier.md`）；在 Antigravity 或 Codex 中使用当前环境支持的独立只读子代理（如 Antigravity 的 `research` / `self` 子代理或 Codex 独立子代理）。
 - **时机与输入**：执行对话在本批最终验证之后显式派发它。派发时提供原始需求或提示词、适用的项目约定、实际差异（文件列表与关键 diff）、已运行的命令与结果；要求它按"结论 / 实际运行的检查 / 整改清单 / 未覆盖项"四段格式返回，并给出 `file:line`。
-- **结论处理**：结论为"通过"，才算关闭本批的复核缺口。结论为"不通过"时，只按整改清单修复，重跑受影响的检查，再派发一次复核。执行者自己不能充当复核者，也不能让普通子代理（如 `Explore`、`general-purpose`）顶替。
-- **不可用环境**：在没有该子代理的环境（如 Codex、Cursor）中，或派发失败时，保留复核缺口并报告 partial，不得冒充已复核。
+- **结论处理**：结论为"通过"，才算关闭本批的复核缺口。结论为"不通过"时，只按整改清单修复，重跑受影响的检查，再派发一次复核。执行者自己不能充当复核者。
+- **不可用环境**：仅当当前环境完全不支持派发独立子代理或派发失败时，保留复核缺口并报告 partial，不得冒充已复核。
 
 ## 来源优先级
 
@@ -41,7 +41,7 @@
 
 ### 2. 读取最小上下文
 
-- 所有任务先读 [AGENTS.md](AGENTS.md) 和本文件。
+- 所有任务先读 [AGENTS.md](AGENTS.md)；涉及跨模块协作、公共组件复用或技能衔接时再读本文件，局部单点任务可直接按 `AGENTS.md` 执行。
 - 产品行为读 `docs/features.md`、`docs/usage.md`。
 - 模块、状态、窗口和数据契约读 `docs/architecture.md` 的相关章节。
 - 生命周期质量、注释、安全、性能、测试、交付和维护读 [质量门禁](docs/quality-gates.md)；性能数字再读 [`docs/performance-baselines.json`](docs/performance-baselines.json)。
@@ -53,21 +53,21 @@
 
 | 任务类型 | 主流程 | 补充能力 | 必要交接 |
 |---|---|---|---|
-| 新增产品能力或页面 | `areasong-development`（当前会话可用时）与 [areachain-workflow](.agents/skills/areachain-workflow/SKILL.md) | 有界面时用 [areachain-ui](.agents/skills/areachain-ui/SKILL.md) | [areachain-verify](.agents/skills/areachain-verify/SKILL.md) |
-| 既有界面、输入、窗口或视觉调整 | [areachain-ui](.agents/skills/areachain-ui/SKILL.md) 与 `areasong-development` 的 UI 路径 | 按实际问题选择 UI/UX 或平台方法 | [areachain-verify](.agents/skills/areachain-verify/SKILL.md) |
-| Domain、Services、持久化、同步或公共状态 | [areachain-workflow](.agents/skills/areachain-workflow/SKILL.md) | `areasong-development` 的架构/可靠性/工程引用 | [areachain-verify](.agents/skills/areachain-verify/SKILL.md) |
-| 重构、公共组件或跨模块契约 | [areachain-workflow](.agents/skills/areachain-workflow/SKILL.md) | `areasong-development` 架构治理 | Claude Code `verifier` 子代理（见[指定只读复核入口](#指定只读复核入口)）只读复核，以及 [areachain-verify](.agents/skills/areachain-verify/SKILL.md) |
+| 新增产品能力或页面 | [areachain-workflow](.agents/skills/areachain-workflow/SKILL.md) | 有界面时用 [areachain-ui](.agents/skills/areachain-ui/SKILL.md) | [areachain-verify](.agents/skills/areachain-verify/SKILL.md) |
+| 既有界面、输入、窗口或视觉调整 | [areachain-ui](.agents/skills/areachain-ui/SKILL.md) | 按实际问题选择 UI/UX 或平台方法 | [areachain-verify](.agents/skills/areachain-verify/SKILL.md) |
+| Domain、Services、持久化、同步或公共状态 | [areachain-workflow](.agents/skills/areachain-workflow/SKILL.md) | [质量门禁](docs/quality-gates.md) 与架构/可靠性章节 | [areachain-verify](.agents/skills/areachain-verify/SKILL.md) |
+| 重构、公共组件或跨模块契约 | [areachain-workflow](.agents/skills/areachain-workflow/SKILL.md) | [组件目录](docs/component-catalog.md) 与消费者核对 | 独立只读子代理（见[指定只读复核入口](#指定只读复核入口)）只读复核，以及 [areachain-verify](.agents/skills/areachain-verify/SKILL.md) |
 | 只读诊断、代码审阅或进度查询 | 相关代码/文档和验证入口 | 不因“看起来像功能”而实施修改 | 按请求报告证据，不自动修复 |
 | 验证或回归 | [areachain-verify](.agents/skills/areachain-verify/SKILL.md) | 按影响选择测试、构建和原生证据 | 报告通过、失败、跳过和未运行 |
 | 文档、AGENTS、路由或项目技能维护 | [areachain-workflow](.agents/skills/areachain-workflow/SKILL.md) | 不引入第四个项目技能或本机 `skill-creator` | `check_workflow.py`（含 `skill-format`）和差异复核 |
 
 技能不可用时，按同一表格读取项目文档和脚本完成安全部分，并明确缺口；不能冒充技能已调用。技能本身不扩大用户授权。
 
-仓库只维护三个项目技能：`areachain-workflow`、`areachain-ui`、`areachain-verify`。不为 Domain、发行、安装、诊断或钥匙串再拆技能；那些事实分别在文档、脚本和高风险授权里。个人级 `areasong-development` 发现才用，不是仓库内容。新增项目技能的门槛仍是重复、多步骤且确需本仓库专项方法，并同时改本文件、`AGENTS.md`、`.gitignore` 和 `check_workflow.py`。
+仓库只维护三个项目技能：`areachain-workflow`、`areachain-ui`、`areachain-verify`。不为 Domain、发行、安装、诊断或钥匙串再拆技能；那些事实分别在文档、脚本和高风险授权里。本仓库已由上述三个项目技能闭环，无需重复叠加个人级通用技能 `areasong-development`。新增项目技能的门槛仍是重复、多步骤且确需本仓库专项方法，并同时改本文件、`AGENTS.md`、`.gitignore` 和 `check_workflow.py`。
 
 ### 4. 复用门禁
 
-在新增控件、规则、状态对象、仓储入口或测试夹具前，先完成一张简短的复用/影响表：
+在新增公共控件、领域规则、跨模块状态对象、仓储入口或测试夹具前，先完成简短的复用/影响核对（新增公共组件或跨模块契约时输出下表；局部单文件改动直接用一句话说明复用的已有入口）：
 
 | 需求 | 已有入口或组件 | 文件与真实消费者 | 直接复用/局部扩展/新建 | 保持的契约 |
 |---|---|---|---|---|
@@ -76,7 +76,7 @@
 
 复用不等于抹平差异：任务输入、手记输入、剪贴板捕获、搜索、菜单栏和独立窗口可以共享外观，但 Return、Command-Return、Escape、失焦、隐私和保存语义必须分别核对。
 
-公共顶栏的页面接入走 `WorkspaceHeaderContent` / `workspaceHeader`；详情能力走当前页面投影登记，入口与消费者见 [组件目录](docs/component-catalog.md)。验收补 `WorkspaceHeaderStateTests`、`WorkspaceHeaderInteractionTests` 和 `WorkspaceRenderingTests`，由原生 UI 技能实施、验证技能执行，公共状态交 Claude Code `verifier` 子代理（见[指定只读复核入口](#指定只读复核入口)）只读复核。
+公共顶栏的页面接入走 `WorkspaceHeaderContent` / `workspaceHeader`；详情能力走当前页面投影登记，入口与消费者见 [组件目录](docs/component-catalog.md)。验收补 `WorkspaceHeaderStateTests`、`WorkspaceHeaderInteractionTests` 和 `WorkspaceRenderingTests`，由原生 UI 技能实施、验证技能执行，公共状态交独立只读子代理（见[指定只读复核入口](#指定只读复核入口)）只读复核。
 
 ### 5. 质量门禁
 
@@ -99,7 +99,7 @@
 
 1. 运行本次影响对应的静态检查、定向测试、脚本测试或构建；不要用旧结果代替新证据。
 2. UI 变更分别检查行为、焦点/键盘、双语、浅深色、最小窗口和原生宿主；网页截图不能证明 macOS 原生验收。
-3. 共享组件或公共契约变化扩大到所有真实消费者。跨模块契约只由 Claude Code `verifier` 子代理（见[指定只读复核入口](#指定只读复核入口)）做只读复核；测试、构建和隔离原生只由 [areachain-verify](.agents/skills/areachain-verify/SKILL.md) 选择并执行。
+3. 共享组件或公共契约变化扩大到所有真实消费者。跨模块契约由独立只读子代理（见[指定只读复核入口](#指定只读复核入口)）做只读复核；测试、构建和隔离原生只由 [areachain-verify](.agents/skills/areachain-verify/SKILL.md) 选择并执行。
 4. 最终报告区分：已实现、已验证、已安装、已发布、跳过、未运行和残余风险。
 5. 更新权威文档和组件目录；不生成重复的计划性规范。
 
@@ -121,7 +121,6 @@
 - 新增共享控件或公共规则时，同时更新 [组件目录](docs/component-catalog.md)、实际调用方测试和必要架构说明。
 - 修改验证入口时，保持脚本、技能、README 和质量门禁文档使用同一命令来源；不维护两套互相漂移的门禁。
 - 任何路由文件、技能引用或组件目录变更，都要运行 `python3 -B scripts/check_workflow.py`；修改检查器本身还要运行其定向测试。
-- **统一搜索交接规则**（本条是唯一出处，其他文件只引用）：
-  - 每批只更新[权威设计的现状总览](docs/unified-search-commands.md#10-现状总览)里受影响的行（覆盖表、缺口、补复核待办），不往[权威设计](docs/unified-search-commands.md) §8 表格行末追加注记。
-  - 权威设计不追加逐批交接节：本批产生或改变的产品决定写进 §1～§6 对应规则或 §9 的“仍有效的决定”，一条一句；入口、测试数字与复核结论写在提交说明里，长日志和证据放在被忽略的 `build/` 批次目录。
+- **统一动作与搜索架构维护规则**（本条是唯一出处，其他文件只引用）：
+  - 新增或修改任何可操作功能、窗口或输入控件时，必须继承对应唯一基类（`BaseAction`、`BaseTextInput`、`BaseWindow`），并在 [统一动作与三大基类架构](docs/unified-actions.md) 与 [共享组件与复用目录](docs/component-catalog.md) 同步登记。
   - 只有路由本身变化（新技能顺序、新复核或验证入口）时才在本文件加段落；普通里程碑不在这里加路由段落。

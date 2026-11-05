@@ -74,6 +74,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NotificationScheduler.shared.start()
         CompletionUndo.shared.install()
         CalendarSync.start()
+        StandardActionCatalog.bootstrapIfNeeded()
         // 只装配、不读库、不申请权限；装配失败时搜索框显示说明，其余功能照常。
         UnifiedSearchProduction.shared.start(makeServices: UnifiedSearchLiveServices.make)
         AppWindows.hideStrayWindows()
@@ -95,7 +96,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         for url in urls {
             if url.scheme == "areachain" {
                 let target = url.host ?? url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-                if target == "quick-task" {
+                if target == "action" || target == "cli" {
+                    StandardActionCatalog.bootstrapIfNeeded()
+                    _ = ExternalActionGateway.shared.execute(url: url)
+                } else if target == "quick-task" {
                     QuickEntryPanelController.shared.show(mode: .task)
                 } else if target == "quick-diary" {
                     QuickEntryPanelController.shared.show(mode: .diary)
@@ -184,6 +188,7 @@ struct AreaChainApp: App {
 
 private struct AreaChainCommands: Commands {
     @Bindable private var shortcuts = ShortcutStore.shared
+    @Bindable private var historyStore = ActionHistoryStore.shared
 
     var body: some Commands {
         CommandGroup(replacing: .appSettings) {
@@ -191,6 +196,17 @@ private struct AreaChainCommands: Commands {
                 AppWindows.openSettings()
             }
             .keyboardShortcut(shortcuts.keyboardShortcut(for: .openSettings))
+        }
+        CommandGroup(after: .undoRedo) {
+            Divider()
+            Button("action.undo.menu") {
+                _ = try? historyStore.undo(isVaultUnlocked: PrivacyVault.shared.isUnlocked)
+            }
+            .disabled(!historyStore.canUndo)
+            Button("action.redo.menu") {
+                _ = try? historyStore.redo(isVaultUnlocked: PrivacyVault.shared.isUnlocked)
+            }
+            .disabled(!historyStore.canRedo)
         }
     }
 }

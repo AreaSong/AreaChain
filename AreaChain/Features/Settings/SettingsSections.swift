@@ -7,6 +7,7 @@ import UserNotifications
 struct GeneralSettingsSection: View {
     @Environment(\.colorScheme) private var colorScheme
     @Bindable var prefs = AppPreferences.shared
+    @Bindable var gateway = ExternalActionGateway.shared
     @Binding var launchesAtLogin: Bool
     var loginNeedsApproval: Bool
     var statusMessage: String?
@@ -108,6 +109,21 @@ struct GeneralSettingsSection: View {
             Text("settings.capture.screen.help")
                 .font(DaybookType.subtitle)
                 .foregroundStyle(DaybookPalette.text.secondary)
+        }
+
+        Section("settings.externalAccess") {
+            DaybookPicker("settings.externalAccess.policy", selection: $gateway.policy, options: [
+                DaybookPickerOption(.disabled, "settings.externalAccess.disabled"),
+                DaybookPickerOption(.normalOnly, "settings.externalAccess.normalOnly"),
+                DaybookPickerOption(.normalAndPrivacy, "settings.externalAccess.normalAndPrivacy"),
+                DaybookPickerOption(.allIncludingSystem, "settings.externalAccess.allIncludingSystem")
+            ], layout: .formRow)
+            .accessibilityIdentifier("settings.externalAccess.policy")
+            .systemPageMarker("settings.externalAccess.policy")
+            Text("settings.externalAccess.help")
+                .font(DaybookType.subtitle)
+                .foregroundStyle(DaybookPalette.text.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
 
         if loginNeedsApproval {

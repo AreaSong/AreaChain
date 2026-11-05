@@ -2,17 +2,30 @@ import AppKit
 import SwiftUI
 
 @MainActor
-final class QuickEntryPanelController: NSObject, NSWindowDelegate {
+final class QuickEntryPanelController: BaseWindow {
     static let shared = QuickEntryPanelController()
 
     private var panel: NSPanel?
     private let size = NSSize(width: 480, height: 180)
 
     var isVisible: Bool { panel?.isVisible == true }
-    var hostedWindow: NSWindow? { panel }
+
+    override var windowID: String { "window.quickEntry" }
+    override var windowCategory: String { "quickEntry" }
+    override var windowTitle: String { L10n.string("quickEntry.window.title", locale: AppPreferences.shared.resolvedLocale) }
+    override var defaultContentSize: NSSize { size }
+    override var minimumContentSize: NSSize { size }
+    override var defaultSize: NSSize { size }
+    override var minSize: NSSize { size }
+
+    override func openWindow() {
+        show()
+    }
 
     func show(mode: QuickEntryMode = .task) {
         let window = ensurePanel(initialMode: mode)
+        attachHostedWindow(window)
+        registry.markActivated(self)
         positionWindow(window)
 
         AppWindows.becomeActive()
@@ -22,10 +35,12 @@ final class QuickEntryPanelController: NSObject, NSWindowDelegate {
 
     func hide() {
         panel?.orderOut(nil)
+        markWindowClosedInRegistry()
         AppWindows.resignIfIdle(closing: panel)
     }
 
-    func windowWillClose(_ notification: Notification) {
+    override func windowWillClose(_ notification: Notification) {
+        super.windowWillClose(notification)
         AppWindows.resignIfIdle(closing: panel)
     }
 
@@ -68,6 +83,7 @@ final class QuickEntryPanelController: NSObject, NSWindowDelegate {
         )
 
         panel = window
+        attachHostedWindow(window)
         return window
     }
 

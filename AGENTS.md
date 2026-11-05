@@ -7,15 +7,14 @@
 ## 开发技能分层
 
 - **项目级工作流编排**：[areachain-workflow](.agents/skills/areachain-workflow/SKILL.md) 负责冷启动定界、上下文加载、复用检索、技能衔接和交付交接；不替代实现或验收技能。
-- **个人级通用流程**：已发现的 `areasong-development` 组织新功能与界面优化的需求、风险和交付，提供跨项目质量判据。
 - **项目级原生界面**：[areachain-ui](.agents/skills/areachain-ui/SKILL.md) 负责本仓库的双语、Daybook 样式、原生输入和窗口契约应用。
 - **项目级验证**：[areachain-verify](.agents/skills/areachain-verify/SKILL.md) 根据改动范围选择项目测试、构建和隔离验收，并报告真实证据与缺口。
-- 本文件和原有项目文档保留具体事实；[技能路由](skill-routing.md) 负责选择顺序，[共享组件与复用目录](docs/component-catalog.md) 负责可复用入口索引。技能引用这些来源，不复制通用技能或另建相互矛盾的规范。专项技能仍按触发要求协作，不扩大操作授权。
+- 本仓库已具备完整项目技能与门禁，日常任务直接由上述三个项目技能闭环，无需重复叠加个人级通用技能 `areasong-development`。本文件和原有项目文档保留具体事实；[技能路由](skill-routing.md) 负责复杂任务的选择顺序，[共享组件与复用目录](docs/component-catalog.md) 负责可复用入口索引。
 - 按当前会话实际发现的技能使用；项目技能缺失时说明并按现有文档/脚本完成允许部分，不自动安装或冒充调用。仅项目专用技能目录纳入版本管理，其他 `.agents` 本地状态继续忽略。仓库只维护上述三个项目技能，不为 Domain、发行、安装或诊断再拆技能。
 
 ## 按任务读取上下文
 
-- 所有新对话先读 [技能路由](skill-routing.md)；新增控件、公共规则或界面时再读 [共享组件与复用目录](docs/component-catalog.md)，并沿实际调用方核对，不只按名称猜测。
+- 涉及多模块协作、新增公共组件或技能衔接时读 [技能路由](skill-routing.md)；局部单点任务可直接按本文件执行。新增控件、公共规则或界面时再读 [共享组件与复用目录](docs/component-catalog.md)，并沿实际调用方核对，不只按名称猜测。
 - 入口、环境要求和命令见 [README.md](README.md)；产品定位、功能与边界见 [docs/features.md](docs/features.md)。
 - 新增或修改任何可操作功能、页面或窗口时，先读 [统一动作设计](docs/unified-actions.md)。
 - 界面、快捷键和保存行为见 [docs/usage.md](docs/usage.md)；分层、数据与隔离验收见 [docs/architecture.md](docs/architecture.md)。
@@ -33,9 +32,9 @@
 ## 新任务闭环
 
 - **新功能硬性约束**（细则唯一出处见 [统一动作设计的规则一节](docs/unified-actions.md#新功能必须满足的规则)）：任何可操作功能都要接入统一动作、能从统一搜索框执行；可见文案中英双语；界面只用 Daybook 令牌与自研组件；同一功能只保留一个页面或入口；界面不显示实现层说明。
-- 修改前先判断任务类型，检查工作区状态，并建立最小影响/复用表；没有完成复用检索，不先新增控件、领域规则、保存入口或平行状态。
+- 修改前先判断任务类型，检查工作区状态并完成复用检索（新增公共控件、领域规则或跨模块状态时列出简短影响/复用表；局部修改一句话说明复用入口即可）；没有完成复用检索，不先新增控件、领域规则、保存入口或平行状态。
 - 实施沿现有 `Domain → Services → Features → Theme` 责任方向进行；任务、手记、搜索、菜单栏和独立窗口的外观可以复用，提交、快捷键、隐私和草稿语义必须分别核对。
-- 修改后按影响选择验证：默认运行 `python3 -B scripts/quality_gate.py`，Swift 改动加 `--profile swift`——门禁按改动推导定向测试（改什么测什么），分前台轮／后台轮走隔离 QA；全量 `--profile full` 只在用 `--single` 替换日常应用之前或用户明确要求时运行，不作为每批或每个检查点的默认动作；核心文件与整次推导超上限时收敛到同名测试＋冒烟集，已知既有失败按 `scripts/known_test_failures.json` 单列；规则/技能/文档仍需 `python3 -B scripts/check_workflow.py`，Swift/UI 交给项目验收技能选择定向测试和构建。共享契约或跨模块行为变化只走一个复核入口：Claude Code `verifier` 子代理（见[指定只读复核入口](skill-routing.md#指定只读复核入口)）做只读核对，测试、构建和隔离原生交给 [areachain-verify](.agents/skills/areachain-verify/SKILL.md)。
+- 修改后按影响选择验证：默认运行 `python3 -B scripts/quality_gate.py`，Swift 改动加 `--profile swift`——门禁按改动推导定向测试（改什么测什么），分前台轮／后台轮走隔离 QA；全量 `--profile full` 只在用 `--single` 替换日常应用之前或用户明确要求时运行，不作为每批或每个检查点的默认动作；核心文件与整次推导超上限时收敛到同名测试＋冒烟集，已知既有失败按 `scripts/known_test_failures.json` 单列；规则/技能/文档仍需 `python3 -B scripts/check_workflow.py`，Swift/UI 交给项目验收技能选择定向测试和构建。共享契约或跨模块行为变化走独立只读复核入口：Claude Code `verifier` 子代理或当前环境的独立只读子代理（见[指定只读复核入口](skill-routing.md#指定只读复核入口)）做只读核对，测试、构建和隔离原生交给 [areachain-verify](.agents/skills/areachain-verify/SKILL.md)。
 - 交付时明确区分已实现、已验证、已安装、已发布、跳过、未运行和残余风险；旧测试结果、代码存在或构建成功不能单独宣称完成。
 - 新增或改变公共组件、路由、技能或验证入口时，必须同步维护 [技能路由](skill-routing.md)、[组件目录](docs/component-catalog.md)、相关文档和检查脚本测试。
 
@@ -51,7 +50,7 @@
 - 这是原生 macOS 应用，使用 SwiftUI、AppKit 和 SwiftData，不是 Web 前端。界面技能与验证工具须适配原生平台，网页截图不能证明原生界面已通过验收。
 - [AreaChain/Domain](AreaChain/Domain) 放领域模型与规则，不引入 SwiftUI/AppKit；模型可使用 SwiftData。系统 IO、持久化和平台集成在 [AreaChain/Services](AreaChain/Services)，界面组合在 [AreaChain/Features](AreaChain/Features)，共享视觉在 [AreaChain/Theme](AreaChain/Theme)。
 - 复用已有领域规则、仓储及变更入口，不在多个页面复制解析、过滤和保存逻辑。不要为了新增一个实现建立额外接口或框架。
-- Xcode 使用文件系统同步组；常规新增 Swift 文件放入对应源码或测试目录，不因添加文件而机械改写工程配置。
+- Xcode 使用文件系统同步组；常规新增 Swift 文件放入对应源码或测试目录，不因添加文件而机械改写工程配置。仓库仅含 `AreaChain.xcodeproj`（无 `Package.swift` / `buildServer.json`），LSP（`sourcekit-lsp`）报出的跨文件 `Cannot find X in scope` 属缺少工程上下文的误报，不要为此修改代码，编译结果以 `./scripts/build.sh` 或 `quality_gate.py` 为准。
 
 ## 原生界面任务的技能协作
 
@@ -73,7 +72,7 @@
 - 复用 [NaturalLanguageParser.swift](AreaChain/Domain/NaturalLanguageParser.swift)、[TagSyntax.swift](AreaChain/Domain/TagSyntax.swift) 与现有标签解析入口。剪贴板捕获保留原文、只解析标签，与普通任务输入不同；搜索不能创建标签。这些是产品约定，不是待统一消除的差异。
 - 日期键遵循 [DayKey.swift](AreaChain/Domain/DayKey.swift) 的民事日期语义；快照日期遵循 [ExportDates.swift](AreaChain/Domain/ExportDates.swift) 的编码与旧格式兼容。不要把本地日期、提醒时刻和时间戳互相替换。
 - 保存复用 [ModelChanges.swift](AreaChain/Services/ModelChanges.swift) 的事务与失败处理；只有保存成功才发布变更。失败不能清掉唯一草稿或虚报保存成功；本地保存、通知排程和日历同步分开判断结果。
-- 模型、软删除、子任务及附件归属、快照兼容和隐私投影遵守架构文档；相关语义变化交给 Claude Code `verifier` 子代理（见[指定只读复核入口](skill-routing.md#指定只读复核入口)）做只读复核，不直接操作真实用户库来验证。
+- 模型、软删除、子任务及附件归属、快照兼容和隐私投影遵守架构文档；相关语义变化交给独立只读子代理（见[指定只读复核入口](skill-routing.md#指定只读复核入口)）做只读复核，不直接操作真实用户库来验证。
 
 ## 按影响选择验证
 

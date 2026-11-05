@@ -92,6 +92,9 @@ struct MenuBarUnifiedSearchContent: View {
 
     var body: some View {
         VStack(spacing: DaybookSpacing.sm) {
+            if controller.cliSession.shouldPresentPanel(for: controller.buffer.text) {
+                UnifiedSearchCLIPanel(controller: controller)
+            }
             if controller.showsNavigationFeedback {
                 Text(LocalizedStringKey(controller.navigationMessage))
                     .font(DaybookType.caption)

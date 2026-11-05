@@ -208,18 +208,25 @@ final class AttachmentImageViewerSession {
 }
 
 @MainActor
-final class AttachmentImageViewerWindowController: NSObject, NSWindowDelegate {
+final class AttachmentImageViewerWindowController: BaseWindow {
     static let shared = AttachmentImageViewerWindowController()
     static let defaultContentSize = NSSize(width: 820, height: 620)
     static let minimumContentSize = NSSize(width: 520, height: 400)
 
     let session = AttachmentImageViewerSession()
-    private(set) var hostedWindow: NSWindow?
     private var observers: [NSObjectProtocol] = []
     private var preferenceObservation: PreferenceObservation?
 
-    override init() {
-        super.init()
+    override var windowID: String { "window.attachmentViewer" }
+    override var windowCategory: String { "attachmentViewer" }
+    override var windowTitle: String { hostedWindow?.title ?? "" }
+    override var minimumContentSize: NSSize { Self.minimumContentSize }
+    override var defaultContentSize: NSSize { Self.defaultContentSize }
+    override var minSize: NSSize { Self.minimumContentSize }
+    override var defaultSize: NSSize { Self.defaultContentSize }
+
+    override init(registry: WindowRegistry? = nil) {
+        super.init(registry: registry)
         AppWindows.attachmentViewerWindowProvider = { [weak self] in
             [self?.hostedWindow].compactMap { $0 }
         }
@@ -274,9 +281,10 @@ final class AttachmentImageViewerWindowController: NSObject, NSWindowDelegate {
             hosting.sizingOptions = []
             window.contentViewController = hosting
             AppWindows.centerWindow(window, size: Self.defaultContentSize)
-            hostedWindow = window
+            attachHostedWindow(window)
         }
         refreshWindowChrome()
+        registry.markActivated(self)
         if activate {
             AppWindows.activateForOpening()
         }
@@ -290,7 +298,7 @@ final class AttachmentImageViewerWindowController: NSObject, NSWindowDelegate {
         hostedWindow?.close()
     }
 
-    func windowWillClose(_ notification: Notification) {
+    override func windowWillClose(_ notification: Notification) {
         guard let closing = notification.object as? NSWindow, closing === hostedWindow else { return }
         closing.makeFirstResponder(nil)
         if let host = closing.contentViewController as? NSHostingController<AnyView> {
@@ -300,7 +308,8 @@ final class AttachmentImageViewerWindowController: NSObject, NSWindowDelegate {
         closing.contentViewController = nil
         closing.contentView = nil
         closing.delegate = nil
-        hostedWindow = nil
+        detachHostedWindow()
+        super.windowWillClose(notification)
         AppWindows.resignIfIdle(closing: closing)
         DispatchQueue.main.async { [weak closing] in
             AppWindows.resignIfIdle(closing: closing)

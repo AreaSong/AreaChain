@@ -51,6 +51,10 @@ AreaChain/
 
 | 模式 | 位置 | 解决的问题 | 不改成更简单写法的原因 |
 |---|---|---|---|
+| 统一动作基类 | `BaseAction`、`ActionRegistry`、`StandardActionCatalog` | 按钮、快捷键、`/` 命令、` > ` 管道与外部 URL 共用唯一实例 | 各入口各写一份回调会导致命令与界面行为漂移 |
+| 输入唯一基类 | `BaseTextInput` | 统一管理 AppKit `markedText`（输入法组合态保护）、光标、撤销栈与语法着色 | 散落拼装 `TextField` / `TextEditor` 会在中文输入法下吞字或误提交 |
+| 窗口唯一基类 | `BaseWindow`、`WindowRegistry` | 全部 6 个独立窗口统一管理置顶、尺寸档位、未保存草稿关闭确认与 Dock 图标策略 | 各窗口各自维护委托与激活策略会导致关窗丢草稿或 Dock 图标残留 |
+| 持久化双向历史 | `ActionHistoryStore` | 滚动持久化最近 1000 条字段级修改明细，支持 `⌘Z` / `⇧⌘Z` 与 `/undo` / `/redo` / `/history` | 仅内存撤销在应用重启后丢失修改脉络，且无法按字段审计 |
 | 事务后通知 | `ModelChanges` | 只有保存成功才发布变更 | 页面直接 `save` 会在失败时清掉草稿或虚报成功 |
 | 能力环境值 | `workspaceEmbedded` | 工作台有侧栏和页头，外观仍与菜单栏相同 | 用它切换颜色会把两个宿主拆成两套主题 |
 | 输入外壳 | `DaybookInputShell` | 外观共用，提交语义按入口区分 | 每个页面自绘边框会让快捷键和高度一起漂 |

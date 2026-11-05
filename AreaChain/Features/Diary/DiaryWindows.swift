@@ -60,12 +60,24 @@ final class DiaryWindows {
 }
 
 @MainActor
-final class DiaryWindowController: NSObject, NSWindowDelegate {
+final class DiaryWindowController: BaseWindow {
     let session: DiaryEditorSession
     let window: NSWindow
     var onClose: (() -> Void)?
     private var observers: [NSObjectProtocol] = []
     private var preferenceObservation: PreferenceObservation?
+
+    override var windowID: String { "window.diary.\(session.id.uuidString)" }
+    override var windowCategory: String { "diary" }
+    override var windowTitle: String { session.plainWindowTitle(locale: AppPreferences.shared.resolvedLocale) }
+    override var minimumContentSize: NSSize { NSSize(width: 360, height: 300) }
+    override var defaultContentSize: NSSize { NSSize(width: 480, height: 440) }
+    override var minSize: NSSize { minimumContentSize }
+    override var defaultSize: NSSize { defaultContentSize }
+
+    override func hasUnsavedChanges() -> Bool {
+        session.hasUnsavedChanges
+    }
 
     init(session: DiaryEditorSession) {
         self.session = session
@@ -74,6 +86,7 @@ final class DiaryWindowController: NSObject, NSWindowDelegate {
             styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false
         )
         super.init()
+        attachHostedWindow(window)
         window.isReleasedWhenClosed = false
         window.isRestorable = false
         window.minSize = NSSize(width: 360, height: 300)
@@ -98,8 +111,14 @@ final class DiaryWindowController: NSObject, NSWindowDelegate {
         for observer in observers { NotificationCenter.default.removeObserver(observer) }
     }
 
+    override func openWindow() {
+        show()
+    }
+
     func show(activate: Bool = true) {
         session.refresh()
+        attachHostedWindow(window)
+        registry.markActivated(self)
         if activate {
             StatusItemController.shared.close()
             AppWindows.becomeActive()
@@ -108,16 +127,24 @@ final class DiaryWindowController: NSObject, NSWindowDelegate {
         window.makeKeyAndOrderFront(nil)
     }
 
-    func setPinned(_ pinned: Bool) {
+    override func setPinned(_ pinned: Bool) {
         session.isWindowPinned = pinned
+        super.setPinned(pinned)
         // 只改变窗口层级，不复用记录 isPinned，也不重新激活应用或抢焦点。
         window.level = pinned ? .floating : .normal
     }
 
-    func windowDidBecomeKey(_ notification: Notification) { session.refresh() }
-    func windowDidResignKey(_ notification: Notification) { session.mask() }
+    override func windowDidBecomeKey(_ notification: Notification) {
+        super.windowDidBecomeKey(notification)
+        session.refresh()
+    }
 
-    func windowShouldClose(_ sender: NSWindow) -> Bool {
+    override func windowDidResignKey(_ notification: Notification) {
+        super.windowDidResignKey(notification)
+        session.mask()
+    }
+
+    override func windowShouldClose(_ sender: NSWindow) -> Bool {
         guard session.hasUnsavedChanges else { return true }
         guard sender.attachedSheet == nil else { return false }
         Self.closeAlert().beginSheetModal(for: sender) { [weak self] response in
@@ -127,12 +154,15 @@ final class DiaryWindowController: NSObject, NSWindowDelegate {
         return false
     }
 
-    func windowWillClose(_ notification: Notification) {
+    override func windowWillClose(_ notification: Notification) {
         session.mask()
         preferenceObservation?.cancel()
         observers.forEach { NotificationCenter.default.removeObserver($0) }
         observers.removeAll()
         window.contentView = nil
+        detachHostedWindow()
+        super.windowWillClose(notification)
+        registry.unregister(self)
         onClose?()
         AppWindows.resignIfIdle(closing: window)
     }

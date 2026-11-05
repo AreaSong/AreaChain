@@ -1,103 +1,197 @@
-# 统一动作（Unified Actions）设计
+# 统一动作与三大基类架构（Unified Actions & Base Architecture）
 
-本文是“软件里一切可操作的功能都能在统一搜索框里执行”这一目标的唯一设计来源，记录已经确认的产品决定与架构约束。它替代旧的统一搜索指令系统（目录、参数草稿、待执行计划、执行记录、宿主转交、按类型编写的指令适配器与参数面板）；旧系统已决定整体删除。内容搜索（查找待办、手记、标签、图片等）不属于被替代的部分，继续沿用。
+本文件是 AreaChain 全软件**可操作功能、输入控件、独立窗口、Linux 风格命令行搜索、持久化双向撤销/重做及外部接口门禁**的唯一架构规范与完整指令手册。该体系已全量落地并由自动化测试（`BaseArchitectureGateTests`）与工作流门禁（`scripts/check_workflow.py`）强制守护。
 
-当前状态：设计已确认，动作接口尚未实现。实现前，本文的“规则”一节是新功能的目标约束；接口第一版完成后，由检查脚本和测试强制执行。
+---
 
-## 已确认的产品决定
+## 核心原则：唯一真相源，派生重载，绝不双写
 
-1. **范围是全部**：软件里所有能点击、能操作的功能，都必须能在统一搜索框里执行。包括新建、修改、删除、页面跳转、窗口操作（关闭、置顶、调整工作台大小）、设置、筛选、排序、日历改期、正文编辑等。以后新增的功能（例如手记支持 Markdown）同样接入。
-2. **搜索框就是“点击”**：在搜索框里执行一个动作，等同于点击界面上对应的控件，走同一段代码。
-3. **界面也走动作**：按钮、菜单项、快捷键、右键菜单不再各写逻辑，统一调用同一个动作。改一处，所有入口同时生效。
-4. **唯一来源**：每个功能只写一次动作。命令补全与解析、动作目录、“搜索与指令”说明页、快捷键列表、菜单、对外接口全部从动作注册表生成，不再手写清单。
-5. **硬性规定**：新增任何功能都必须先注册动作，并能从搜索框调用；由测试强制检查“每个可点击控件都绑定了动作”。
-6. **命令行式执行**：参数直接写在一行命令里，回车执行，结果一行回显；不再弹出逐项填写的参数表单。具体语法另行讨论。
-7. **多个同类窗口**：用参数指定作用对象（例如指定是哪一个手记小窗）。
-8. **撤销与重做**：所有动作进入同一套撤销栈，⌘Z 撤销、⇧⌘Z 重做，也能在搜索框里用命令撤销和重做。
-9. **操作历史**：每次执行都记入历史，能看到具体改了什么（例如“买牛奶：日期 10-31 → 11-01”）。历史持久保存，退出软件后仍在，退出后也能撤销和重做。
-10. **对外开放**：动作接口要能对外暴露（快捷指令、自动化等）。每个动作标明权限级别（普通 / 隐私 / 系统），外部调用允许到哪一级由设置控制。
-11. **原页面不再是终点**：系统权限、隐私解锁、永久删除、导入与备份恢复也用动作完成；需要身份验证或选文件时直接弹出系统的认证框或文件选择框，不跳转页面。此条取代旧的“系统类、永久删除类只打开原页面”的决定。
+全软件严格遵循 **「三大唯一基类 + 单点注册自动派生」** 原则，禁止在页面、菜单栏或搜索框中各自手写平行实现：
 
-## 架构
+1. **所有可操作动作唯一基类 [`BaseAction`](../AreaChain/Services/BaseAction.swift)（契约见 [`BaseActionContract.swift`](../AreaChain/Domain/BaseActionContract.swift)）**：
+   - 软件内任何一个可以点击的按钮、切换的开关、触发的命令或快捷键动作，都必须继承自 `BaseAction` 并统一注册到 [`ActionRegistry.shared`](../AreaChain/Services/ActionRegistry.swift)。
+   - 页面按钮（通过 [`DaybookActionButton`](../AreaChain/Theme/DaybookActionButton.swift)）、快捷键、统一搜索框 Linux CLI 命令（`/command` 与管道 ` > `）以及外部接口（[`ExternalActionGateway`](../AreaChain/Services/ExternalActionGateway.swift) 的 `areachain://` URL Scheme）最终调用的是**同一个 `BaseAction` 实例**。
+   - 动作一旦注册，系统从 `ActionRegistry` 自动派生：搜索框动作匹配、Tab 参数补全、工作台「搜索与指令」页全量动作目录及 CLI 帮助说明，**绝不手写第二份命令表**。
+2. **所有文本输入框唯一基类 [`BaseTextInput`](../AreaChain/Theme/BaseTextInput.swift)（AppKit 宿主见 [`BaseTextInputNative.swift`](../AreaChain/Theme/BaseTextInputNative.swift)）**：
+   - 全软件只有一套输入底层：统一封装 AppKit `NSTextField` / `NSTextView` 的中文输入法组合态保护（`hasMarkedText` 期间不乱触发提交或丢字）、光标与选区同步、系统级原生撤销栈（`allowsUndo`）、Daybook 边框/圆角/焦环令牌、左/右侧自定义插槽（`prefix` / `suffix`）与语法着色插件（`SyntaxHighlightPlugin`）。
+   - 通过配置模式派生 `.singleLine`（单行输入/搜索/快速录入）、`.multiLine(minHeight:maxHeight:)`（多行备注/手记正文）与 `.secure`（私密口令输入），业务页面不再私自拼装裸 `TextField` 或 `TextEditor`。
+3. **所有独立窗口唯一基类 [`BaseWindow`](../AreaChain/Services/BaseWindow.swift)（注册中心 `WindowRegistry.shared`）**：
+   - 全软件全部 6 个独立窗口控制器（工作台/设置/回收站 `PanelWindowController`、手记小窗 `DiaryWindowController`、剪贴板浮层 `ClipboardHistoryPanel`、快速录入浮窗 `QuickEntryPanelController`、附件预览窗 `AttachmentImageViewerWindowController`、控件预览窗 `ControlsPreviewWindowController`）全部继承自 `BaseWindow`。
+   - 基类内置窗口生命周期、未保存草稿关闭拦截、置顶状态切换（`isPinned`）、尺寸档位调整（`compact` / `standard` / `expanded`）、居中复位，以及基于可见主窗口数量的 Dock 图标策略（`.regular` / `.accessory`）自动切换，并自动映射为标准窗口管理动作。
 
-分三层，单向依赖：入口层 → 动作约定层 ← 动作实现层。
-
-**动作约定层**（纯逻辑，不依赖 SwiftUI/AppKit，可对外暴露）
-- 动作协议：身份（稳定 ID、中英名称与别名、所属分组）、参数说明（类型、是否可省略）、作用对象（某条记录、某个窗口、当前页面或无）、可用性（当前能否执行及原因）、风险级别（普通、需二次确认、需身份验证、需系统弹窗）、权限级别（普通、隐私、系统）、执行（返回一句结果、改动明细与撤销信息）。
-- 动作注册表：唯一登记处。搜索框、界面、说明页、对外接口都只读这里。
-- 执行上下文：当前窗口、当前页面、选中的记录、当前日期、隐私锁状态等，动作执行时可直接读取。
-- 历史与撤销：统一记录每次执行的改动明细，支持撤销、重做，并持久保存。
-
-**动作实现层**（Services / Features）
-- 每个功能在自己的模块里实现并注册动作，复用现有业务服务（`TaskMutationService`、`DiaryWriteService`、`DayBoardMutations`、`ModelChanges` 的事务与失败处理等），不另写第二套保存逻辑。
-
-**入口层**（各种外壳，不写业务逻辑）
-- 统一搜索框、按钮与菜单、快捷键、将来的快捷指令与自动化接口，都只把用户操作翻译成“执行动作 X，参数为……”。
+---
 
 ## 新功能必须满足的规则
 
-这些规则同时写入 [项目规则](../AGENTS.md)、[技能路由](../skill-routing.md) 与项目技能，此处为唯一出处：
+以后每次新增或修改功能，实施与验收都必须逐条核对以下硬性规则：
 
-1. **接入统一动作**：新增或修改任何可操作功能，都要注册动作，界面控件调用动作，搜索框能执行；标明风险级别与权限级别。（接口实现前：在交付说明里列出该功能将来对应的动作，不另写平行入口。）
-2. **中英双语**：所有可见文案进 `Localizable.xcstrings`，`en` 与 `zh-Hans` 同时提供；动作名称与别名同样双语。
-3. **只用自研组件**：界面只用 Daybook 令牌与项目已有组件（见 [组件目录](component-catalog.md)），不直接拼接原生默认样式。
-4. **唯一页面**：同一个功能只有一个页面或一个入口实现，其他地方通过动作调用，不复制页面。
-5. **界面不显示实现层说明**：只说要做什么、会变成什么、怎么确认、出问题下一步怎么办；正常时不说话。
+1. **凡是可操作的功能，都必须继承 `BaseAction` 并登记到 [`StandardActionCatalog`](../AreaChain/Services/Actions/StandardActionCatalog.swift)**：
+   - 无论该功能在任务页、日程表、手记、剪贴板、设置、回收站还是独立小窗，只要用户能点、能切换、能触发，就必须定义为 `BaseAction` 子类，声明稳定 `ActionID`、中英文标题、`commandNames`（命令与简写）、`parameters`、`permissionLevel`（权限等级）与 `riskLevel`（风险等级）。
+2. **所有动作都必须能从统一搜索框以 Linux CLI 风格执行**：
+   - 支持 `/命令 参数` 直接执行（如 `/todo 买牛奶 !p1 @15:30 #生活 // 备注`、`/theme dark`、`/win-pin`）。
+   - 支持 `搜索词 > 命令 参数` 管道操作（如 `买牛奶 > move tomorrow`、`周报 > prio p1`）。
+   - 支持不带 `/` 直接输入动作中英文名或别名匹配执行。
+3. **零表单轻快交互（Zero-Form CLI Feedback）**：
+   - 普通动作（`riskLevel == .direct`）回车**立即执行**，搜索框底部 [`UnifiedSearchCLIPanel`](../AreaChain/Features/Search/UnifiedSearchCLIBridge.swift) 显示单行状态回显，**不弹出重型表单卡片**。
+   - 破坏性动作（`riskLevel == .confirm`，如删除、彻底清除、清空回收站）回车后在搜索框下方显示**单行内联二次确认提示**，再次按 `Return`（或附带 `--confirm` / `--yes`）立即执行，按 `Esc` 取消。
+4. **修改类动作必须接入持久化修改明细与双向撤销/重做（[`ActionHistoryStore`](../AreaChain/Services/ActionHistoryStore.swift)）**：
+   - 每次修改自动记录对象标题、字段名及修改前后的可读值（[`ActionFieldChange`](../AreaChain/Domain/BaseActionContract.swift)：`字段 旧值 → 新值`），滚动持久化最近 1000 条记录至 `areachain-action-history.json`，重启软件不丢失。
+   - 同时支持快捷键 `⌘Z`（后退 Undo）/ `⇧⌘Z`（前进 Redo）与搜索框命令 `/undo`（`/u`）、`/redo`（`/r`）、`/history [关键词]`（`/h`）。
+5. **界面按钮必须绑定 `ActionID`，可见文字支持中英双语，样式只用 Daybook 令牌**：
+   - 新增动作按钮优先使用 [`DaybookActionButton`](../AreaChain/Theme/DaybookActionButton.swift) 绑定 `ActionID`，自动共享启用状态、本地化文案与快捷键提示。
+   - 所有界面可见文案同时提供简体中文与英文（维护在 [`Localizable.xcstrings`](../AreaChain/Resources/Localizable.xcstrings)），严禁把内部类名或机器标识直接展示给用户。
+
+---
 
 ## 必须继承的安全规则
 
-以下规则摘自被删除的旧指令系统。业务层（`ModelChanges`、各 `*Service`、仓储）已有的保护直接复用；只存在于旧系统的，新动作必须在动作约定层或业务层重新实现，不能随旧代码一起消失。
+1. **三档权限分级（`ActionPermissionLevel`）与外部调用门禁**：
+   - 每个 `BaseAction` 必须声明 `permissionLevel`：
+     - `.normal`（普通）：新建/修改待办、打卡、窗口切换、视图切换等日常操作。
+     - `.privacy`（隐私）：手记读写、私密锁状态、剪贴板历史读取与贴回等涉及个人敏感数据的操作。
+     - `.system`（系统）：备份导入导出、清空回收站、权限变更等系统级高风险操作。
+   - 外部接口网关 [`ExternalActionGateway`](../AreaChain/Services/ExternalActionGateway.swift)（支持 `areachain://action/<ActionID>?...` 与 `areachain://cli?cmd=...`）严格受设置页 `AppPreferences.externalAccessPolicy` 四档开关控制：
+     - `disabled`（完全关闭外部调用）
+     - `normalOnly`（仅允许 `.normal` 普通动作，**默认档位**）
+     - `normalAndPrivacy`（允许 `.normal` 与已解锁状态下的 `.privacy` 动作）
+     - `allIncludingSystem`（允许全部动作，但 `.confirm` 破坏性动作仍强制要求确认标志）
+2. **私密锁（`PrivacyVault`）对动作执行与历史明细的双重保护**：
+   - 当私密锁处于锁定状态（`!isVaultUnlocked`）时，所有 `permissionLevel == .privacy` 的动作自动返回 `.requiresUnlock` 拒绝执行，且禁止通过命令参数泄露未解锁手记内容。
+   - 标记为 `isSensitive == true` 的历史记录在锁定时自动脱敏为 `私密操作（已锁定隐藏明细）`，且屏蔽对敏感字段明文的关键词搜索探测，防止通过 `/history 关键词` 侧信道套取私密手记内容；同时阻止在锁定状态下撤销/重做敏感记录。
+3. **跨重启持久化载荷不存敏感明文**：
+   - `areachain-action-history.json` 中的 `ActionUndoPayload` 仅保存目标 UUID 与非敏感状态快照，绝不落盘手记明文长正文或钥匙串密码凭据。
+4. **事务保存成功才入栈**：
+   - 所有数据写入复用 [`ModelChanges.swift`](../AreaChain/Services/ModelChanges.swift) 事务保存，只有落库成功才向 `ActionHistoryStore` 登记修改明细并发布界面刷新；保存失败保留用户输入草稿并回显错误。
 
-**业务层已有、直接复用**
-- 只有保存成功才发布刷新、通知与日历；失败回滚（`ModelChanges`）。
-- 待办与习惯互转的写入规则与日历刷新（`ItemConversionService`）。
-- 附件回收资格、附件只能在拥有者存活时恢复（`AttachmentTrashService`、`TrashRestoreService`）。
-- 预置标签不能改名、改色、合并；新建标签空名或重名拒绝（标签仓储、`Catalog.mergeTags`）。
-- 手记敏感判定（`DiaryPrivacy.isSensitive`、`DiaryWriteService.isOrdinary`）。
-- 父待办完成级联子任务、打卡状态编码、重新启用的补录桥接（任务与习惯仓储）。
+---
 
-**隐私**
-1. 动作只处理普通内容；来源保护状态为“需要保护”或“未知”一律拒绝，不能从“没有关键词”推断为普通。
-2. 长文（备注、正文）不以明文进入历史、日志或对外接口的返回；历史里只记字节数与带键摘要，摘要密钥只在内存。
-3. 锁定、隐私变化或遮罩时，锁定前的预览与待执行确认全部作废；锁定清空搜索状态，只从可信页面重建。
-4. 会让手记变成受保护、或给手记加私密标签的修改，以及恢复受保护手记、加密附件、敏感手记的附件，都必须先经过身份验证。
-5. 敏感手记上的标签不能被普通动作解绑。
+## Linux 风格命令行语法速查（[`ActionCLIParser`](../AreaChain/Domain/ActionCLIParser.swift)）
 
-**标签**
-6. 手记预置名与私密标签（含已删除的）不能被普通动作关联、新建或恢复；按名字或按 ID 都一样，整条拒绝。
-7. 目标已关联私密或预置标签时，普通动作不能修改这些关联（含清空和移除）。
-8. 同名歧义、ID 重复、标签目录不完整时拒绝，不自动取第一个。
-9. 合并标签时来源或目标含私密标签则拒绝。
-10. 标签目录变化后，之前的预览视为过期；恢复已删除标签、新建标签都要作为可见的副作用告诉用户。
+统一搜索框（菜单栏顶部与工作台顶部共用）原生支持四种输入形态：
 
-**保存一致性**
-11. 写入后、保存前核对实际结果等于预期；回收只落在确认时的那组对象上，集合变了就整体回滚。
-12. 执行前核对目标仍存在、相关字段没有被别处改动；对象已删除或无权访问时不能强行覆盖。
-13. 新建对象的身份在确认时分配一次；重试不另建第二个。
-14. 批量中同一对象被设成不同值，或任一目标有问题，整批拒绝。
-15. 单次最多改动 4000 条记录（批量回收同一上限）；超限整批拒绝，不截断、不自动分批。
-16. 结果未知（已调用保存但没有确认返回）时如实记为未知；核对之前禁止重试或再次执行；重试只针对失败或未执行的步骤，外部效果须可安全重复才能重试；本地已保存而通知或日历失败时，不重放本地写入。
+| 形态 | 语法示例 | 说明 |
+| --- | --- | --- |
+| **1. 斜杠命令（`/`）** | `/todo 买牛奶 !p1 @15:30 #生活 // 顺便买面包` | `/` 开头直接进入纯命令模式；支持位置参数、双引号包裹空格、`--key=value`、`--key value`、`--flag` 以及内联自然语言标记（日期、`@HH:mm`、`!p0..p3`、`#标签`、`// 备注`） |
+| **2. 管道操作（` > `）** | `买牛奶 > move tomorrow` | 左侧先定位目标对象（或留空默认作用于当前页面选中项），右侧对目标执行动作 |
+| **3. 动作名直达** | `暗色模式` / `置顶窗口` / `清空回收站` | 不带 `/` 时同时检索内容与动作名称/中英文别名，匹配动作可直接回车或点击触发 |
+| **4. 双向历史与审计** | `/undo` · `/redo` · `/history 牛奶` | 随时后退一步、前进一步，或按关键词过滤查看最近 1000 条字段级修改明细 |
 
-**不可逆与高风险**
-17. 永久删除、清空回收站、标签永久删除、隐私转换、导入、备份恢复、重置：需要二次确认或身份验证（由动作的风险级别声明，入口统一处理）。
-18. 回收、互转、恢复、手记正文替换需要确认；确认绑定当时的目标与内容，任何一项变化即作废。
-19. 回收前列出连带的子任务、附件与带备注的数量；互转前列出会丢失的字段（日期只保留星期、截止时刻、完成状态、子任务、附件、备注、打卡记录等），跨日须重新确认。
+---
 
-**其他**
-20. 长文上限 64 KiB（按 UTF-8 字节）；超限整次不生效、不截断，旧的超限草稿原样保留。
-21. 子任务严格父子校验：父项存活、同一数据上下文、子项属于该父项且不在回收站；子任务与习惯标题必须单行。
-22. 单日打卡：同一天有重复记录或历史排程未知时拒绝，必须当天确实排定；重新启用补录跨度超过 4000 天或起点不可靠时拒绝。
-23. 日期只接受规范的 `yyyy-MM-dd`，拒绝 2 月 30 日这类会被日历归一化的日期；打卡对象必须带具体日期。
-24. 对外接口与历史中不出现密码、密钥等凭据。
+## 全软件标准 `BaseAction` 动作目录（7 大族）
 
-**现有界面的已知缺口**（与旧系统删除无关，需单独修复）
-- 任务标签选择器与批量打标签按 ID 选择时，不过滤私密标签和手记预置标签（`Catalog.taskPickerTags`、`DayBoardMutations+Batch.batchApplyTag`、`toggleTag`）。
-- 界面合并标签只挡预置标签、不挡私密标签；把私密标签并入普通标签会改变手记保护。
-- 界面的软删与互转没有二次确认，互转也不提示字段损失。
+所有标准动作由 [`StandardActionCatalog`](../AreaChain/Services/Actions/StandardActionCatalog.swift) 在启动时统一装配至 `ActionRegistry.shared`：
 
-## 待讨论
+### 1. 窗口、导航与历史族（[`WindowAndNavActions.swift`](../AreaChain/Services/Actions/WindowAndNavActions.swift) + [`ActionHistoryStore.swift`](../AreaChain/Services/ActionHistoryStore.swift)）
 
-- 命令语法：参数写法（位置与符号为主，还是 `--选项`）、中文命令名、多个同类窗口的指定方式。
-- 回车即执行还是先 dry-run：建议普通动作直接执行、可撤销，危险动作二次确认。
-- 历史与撤销的持久化范围与容量；撤销与外部效果（通知、日历）的关系。
-- 对外接口的具体形式（App Intents、URL Scheme、AppleScript）与权限设置界面。
+| `ActionID` | 主命令与常用别名 | 中文名称 | 权限 / 风险 |
+| --- | --- | --- | --- |
+| `history.undo` | `/undo`, `/u`, `/撤销`, `/上一步` | 撤销上一步 | `.normal` / `.direct` |
+| `history.redo` | `/redo`, `/r`, `/重做`, `/下一步` | 前进一步 | `.normal` / `.direct` |
+| `history.query` | `/history`, `/h`, `/hist`, `/历史` | 查看修改历史 | `.normal` / `.direct` |
+| `win.open` | `/open-window`, `/win-open`, `/打开窗口` | 打开窗口 | `.normal` / `.direct` |
+| `win.close` | `/close-window`, `/win-close`, `/关闭窗口` | 关闭窗口 | `.normal` / `.direct` |
+| `win.pin` | `/pin-window`, `/win-pin`, `/置顶窗口` | 置顶窗口 | `.normal` / `.direct` |
+| `win.unpin` | `/unpin-window`, `/win-unpin`, `/取消置顶` | 取消置顶 | `.normal` / `.direct` |
+| `win.size` | `/window-size`, `/win-size`, `/窗口尺寸` | 窗口尺寸档位 | `.normal` / `.direct` |
+| `win.center` | `/center-window`, `/win-center`, `/窗口居中` | 窗口居中 | `.normal` / `.direct` |
+| `nav.tab` | `/tab`, `/go`, `/去页面` | 切换工作台页面 | `.normal` / `.direct` |
+| `nav.focusSearch` | `/focus-search`, `/聚焦搜索` | 聚焦搜索框 | `.normal` / `.direct` |
+
+### 2. 待办任务族（[`TaskMutationActions.swift`](../AreaChain/Services/Actions/TaskMutationActions.swift)）
+
+| `ActionID` | 主命令与常用别名 | 中文名称 | 权限 / 风险 |
+| --- | --- | --- | --- |
+| `todo.create` | `/todo`, `/add`, `/t`, `/新建任务` | 新建待办 | `.normal` / `.direct` |
+| `todo.done` | `/done`, `/complete`, `/完成` | 完成待办 | `.normal` / `.direct` |
+| `todo.reopen` | `/reopen`, `/undone`, `/重开` | 重开待办 | `.normal` / `.direct` |
+| `todo.rename` | `/rename`, `/title`, `/改名` | 改名待办 | `.normal` / `.direct` |
+| `todo.notes` | `/notes`, `/note`, `/备注` | 修改待办备注 | `.normal` / `.direct` |
+| `todo.move` | `/move`, `/defer`, `/推迟`, `/改期` | 移动待办日期 | `.normal` / `.direct` |
+| `todo.priority` | `/priority`, `/prio`, `/p`, `/优先级` | 设置待办优先级 | `.normal` / `.direct` |
+| `todo.remind` | `/remind`, `/at`, `/提醒` | 设置待办提醒 | `.normal` / `.direct` |
+| `todo.clearRemind` | `/clear-remind`, `/unremind`, `/清除提醒` | 清除待办提醒 | `.normal` / `.direct` |
+| `todo.due` | `/due`, `/deadline`, `/截止` | 设置待办截止日期 | `.normal` / `.direct` |
+| `todo.clearDue` | `/clear-due`, `/undue`, `/清除截止` | 清除待办截止日期 | `.normal` / `.direct` |
+| `todo.tagAdd` | `/tag-add`, `/贴标签` | 为待办添加标签 | `.normal` / `.direct` |
+| `todo.tagRemove` | `/tag-remove`, `/tag-rm`, `/移除标签` | 移除待办标签 | `.normal` / `.direct` |
+| `todo.delete` | `/todo-delete`, `/rm`, `/del`, `/delete`, `/删除任务` | 删除待办（移入回收站） | `.normal` / `.confirm` |
+
+### 3. 例行习惯与子任务族（[`RoutineAndSubtaskActions.swift`](../AreaChain/Services/Actions/RoutineAndSubtaskActions.swift)）
+
+| `ActionID` | 主命令与常用别名 | 中文名称 | 权限 / 风险 |
+| --- | --- | --- | --- |
+| `routine.create` | `/routine`, `/habit`, `/新建习惯` | 新建习惯 | `.normal` / `.direct` |
+| `routine.check` | `/check`, `/checkin`, `/打卡` | 打卡习惯 | `.normal` / `.direct` |
+| `routine.uncheck` | `/uncheck`, `/取消打卡` | 取消打卡 | `.normal` / `.direct` |
+| `routine.rename` | `/routine-rename`, `/改名习惯` | 改名习惯 | `.normal` / `.direct` |
+| `routine.notes` | `/routine-notes`, `/习惯备注` | 修改习惯备注 | `.normal` / `.direct` |
+| `routine.schedule` | `/routine-schedule`, `/routine-freq`, `/习惯频次` | 设置习惯频次 | `.normal` / `.direct` |
+| `routine.pause` | `/routine-pause`, `/暂停习惯` | 暂停习惯 | `.normal` / `.direct` |
+| `routine.resume` | `/routine-resume`, `/恢复习惯` | 恢复习惯 | `.normal` / `.direct` |
+| `routine.remind` | `/routine-remind`, `/习惯提醒` | 设置习惯提醒 | `.normal` / `.direct` |
+| `routine.delete` | `/routine-delete`, `/routine-rm`, `/删除习惯` | 删除习惯 | `.normal` / `.confirm` |
+| `subtask.add` | `/subtask-add`, `/subtask`, `/sub`, `/添加子任务` | 添加子任务 | `.normal` / `.direct` |
+| `subtask.done` | `/subtask-done`, `/sub-done`, `/完成子任务` | 完成子任务 | `.normal` / `.direct` |
+| `subtask.reopen` | `/subtask-reopen`, `/重开子任务` | 重开子任务 | `.normal` / `.direct` |
+| `subtask.rename` | `/subtask-rename`, `/sub-rename`, `/改名子任务` | 改名子任务 | `.normal` / `.direct` |
+| `subtask.delete` | `/subtask-delete`, `/sub-rm`, `/删除子任务` | 删除子任务 | `.normal` / `.confirm` |
+
+### 4. 日程表与规划面板族（[`PlanningBoardActions.swift`](../AreaChain/Services/Actions/PlanningBoardActions.swift)）
+
+| `ActionID` | 主命令与常用别名 | 中文名称 | 权限 / 风险 |
+| --- | --- | --- | --- |
+| `cal.layout` | `/cal-layout`, `/月历布局` | 切换月历布局 | `.normal` / `.direct` |
+| `cal.today` | `/cal-today`, `/回到今天` | 回到今天 | `.normal` / `.direct` |
+| `cal.prev` | `/cal-prev`, `/上一天` | 上一天 | `.normal` / `.direct` |
+| `cal.next` | `/cal-next`, `/下一天` | 下一天 | `.normal` / `.direct` |
+| `cal.selectDay` | `/day`, `/跳转到日期` | 跳转到指定日期 | `.normal` / `.direct` |
+| `quadrant.move` | `/quad-move`, `/移入象限` | 移入四象限 | `.normal` / `.direct` |
+| `gantt.shift` | `/gantt-shift`, `/甘特顺延` | 甘特图日期顺延 | `.normal` / `.direct` |
+
+### 5. 手记与标签族（[`DiaryAndTagActions.swift`](../AreaChain/Services/Actions/DiaryAndTagActions.swift)）
+
+| `ActionID` | 主命令与常用别名 | 中文名称 | 权限 / 风险 |
+| --- | --- | --- | --- |
+| `diary.save` | `/diary`, `/journal`, `/写手记` | 写手记 | `.privacy` / `.direct` |
+| `diary.append` | `/diary-append`, `/追加手记` | 追加手记 | `.privacy` / `.direct` |
+| `diary.mood` | `/mood`, `/心情` | 设置手记心情 | `.privacy` / `.direct` |
+| `diary.tagAdd` | `/diary-tag-add`, `/手记贴标签` | 为手记添加标签 | `.privacy` / `.direct` |
+| `diary.tagRemove` | `/diary-tag-remove`, `/手记移除标签` | 移除手记标签 | `.privacy` / `.direct` |
+| `diary.delete` | `/diary-delete`, `/diary-rm`, `/删除手记` | 删除手记（移入回收站） | `.privacy` / `.confirm` |
+| `tag.create` | `/tag-create`, `/tag`, `/new-tag`, `/新建标签` | 新建标签 | `.normal` / `.direct` |
+| `tag.rename` | `/tag-rename`, `/改名标签` | 改名标签 | `.normal` / `.direct` |
+| `tag.color` | `/tag-color`, `/标签颜色` | 设置标签颜色 | `.normal` / `.direct` |
+| `tag.delete` | `/tag-delete`, `/删除标签` | 删除标签 | `.normal` / `.confirm` |
+
+### 6. 剪贴板与回收站族（[`ClipboardAndTrashActions.swift`](../AreaChain/Services/Actions/ClipboardAndTrashActions.swift)）
+
+| `ActionID` | 主命令与常用别名 | 中文名称 | 权限 / 风险 |
+| --- | --- | --- | --- |
+| `clip.paste` | `/clip-paste`, `/贴回剪贴板`, `/贴回` | 贴回剪贴板 | `.privacy` / `.direct` |
+| `clip.pin` | `/clip-pin`, `/置顶剪贴板`, `/固定剪贴板` | 置顶剪贴板 | `.privacy` / `.direct` |
+| `clip.unpin` | `/clip-unpin`, `/取消置顶剪贴板` | 取消置顶剪贴板 | `.privacy` / `.direct` |
+| `clip.toTodo` | `/clip-to-todo`, `/clip-todo`, `/转为待办` | 剪贴板转为待办 | `.privacy` / `.direct` |
+| `clip.toDiary` | `/clip-to-diary`, `/clip-diary`, `/转为手记` | 剪贴板转为手记 | `.privacy` / `.direct` |
+| `clip.delete` | `/clip-delete`, `/clip-rm`, `/删除剪贴板` | 删除剪贴板条目 | `.privacy` / `.confirm` |
+| `clip.clear` | `/clip-clear`, `/清空剪贴板` | 清空剪贴板 | `.privacy` / `.confirm` |
+| `clip.toggleCapture` | `/clip-capture`, `/切换剪贴板捕获`, `/剪贴板监听` | 切换剪贴板捕获 | `.privacy` / `.direct` |
+| `trash.restore` | `/trash-restore`, `/restore`, `/恢复回收站`, `/恢复` | 恢复回收站条目 | `.normal` / `.direct` |
+| `trash.purge` | `/trash-purge`, `/purge`, `/彻底删除` | 彻底删除单条回收站记录 | `.system` / `.confirm` |
+| `trash.empty` | `/trash-empty`, `/empty-trash`, `/清空回收站` | 清空回收站 | `.system` / `.confirm` |
+
+### 7. 设置、安全与数据备份族（[`SettingsAndPrivacyActions.swift`](../AreaChain/Services/Actions/SettingsAndPrivacyActions.swift)）
+
+| `ActionID` | 主命令与常用别名 | 中文名称 | 权限 / 风险 |
+| --- | --- | --- | --- |
+| `pref.theme` | `/theme`, `/appearance`, `/外观`, `/主题` | 切换外观主题 | `.normal` / `.direct` |
+| `pref.language` | `/lang`, `/language`, `/语言` | 切换界面语言 | `.normal` / `.direct` |
+| `pref.truncation` | `/truncation`, `/省略方式` | 切换省略方式 | `.normal` / `.direct` |
+| `pref.calendarSync` | `/cal-sync`, `/日历同步` | 切换日历同步 | `.normal` / `.direct` |
+| `pref.stampApp` | `/stamp-app`, `/记录来源应用` | 切换记录来源应用 | `.normal` / `.direct` |
+| `privacy.lock` | `/lock`, `/锁定隐私` | 锁定隐私保险箱 | `.privacy` / `.direct` |
+| `privacy.unlock` | `/unlock`, `/解锁隐私` | 解锁隐私保险箱 | `.privacy` / `.direct` |
+| `data.exportJSON` | `/export-json`, `/导出快照` | 导出快照 | `.system` / `.direct` |
+| `data.importJSON` | `/import-json`, `/导入快照` | 导入快照 | `.system` / `.direct` |
+| `data.exportBackup` | `/backup-export`, `/导出加密备份` | 导出加密备份 | `.system` / `.direct` |
+| `data.restoreBackup` | `/backup-restore`, `/恢复加密备份` | 恢复加密备份 | `.system` / `.confirm` |

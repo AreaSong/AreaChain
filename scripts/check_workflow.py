@@ -20,7 +20,7 @@ REQUIRED_DOCS = (
     "AGENTS.md", "README.md", "docs/README.md", "docs/architecture.md",
     "docs/signing.md", "skill-routing.md",
     "docs/component-catalog.md", "docs/quality-gates.md",
-    "docs/unified-search-commands.md", "docs/unified-actions.md",
+    "docs/unified-actions.md",
 )
 LINK = re.compile(r"\[[^\]\n]*\]\((?:<([^>\n]+)>|([^\s)]+))(?:\s+\"[^\"]*\")?\)")
 IMPORT = re.compile(r"\bimport\s+(?:(?:typealias|struct|class|enum|protocol|let|var|func)\s+)?(AppKit|SwiftUI|Cocoa)\b")
@@ -64,11 +64,23 @@ WORKFLOW_CONTRACT = {
         "comment-contract",
     ),
     "docs/architecture.md": ("qa-compile", "--qa-batch", "Config/QA.xcconfig", "持久化之前"),
-    "docs/unified-search-commands.md": ("现状总览", "功能覆盖表", "每批最少必读", "## 8. 用户功能覆盖映射"),
     "docs/unified-actions.md": ("## 新功能必须满足的规则", "## 必须继承的安全规则"),
 }
 
 COMPONENT_ENTRIES = (
+    ("AreaChain/Services/BaseAction.swift", "BaseAction"),
+    ("AreaChain/Services/ActionRegistry.swift", "ActionRegistry"),
+    ("AreaChain/Domain/ActionCLIParser.swift", "ActionCLIParser"),
+    ("AreaChain/Services/ActionHistoryStore.swift", "ActionHistoryStore"),
+    ("AreaChain/Services/BaseWindow.swift", "BaseWindow"),
+    ("AreaChain/Services/BaseWindow.swift", "WindowRegistry"),
+    ("AreaChain/Theme/BaseTextInput.swift", "BaseTextInput"),
+    ("AreaChain/Theme/BaseTextInputNative.swift", "BaseSingleLineTextField"),
+    ("AreaChain/Theme/BaseTextInputNative.swift", "BaseMultiLineTextEditor"),
+    ("AreaChain/Theme/DaybookActionButton.swift", "DaybookActionButton"),
+    ("AreaChain/Services/ExternalActionGateway.swift", "ExternalActionGateway"),
+    ("AreaChain/Services/Actions/StandardActionCatalog.swift", "StandardActionCatalog"),
+    ("AreaChain/Features/Search/UnifiedSearchCLIBridge.swift", "UnifiedSearchCLIPanel"),
     ("AreaChain/Domain/AppLaunchPolicy.swift", "AppLaunchPolicy"),
     ("AreaChain/Services/AppStartup.swift", "AppStartup"),
     ("AreaChain/Features/Search/CommandTextSystem.swift", "CommandTextSystem"),

@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 @MainActor
-final class ClipboardHistoryPanel: NSObject, NSWindowDelegate {
+final class ClipboardHistoryPanel: BaseWindow {
     static let shared = ClipboardHistoryPanel()
 
     private var panel: NSPanel?
@@ -12,7 +12,14 @@ final class ClipboardHistoryPanel: NSObject, NSWindowDelegate {
     private let size = NSSize(width: 380, height: 460)
 
     var isKey: Bool { panel?.isKeyWindow == true }
-    var hostedWindow: NSWindow? { panel }
+
+    override var windowID: String { "window.clipboard" }
+    override var windowCategory: String { "clipboard" }
+    override var windowTitle: String { L10n.string("window.clipboard", locale: AppPreferences.shared.resolvedLocale) }
+    override var defaultContentSize: NSSize { size }
+    override var minimumContentSize: NSSize { size }
+    override var defaultSize: NSSize { size }
+    override var minSize: NSSize { size }
 
     func install() {
         guard hotkeyObserver == nil else { return }
@@ -28,6 +35,12 @@ final class ClipboardHistoryPanel: NSObject, NSWindowDelegate {
         ClipboardHistoryKeys.install()
     }
 
+    override func openWindow() {
+        if panel?.isVisible != true {
+            toggle()
+        }
+    }
+
     func toggle() {
         if panel?.isVisible == true {
             closeReturning()
@@ -38,6 +51,8 @@ final class ClipboardHistoryPanel: NSObject, NSWindowDelegate {
             previousApp = front
         }
         let window = ensurePanel()
+        attachHostedWindow(window)
+        registry.markActivated(self)
         window.setFrame(frameNearCursor(), display: false)
         applyLevel()
         AppWindows.becomeActive()
@@ -52,7 +67,12 @@ final class ClipboardHistoryPanel: NSObject, NSWindowDelegate {
 
     func setStaysOnTop(_ enabled: Bool) {
         ClipboardHistorySession.shared.setPanelStaysOnTop(enabled)
+        super.setPinned(enabled)
         applyLevel()
+    }
+
+    override func setPinned(_ pinned: Bool) {
+        setStaysOnTop(pinned)
     }
 
     func applyLevel() {
@@ -64,6 +84,7 @@ final class ClipboardHistoryPanel: NSObject, NSWindowDelegate {
         isClosing = true
         let app = previousApp
         panel?.orderOut(nil)
+        markWindowClosedInRegistry()
         if let app, app.bundleIdentifier != Bundle.main.bundleIdentifier {
             app.activate()
         }
@@ -71,7 +92,8 @@ final class ClipboardHistoryPanel: NSObject, NSWindowDelegate {
         isClosing = false
     }
 
-    func windowWillClose(_ notification: Notification) {
+    override func windowWillClose(_ notification: Notification) {
+        super.windowWillClose(notification)
         AppWindows.resignIfIdle(closing: panel)
     }
 
@@ -100,6 +122,7 @@ final class ClipboardHistoryPanel: NSObject, NSWindowDelegate {
                 .appChrome()
         )
         panel = window
+        attachHostedWindow(window)
         applyLevel()
         return window
     }

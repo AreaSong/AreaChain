@@ -11,8 +11,8 @@ description: "仅用于 AreaChain 仓库的 SwiftUI/AppKit 界面实现、布局
 
 - 从本技能目录向上三级定位 [仓库根](../../..)，确认存在 `AreaChain.xcodeproj` 与 `AreaChain/App/AreaChainApp.swift`；不按当前工作目录或文件夹名称猜测目标。
 - 先遵循 [项目 AGENTS.md](../../../AGENTS.md)。本技能只服务该仓库及其工作副本；用户目标属于其他项目时停止套用这里的具体约定。
-- 先读取 [技能路由](../../../skill-routing.md) 和 [共享组件与复用目录](../../../docs/component-catalog.md)，在修改前列出实际复用的令牌、基座、Feature 组件及其调用方；目录只做索引，仍需查看声明和消费者。
-- `areasong-development` 已发现且请求匹配时，由它协调需求、风险和交付；本技能补充项目界面方法，不再生成第二份计划，也不写入 `.cursor/plans/`。没有个人级通用技能时仍可按本技能和项目规则推进，不自动安装全局依赖。
+- 修改前先参考 [共享组件与复用目录](../../../docs/component-catalog.md) 核对实际复用的令牌、基座、Feature 组件及其调用方；目录只做索引，仍需查看声明和消费者。涉及多模块或技能衔接时按需参考 [技能路由](../../../skill-routing.md)。
+- 本技能与 `areachain-workflow`、`areachain-verify` 已构成完整项目闭环，无需重复叠加个人级通用技能 `areasong-development`，不再生成第二份计划，也不写入 `.cursor/plans/`。
 
 ## 输入：先识别宿主和行为边界
 
@@ -24,8 +24,8 @@ description: "仅用于 AreaChain 仓库的 SwiftUI/AppKit 界面实现、布局
 |---|---|---|
 | 双语与显示格式 | [Localizable.xcstrings](../../../AreaChain/Resources/Localizable.xcstrings)、[L10n.swift](../../../AreaChain/Domain/L10n.swift)、[AppPreferences.swift](../../../AreaChain/Services/AppPreferences.swift) | `en` / `zh-Hans`、格式参数、相关提示及可访问性名称；用户正文和机器值不翻译 |
 | 样式与宿主差异 | [DaybookPalette.swift](../../../AreaChain/Theme/DaybookPalette.swift)、[DaybookMetrics.swift](../../../AreaChain/Theme/DaybookMetrics.swift)、[WorkspaceLayout.swift](../../../AreaChain/Theme/WorkspaceLayout.swift) | 复用语义色、尺寸与字号令牌；两宿主外观一致，只有 `workspaceEmbedded` 决定的布局/能力差异 |
-| 输入与浮层 | [Theme 组件目录](../../../AreaChain/Theme)、[使用说明](../../../docs/usage.md) | 复用原生文本、语法输入、候选和属性组件；按入口核对 Return、⌘Return、Esc、失焦及组合输入 |
-| 窗口与编辑会话 | [AppWindows.swift](../../../AreaChain/Services/AppWindows.swift)、[Diary 目录](../../../AreaChain/Features/Diary)、[架构说明](../../../docs/architecture.md) | 路由、窗口复用、关闭/退出、脏草稿和外部修改冲突；布局调整不重建唯一编辑会话 |
+| 输入与浮层 | [BaseTextInput.swift](../../../AreaChain/Theme/BaseTextInput.swift)、[Theme 组件目录](../../../AreaChain/Theme)、[使用说明](../../../docs/usage.md) | 复用唯一输入基类 `BaseTextInput`、语法输入、候选和属性组件；按入口核对 Return、⌘Return、Esc、失焦及组合输入 |
+| 窗口与编辑会话 | [BaseWindow.swift](../../../AreaChain/Services/BaseWindow.swift)、[AppWindows.swift](../../../AreaChain/Services/AppWindows.swift)、[Diary 目录](../../../AreaChain/Features/Diary)、[架构说明](../../../docs/architecture.md) | 独立窗口统一继承 `BaseWindow` 并登记到 `WindowRegistry`；核对路由、窗口复用、关闭/退出、脏草稿和外部修改冲突 |
 | 事件与数据 | [DayBoardMutations.swift](../../../AreaChain/Features/Tasks/DayBoardMutations.swift)、[ModelChanges.swift](../../../AreaChain/Services/ModelChanges.swift) | 沿原有领域/仓储/事务路径；保存成功才发布变更，失败不丢草稿 |
 
 ## 实施方式

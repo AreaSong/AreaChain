@@ -45,10 +45,10 @@ class WorkflowCheckTests(unittest.TestCase):
             "AGENTS.md": "[路由](skill-routing.md) [目录](docs/component-catalog.md) areachain-workflow 白话请求默认行为 不把 `.cursor/plans` 当项目路线 Claude Code `verifier`\n",
             "skill-routing.md": "areachain-workflow areachain-ui areachain-verify docs/component-catalog.md docs/quality-gates.md 用户输入契约 三个项目技能 Claude Code `verifier`\n",
             "docs/quality-gates.md": "quality_gate.py performance-baselines.json security-static comment-contract\n",
-            "docs/unified-search-commands.md": "现状总览 功能覆盖表 每批最少必读 ## 8. 用户功能覆盖映射\n",
             "docs/unified-actions.md": "## 新功能必须满足的规则\n\n## 必须继承的安全规则\n",
             "docs/component-catalog.md": "TaskContentQueryReader DaybookInputShell DaybookTextField SyntaxTextField DaybookButtonStyle DaybookToggleStyle checkbox Checkbox DaybookStepper Stepper DaybookSegmentedControl DaybookSegmentOption DaybookSegmentedBar Segmented segmented DaybookPicker DaybookPickerOption formRow verbatim Picker ModernCheckbox inlineSubtask detailSubtask detailSubtaskSymbolSize Completion DaybookControlsPreview ControlsPreviewWindowController openControlsPreview settings.controlsPreview DaybookOverlaySamples daybookSurface TaskRow DayBoardList BoardFilter BoardSearch CommandCatalog DayKey AgendaProjection DayBoardPageProjection DayBoardCheckIndex DayBoardMutations ModelChanges PendingTrash BoardRowChrome BoardCommandStrip WorkspaceHeaderBar WorkspaceHeaderAction 新公共组件 UnifiedSearchUnavailableField\n",
         }
+        contract_docs["docs/component-catalog.md"] += " BaseAction ActionRegistry ActionCLIParser ActionHistoryStore BaseWindow WindowRegistry BaseTextInput BaseSingleLineTextField BaseMultiLineTextEditor DaybookActionButton ExternalActionGateway StandardActionCatalog UnifiedSearchCLIPanel\n"
         contract_docs["docs/component-catalog.md"] += " AppLaunchPolicy AppStartup CommandTextSystem\n"
         contract_docs["docs/component-catalog.md"] += " WorkspaceSearchRouter UnifiedSearchReturnContext WorkspaceObjectNavigation WorkspaceHostContext\n"
         contract_docs["docs/component-catalog.md"] += " WorkspaceContentReader WorkspaceContentSession WorkspaceContentSource WorkspaceReadOnlyContentView LoadedAttachmentImage\n"
@@ -353,16 +353,16 @@ class WorkflowCheckTests(unittest.TestCase):
 
     def test_unified_search_design_requires_its_markers(self):
         self.make_project()
-        self.assertIn("docs/unified-search-commands.md", workflow.REQUIRED_DOCS)
-        path = self.root / "docs/unified-search-commands.md"
+        self.assertIn("docs/unified-actions.md", workflow.REQUIRED_DOCS)
+        path = self.root / "docs/unified-actions.md"
         original = path.read_text(encoding="utf-8")
         self.assertEqual(workflow.check_workflow_contract(self.root)["status"], "passed")
-        for marker in ("现状总览", "功能覆盖表", "每批最少必读", "## 8. 用户功能覆盖映射"):
+        for marker in ("## 新功能必须满足的规则", "## 必须继承的安全规则"):
             with self.subTest(marker=marker):
                 path.write_text(original.replace(marker, ""), encoding="utf-8")
                 result = workflow.check_workflow_contract(self.root)
                 self.assertEqual(result["status"], "failed")
-                self.assertTrue(any(item["file"].endswith("unified-search-commands.md") and marker in item["message"]
+                self.assertTrue(any(item["file"].endswith("unified-actions.md") and marker in item["message"]
                                     for item in result["issues"]))
         path.unlink()
         result = workflow.check_workflow_contract(self.root)

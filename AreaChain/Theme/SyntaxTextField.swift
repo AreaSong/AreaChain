@@ -2,7 +2,7 @@ import AppKit
 import SwiftData
 import SwiftUI
 
-/// 新增与编辑共用的单行语法输入；仅补全草稿，绝不在候选选择时写入标签。
+/// 新增与编辑共用的单行语法输入；内部收敛至 BaseSingleLineTextField，仅补全草稿，绝不在候选选择时写入标签。
 struct SyntaxTextField: View {
     @Binding var text: String
     var placeholder: String
@@ -38,11 +38,24 @@ struct SyntaxTextField: View {
         _autocomplete = State(initialValue: SyntaxAutocompleteState(context: context))
     }
 
+    private var resolvedSyntaxPlugin: BaseInputSyntaxPlugin {
+        context == .tags ? .tagOnly : .taskSyntax
+    }
+
     var body: some View {
-        DaybookTextField(
-            text: $text, placeholder: placeholder, fontSize: fontSize, fontWeight: fontWeight, focus: $focused,
-            autocomplete: autocomplete, availableTags: tags.filter { $0.deletedAt == nil }.map(\.name),
-            onSubmit: onSubmit, allowsShiftNewline: allowsShiftNewline, newlinePolicy: newlinePolicy, onEscape: onEscape
+        BaseSingleLineTextField(
+            text: $text,
+            placeholder: placeholder,
+            focus: $focused,
+            syntaxPlugin: resolvedSyntaxPlugin,
+            fontSize: fontSize,
+            fontWeight: fontWeight,
+            allowsShiftNewline: allowsShiftNewline,
+            newlinePolicy: newlinePolicy,
+            autocomplete: autocomplete,
+            availableTags: tags.filter { $0.deletedAt == nil }.map(\.name),
+            onSubmit: onSubmit,
+            onEscape: onEscape
         )
         .frame(minHeight: fontSize + 6)
         .accessibilityLabel(placeholder)

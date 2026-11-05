@@ -89,9 +89,25 @@ final class CompletionUndo {
 
     private func handle(_ event: NSEvent) -> NSEvent? {
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-        guard flags.contains(.command), !flags.contains(.shift),
+        guard flags.contains(.command),
+              flags.subtracting([.command, .shift]).isEmpty,
               event.charactersIgnoringModifiers?.lowercased() == "z" else { return event }
         if NSApp.keyWindow?.firstResponder is NSTextView { return event }
+        let unlocked = PrivacyVault.shared.isUnlocked
+        let isZh = AppPreferences.shared.resolvedLocale.identifier.hasPrefix("zh")
+        if flags.contains(.shift) {
+            if let diff = try? ActionHistoryStore.shared.redo(isVaultUnlocked: unlocked) {
+                let prefix = isZh ? "已前进：" : "Redone: "
+                CompletionUndoToast.shared.show("\(prefix)\(diff.formattedSummary(isVaultUnlocked: unlocked))")
+                return nil
+            }
+            return event
+        }
+        if let diff = try? ActionHistoryStore.shared.undo(isVaultUnlocked: unlocked) {
+            let prefix = isZh ? "已撤销：" : "Undone: "
+            CompletionUndoToast.shared.show("\(prefix)\(diff.formattedSummary(isVaultUnlocked: unlocked))")
+            return nil
+        }
         return undo() ? nil : event
     }
 }

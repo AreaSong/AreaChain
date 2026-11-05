@@ -90,12 +90,19 @@ enum AppWindows {
     }
 
     private static var panelWindows: [NSWindow] {
-        [PanelWindowController.workspace.hostedWindow,
-         ControlsPreviewWindowController.shared.hostedWindow].compactMap { $0 }
+        var result: [NSWindow] = []
+        var seen = Set<ObjectIdentifier>()
+        let candidates = WindowRegistry.shared.openWindows.compactMap(\.hostedWindow)
+            + [PanelWindowController.workspace.hostedWindow,
+               ControlsPreviewWindowController.shared.hostedWindow].compactMap { $0 }
             + (diaryWindowsProvider?() ?? [])
             + (clipboardWindowProvider?() ?? [])
             + (quickEntryWindowProvider?() ?? [])
             + (attachmentViewerWindowProvider?() ?? [])
+        for window in candidates where seen.insert(ObjectIdentifier(window)).inserted {
+            result.append(window)
+        }
+        return result
     }
 
     static func centeredFrame(size: NSSize, in visibleFrame: NSRect) -> NSRect {
@@ -125,7 +132,7 @@ enum AppWindows {
 }
 
 @MainActor
-final class PanelWindowController: NSObject, NSWindowDelegate {
+final class PanelWindowController: BaseWindow {
     static let workspace = PanelWindowController(
         titleKey: "window.workspace",
         size: DaybookMetrics.Window.workspaceSize,
@@ -137,12 +144,18 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
 
     private let titleKey: String
     private let size: NSSize
-    private let minSize: NSSize?
+    private let configuredMinSize: NSSize?
     private let root: @MainActor () -> AnyView
-    private var window: NSWindow?
     private var preferenceObservation: PreferenceObservation?
 
-    var hostedWindow: NSWindow? { window }
+    override var windowID: String { "window.workspace" }
+    override var windowCategory: String { "workspace" }
+    override var windowTitle: String { L10n.format(titleKey, locale: AppPreferences.shared.resolvedLocale) }
+    override var minimumContentSize: NSSize { configuredMinSize ?? size }
+    override var defaultContentSize: NSSize { size }
+    override var minSize: NSSize { minimumContentSize }
+    override var defaultSize: NSSize { defaultContentSize }
+    override var supportsPinning: Bool { false }
 
     init(
         titleKey: String,
@@ -152,7 +165,7 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
     ) {
         self.titleKey = titleKey
         self.size = size
-        self.minSize = minSize
+        self.configuredMinSize = minSize
         self.root = root
         super.init()
         preferenceObservation = PreferenceObservation(preferences: AppPreferences.shared,
@@ -160,9 +173,13 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
             legacy: { [weak self] in self?.refreshChrome() })
     }
 
+    override func openWindow() {
+        show()
+    }
+
     func show() {
-        let shouldCenter = !(window?.isVisible ?? false) && !(window?.isMiniaturized ?? false)
-        if window == nil {
+        let shouldCenter = !(hostedWindow?.isVisible ?? false) && !(hostedWindow?.isMiniaturized ?? false)
+        if hostedWindow == nil {
             guard let provider = AppWindows.workspaceViewProvider else {
                 assertionFailure("AppWindows.workspaceViewProvider must be registered before showing workspace")
                 return
@@ -171,7 +188,7 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
             // 禁止 NSHostingController 根据 GeometryReader 的 (0,0) 理想尺寸冲掉窗口 minSize
             hosting.sizingOptions = []
             hosting.view.frame = NSRect(origin: .zero, size: size)
-            let targetMinSize = minSize ?? size
+            let targetMinSize = minimumContentSize
             let initialFrame = AppWindows.activeScreenVisibleFrame()
                 .map { AppWindows.centeredFrame(size: size, in: $0) }
                 ?? NSRect(origin: .zero, size: size)
@@ -197,10 +214,12 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
             next.isRestorable = false
             next.delegate = self
             AppWindows.centerWindow(next, size: size)
-            window = next
+            attachHostedWindow(next)
         }
         refreshChrome()
-        guard let window else { return }
+        guard let window = hostedWindow else { return }
+        attachHostedWindow(window)
+        registry.markActivated(self)
         let targetSize = NSSize(
             width: max(window.frame.width, size.width),
             height: max(window.frame.height, size.height)
@@ -214,7 +233,8 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
         }
     }
 
-    func windowWillClose(_ notification: Notification) {
+    override func windowWillClose(_ notification: Notification) {
+        super.windowWillClose(notification)
         let closing = notification.object as? NSWindow
         AppWindows.resignIfIdle(closing: closing)
         DispatchQueue.main.async {
@@ -223,11 +243,11 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
     }
 
     private func refreshChrome() {
-        let targetMinSize = minSize ?? size
-        window?.minSize = targetMinSize
-        window?.contentMinSize = targetMinSize
-        window?.title = ""
-        window?.titleVisibility = .hidden
+        let targetMinSize = minimumContentSize
+        hostedWindow?.minSize = targetMinSize
+        hostedWindow?.contentMinSize = targetMinSize
+        hostedWindow?.title = ""
+        hostedWindow?.titleVisibility = .hidden
     }
 }
 
