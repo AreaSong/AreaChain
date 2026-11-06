@@ -168,8 +168,8 @@ struct BatchActionBar: View {
 
     private var dateAdjustmentMenu: some View {
         Menu {
-            Button("capture.today", action: onMoveToday)
-            Button("capture.tomorrow", action: onMoveTomorrow)
+            moveTodayButton
+            moveTomorrowButton
         } label: {
             Label("batch.move.date", systemImage: "calendar")
                 .font(DaybookType.caption)
@@ -179,10 +179,30 @@ struct BatchActionBar: View {
         .fixedSize()
     }
 
+    private var moveTodayButton: some View {
+        DaybookActionButton(
+            actionID: "todo.move",
+            accessibilityTitle: L10n.string("capture.today", locale: locale),
+            action: onMoveToday
+        ) {
+            Text("capture.today")
+        }
+    }
+
+    private var moveTomorrowButton: some View {
+        DaybookActionButton(
+            actionID: "todo.move",
+            accessibilityTitle: L10n.string("capture.tomorrow", locale: locale),
+            action: onMoveTomorrow
+        ) {
+            Text("capture.tomorrow")
+        }
+    }
+
     private var statusAdjustmentMenu: some View {
         Menu {
-            Button("batch.done") { onToggleDone(true) }
-            Button("batch.undone") { onToggleDone(false) }
+            markDoneButton
+            markUndoneButton
         } label: {
             Label("batch.status", systemImage: "checkmark.circle")
                 .font(DaybookType.caption)
@@ -190,6 +210,26 @@ struct BatchActionBar: View {
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
+    }
+
+    private var markDoneButton: some View {
+        DaybookActionButton(
+            actionID: "todo.done",
+            accessibilityTitle: L10n.string("batch.done", locale: locale),
+            action: { onToggleDone(true) }
+        ) {
+            Text("batch.done")
+        }
+    }
+
+    private var markUndoneButton: some View {
+        DaybookActionButton(
+            actionID: "todo.reopen",
+            accessibilityTitle: L10n.string("batch.undone", locale: locale),
+            action: { onToggleDone(false) }
+        ) {
+            Text("batch.undone")
+        }
     }
 
     @ViewBuilder
@@ -218,25 +258,48 @@ struct BatchActionBar: View {
 
     private var enableButtons: some View {
         HStack(spacing: 6) {
-            Button("items.status.enabled") { onSetEnabled?(true) }
-                .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
-            Button("items.status.disabled") { onSetEnabled?(false) }
-                .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
+            DaybookActionButton(
+                actionID: "routine.resume",
+                role: .quiet,
+                size: .compact,
+                accessibilityTitle: L10n.string("items.status.enabled", locale: locale),
+                action: { onSetEnabled?(true) }
+            ) {
+                Text("items.status.enabled")
+            }
+            DaybookActionButton(
+                actionID: "routine.pause",
+                role: .quiet,
+                size: .compact,
+                accessibilityTitle: L10n.string("items.status.disabled", locale: locale),
+                action: { onSetEnabled?(false) }
+            ) {
+                Text("items.status.disabled")
+            }
         }
     }
 
     private var actionButtons: some View {
         HStack(spacing: 8) {
-            Button(role: .destructive, action: onTrash) {
-                Label("alert.trash.move", systemImage: "trash")
-                    .font(DaybookType.caption)
-            }
-            .buttonStyle(DaybookButtonStyle(.destructive, size: .compact))
+            trashButton
 
             Spacer(minLength: 8)
 
             DaybookIconButton(systemName: "xmark.circle.fill", label: "batch.clear", size: .compact, action: onClear)
             .help("batch.clear")
+        }
+    }
+
+    private var trashButton: some View {
+        DaybookActionButton(
+            actionID: "todo.delete",
+            role: .destructive,
+            size: .compact,
+            accessibilityTitle: L10n.string("alert.trash.move", locale: locale),
+            action: onTrash
+        ) {
+            Label("alert.trash.move", systemImage: "trash")
+                .font(DaybookType.caption)
         }
     }
 

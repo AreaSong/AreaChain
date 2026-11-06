@@ -47,11 +47,16 @@ struct SyntaxTextEditor: View {
     }
 
     var body: some View {
-        DaybookTextEditor(
-            text: $text, focused: $focused, placeholder: placeholder, fontSize: fontSize,
+        BaseMultiLineTextEditor(
+            text: $text,
+            focus: $focused,
+            placeholder: placeholder,
+            syntaxPlugin: (context == .tags || context == .search) ? .tagOnly : .taskSyntax,
+            fontSize: fontSize,
+            commandChord: commandChord,
             autocomplete: activeAutocomplete,
             availableTags: availableTags ?? tags.filter { $0.deletedAt == nil }.map(\.name),
-            onSubmit: onSubmit, commandChord: commandChord,
+            onSubmit: onSubmit,
             onMarkedTextChange: { hasMarkedText = $0 },
             onPasteImage: onPasteImage
         )

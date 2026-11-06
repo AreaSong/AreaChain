@@ -113,7 +113,8 @@ struct MenuBarUnifiedSearchContent: View {
     }
 
     static func showsOperation(_ controller: UnifiedSearchController) -> Bool {
-        controller.isNavigationInput || controller.operations?.active != nil
+        guard !controller.cliSession.shouldPresentPanel(for: controller.buffer.text) else { return false }
+        return controller.isNavigationInput || controller.operations?.active != nil
             || controller.plan?.items.isEmpty == false || controller.settingExecution != nil
     }
 

@@ -143,6 +143,7 @@ extension View {
     /// 指令不取结果期间：结果区保持挂载（滚动与选择不丢）但隐藏，操作面板占用结果区整块空间。
     func unifiedSearchYieldsToCommand(_ controller: UnifiedSearchController) -> some View {
         let yields = controller.hidesResultsForCommand
+            && !controller.cliSession.shouldPresentPanel(for: controller.buffer.text)
         return opacity(yields ? 0 : 1)
             .allowsHitTesting(!yields)
             .accessibilityHidden(yields)

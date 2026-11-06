@@ -52,4 +52,32 @@ struct BaseArchitectureGateTests {
             #expect(tooltip != nil && !(tooltip?.isEmpty ?? true))
         }
     }
+
+    @Test func uiMutationsRecordIntoSharedHistoryAndAvoidDoubleRecordingOnCLI() throws {
+        let container = try AppStartup.memoryContainer()
+        let context = container.mainContext
+        StandardActionCatalog.bootstrapIfNeeded()
+
+        let todo = TodoItem(title: "测试界面联动", dayKey: "2026-11-06")
+        context.insert(todo)
+        try context.save()
+
+        let initialCount = ActionHistoryStore.shared.appliedEntries.count
+        #expect(DayBoardMutations.setTodoDone(todo, isDone: true))
+        #expect(todo.isDone)
+        #expect(ActionHistoryStore.shared.appliedEntries.count == initialCount + 1)
+
+        _ = try ActionHistoryStore.shared.undo(isVaultUnlocked: true)
+        #expect(!todo.isDone)
+
+        _ = try ActionHistoryStore.shared.redo(isVaultUnlocked: true)
+        #expect(todo.isDone)
+
+        let beforeCLI = ActionHistoryStore.shared.appliedEntries.count
+        let cliContext = ActionContext(modelContext: context, todayKey: "2026-11-06", isVaultUnlocked: true)
+        let result = ActionRegistry.shared.executeCLI("测试界面联动 > move 2026-11-07", context: cliContext)
+        #expect(result.isSuccess)
+        #expect(todo.dayKey == "2026-11-07")
+        #expect(ActionHistoryStore.shared.appliedEntries.count == beforeCLI + 1)
+    }
 }

@@ -127,7 +127,10 @@ enum DayBoardMutations {
         let saved = ModelChanges.attempt(in: todo.modelContext) {
             try taskRepo(for: todo.modelContext).completeTodo(id: todo.id)
         }
-        if saved { CompletionUndo.shared.record(.todo(todo.id, wasDone: false, reopen: reopen)) }
+        if saved {
+            CompletionUndo.shared.record(.todo(todo.id, wasDone: false, reopen: reopen))
+            ActionHistoryUIBridge.recordTodoDone(todo, wasDone: false, isDone: true, reopenSubtaskIDs: reopen)
+        }
         return saved
     }
 
@@ -138,13 +141,19 @@ enum DayBoardMutations {
         let saved = ModelChanges.attempt(in: todo.modelContext) {
             try taskRepo(for: todo.modelContext).toggleTodo(id: todo.id)
         }
-        if saved { CompletionUndo.shared.record(.todo(todo.id, wasDone: wasDone, reopen: reopen)) }
+        if saved {
+            CompletionUndo.shared.record(.todo(todo.id, wasDone: wasDone, reopen: reopen))
+            ActionHistoryUIBridge.recordTodoDone(todo, wasDone: wasDone, isDone: !wasDone, reopenSubtaskIDs: reopen)
+        }
         return saved
     }
 
     @discardableResult
     static func editTodo(_ todo: TodoItem, title: String) -> Bool {
-        editTodoWithSyntax(todo, rawInput: title)
+        let oldTitle = todo.title
+        let saved = editTodoWithSyntax(todo, rawInput: title)
+        if saved { ActionHistoryUIBridge.recordTodoRename(todo, oldTitle: oldTitle, newTitle: todo.title) }
+        return saved
     }
 
     @discardableResult
@@ -154,8 +163,11 @@ enum DayBoardMutations {
 
     @discardableResult
     static func moveTodo(_ todo: TodoItem, to dayKey: String) -> Bool {
-        guard dayKey != todo.dayKey else { return true }
-        return ModelChanges.attempt(in: todo.modelContext) { try taskRepo(for: todo.modelContext).moveTodo(id: todo.id, to: dayKey) }
+        let oldDayKey = todo.dayKey
+        guard dayKey != oldDayKey else { return true }
+        let saved = ModelChanges.attempt(in: todo.modelContext) { try taskRepo(for: todo.modelContext).moveTodo(id: todo.id, to: dayKey) }
+        if saved { ActionHistoryUIBridge.recordTodoMove(todo, oldDayKey: oldDayKey, newDayKey: dayKey) }
+        return saved
     }
 
     @discardableResult
@@ -169,14 +181,19 @@ enum DayBoardMutations {
 
     @discardableResult
     static func applyQuadrant(_ slot: QuadrantSlot, to todo: TodoItem) -> Bool {
-        ModelChanges.attempt(in: todo.modelContext) {
+        let oldSlot = QuadrantSlot.of(important: todo.isImportant, urgent: todo.isUrgent)
+        let saved = ModelChanges.attempt(in: todo.modelContext) {
             try taskRepo(for: todo.modelContext).setPriority(id: todo.id, isImportant: slot.isImportant, isUrgent: slot.isUrgent)
         }
+        if saved { ActionHistoryUIBridge.recordTodoPriority(todo, oldSlot: oldSlot, newSlot: slot) }
+        return saved
     }
 
     @discardableResult
     static func trashTodo(_ todo: TodoItem) -> Bool {
-        ModelChanges.attempt(in: todo.modelContext) { try taskRepo(for: todo.modelContext).deleteTodo(id: todo.id, soft: true) }
+        let saved = ModelChanges.attempt(in: todo.modelContext) { try taskRepo(for: todo.modelContext).deleteTodo(id: todo.id, soft: true) }
+        if saved { ActionHistoryUIBridge.recordTodoTrash(todo) }
+        return saved
     }
 
     @discardableResult
@@ -196,109 +213,7 @@ enum DayBoardMutations {
         ModelChanges.attempt(in: todo.modelContext) { try taskRepo(for: todo.modelContext).toggleTag(id: todo.id, tagID: tagID) }
     }
 
-    // MARK: - 子任务
-
-    @discardableResult
-    static func addSubtask(to todo: TodoItem, title: String, context: ModelContext) -> Bool {
-        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return false }
-        guard let sub = ModelChanges.value(in: context, {
-            try taskRepo(for: context).addSubtask(to: todo.id, title: trimmed)
-        }) else { return false }
-        if !todo.subtasks.contains(where: { $0.id == sub.id }) { todo.subtasks.append(sub) }
-        return true
-    }
-
-    @discardableResult
-    static func toggleSubtask(_ subtask: SubtaskItem) -> Bool {
-        let wasDone = subtask.isDone
-        let saved = ModelChanges.attempt(in: subtask.modelContext) {
-            try taskRepo(for: subtask.modelContext).toggleSubtask(id: subtask.id)
-        }
-        if saved { CompletionUndo.shared.record(.subtask(subtask.id, wasDone: wasDone)) }
-        return saved
-    }
-
-    @discardableResult
-    static func toggleSubtaskTag(_ subtask: SubtaskItem, tagID: UUID) -> Bool {
-        ModelChanges.attempt(in: subtask.modelContext) {
-            try taskRepo(for: subtask.modelContext).toggleSubtaskTag(id: subtask.id, tagID: tagID)
-        }
-    }
-
-    @discardableResult
-    static func editSubtask(_ subtask: SubtaskItem, title: String) -> Bool {
-        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return false }
-        return ModelChanges.attempt(in: subtask.modelContext) {
-            try taskRepo(for: subtask.modelContext).editSubtask(id: subtask.id, title: trimmed)
-        }
-    }
-
-    @discardableResult
-    static func deleteSubtask(_ subtask: SubtaskItem) -> Bool {
-        ModelChanges.attempt(in: subtask.modelContext) { try taskRepo(for: subtask.modelContext).deleteSubtask(id: subtask.id, soft: true) }
-    }
-
-    @discardableResult
-    static func reorderSubtasks(for todo: TodoItem, orderedIDs: [UUID]) -> Bool {
-        ModelChanges.attempt(in: todo.modelContext) {
-            try taskRepo(for: todo.modelContext).reorderSubtasks(for: todo.id, orderedIDs: orderedIDs)
-        }
-    }
-
-    // MARK: - 习惯
-
-    @discardableResult
-    static func setRoutineEnabled(
-        _ routine: DailyRoutine, enabled: Bool, todayKey: String,
-        checks: [RoutineCheck] = [], context: ModelContext? = nil
-    ) -> Bool {
-        let context = context ?? routine.modelContext
-        return ModelChanges.attempt(in: context) {
-            try routineRepo(for: context).setRoutineEnabled(id: routine.id, enabled: enabled, todayKey: todayKey)
-        }
-    }
-
-    @discardableResult
-    static func setWeekdayMask(_ routine: DailyRoutine, mask: Int) -> Bool {
-        ModelChanges.attempt(in: routine.modelContext) {
-            try routineRepo(for: routine.modelContext).setWeekdayMask(id: routine.id, mask: mask)
-        }
-    }
-
-    @discardableResult
-    static func markRoutineDone(_ routine: DailyRoutine, on dayKey: String) -> Bool {
-        let saved = ModelChanges.attempt(in: routine.modelContext) {
-            try routineRepo(for: routine.modelContext).markRoutineDone(id: routine.id, dayKey: dayKey)
-        }
-        if saved { CompletionUndo.shared.record(.routine(routine.id, dayKey: dayKey, wasClosed: false)) }
-        return saved
-    }
-
-    @discardableResult
-    static func toggleRoutine(
-        _ routine: DailyRoutine, on dayKey: String,
-        checks: [RoutineCheck] = [], context: ModelContext? = nil
-    ) -> Bool {
-        let context = context ?? routine.modelContext
-        let snaps = checks.compactMap(\.snapshot)
-        let wasClosed = DayBoardLogic.isRoutineDone(routine.snapshot, checks: snaps, on: dayKey)
-        let saved = ModelChanges.attempt(in: context) {
-            try routineRepo(for: context).toggleRoutine(id: routine.id, dayKey: dayKey)
-        }
-        if saved { CompletionUndo.shared.record(.routine(routine.id, dayKey: dayKey, wasClosed: wasClosed)) }
-        return saved
-    }
-
-    @discardableResult
-    static func skipRoutine(
-        _ routine: DailyRoutine, on dayKey: String,
-        checks: [RoutineCheck] = [], context: ModelContext? = nil
-    ) -> Bool {
-        let context = context ?? routine.modelContext
-        return ModelChanges.attempt(in: context) { try routineRepo(for: context).skipRoutine(id: routine.id, dayKey: dayKey) }
-    }
+    // MARK: - 习惯字段与生命周期
 
     @discardableResult
     static func editRoutine(_ routine: DailyRoutine, title: String) -> Bool {

@@ -112,7 +112,14 @@ struct TrashPage: View {
             isEnabled: !items.isEmpty && storage != nil, role: .destructive, overflowOnly: true
         ) { confirmEmpty = true }])
         .confirmationDialog("alert.purge.all.title", isPresented: $confirmEmpty, titleVisibility: .visible) {
-            Button("alert.purge.all", role: .destructive, action: emptyTrash)
+            DaybookActionButton(
+                actionID: "trash.empty",
+                role: .destructive,
+                accessibilityTitle: L10n.string("alert.purge.all", locale: locale),
+                action: emptyTrash
+            ) {
+                Text("alert.purge.all")
+            }
             Button("alert.cancel", role: .cancel) {}
         } message: { Text("alert.purge.all.message") }
         .confirmPurge($pendingPurge)
@@ -134,9 +141,13 @@ struct TrashPage: View {
             ForEach(TrashCategoryFilter.allCases, id: \.self) { filter in
                 let isSelected = categoryFilter == filter
                 let count = counts[filter] ?? 0
-                Button {
-                    categoryFilter = filter
-                } label: {
+                DaybookActionButton(
+                    actionID: "trash.filter." + filter.rawValue,
+                    role: isSelected ? .pill(tint: DaybookPalette.accent.base) : .subtle,
+                    size: .compact,
+                    isActive: isSelected,
+                    action: { categoryFilter = filter }
+                ) {
                     HStack(spacing: DaybookSpacing.xxs) {
                         Text(LocalizedStringKey(filter.titleKey))
                         Text(verbatim: "\(count)")
@@ -144,12 +155,6 @@ struct TrashPage: View {
                             .foregroundStyle(isSelected ? DaybookPalette.accent.base : DaybookPalette.text.tertiary)
                     }
                 }
-                .buttonStyle(
-                    DaybookButtonStyle(
-                        isSelected ? .pill(tint: DaybookPalette.accent.base) : .subtle,
-                        size: .compact
-                    )
-                )
                 .accessibilityIdentifier("trash.filter." + filter.rawValue)
             }
         }
@@ -327,13 +332,42 @@ struct TrashPage: View {
         )
     }
 
+    func trashRestoreButton(for item: TrashRow, size: DaybookControlSize = .compact) -> some View {
+        DaybookActionButton(
+            actionID: "trash.restore",
+            role: .prominent,
+            size: size,
+            isEnabled: item.canRestore,
+            tooltip: L10n.string(item.canRestore ? "trash.restore" : "trash.restore.blocked", locale: locale),
+            accessibilityTitle: L10n.string("trash.restore", locale: locale),
+            action: { restore(item) }
+        ) {
+            Text("trash.restore")
+        }
+    }
+
+    func trashDeletePermanentlyButton(for item: TrashRow, size: DaybookControlSize = .compact) -> some View {
+        DaybookActionButton(
+            actionID: "trash.deletePermanently",
+            role: .destructive,
+            size: size,
+            isEnabled: item.canPurge,
+            accessibilityTitle: L10n.string("trash.purge", locale: locale),
+            action: { askPurge(item) }
+        ) {
+            Text("trash.purge")
+        }
+    }
+
     private func restoreFocused() {
         guard let item = flatItems.first(where: { $0.id == navigation.focusedTrashID }), item.canRestore else { return }
         restore(item)
     }
 
     private func restore(_ item: TrashRow) {
-        item.restore()
+        DaybookActionDispatcher.shared.perform(actionID: "trash.restore") {
+            item.restore()
+        }
     }
 
     private func askPurge(_ item: TrashRow) {
@@ -344,12 +378,16 @@ struct TrashPage: View {
     }
 
     private func purge(_ item: TrashRow) {
-        guard item.purge() else { return }
-        if let owner = item.purgesOwner { EditDrafts.shared.discard(owner: owner) }
+        DaybookActionDispatcher.shared.perform(actionID: "trash.deletePermanently") {
+            guard item.purge() else { return }
+            if let owner = item.purgesOwner { EditDrafts.shared.discard(owner: owner) }
+        }
     }
 
     private func emptyTrash() {
         guard let storage else { return }
-        _ = try? LocalStorageInspector.emptyAllTrash(in: modelContext, store: storage.store, root: storage.root)
+        DaybookActionDispatcher.shared.perform(actionID: "trash.empty") {
+            _ = try? LocalStorageInspector.emptyAllTrash(in: modelContext, store: storage.store, root: storage.root)
+        }
     }
 }

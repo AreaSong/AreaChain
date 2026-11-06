@@ -35,13 +35,14 @@ struct UnifiedSearchCLIBridgeTests {
         StandardActionCatalog.bootstrapIfNeeded()
         let session = UnifiedSearchCLISession()
 
+        #expect(session.handlesCLIInput("/"))
         #expect(session.handlesCLIInput("/todo 买牛奶 !p1 @15:30"))
+        #expect(session.handlesCLIInput("/todo/create 买牛奶"))
         #expect(session.handlesCLIInput("/theme dark"))
         #expect(session.handlesCLIInput("买牛奶 > move tomorrow"))
         #expect(session.handlesCLIInput("/history"))
         #expect(!session.handlesCLIInput("/trash"))
         #expect(!session.handlesCLIInput("/clipboard"))
-        #expect(!session.handlesCLIInput("/task.create"))
         #expect(!session.handlesCLIInput("普通搜索关键词"))
 
         session.updateForInput("/history 牛奶")

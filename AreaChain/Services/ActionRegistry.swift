@@ -8,6 +8,7 @@ final class ActionRegistry {
     static let shared = ActionRegistry(historyStore: .shared)
 
     let historyStore: ActionHistoryStore
+    private(set) var isExecutingAction: Bool = false
     private(set) var actionsByID: [ActionID: BaseAction] = [:]
     private(set) var orderedActionIDs: [ActionID] = []
     private var commandIndex: [String: ActionID] = [:]
@@ -61,6 +62,9 @@ final class ActionRegistry {
         case "action.undo": return actionsByID[.undo]
         case "action.redo": return actionsByID[.redo]
         case "action.history": return actionsByID[.historyQuery]
+        case "todo.done": return actionsByID["todo.complete"]
+        case "todo.rename": return actionsByID["todo.title"]
+        case "todo.delete": return actionsByID["todo.trash"]
         default: return nil
         }
     }
@@ -145,6 +149,14 @@ final class ActionRegistry {
         if let gateStatus = verifyExecutionGate(for: action, arguments: resolvedArgs, context: context) {
             return gateStatus
         }
+        let wasExecuting = isExecutingAction
+        let wasSharedExecuting = Self.shared.isExecutingAction
+        isExecutingAction = true
+        Self.shared.isExecutingAction = true
+        defer {
+            isExecutingAction = wasExecuting
+            Self.shared.isExecutingAction = wasSharedExecuting
+        }
         do {
             let output = try action.perform(arguments: resolvedArgs, context: context)
             guard action.recordsUndo else {
@@ -153,11 +165,28 @@ final class ActionRegistry {
             let recordedDiff = output.diff ?? makeDefaultDiff(for: action, arguments: resolvedArgs, context: context)
             historyStore.record(
                 diff: recordedDiff, message: output.message, undoPayload: output.undoPayload,
-                undoClosure: output.undoClosure, redoClosure: output.redoClosure
+                undoClosure: wrapExecutionFlag(output.undoClosure), redoClosure: wrapExecutionFlag(output.redoClosure)
             )
             return .succeeded(message: output.message, diff: recordedDiff)
         } catch {
             return .failed(error.localizedDescription)
+        }
+    }
+
+    private func wrapExecutionFlag(
+        _ closure: (@MainActor () throws -> Void)?
+    ) -> (@MainActor () throws -> Void)? {
+        guard let closure else { return nil }
+        return { [weak self] in
+            let wasSelf = self?.isExecutingAction ?? false
+            let wasShared = Self.shared.isExecutingAction
+            self?.isExecutingAction = true
+            Self.shared.isExecutingAction = true
+            defer {
+                self?.isExecutingAction = wasSelf
+                Self.shared.isExecutingAction = wasShared
+            }
+            try closure()
         }
     }
 

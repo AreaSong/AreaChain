@@ -60,17 +60,47 @@ struct BoardCommandStripButton: View {
     var labelKey: String
     var isActive = false
     var isDestructive = false
+    var actionID: String? = nil
     @Binding var hoveredTip: String?
     var action: () -> Void
 
     @Environment(\.locale) private var locale
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    var resolvedActionID: String {
+        if let actionID, !actionID.isEmpty {
+            return actionID
+        }
+        return Self.defaultActionID(for: labelKey)
+    }
+
+    static func defaultActionID(for labelKey: String) -> String {
+        switch labelKey {
+        case "row.quick.edit": return "todo.rename"
+        case "row.quick.skip": return "routine.skip"
+        case "row.quick.delete": return "todo.delete"
+        case "diary.quick.open": return "diary.openWindow"
+        case "diary.quick.convert_task", "diary.quick.converted_task": return "diary.toTodo"
+        case "diary.quick.pin", "diary.quick.unpin": return "diary.pin"
+        case "diary.quick.private", "diary.quick.privacy.lock", "diary.quick.privacy.unlock": return "diary.togglePrivate"
+        case "diary.quick.delete": return "diary.trash"
+        default: return labelKey
+        }
+    }
+
     var body: some View {
-        Button(action: action) {
+        DaybookActionButton(
+            actionID: resolvedActionID,
+            role: isDestructive ? .iconDestructive : (isActive ? .iconActive : .icon),
+            size: .compact,
+            isActive: isActive,
+            isIconOnly: true,
+            tooltip: localizedText,
+            accessibilityTitle: localizedText,
+            action: action
+        ) {
             BoardCommandStripIcon(icon: icon)
         }
-        .buttonStyle(DaybookButtonStyle(isDestructive ? .iconDestructive : (isActive ? .iconActive : .icon), size: .compact))
         .fixedSize()
         .accessibilityLabel(LocalizedStringKey(labelKey))
         .help(LocalizedStringKey(labelKey))

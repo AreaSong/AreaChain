@@ -28,30 +28,63 @@ final class UnifiedSearchCLISession {
     var showingHistory = false
     var historyKeyword = ""
 
-    private static let legacyScopeTokens: Set<String> = ["trash", "clipboard"]
+    var lastEcho: String? {
+        get { statusMessage }
+        set { statusMessage = newValue }
+    }
 
-    /// 判断输入是否应由 Linux 风格 `ActionCLIParser` 与 `ActionRegistry` 直接接管。
-    func handlesCLIInput(_ rawText: String) -> Bool {
+    private static func isPureContentSearchScope(_ trimmed: String) -> Bool {
+        let lower = trimmed.lowercased()
+        return lower == "/trash"
+            || lower.hasPrefix("/trash ")
+            || lower == "/clipboard"
+            || lower.hasPrefix("/clipboard ")
+    }
+
+    /// 按命令名、别名或旧式斜杠路径（如 `todo/create`、`win/open`）解析为统一动作。
+    func resolveCLIAction(_ commandName: String) -> BaseAction? {
+        StandardActionCatalog.bootstrapIfNeeded()
+        let cleaned = commandName
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingPrefix("/")
+            .trimmingCharacters(in: .whitespaces)
+        guard !cleaned.isEmpty else { return nil }
+        if let direct = ActionRegistry.shared.resolve(commandOrID: cleaned) {
+            return direct
+        }
+        let dotNormalized = cleaned.replacingOccurrences(of: "/", with: ".")
+        if let byDot = ActionRegistry.shared.resolve(commandOrID: dotNormalized) {
+            return byDot
+        }
+        let dashNormalized = cleaned.replacingOccurrences(of: "/", with: "-")
+        if let byDash = ActionRegistry.shared.resolve(commandOrID: dashNormalized) {
+            return byDash
+        }
+        return nil
+    }
+
+    /// 判断输入是否应由统一搜索 CLI 会话直接拦截。
+    func shouldIntercept(text rawText: String) -> Bool {
         let trimmed = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return false }
+        if trimmed.hasPrefix("/") {
+            return !Self.isPureContentSearchScope(trimmed)
+        }
         switch ActionCLIParser.parse(trimmed) {
         case .pipeline(let args):
-            StandardActionCatalog.bootstrapIfNeeded()
-            return ActionRegistry.shared.resolve(commandOrID: args.commandName) != nil
+            return resolveCLIAction(args.commandName) != nil
         case .command(let args):
             let cmd = args.commandName.lowercased()
-            guard !cmd.isEmpty else { return false }
-            if Self.legacyScopeTokens.contains(cmd) && args.positional.isEmpty && args.options.isEmpty {
-                return false
-            }
-            if cmd.contains(".") && CommandCatalog.standard.command(id: CommandID(rawValue: cmd)) != nil {
-                return false
-            }
-            StandardActionCatalog.bootstrapIfNeeded()
-            return ActionRegistry.shared.resolve(commandOrID: cmd) != nil
+            guard !cmd.isEmpty, !Self.isPureContentSearchScope("/\(cmd)") else { return false }
+            return resolveCLIAction(cmd) != nil
         case .search:
             return false
         }
+    }
+
+    /// 判断输入是否应由 Linux 风格 `ActionCLIParser` 与 `ActionRegistry` 直接接管。
+    func handlesCLIInput(_ rawText: String) -> Bool {
+        shouldIntercept(text: rawText)
     }
 
     func updateForInput(_ rawText: String) {
@@ -82,13 +115,13 @@ final class UnifiedSearchCLISession {
         if confirmationPrompt != nil || statusMessage != nil || showingHistory {
             return true
         }
-        if handlesCLIInput(trimmed) || rawText.contains(" > ") {
+        if trimmed.hasPrefix("/") {
+            return !Self.isPureContentSearchScope(trimmed)
+        }
+        if shouldIntercept(text: trimmed) || rawText.contains(" > ") {
             return true
         }
-        if trimmed.hasPrefix("/") && !trimmed.dropFirst().contains(".") {
-            return true
-        }
-        if !trimmed.isEmpty && !trimmed.hasPrefix("/") {
+        if !trimmed.isEmpty {
             StandardActionCatalog.bootstrapIfNeeded()
             return !ActionRegistry.shared.matchActions(query: trimmed).isEmpty
         }
@@ -97,13 +130,36 @@ final class UnifiedSearchCLISession {
 
     @discardableResult
     func execute(
+        text rawText: String,
+        context: ActionContext,
+        controller: UnifiedSearchController? = nil,
+        source: UnifiedSearchBuffer? = nil
+    ) -> ActionExecutionStatus {
+        StandardActionCatalog.bootstrapIfNeeded()
+        let trimmed = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let result: ActionExecutionStatus
+        switch ActionCLIParser.parse(trimmed) {
+        case .command(let args), .pipeline(let args):
+            if !args.commandName.isEmpty, let action = resolveCLIAction(args.commandName) {
+                result = ActionRegistry.shared.execute(id: action.id, arguments: args, context: context)
+            } else {
+                result = ActionRegistry.shared.executeCLI(trimmed, context: context)
+            }
+        case .search:
+            result = ActionRegistry.shared.executeCLI(trimmed, context: context)
+        }
+        applyResult(result, rawInput: trimmed, controller: controller, source: source)
+        return result
+    }
+
+    @discardableResult
+    func execute(
         input rawText: String,
         controller: UnifiedSearchController,
         source: UnifiedSearchBuffer
     ) -> ActionExecutionStatus {
-        StandardActionCatalog.bootstrapIfNeeded()
         let trimmed = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let isConfirmed = (pendingConfirmationInput == trimmed && confirmationPrompt != nil)
+        let isConfirmed = pendingConfirmationInput == trimmed && confirmationPrompt != nil
         let nav = controller.navigationRouter?.navigation ?? WorkspaceNavigation.shared
         let context = ActionContext(
             modelContext: Persistence.session.container.mainContext,
@@ -114,9 +170,7 @@ final class UnifiedSearchCLISession {
             allowedExternalPermission: .system,
             confirmed: isConfirmed
         )
-        let result = ActionRegistry.shared.executeCLI(trimmed, context: context)
-        applyResult(result, rawInput: trimmed, controller: controller, source: source)
-        return result
+        return execute(text: trimmed, context: context, controller: controller, source: source)
     }
 
     @discardableResult
@@ -133,8 +187,8 @@ final class UnifiedSearchCLISession {
     private func applyResult(
         _ result: ActionExecutionStatus,
         rawInput: String,
-        controller: UnifiedSearchController,
-        source: UnifiedSearchBuffer
+        controller: UnifiedSearchController?,
+        source: UnifiedSearchBuffer?
     ) {
         switch result {
         case .succeeded(let message, _):
@@ -146,7 +200,7 @@ final class UnifiedSearchCLISession {
                ["history", "日志", "历史", "action.history"].contains(args.commandName.lowercased()) {
                 showingHistory = true
                 historyKeyword = args.option("query") ?? args.joinedPositional
-            } else {
+            } else if let controller {
                 _ = controller.publishOperation(text: "")
                 controller.refresh()
             }
@@ -165,7 +219,13 @@ final class UnifiedSearchCLISession {
             pendingConfirmationInput = nil
             statusMessage = prompt
             isErrorStatus = false
-        case .unavailable, .permissionDenied, .actionNotFound, .failed:
+        case .actionNotFound(let commandName):
+            confirmationPrompt = nil
+            pendingConfirmationInput = nil
+            let token = commandName.isEmpty ? rawInput : commandName
+            statusMessage = "未找到指令「\(token)」，输入 / 查看可用命令 (Unknown command '\(token)')"
+            isErrorStatus = true
+        case .unavailable, .permissionDenied, .failed:
             confirmationPrompt = nil
             pendingConfirmationInput = nil
             let isZh = AppPreferences.shared.resolvedLocale.identifier.hasPrefix("zh")
@@ -193,7 +253,7 @@ extension UnifiedSearchController {
                 return false
             }
         }
-        guard cliSession.handlesCLIInput(source.text) else { return false }
+        guard cliSession.shouldIntercept(text: source.text) else { return false }
         switch intent {
         case .open, .submit:
             _ = cliSession.execute(input: source.text, controller: self, source: source)
@@ -348,8 +408,25 @@ struct UnifiedSearchCLIPanel: View {
         .accessibilityIdentifier("unified.cli.history")
     }
 
+    private var resolvedCompletionCandidates: [ActionCompletionCandidate] {
+        StandardActionCatalog.bootstrapIfNeeded()
+        if rawText == "/" {
+            return ActionRegistry.shared.allMetadata.prefix(8).map { meta in
+                let cmd = meta.primaryCommand
+                return ActionCompletionCandidate(
+                    kind: .command,
+                    insertText: "/\(cmd)",
+                    completedInput: "/\(cmd) ",
+                    displayTitle: "\(meta.chineseTitle) (\(meta.englishTitle))",
+                    actionID: meta.id
+                )
+            }
+        }
+        return Array(ActionRegistry.shared.completions(for: rawInput).prefix(8))
+    }
+
     private var completionsSection: some View {
-        let candidates = ActionRegistry.shared.completions(for: rawInput).prefix(6)
+        let candidates = resolvedCompletionCandidates
         return Group {
             if !candidates.isEmpty {
                 VStack(alignment: .leading, spacing: DaybookSpacing.xxs) {
