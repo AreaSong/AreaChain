@@ -54,17 +54,8 @@ import Testing
     var field: NSTextField {
         get throws {
             try #require(SettingsButtonTestSupport.elements(window.contentView).compactMap { $0 as? NSTextField }
-                .first { $0.cell is UnifiedSearchFieldCell && !Self.insideOperation($0) })
+                .first { $0.cell is UnifiedSearchFieldCell })
         }
-    }
-
-    static func insideOperation(_ view: NSView) -> Bool {
-        var ancestor = view.superview
-        while let current = ancestor {
-            if current is UnifiedSearchOperationBoundary { return true }
-            ancestor = current.superview
-        }
-        return false
     }
 
     var editor: NSTextView { get throws { try #require(try field.currentEditor() as? NSTextView) } }
@@ -164,11 +155,6 @@ import Testing
     func switchAwayAndBack() async throws {
         try await switchAway()
         try await switchBack()
-    }
-
-    var operationPanelShown: Bool {
-        SettingsButtonTestSupport.elements(window.contentView).compactMap { $0 as? UnifiedSearchOperationBoundary }
-            .contains { !$0.subviews.isEmpty }
     }
 
     var resultStrings: [String] {

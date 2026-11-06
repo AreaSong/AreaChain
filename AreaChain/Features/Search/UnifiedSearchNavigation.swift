@@ -1,6 +1,6 @@
 import Foundation
 
-/// 返回票据只有定位及版本。查询/正文/计划仍留在各自唯一所有者中。
+/// 返回票据只有定位及版本。查询/正文仍留在各自唯一所有者中。
 struct UnifiedSearchReturnContext {
     let id = UUID()
     let ownership: CommandHostOwnership
@@ -18,10 +18,9 @@ struct UnifiedSearchReturnContext {
 extension UnifiedSearchController {
     var isNavigationInput: Bool { browsedCommand.map(Self.routesAsNavigation) == true }
 
-    /// 走导航面板（不建草稿）的指令：导航类、“在原页面完成”对照与窗口／统计／退出等直接动作。
+    /// 走导航面板（不建草稿）的指令：导航类与“在原页面完成”对照。
     static func routesAsNavigation(_ command: CommandDescriptor) -> Bool {
         command.category == .navigation || CommandOriginalPage.route(for: command.id) != nil
-            || CommandSystemAction.commands.contains(command.id.rawValue)
     }
     var isNavigationPresented: Bool { navigationRouter?.navigation.searchPresentation == false }
 
@@ -36,7 +35,6 @@ extension UnifiedSearchController {
         guard let router = navigationRouter else { navigationMessage = "unified.navigation.unassembled"; return }
         let parsed = CommandPathParser().parse(.init(text: source.text))
         guard let command = parsed.command else { return }
-        // 分派与候选标签共用 navigationRoute（唯一判断入口），不另写平行名单。
         let route = navigationRoute(for: command)
         if case .page(let page)? = route, parsed.arguments.isEmpty, parsed.state == .command {
             navigate(.page(page), source: source)
@@ -69,12 +67,6 @@ extension UnifiedSearchController {
                 navigationMessage = "unified.navigation.unsupported"; return
             }
             browse(.init(version: page.snapshot.version, action: .open(inputEditing: false)), source: source)
-        } else if route == .board, let pages = pageCommands {
-            executeBoardNavigation(command.id, parsed: parsed, source: source, pages: pages)
-        } else if case .clipboardWindow(let window)? = route, let pages = pageCommands {
-            executeClipboardWindow(window, parsed: parsed, source: source, pages: pages)
-        } else if route == .system {
-            executeSystemAction(command, parsed: parsed, source: source)
         } else if case .originalPage(let page)? = route {
             executeOriginalPage(page, command: command, parsed: parsed, source: source)
         } else { navigationMessage = "unified.navigation.unsupported" }
@@ -87,8 +79,6 @@ extension UnifiedSearchController {
         return day
     }
 
-    /// 与月历点日期同义：只换检查日，不打卡。目标是当前可见结果里的焦点习惯（执行日结果的 id 就是习惯 id），
-    /// 位置仍经 objects.resolve 的存活与隐私检查，再沿同一 navigate 打开检查器。
     private func inspectRoutineDay(_ day: String, router: WorkspaceSearchRouter, source: UnifiedSearchBuffer) {
         guard let page = try? session.presentation().pagination, let active = page.browse.active,
               page.snapshot.visible.contains(active), [.routine, .routineOccurrence].contains(active.type) else {
@@ -100,8 +90,6 @@ extension UnifiedSearchController {
         catch { navigationMessage = navigationFailure(error as? WorkspaceOpenFailure ?? .invalidTarget) }
     }
 
-    /// 沿检查器关闭按钮（navigation.closeInspector），但先经 commitInspectorBeforeNavigation：
-    /// 正式版让编辑器按失焦规则保存，隔离宿主只留 EditDrafts；同一轮直接关闭会先卸载编辑器而丢掉未保存的修改。
     private func closeInspector(router: WorkspaceSearchRouter, source: UnifiedSearchBuffer) {
         guard router.navigation.isInspectorPresented else { navigationMessage = "unified.navigation.inspectorNotOpen"; return }
         do { try router.validateHost() } catch {
@@ -128,7 +116,6 @@ extension UnifiedSearchController {
             return
         }
         do {
-            // BrowseOpen 仅在原 Session 同步消费后进入此处，异步显示前仍核验原票据。
             let page = try session.presentation().pagination
             guard page.snapshot.visible.contains(open.object),
                   page.browse.active == open.object || page.browse.selected.contains(open.object) else {
@@ -148,7 +135,6 @@ extension UnifiedSearchController {
         } catch { navigationMessage = navigationFailure(error as? WorkspaceOpenFailure ?? .invalidTarget) }
     }
 
-    /// `then` 在页面实际显示后调用（任务页的选择类指令据此在页面投影上执行）；被拒或过期不调用。
     func navigate(_ destination: WorkspaceNavigationDestination, source: UnifiedSearchBuffer,
                   content: ContentQueryBrowseOpen? = nil, origin: CommandObjectReference? = nil,
                   then completion: ((WorkspaceNavigationOutcome) -> Void)? = nil) {
@@ -164,13 +150,11 @@ extension UnifiedSearchController {
                 selected: browse?.selected ?? [], expanded: browse?.expanded ?? [])
         }
         guard let ticket = returnSearch else { return }
-        endLongText()
         inputFocused = false
         guard inputReset.state?.dismissForNavigation() != false else {
             navigationMessage = "unified.navigation.composing"
             return
         }
-        revokeNavigationAcceptances()
         let requestID = UUID()
         navigationRequestID = requestID
         navigationTask = Task { @MainActor [weak self] in
@@ -224,48 +208,9 @@ extension UnifiedSearchController {
         }
     }
 
-    /// 超限长文回到原编辑入口：沿 openResult／openContentOwner 的同一解析与 navigate 核验，
-    /// 手记仍须在当前结果中可见，任务仍经 objects.resolve 的隐私与存活检查，不另开导航或放宽资格。
-    func openLongTextOwner(_ owner: CommandObjectReference, source: UnifiedSearchBuffer) {
-        guard validates(source), let router = navigationRouter else { longTextMessage = "unified.navigation.unassembled"; return }
-        let open = ContentQueryBrowseOpen(object: owner, parent: nil, viewingTrash: false)
-        switch owner.type {
-        case .diary:
-            guard router.contents != nil else { longTextMessage = navigationFailure(.unassembled); return }
-            navigate(.content(owner), source: source, content: open)
-        case .todo:
-            do { navigate(.object(try router.objects.resolve(open)), source: source) }
-            catch { longTextMessage = navigationFailure(error as? WorkspaceOpenFailure ?? .invalidTarget) }
-        default: longTextMessage = "unified.longText.ownerNeedsDay"
-        }
-    }
-
-    /// 转换回执打开新对象：沿 openLongTextOwner 的同一解析与 navigate 核验，不另开导航。
-    /// 新习惯按转换所用时钟的今天作为执行日打开；新待办直接打开。
-    func openConvertedObject(_ facts: CommandConvertFacts, source: UnifiedSearchBuffer) {
-        guard validates(source), facts.state == .saved else { return }
-        guard let router = navigationRouter, let convert else { convertFailure = "unified.navigation.unassembled"; return }
-        let created = facts.created
-        let open = created.type == .routine
-            ? ContentQueryBrowseOpen(object: .init(type: .routineOccurrence, id: created.id, dayKey: convert.conversion.clock.today()),
-                                     parent: created, viewingTrash: false)
-            : ContentQueryBrowseOpen(object: created, parent: nil, viewingTrash: false)
-        do { navigate(.object(try router.objects.resolve(open)), source: source) }
-        catch { convertFailure = navigationFailure(error as? WorkspaceOpenFailure ?? .invalidTarget) }
-    }
-
-    /// routine.capture 回执“打开新习惯”：位置由规格给出，与转换后打开习惯同一解析与导航。
-    func openSimpleCreated(_ facts: CommandSimpleFacts, source: UnifiedSearchBuffer) {
-        guard validates(source), let open = simple?.openTarget(facts) else { return }
-        guard let router = navigationRouter else { simpleFailure = "unified.navigation.unassembled"; return }
-        do { navigate(.object(try router.objects.resolve(open)), source: source) }
-        catch { simpleFailure = navigationFailure(error as? WorkspaceOpenFailure ?? .invalidTarget) }
-    }
-
-    /// 受保护手记、加私密标签与超长正文改在原手记页完成；沿“打开原页面”里手记的目的地（手记页）。
     func openDiaryOriginalPage(_ source: UnifiedSearchBuffer) {
         guard validates(source) else { return }
-        guard navigationRouter != nil else { simpleFailure = "unified.navigation.unassembled"; return }
+        guard navigationRouter != nil else { return }
         navigate(.page(.diary), source: source) { [weak self] _ in self?.navigationMessage = "unified.originalPage.displayed" }
     }
 
@@ -286,8 +231,6 @@ extension UnifiedSearchController {
         }
         router.clearDestination()
         router.navigation.restoreSearchPage(ticket.tab, tag: ticket.tag)
-        // 目的地上新输入的修改类指令是用户当前的意图，不用保留查询覆盖；导航指令（含导航过来时留下的那条）
-        // 照旧换回保留查询。保留查询仍决定回来后读取的结果。
         if !isCommandInput || isNavigationInput { restoreQueryInput() }
         if (try? session.presentation().pagination.snapshot.version) != ticket.version || ticket.version == nil {
             preservedSearchScrollVersion = nil
@@ -316,27 +259,19 @@ extension UnifiedSearchController {
         inputFocused = true
     }
 
-    /// 工作台停在原页面（searchPresentation 为 false、不是从搜索导航过去）时操作面板没有宿主：输入指令即显示搜索页。
-    /// 从搜索导航到的目的地持有返回票据，输入时不切页，由 Return／⌘Return 经 returnForCommand 回到搜索页。
     func showSearchForCommandOnOriginalPage() {
         guard isNavigationPresented, returnSearch == nil else { return }
         navigationRouter?.navigation.searchPresentation = true
     }
 
-    /// 停在从搜索导航到的目的地（持有返回票据）时，操作面板没有宿主：修改类指令的 Return／⌘Return
-    /// 先回到搜索页（保留指令文字）再按 Return 继续；已有草稿时 ⌘Return 只回到面板，不在用户看到预览前直接提交。
-    /// 导航类指令不经过这里，仍在目的地之间跳转并保留票据。
     func returnForCommand(_ intent: UnifiedSearchIntent) -> Bool {
         guard intent == .open || intent == .submit, isCommandInput, !isNavigationInput,
-              browsedCommand != nil || editingDraft != nil else { return false }
-        let continues = intent == .open || editingDraft == nil
+              browsedCommand != nil else { return false }
         return returnThenContinue { [weak self] source in
-            if continues { self?.intent(.open, source: source) }
+            self?.intent(.open, source: source)
         }
     }
 
-    /// 回到搜索页后再继续；只认按键当时的缓冲，期间改字、锁定或换所有者都不再继续。
-    /// 票据失效回不去时给出原因，不覆盖 returnToSearch 已写的更具体原因（例如正在组词）。
     func returnThenContinue(_ next: @escaping (UnifiedSearchBuffer) -> Void) -> Bool {
         guard isNavigationPresented, let ticket = returnSearch else { return false }
         guard !commandReturnPending else { return true }
@@ -358,7 +293,6 @@ extension UnifiedSearchController {
 
     private func restoreBrowse(_ ticket: UnifiedSearchReturnContext) {
         guard let page = try? session.presentation().pagination else { return }
-        // 原分页加载负责可见性；不把过期快照或候选拼回结果。
         let wanted = ticket.selected.union(ticket.active.map { [$0] } ?? [])
         for id in wanted where page.snapshot.known.contains(id) {
             for _ in 0..<100 {
@@ -413,13 +347,6 @@ extension UnifiedSearchController {
             navigationQueryRevision &+= 1
             navigationRouter?.navigation.searchPresentation = true
         }
-    }
-
-    private func revokeNavigationAcceptances() {
-        multiPlan?.invalidatePresentation()
-        revokeRoutine(); revokeSubtask(); revokeBatch(); revokeTaskField(); revokeTaskTitle(); revokeTaskComposition()
-        revokeTrash(); revokeTaskCopy(); revokeConvert(); revokeSimple(); revokePage(); clipboardCapture.revoke()
-        chainCreationPreparation = nil
     }
 
     private func restoreQueryInput() {

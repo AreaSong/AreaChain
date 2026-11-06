@@ -175,7 +175,6 @@ struct UnifiedSearchResultsInteractionTests {
         let version = try fixture.page.snapshot.version
         let owned = try fixture.handoff.owned()
         #expect(fixture.controller.validates(source) && !source.selectingObjects)
-        #expect(fixture.controller.objectSelection == nil && owned.session.execution == nil)
         var changes: [ContentQueryDisplayUpdates.Change] = []
         let observer = fixture.session.displayUpdates.observe { changes.append($0) }
         defer { fixture.session.displayUpdates.remove(observer) }
@@ -183,8 +182,7 @@ struct UnifiedSearchResultsInteractionTests {
         #expect(fixture.session.isMasked && !fixture.session.hasRetainedPresentation)
         // 撤显示使旧 UI source 失效，但不续租、清查询或触发隐私清空。
         let expected = UnifiedSearchBuffer(lease: source.lease, version: source.version + 1, text: source.text,
-            privacyRevision: source.privacyRevision, operation: source.operation, selectingObjects: source.selectingObjects,
-            plan: source.plan, planItem: source.planItem)
+            privacyRevision: source.privacyRevision, selectingObjects: source.selectingObjects)
         #expect(fixture.controller.buffer == expected && changes == [.invalidated])
         #expect(throws: ContentQueryReadSessionError.stalePermit) { try fixture.session.presentation() }
         try await expectRejectedSource(source, version: version, fixture: fixture, host: host)

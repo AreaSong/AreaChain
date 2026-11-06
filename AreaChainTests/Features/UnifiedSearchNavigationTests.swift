@@ -17,7 +17,6 @@ import Testing
             _ = fixture.controller.navigationInput(command.path)
             fixture.controller.executeNavigation(source: fixture.controller.buffer)
             #expect(fixture.controller.navigationMessage == "unified.navigation.unassembled")
-            #expect(try fixture.handoff.state().operations.active == nil)
         }
         #expect(WorkspaceNavigationDestination.page(command: .init(rawValue: "go.tagList")) == nil)
     }
@@ -160,8 +159,6 @@ import Testing
         #expect(fixture.saves == 0 && fixture.publications == 0)
         #expect(try fixture.context.fetchCount(FetchDescriptor<TagItem>()) == 0)
         #expect(try fixture.context.fetchCount(FetchDescriptor<RoutineCheck>()) == 0)
-        #expect(try fixture.handoff.state().plan.items.isEmpty)
-        #expect(try fixture.handoff.state().execution == nil)
     }
 }
 

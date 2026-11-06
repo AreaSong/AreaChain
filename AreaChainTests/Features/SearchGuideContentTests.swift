@@ -46,8 +46,8 @@ import Testing
         }
     }
 
-    /// 示例会替换搜索框文字：工作台有未完成的指令草稿时不提供，没有工作台控制器时也不提供。
-    @Test func examplesAreBlockedByUnfinishedCommandWork() throws {
+    /// 示例会替换搜索框文字：没有工作台控制器时不提供。
+    @Test func examplesAreBlockedWhenWorkspaceMissing() throws {
         let fixture = try UnifiedSearchProductionFixture()
         defer { fixture.cleanup() }
         let assembly = try fixture.assembly()
@@ -55,10 +55,5 @@ import Testing
         let workspace = try #require(assembly.workspace)
         #expect(SearchGuideHosts(workspace: nil, menubar: assembly.menubar).blocksExamples)
         #expect(!SearchGuideHosts(workspace: workspace, menubar: nil).blocksExamples)
-        let path = "/tasks/add"
-        _ = workspace.edit(.init(source: workspace.buffer, text: path, selection: .init(location: path.utf16.count, length: 0)))
-        workspace.intent(.open, source: workspace.buffer)
-        try #require(workspace.operations?.active != nil, "应已开始 todo.create 草稿")
-        #expect(SearchGuideHosts(workspace: workspace, menubar: nil).blocksExamples)
     }
 }

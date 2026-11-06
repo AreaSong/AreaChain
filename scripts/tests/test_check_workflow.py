@@ -414,37 +414,6 @@ class WorkflowCheckTests(unittest.TestCase):
         for _, symbol in entries:
             self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
 
-    def test_component_catalog_requires_preference_publication_boundaries(self):
-        self.make_project()
-        entries = (("AppPreferences", "committedLocalPreferenceRecord"),
-                   ("AppPreferences", "applyLocalPreferences"),
-                   ("AppPreferences", "verifyAndReloadLocalPreferences"),
-                   ("LocalPreferencePublication", "LocalPreferencePublishedState"),
-                   ("LocalPreferencePublication", "LocalPreferenceBackendState"),
-                   ("LocalPreferencePublication", "LocalPreferenceGroupChange"),
-                   ("LocalPreferencePresentation", "LocalPreferencePresentationLedger"))
-        for path, _ in entries:
-            self.write(f"AreaChain/Services/{path}.swift", "struct Other {}\n")
-        result = workflow.check_component_catalog(self.root)
-        self.assertEqual(result["status"], "failed")
-        for _, symbol in entries:
-            self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
-
-    def test_component_catalog_requires_file_command_group_boundaries(self):
-        self.make_project()
-        entries = (("Services/FileLocalSettingCommandAdapter", "FileLocalSettingCommandAdapter"),
-                   ("Services/FileLocalSettingCommandAdapter", "prepareGroup"),
-                   ("Services/FileLocalSettingCommandAdapter", "verifyCommit"),
-                   ("Services/AppPreferences", "readLocalPreferenceRecord"),
-                   ("Domain/CommandPreferenceGroup", "CommandPreferenceGroupBaseline"),
-                   ("Domain/CommandHandoffCoordinator", "claimPreferenceGroup"))
-        for path, _ in entries:
-            self.write(f"AreaChain/{path}.swift", "struct Other {}\n")
-        result = workflow.check_component_catalog(self.root)
-        self.assertEqual(result["status"], "failed")
-        for _, symbol in entries:
-            self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
-
     def test_component_catalog_requires_isolated_preference_migration_boundaries(self):
         self.make_project()
         entries = (("LocalPreferenceLegacySource", "LocalPreferenceLegacySource"),
@@ -454,41 +423,6 @@ class WorkflowCheckTests(unittest.TestCase):
                    ("LocalPreferenceFileStore", "reopen(from"))
         for path, _ in entries:
             self.write(f"AreaChain/Services/{path}.swift", "struct Other {}\n")
-        result = workflow.check_component_catalog(self.root)
-        self.assertEqual(result["status"], "failed")
-        for _, symbol in entries:
-            self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
-
-    def test_component_catalog_requires_single_setting_adapter_and_evidence(self):
-        self.make_project()
-        entries = (("Services", "LocalSettingCommandAdapter", "LocalSettingCommandAdapter"),
-                   ("Services", "LocalSettingCommandMapping", "LocalSettingCommandMapping"),
-                   ("Domain", "CommandPreferenceEvidence", "CommandPreferenceBaseline"))
-        for folder, name, _ in entries:
-            self.write(f"AreaChain/{folder}/{name}.swift", "struct Other {}\n")
-        result = workflow.check_component_catalog(self.root)
-        self.assertEqual(result["status"], "failed")
-        for _, _, symbol in entries:
-            self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
-
-    def test_component_catalog_requires_setting_submission_ui(self):
-        self.make_project()
-        entries = (("UnifiedSearchSettingEditing", "requestOperationSubmit"),
-                   ("UnifiedSearchSettingSubmission", "UnifiedSearchSettingSubmission"))
-        for name, _ in entries:
-            self.write(f"AreaChain/Features/Search/{name}.swift", "struct Other {}\n")
-        result = workflow.check_component_catalog(self.root)
-        self.assertEqual(result["status"], "failed")
-        for _, symbol in entries:
-            self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
-
-    def test_component_catalog_requires_file_setting_ui(self):
-        self.make_project()
-        entries = (("UnifiedSearchFileSettingEditing", "UnifiedSearchSettingBackend"),
-                   ("UnifiedSearchFileSettingEditing", "requestFileSettingPreparation"),
-                   ("UnifiedSearchFileSettingSubmission", "UnifiedSearchFileSettingSubmission"))
-        for name, _ in entries:
-            self.write(f"AreaChain/Features/Search/{name}.swift", "struct Other {}\n")
         result = workflow.check_component_catalog(self.root)
         self.assertEqual(result["status"], "failed")
         for _, symbol in entries:
@@ -683,82 +617,12 @@ class WorkflowCheckTests(unittest.TestCase):
                 self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
                 path.write_text(original)
 
-    def test_component_catalog_requires_command_protection_entries(self):
-        self.make_project()
-        for relative, symbol in (
-            ("AreaChain/Services/Privacy/CommandDraftNativeOwner.swift", "CommandDraftNativeOwner"),
-            ("AreaChain/Features/Search/CommandProtectedTextView.swift", "CommandProtectedTextView"),
-            ("AreaChain/Domain/CommandTextEditing.swift", "CommandTextComposition"),
-            ("AreaChain/Features/Search/UnifiedSearchLongTextField.swift", "UnifiedSearchLongTextField"),
-            ("AreaChainTests/Features/CommandTextQAWindowLease.swift", "CommandTextQAWindowLease"),
-            ("AreaChain/Domain/CommandDraftProtection.swift", "CommandProtectedReference"),
-            ("AreaChain/Services/Privacy/CommandDraftContentSession.swift", "CommandDraftContentSession"),
-            ("AreaChain/Services/Privacy/SealedCommandDraft.swift", "SealedCommandDraft"),
-            ("AreaChain/Services/Privacy/CommandDraftPayload.swift", "CommandDraftPayload"),
-        ):
-            with self.subTest(symbol=symbol):
-                path = self.root / relative
-                original = path.read_text()
-                path.write_text("struct Other {}\n")
-                result = workflow.check_component_catalog(self.root)
-                path.write_text(original)
-                self.assertEqual(result["status"], "failed")
-                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
-
     def test_component_catalog_requires_tag_read_adapter(self):
         self.make_project()
         self.write("AreaChain/Services/TagContentQueryReader.swift", "struct Other {}\n")
         result = workflow.check_component_catalog(self.root)
         self.assertEqual(result["status"], "failed")
         self.assertTrue(any("TagContentQueryReader" in item["message"] for item in result["issues"]))
-
-    def test_component_catalog_requires_task_title_shared_entry_and_preview(self):
-        self.make_project()
-        entries = [
-            ("AreaChain/Features/Search/UnifiedSearchTaskTitleEditing.swift", "prepareTaskTitle"),
-            ("AreaChain/Features/Search/UnifiedSearchTaskTitlePreview.swift", "UnifiedSearchTaskTitlePreview"),
-            ("AreaChain/Features/Search/UnifiedSearchTaskTitleSubmission.swift", "UnifiedSearchTaskTitleSubmission"),
-            ("AreaChain/Features/Search/UnifiedSearchTaskEffectViews.swift", "UnifiedSearchTaskExternalFeedback"),
-            ("AreaChain/Services/TaskTitleCommandAdapter.swift", "TaskTitleCommandAdapter"),
-            ("AreaChain/Services/TaskTitleCommandEnvironment.swift", "TaskTitleCommandEnvironment"),
-            ("AreaChain/Domain/CommandTaskTitleContract.swift", "CommandTaskTitleAcceptance"),
-            ("AreaChain/Domain/CommandTaskTitleExecution.swift", "claimTaskTitle"),
-            ("AreaChain/Services/TaskMutationService+Title.swift", "editTitle"),
-            ("AreaChain/Services/TaskTitleCommandPreviewReader.swift", "TaskTitleCommandPreviewReader"),
-            ("AreaChain/Domain/CommandTaskTitlePreview.swift", "CommandTaskTitlePreview"),
-            ("AreaChain/Domain/CommandTaskTitleImpact.swift", "CommandTaskTitleImpact"),
-        ]
-        for relative, symbol in entries:
-            with self.subTest(symbol=symbol):
-                original = (self.root / relative).read_text()
-                self.write(relative, "struct Other {}\n")
-                result = workflow.check_component_catalog(self.root)
-                self.assertEqual(result["status"], "failed")
-                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
-                self.write(relative, original)
-
-    def test_component_catalog_requires_task_create_adapter_and_claim(self):
-        self.make_project()
-        for relative, symbol in [
-            ("AreaChain/Features/Search/UnifiedSearchTagSetField.swift", "UnifiedSearchTagSetField"),
-            ("AreaChain/Features/Search/UnifiedSearchTaskCompositionPreview.swift", "UnifiedSearchTaskCompositionPreview"),
-            ("AreaChain/Services/TaskCreateTagCatalogReader.swift", "TaskCreateTagCatalogReader"),
-            ("AreaChain/Services/TaskMutationService.swift", "createComposed"),
-            ("AreaChain/Domain/CommandTaskCreateContract.swift", "tagCreationIDs"),
-            ("AreaChain/Services/TaskCreateCommandAdapter.swift", "TaskCreateCommandAdapter"),
-            ("AreaChain/Domain/CommandTaskCreatePreview.swift", "CommandTaskCreatePreview"),
-            ("AreaChain/Domain/CommandTaskTagCatalog.swift", "CommandTaskTagCatalog"),
-            ("AreaChain/Features/Search/UnifiedSearchTaskCreateEditing.swift", "requestTaskCreate"),
-            ("AreaChain/Features/Search/UnifiedSearchTaskCreateSubmission.swift", "UnifiedSearchTaskCreateSubmission"),
-            ("AreaChain/Domain/CommandTaskCreateExecution.swift", "claimTaskCreate"),
-        ]:
-            with self.subTest(symbol=symbol):
-                original = (self.root / relative).read_text()
-                self.write(relative, "struct Other {}\n")
-                result = workflow.check_component_catalog(self.root)
-                self.assertEqual(result["status"], "failed")
-                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
-                self.write(relative, original)
 
     def test_component_catalog_requires_workspace_header_contract(self):
         self.make_project()
@@ -872,25 +736,6 @@ class WorkflowCheckTests(unittest.TestCase):
         for symbol in ("DaybookPicker", "DaybookPickerOption", "Picker"):
             self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
 
-    def test_component_catalog_requires_tm2_shared_boundaries(self):
-        self.make_project()
-        entries = (
-            ("Domain/CommandTaskCompletionImpact", "CommandTaskCompletionImpact"),
-            ("Domain/CommandTaskTagMutation", "CommandTaskTagMutation"),
-            ("Services/TaskFieldCommandTagCandidates", "tagCandidates"),
-            ("Services/TaskMutationService+Fields", "assignDue"),
-            ("Features/Search/UnifiedSearchTaskFieldImpact", "UnifiedSearchTaskFieldImpact"),
-        )
-        for path, symbol in entries:
-            with self.subTest(symbol=symbol):
-                relative = f"AreaChain/{path}.swift"
-                original = (self.root / relative).read_text()
-                self.write(relative, "struct Other {}\n")
-                result = workflow.check_component_catalog(self.root)
-                self.write(relative, original)
-                self.assertEqual(result["status"], "failed")
-                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
-
     def test_component_catalog_requires_workspace_shell_boundaries(self):
         self.make_project()
         for path, symbol in (
@@ -904,231 +749,6 @@ class WorkflowCheckTests(unittest.TestCase):
                 self.write(path, original)
                 self.assertEqual(result["status"], "failed")
                 self.assertTrue(any(symbol in entry["message"] for entry in result["issues"]))
-
-    def test_component_catalog_requires_pm3_revision_boundaries(self):
-        self.make_project()
-        for path, symbol in (
-            ("Domain/CommandPlanRevision", "CommandPlanReturnTicket"),
-            ("Domain/CommandPlanRevision", "CommandAssignmentMergeProof"),
-            ("Services/MultiPlanCommandMerge", "proposeMerge"),
-            ("Features/Search/UnifiedSearchPlanRevisionHistory", "UnifiedSearchPlanRevisionHistory"),
-        ):
-            with self.subTest(symbol=symbol):
-                relative = f"AreaChain/{path}.swift"
-                original = (self.root / relative).read_text()
-                self.write(relative, "struct Other {}\n")
-                result = workflow.check_component_catalog(self.root)
-                self.write(relative, original)
-                self.assertEqual(result["status"], "failed")
-                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
-
-    def test_component_catalog_requires_pm2_output_boundaries(self):
-        self.make_project()
-        for path, symbol in (
-            ("Domain/CommandCreationOutput", "CommandCreationOutput"),
-            ("Domain/CommandCreationEvidence", "multiPlanOutput"),
-            ("Services/MultiPlanCommandOutput", "validateReferenceEnvironments"),
-            ("Features/Search/UnifiedSearchPlanLinks", "creationReferenceLabel"),
-        ):
-            with self.subTest(symbol=symbol):
-                relative = f"AreaChain/{path}.swift"
-                original = (self.root / relative).read_text()
-                self.write(relative, "struct Other {}\n")
-                result = workflow.check_component_catalog(self.root)
-                self.write(relative, original)
-                self.assertEqual(result["status"], "failed")
-                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
-
-    def test_component_catalog_requires_pm1_boundaries(self):
-        self.make_project()
-        entries = (
-            ("Domain/CommandMultiPlan", "CommandMultiPlanIdentity"),
-            ("Domain/CommandExecutionHistory", "CommandAttemptRecord"),
-            ("Domain/CommandMultiPlanExecution", "startMultiPlan"),
-            ("Services/MultiPlanCommandAdapter", "MultiPlanCommandAdapter"),
-            ("Features/Search/UnifiedSearchMultiPlanEditing", "prepareMultiPlan"),
-            ("Features/Search/UnifiedSearchMultiPlanSubmission", "UnifiedSearchMultiPlanSubmission"),
-            ("Features/Search/UnifiedSearchTaskCreationImpact", "UnifiedSearchTaskCreationImpact"),
-            ("Features/Search/UnifiedSearchRoutineCreationImpact", "UnifiedSearchRoutineCreationImpact"),
-        )
-        for path, symbol in entries:
-            with self.subTest(symbol=symbol):
-                relative = f"AreaChain/{path}.swift"
-                original = (self.root / relative).read_text()
-                self.write(relative, "struct Other {}\n")
-                result = workflow.check_component_catalog(self.root)
-                self.write(relative, original)
-                self.assertEqual(result["status"], "failed")
-                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
-
-    def test_component_catalog_requires_bm2_boundaries(self):
-        self.make_project()
-        entries = (
-            ("Domain/CommandBatchWriteSet", "CommandBatchWriteSet"),
-            ("Services/BatchCommandStateReader", "readStateImpacts"),
-            ("Services/RoutineStateApplication", "RoutineStateApplication"),
-            ("Features/Search/UnifiedSearchBatchStateImpact", "UnifiedSearchBatchStateImpact"),
-            ("Features/Search/UnifiedSearchBatchOccurrenceSelection", "UnifiedSearchBatchOccurrenceSelection"),
-        )
-        for path, symbol in entries:
-            with self.subTest(symbol=symbol):
-                relative = f"AreaChain/{path}.swift"
-                original = (self.root / relative).read_text()
-                self.write(relative, "struct Other {}\n")
-                result = workflow.check_component_catalog(self.root)
-                self.write(relative, original)
-                self.assertEqual(result["status"], "failed")
-                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
-
-    def test_component_catalog_requires_bm1_boundaries(self):
-        self.make_project()
-        entries = (
-            ("Domain/CommandBatch", "CommandBatchPreview"),
-            ("Services/BatchCommandReader", "BatchCommandReader"),
-            ("Services/BatchCommandTransaction", "BatchCommandTransaction"),
-            ("Services/ContentQueryObjectCandidates", "allObjectResultsComplete"),
-            ("Features/Search/UnifiedSearchBatchEditing", "prepareBatch"),
-            ("Features/Search/UnifiedSearchBatchImpact", "UnifiedSearchBatchImpact"),
-            ("Features/Search/UnifiedSearchBatchSubmission", "UnifiedSearchBatchSubmission"),
-        )
-        for path, symbol in entries:
-            with self.subTest(symbol=symbol):
-                relative = f"AreaChain/{path}.swift"
-                original = (self.root / relative).read_text()
-                self.write(relative, "struct Other {}\n")
-                result = workflow.check_component_catalog(self.root)
-                self.write(relative, original)
-                self.assertEqual(result["status"], "failed")
-                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
-
-    def test_component_catalog_requires_rm1_shared_boundaries(self):
-        self.make_project()
-        entries = (
-            ("Services/RoutineMutationService", "RoutineMutationService"),
-            ("Services/RoutineCommandReader", "RoutineCommandReader"),
-            ("Services/RoutineCommandEnvironment", "RoutineCommandEnvironment"),
-            ("Services/RoutineCommandAdapter", "RoutineCommandAdapter"),
-            ("Domain/CommandRoutineExecution", "claimRoutine"),
-            ("Domain/CommandRoutineFacts", "CommandRoutineFacts"),
-            ("Features/Search/UnifiedSearchRoutineEditing", "prepareRoutine"),
-            ("Features/Search/UnifiedSearchRoutineSubmission", "UnifiedSearchRoutineSubmission"),
-        )
-        for path, symbol in entries:
-            with self.subTest(symbol=symbol):
-                relative = f"AreaChain/{path}.swift"
-                original = (self.root / relative).read_text()
-                self.write(relative, "struct Other {}\n")
-                result = workflow.check_component_catalog(self.root)
-                self.write(relative, original)
-                self.assertEqual(result["status"], "failed")
-                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
-
-    def test_component_catalog_requires_rm3_state_boundaries(self):
-        self.make_project()
-        entries = (
-            ("Domain/CommandRoutineState", "CommandRoutineStatePlanning"),
-            ("Services/RoutineCommandStateReader", "stateImpact"),
-            ("Services/Repositories/SwiftDataRoutineRepository+State", "applyRoutineState"),
-            ("Features/Search/UnifiedSearchRoutineStateImpact", "UnifiedSearchRoutineStateImpact"),
-            ("Features/Search/UnifiedSearchRoutineOccurrenceDate", "UnifiedSearchRoutineOccurrenceDate"),
-        )
-        for path, symbol in entries:
-            with self.subTest(symbol=symbol):
-                relative = f"AreaChain/{path}.swift"
-                original = (self.root / relative).read_text()
-                self.write(relative, "struct Other {}\n")
-                result = workflow.check_component_catalog(self.root)
-                self.write(relative, original)
-                self.assertEqual(result["status"], "failed")
-                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
-
-    def test_component_catalog_requires_rm2_creation_boundaries(self):
-        self.make_project()
-        entries = (
-            ("Domain/CommandRoutineCreate", "CommandRoutineCreatePreview"),
-            ("Domain/CommandRoutineCreateFacts", "CommandRoutineCreateFacts"),
-            ("Services/RoutineCreateCommandReader", "RoutineCreateCommandReader"),
-            ("Services/RoutineCreateCommandAdapter", "prepareCreation"),
-            ("Features/Search/UnifiedSearchRoutineCreateSubmission", "UnifiedSearchRoutineCreateSubmission"),
-        )
-        for path, symbol in entries:
-            with self.subTest(symbol=symbol):
-                relative = f"AreaChain/{path}.swift"
-                original = (self.root / relative).read_text()
-                self.write(relative, "struct Other {}\n")
-                result = workflow.check_component_catalog(self.root)
-                self.write(relative, original)
-                self.assertEqual(result["status"], "failed")
-                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
-
-    def test_component_catalog_requires_tm3_shared_boundaries(self):
-        self.make_project()
-        entries = (
-            ("Domain/SubtaskTitleEdit", "SubtaskTitleEdit"),
-            ("Domain/SubtaskTitleEdit", "CreateSubtaskParams"),
-            ("Services/TaskFamilyCommandIdentity", "TaskFamilyCommandIdentity"),
-            ("Services/SubtaskCommandEnvironment", "SubtaskCommandEnvironment"),
-            ("Services/SubtaskCommandAdapter", "SubtaskCommandAdapter"),
-            ("Domain/CommandSubtaskExecution", "claimSubtask"),
-            ("Domain/CommandSubtaskFacts", "CommandSubtaskFacts"),
-            ("Features/Search/UnifiedSearchSubtaskEditing", "prepareSubtask"),
-            ("Features/Search/UnifiedSearchSubtaskSubmission", "UnifiedSearchSubtaskSubmission"),
-        )
-        for path, symbol in entries:
-            with self.subTest(symbol=symbol):
-                relative = f"AreaChain/{path}.swift"
-                original = (self.root / relative).read_text()
-                self.write(relative, "struct Other {}\n")
-                result = workflow.check_component_catalog(self.root)
-                self.write(relative, original)
-                self.assertEqual(result["status"], "failed")
-                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
-
-    def test_component_catalog_requires_tm1_execution_boundaries(self):
-        self.make_project()
-        entries = (
-            ("Services/TaskFieldCommandAdapter", "TaskFieldCommandAdapter"),
-            ("Services/TaskMutationService+Fields", "editField"),
-            ("Services/TaskChainCommandAdapter", "TaskChainCommandAdapter"),
-            ("Domain/CommandTaskChain", "CommandTaskChainIdentity"),
-            ("Features/Search/UnifiedSearchTaskFieldEditing", "prepareTaskField"),
-            ("Features/Search/UnifiedSearchTaskChainSubmission", "UnifiedSearchTaskChainSubmission"),
-        )
-        for path, symbol in entries:
-            with self.subTest(symbol=symbol):
-                relative = f"AreaChain/{path}.swift"
-                original = (self.root / relative).read_text()
-                self.write(relative, "struct Other {}\n")
-                result = workflow.check_component_catalog(self.root)
-                self.write(relative, original)
-                self.assertEqual(result["status"], "failed")
-                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
-
-    def test_component_catalog_requires_unified_operation_parameters(self):
-        self.make_project()
-        entries = (("Features/Search/UnifiedSearchOperationPanel", "UnifiedSearchOperationPanel"),
-                   ("Features/Search/UnifiedSearchOperationPreview", "UnifiedSearchOperationPreview"),
-                   ("Features/Search/UnifiedSearchParameterField", "UnifiedSearchParameterField"),
-                   ("Theme/UnifiedSearchParameterContext", "UnifiedSearchParameterContext"))
-        for path, _ in entries:
-            self.write(f"AreaChain/{path}.swift", "struct Other {}\n")
-        result = workflow.check_component_catalog(self.root)
-        self.assertEqual(result["status"], "failed")
-        for _, symbol in entries:
-            self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
-
-    def test_component_catalog_requires_object_selection_boundaries(self):
-        self.make_project()
-        entries = (("Features/Search/UnifiedSearchObjectSelection", "UnifiedSearchObjectSelectionStamp"),
-                   ("Features/Search/UnifiedSearchObjectField", "UnifiedSearchObjectField"),
-                   ("Features/Search/UnifiedSearchObjectPicker", "UnifiedSearchObjectPicker"),
-                   ("Services/ContentQueryObjectCandidates", "objectCandidate"))
-        for path, _ in entries:
-            self.write(f"AreaChain/{path}.swift", "struct Other {}\n")
-        result = workflow.check_component_catalog(self.root)
-        self.assertEqual(result["status"], "failed")
-        for _, symbol in entries:
-            self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
 
     def test_component_catalog_requires_scroll_assembly(self):
         self.make_project()
@@ -1225,18 +845,6 @@ class WorkflowCheckTests(unittest.TestCase):
         result = workflow.check_component_catalog(self.root)
         self.assertEqual(result["status"], "failed")
         for symbol in ("daybookStaticCardSurface", "yesterdaySection", "centeredYesterdaySection"):
-            self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
-
-    def test_component_catalog_requires_plan_editing_boundaries(self):
-        self.make_project()
-        entries = (("UnifiedSearchPlanList", "UnifiedSearchPlanList"),
-                   ("UnifiedSearchPlanEditing", "UnifiedSearchPlanMerge"),
-                   ("UnifiedSearchPlanDependencies", "UnifiedSearchPlanDependencies"))
-        for path, _ in entries:
-            self.write(f"AreaChain/Features/Search/{path}.swift", "struct Other {}\n")
-        result = workflow.check_component_catalog(self.root)
-        self.assertEqual(result["status"], "failed")
-        for _, symbol in entries:
             self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
 
     def test_component_catalog_requires_unified_result_boundary(self):
@@ -1633,8 +1241,6 @@ class WorkflowCheckTests(unittest.TestCase):
     def write_assembly_fixture(self):
         self.write("AreaChain/Features/Search/UnifiedSearchProductionAssembly.swift",
                    "let controller = UnifiedSearchController(session: s)\nlet c = CommandHandoffCoordinator(pages: [])\n")
-        self.write("AreaChain/Features/Search/UnifiedSearchProductionAssembly+Commands.swift",
-                   "let grant = CommandStoreGrant.production(context)\nlet a = TaskCreateCommandAdapter(coordinator: c)\n")
 
     def test_unified_search_assembly_allows_assembly_files_and_tests(self):
         self.write_assembly_fixture()

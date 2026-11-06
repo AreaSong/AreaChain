@@ -294,24 +294,6 @@ final class AppPreferences {
         return result
     }
 
-    /// 只重试失败的进程内展示步骤；后来写过同字段即使值相同也不能重放旧展示。
-    func retryLocalSettingPresentation(_ result: LocalPreferenceWriteResult,
-                                       validateBeforeApply: () throws -> Void) throws -> CommandPreferencePresentation {
-        guard !isApplyingLocalSetting else { throw CommandExecutionError.busy }
-        isApplyingLocalSetting = true
-        defer { isApplyingLocalSetting = false }
-        guard result.write == .returned, result.readback == .matches, let after = result.after,
-              readLocalSetting(result.requested.field) == after else { return .superseded }
-        try validateBeforeApply()
-        var appearance = result.appearance, event = result.event
-        if appearance == .threw { appearance = applyAppAppearance() }
-        if event == .threw {
-            let change = LocalPreferenceChange(source: after.source, field: after.field, revision: after.revision)
-            event = call { try effects.post(Notification(name: .localPreferenceDidChange, object: change)) }
-        }
-        return .applied(appearance: appearance, event: event)
-    }
-
     private func localValue(_ field: LocalPreferenceField) -> LocalPreferenceValue {
         switch field {
         case .language: return .language(language)

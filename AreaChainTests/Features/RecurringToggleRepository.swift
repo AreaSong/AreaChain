@@ -30,11 +30,6 @@ final class RecurringToggleRepository: RoutineRepositoryProtocol {
         return value
     }
 
-    func applyRoutineState(_ accepted: CommandRoutineAcceptance) throws {
-        try base.applyRoutineState(accepted)
-        try afterStateWork?()
-    }
-
     func setRoutineEnabled(id: UUID, enabled: Bool, todayKey: String) throws {
         switches += 1
         try ModelChanges.transaction(in: context, save: { context in

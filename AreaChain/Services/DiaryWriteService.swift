@@ -42,14 +42,6 @@ import SwiftData
     enum BodyEdit: Equatable {
         case replace(String), append(String)
 
-        init(_ operation: CommandFieldOperation, text: String) throws {
-            switch operation {
-            case .replace: self = .replace(text)
-            case .append: self = .append(text)
-            default: throw CommandSimpleIssue.invalidArguments
-            }
-        }
-
         func final(_ current: String) -> String {
             switch self {
             case .replace(let text): return text

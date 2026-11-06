@@ -14,8 +14,6 @@ import SwiftData
     var clipboardWriter: any ClipboardTextWriting
     /// 剪贴板历史复制／粘贴（粘贴到其他应用需辅助功能权限，只在执行 clipboard 指令时询问）。
     var clipboardActions: () -> ClipboardHistoryActions?
-    /// 窗口、浮层、小窗、退出与立即锁定；nil 表示未装配。
-    var system: () -> WorkspaceSystemCommands?
     var sourceBundleID: () -> String
     /// 菜单栏打开结果时先显示工作台（收起浮层、激活、显示同一窗口），再在工作台里打开。
     var revealWorkspace: () -> Void
@@ -47,8 +45,7 @@ import SwiftData
     var effects: UnifiedSearchProductionEffects
 }
 
-/// 正式版里唯一构造统一搜索（协调者、读取会话、各指令适配器与规格、页面宿主、导航路由、控制器）的地方。
-/// check_workflow 的 unified-search-assembly 守卫保证生产代码只在本文件与 +Commands 扩展里构造这些类型。
+/// 正式版里唯一构造统一搜索（协调者、读取会话、页面宿主、导航路由、控制器）的地方。
 /// 构造失败时 `attempt` 返回失败，宿主搜索框显示不可用说明（没有退回旧搜索的入口）。
 @MainActor final class UnifiedSearchProductionAssembly {
     static let workspaceHost = "workspace"
@@ -61,8 +58,6 @@ import SwiftData
     private(set) var workspace: UnifiedSearchController!
     private(set) var menubar: UnifiedSearchController!
     private var handoffTask: Task<Void, Never>?
-    /// 每个控制器的长文托管；装配销毁时逐个 discard。
-    private(set) var escrows: [CommandLongTextEscrow] = []
     /// 来源所有者的修订：隐私锁定、隐私变化或遮罩后更新，使之前接受的预览在提交前作废。
     private(set) var sourceRevision = UUID()
     private var privacyObservers: [NSObjectProtocol] = []
@@ -103,7 +98,6 @@ import SwiftData
         }
         workspace = try makeController(Self.workspaceHost)
         menubar = try makeController(Self.menubarHost)
-        // 锁定清查询后的重建页面只由宿主给出：工作台是当前显示的页面（与普通页签访问同一取法），菜单栏是今日页与当前任务筛选。
         let services = services, router = router
         workspace.trustedPage = {
             services.navigation.queryContext(hostID: Self.workspaceHost, filters: services.filters.filters,
@@ -128,37 +122,26 @@ import SwiftData
         session.install()
         let text: String
         if case .content(let content) = owned.session.query.input { text = content.source } else { text = "" }
-        let commands = try makeCommands()
         let reads = reads, coordinator = coordinator
         let controller = UnifiedSearchController(session: session, coordinator: coordinator,
             buffer: .init(lease: owned.lease, version: 0, text: text),
             read: { [weak session] in
                 guard let session else { throw ContentQueryReadSessionError.detached }
                 return try await reads.read(session) { try coordinator.host(hostID).session.query }
-            }, recordOpen: { [weak self] open in self?.continueInWorkspace(open) },
-            settingBackend: .legacy(commands.settings), taskCreate: commands.taskCreate, taskTitle: commands.taskTitle,
-            taskField: commands.taskField, taskChain: commands.taskChain, subtask: commands.subtask,
-            routine: commands.routine, batch: commands.batch, multiPlan: commands.multiPlan, trash: commands.trash,
-            taskCopy: commands.taskCopy, convert: commands.convert, simple: commands.simple, clipboard: commands.clipboard)
-        // 导航路由与页面指令只操作工作台；菜单栏打开结果经 recordOpen 交给工作台（continueInWorkspace）。
+            }, recordOpen: { [weak self] open in self?.continueInWorkspace(open) })
         if hostID == Self.workspaceHost {
             controller.navigationRouter = router
-            controller.pageCommands = makePageCommands()
         }
-        if let escrow = commands.simple?.escrow { escrows.append(escrow) }
         return controller
     }
 
-    /// 宿主关闭：撤销两个控制器的全部预览、读取与订阅，托管丢弃明文；协调者里的未提交草稿保留。
+    /// 宿主关闭：撤销两个控制器的全部预览、读取与订阅。
     func discard() {
         handoffTask?.cancel()
         handoffTask = nil
         for controller in [workspace, menubar].compactMap({ $0 }) {
-            let ownership = controller.buffer.lease.ownership
             controller.detach()
-            for escrow in escrows { escrow.discard(ownership) }
         }
-        for escrow in escrows { escrow.revoke() }
         router.contents?.clear()
         services.navigation.searchPresentation = nil
         for observer in privacyObservers { services.center.removeObserver(observer) }
@@ -166,7 +149,6 @@ import SwiftData
     }
 
     /// 菜单栏打开结果：在工作台用同一查询读取，命中同一对象后沿原导航打开。
-    /// 工作台查询的页面上下文不同时可能不含该对象，此时只停在结果页。
     func continueInWorkspace(_ open: ContentQueryBrowseOpen) {
         guard let menubar else { return }
         revealWorkspaceThenWrite(menubar.queryInputText) { [weak self] workspace in
@@ -175,8 +157,8 @@ import SwiftData
         }
     }
 
-    /// 菜单栏没接上、工作台能处理的指令：先在工作台用菜单栏的同一查询选中菜单栏当时的焦点对象（没有焦点则不选），
-    /// 再写入同一指令文字（含已填参数），由工作台走它自己的 Return 路径。焦点对象在工作台找不到时不执行，只说明。
+    /// 菜单栏没接上、工作台能处理的指令：先在工作台用菜单栏的同一查询选中菜单栏当时的焦点对象，
+    /// 再写入同一指令文字，由工作台走它自己的 Return 路径。
     func continueCommandInWorkspace(_ text: String, focus: CommandObjectReference?) {
         guard let menubar else { return }
         revealWorkspaceThenWrite(menubar.queryInputText) { [weak self] workspace in
@@ -191,7 +173,6 @@ import SwiftData
         }
     }
 
-    /// 等工作台按同一查询读出该对象并选中它；返回选中时的结果版本，超时或被取消返回 nil。
     private func activateWhenVisible(_ object: CommandObjectReference, in workspace: UnifiedSearchController) async -> UUID? {
         for _ in 0..<150 where !Task.isCancelled {
             if let page = try? workspace.session.presentation().pagination, page.snapshot.visible.contains(object) {
@@ -203,8 +184,6 @@ import SwiftData
         return nil
     }
 
-    /// 菜单栏交给工作台的唯一路径：显示工作台 → 等窗口可见 → 写入文字 → 在工作台继续。菜单栏浮层随工作台显示而收起，
-    /// 所以不能在菜单栏会话里等待。工作台有未完成的指令草稿或待执行列表时不写入（不替换它的工作），改由工作台显示被挡说明。
     private func revealWorkspaceThenWrite(_ text: String, then next: @escaping @MainActor (UnifiedSearchController) async -> Void) {
         handoffTask?.cancel()
         services.effects.revealWorkspace()

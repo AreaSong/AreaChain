@@ -8,7 +8,6 @@ struct UnifiedSearchResultsTestContent: View {
     let layout: UnifiedSearchInputLayout
     var body: some View {
         VStack(spacing: 8) {
-            // 给唯一上方补全留出可用空间；下方始终是查询上下文，不是操作预览。
             Color.clear.frame(height: 320)
             UnifiedSearchInput(buffer: controller.buffer, focused: $controller.inputFocused,
                 actions: controller.actions, layout: layout, reset: controller.inputReset)
@@ -33,19 +32,8 @@ final class UnifiedSearchResultsFixture {
     static let focusLost = Notification.Name("synthetic.results.focusLost")
 
     init(_ batch: ContentQueryBatch = UnifiedSearchResultsFixture.mixed(), pageSize: Int = 3,
-         localPreferences: AppPreferences? = nil, filePreferences: AppPreferences? = nil,
-         hostID: String = HandoffFixture.source, taskCreateEnvironment: TaskCreateCommandEnvironment? = nil,
-         taskCreateCapability: TaskCreateCommandAdapter.Capability = .minimal,
-         privacyCenter: NotificationCenter? = nil, taskTitleEnvironment: TaskTitleCommandEnvironment? = nil,
-         taskFieldEnvironment: TaskTitleCommandEnvironment? = nil,
-         taskFieldCapability: TaskFieldCommandAdapter.Capability = .basic, taskChainIO: TaskChainCommandIO? = nil,
-         subtaskEnvironment: SubtaskCommandEnvironment? = nil, routineEnvironment: RoutineCommandEnvironment? = nil, batchEnvironment: BatchCommandEnvironment? = nil,
-         testVault: PrivacyVault? = nil, enableMultiPlan: Bool = false, outputCapability: CommandMultiPlanOutputCapability = .taskTitle, enablePlanRevisions: Bool = false,
-         trashEnvironment: BatchCommandEnvironment? = nil, trashCapability: TrashCommandAdapter.Capability = .closed,
-         taskCopyEnvironment: TaskCopyCommandEnvironment? = nil,
-         convert: ((CommandHandoffCoordinator) -> ConvertCommandAdapter)? = nil,
-         simple: ((CommandHandoffCoordinator) -> SimpleCommandAdapter)? = nil,
-         clipboard: ((CommandHandoffCoordinator) -> ClipboardCaptureCommandAdapter)? = nil) throws {
+         hostID: String = HandoffFixture.source, privacyCenter: NotificationCenter? = nil,
+         testVault: PrivacyVault? = nil) throws {
         vault = testVault ?? PrivacyVault(store: MemoryVaultConfigurationStore(), systemKeys: FakeSystemVaultKeys())
         self.batch = batch
         handoff = try .init(sourcePage: .overview)
@@ -60,48 +48,12 @@ final class UnifiedSearchResultsFixture {
             notifications: .init(privacy: privacyCenter ?? .default, model: model, focus: focus,
                 focusLost: Self.focusLost, focusObject: focusObject))
         session.install()
-        let backend: UnifiedSearchSettingBackend
-        if let filePreferences {
-            precondition(localPreferences == nil)
-            backend = .file(try FileLocalSettingCommandAdapter(coordinator: handoff.coordinator, filePreferences: filePreferences))
-        } else {
-            backend = localPreferences.map { .legacy(LocalSettingCommandAdapter(coordinator: handoff.coordinator, preferences: $0)) }
-                ?? .unassembled
-        }
-        let creation = taskChainIO?.createEnvironment ?? taskCreateEnvironment
-        let modification = taskChainIO?.titleEnvironment ?? taskTitleEnvironment
-        let createAdapter = creation.map {
-            TaskCreateCommandAdapter(coordinator: handoff.coordinator, environment: $0, capability: taskCreateCapability)
-        }
-        let titleAdapter = modification.map { TaskTitleCommandAdapter(coordinator: handoff.coordinator, environment: $0) }
-        let chainAdapter = taskChainIO.flatMap { _ in
-            createAdapter.flatMap { create in titleAdapter.map { TaskChainCommandAdapter(create: create, title: $0) } }
-        }
-        let fieldAdapter = taskFieldEnvironment.map { TaskFieldCommandAdapter(coordinator: handoff.coordinator,
-                                                                              environment: $0, capability: taskFieldCapability) }
-        let subtaskAdapter = subtaskEnvironment.map { SubtaskCommandAdapter(coordinator: handoff.coordinator, environment: $0) }
-        let routineAdapter = routineEnvironment.map { RoutineCommandAdapter(coordinator: handoff.coordinator, environment: $0) }
-        let batchAdapter = batchEnvironment.map { BatchCommandAdapter(coordinator: handoff.coordinator, environment: $0) }
-        var multiAdapters = MultiPlanCommandAdapter.Adapters(taskCreate: createAdapter, taskTitle: titleAdapter,
-            taskField: fieldAdapter, subtask: subtaskAdapter, routine: routineAdapter, batch: batchAdapter)
-        if case .file(let adapter) = backend { multiAdapters.fileSettings = adapter }
-        if case .legacy(let adapter) = backend { multiAdapters.localSettings = adapter }
-        let multi = enableMultiPlan ? MultiPlanCommandAdapter(coordinator: handoff.coordinator, adapters: multiAdapters,
-                                                              outputCapability: outputCapability, supportsRevisions: enablePlanRevisions) : nil
         controller = UnifiedSearchController(session: session, coordinator: handoff.coordinator,
             buffer: .init(lease: try handoff.owned(hostID).lease, version: 0, text: text),
             read: { [weak self] in
                 guard let self else { throw ContentQueryReadSessionError.detached }
                 return try await self.publish()
-            }, recordOpen: { [weak self] in self?.opens.append($0) },
-            settingBackend: backend, taskCreate: createAdapter, taskTitle: titleAdapter,
-            taskField: fieldAdapter,
-            taskChain: chainAdapter,
-            subtask: subtaskAdapter, routine: routineAdapter, batch: batchAdapter, multiPlan: multi,
-            trash: trashEnvironment.map { TrashCommandAdapter(coordinator: handoff.coordinator, environment: $0, capability: trashCapability) },
-            taskCopy: taskCopyEnvironment.map { TaskCopyCommandAdapter(coordinator: handoff.coordinator, environment: $0) },
-            convert: convert?(handoff.coordinator), simple: simple?(handoff.coordinator),
-            clipboard: clipboard?(handoff.coordinator))
+            }, recordOpen: { [weak self] in self?.opens.append($0) })
     }
 
     func publish() async throws -> ContentQueryReadEffect {

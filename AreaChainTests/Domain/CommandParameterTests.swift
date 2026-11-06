@@ -192,13 +192,6 @@ struct CommandParameterTests {
         let combining = String(repeating: "e\u{301}", count: limit / 3) + "a"
         #expect(combining.utf8.count == limit && CommandLongTextLimit.allows(combining))
         #expect(!CommandLongTextLimit.allows(combining + "\u{301}"))
-        // 组合缓冲不计入：已确认正文满额时，正在组词的拼写仍不超限。
-        let confirmed = String(repeating: "a", count: limit)
-        let composing = CommandDraftEditingState(parameter: "notes", spelling: confirmed + "zhong",
-            selectionLocation: limit + 5, selectionLength: 0,
-            composition: .init(text: "zhong", location: limit, replacedText: ""))
-        #expect(CommandLongTextLimit.allows(composing.confirmedText))
-        #expect(!CommandLongTextLimit.allows(composing.confirmingComposition().confirmedText))
     }
 
     @Test func overLimitLongTextIsDistinctFromInvalidValue() throws {

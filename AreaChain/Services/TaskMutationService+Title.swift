@@ -24,7 +24,6 @@ extension TaskMutationService {
         let targetID: UUID
         fileprivate(set) var transaction: ModelChanges.CommitFacts?
         fileprivate(set) var registrationFailed = false
-        fileprivate(set) var savedTagEffects: [CommandTaskTagAssociation.Effect]?
         fileprivate(set) var reminderRequest: ModelChanges.CallFact = .notCalled
         fileprivate var savedLocally = false
         fileprivate var rejected = false
@@ -42,7 +41,7 @@ extension TaskMutationService {
         var saved: Bool { state == .saved }
     }
 
-    /// 兼容旧 UI：保留同值保存、旧标签资格与非空派生备注。命令必须先完成自己的最终资格核验。
+    /// 兼容旧 UI：保留同值保存、旧标签资格与非空派生备注。
     static func editTitle(_ todo: TodoItem, rawInput: String, in context: ModelContext,
                           dependencies: TitleDependencies) -> TitleModification {
         let result = TitleModification(targetID: todo.id)
@@ -53,35 +52,8 @@ extension TaskMutationService {
         }
     }
 
-    /// 窄入口只消费最终核实的影响，不再次按同名 first-wins 选标签；旧 UI 仍走上方入口。
-    static func editTitle(_ todo: TodoItem, verified impact: CommandTaskTitleImpact,
-                          tagCreationIDs: [String: UUID], in context: ModelContext,
-                          dependencies: TitleDependencies) -> TitleModification {
-        guard impact.target == CommandObjectReference(type: .todo, id: todo.id), impact.edit.notes == nil else {
-            let rejected = TitleModification(targetID: todo.id)
-            rejected.rejected = true
-            return rejected
-        }
-        return editTitle(todo, edit: impact.edit, in: context, dependencies: dependencies,
-                         tagEffects: impact.tags.syntax.final.map(\.effect)) {
-            _ = try InputTagResolver.apply(impact.tags.syntax, creationIDs: tagCreationIDs, in: context)
-            let ids = try impact.tags.final.map { target in
-                switch target {
-                case .existing(let row):
-                    guard let id = row.id else { throw TaskTitleCommandIssue.stale }
-                    return id
-                case .newName(_, let key):
-                    guard let id = tagCreationIDs[key] else { throw TaskTitleCommandIssue.stale }
-                    return id
-                }
-            }
-            return TagIDList.encode(ids)
-        }
-    }
-
     private static func editTitle(_ todo: TodoItem, edit: TaskTitleEdit, in context: ModelContext,
                                   dependencies: TitleDependencies,
-                                  tagEffects: [CommandTaskTagAssociation.Effect]? = nil,
                                   tags: () throws -> String) -> TitleModification {
         let result = TitleModification(targetID: todo.id)
         do {
@@ -94,11 +66,10 @@ extension TaskMutationService {
                     try repo.setPriority(id: todo.id, isImportant: priority.isImportant, isUrgent: priority.isUrgent)
                 }
                 if let minutes = edit.remindMinutes { try repo.setRemind(id: todo.id, minutes: minutes) }
-                // 标签和标题属于同一事务；任一步失败都沿共同回滚，不逐标签保存。
                 let merged = try tags()
                 try repo.replaceTagIDs(id: todo.id, tagIDs: merged)
                 registerTitleCompletion(result, minutes: edit.remindMinutes, context: context,
-                                        dependencies: dependencies, tagEffects: tagEffects)
+                                        dependencies: dependencies)
             }
         } catch {
             result.rejected = true
@@ -108,11 +79,9 @@ extension TaskMutationService {
     }
 
     private static func registerTitleCompletion(_ result: TitleModification, minutes: Int?, context: ModelContext,
-                                                dependencies: TitleDependencies,
-                                                tagEffects: [CommandTaskTagAssociation.Effect]?) {
+                                                dependencies: TitleDependencies) {
         ModelChanges.afterCommit(in: context) {
             result.savedLocally = true
-            result.savedTagEffects = tagEffects
             do { try dependencies.registerLocalModification(result.targetID) }
             catch {
                 result.registrationFailed = true
@@ -120,7 +89,6 @@ extension TaskMutationService {
             }
         }
         ModelChanges.afterPublication(in: context) {
-            // nil 仍交给原依赖保持旧调用契约；只有存在提醒才记录授权请求。
             if minutes != nil { result.reminderRequest = .called }
             dependencies.requestReminderAccessIfNeeded(minutes)
             if minutes != nil { result.reminderRequest = .returned }

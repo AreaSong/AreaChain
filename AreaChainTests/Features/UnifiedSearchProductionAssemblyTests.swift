@@ -26,10 +26,8 @@ import Testing
         let workspace = try #require(assembly.controller(for: UnifiedSearchProductionAssembly.workspaceHost))
         let menubar = try #require(assembly.controller(for: UnifiedSearchProductionAssembly.menubarHost))
         #expect(workspace !== menubar && workspace.coordinator === menubar.coordinator)
-        #expect(workspace.navigationRouter === assembly.router && workspace.pageCommands != nil)
-        #expect(menubar.navigationRouter == nil && menubar.pageCommands == nil)
-        // 设置类沿用当前偏好权威：旧键 AppPreferences + LocalSettingCommandAdapter，没有文件后端。
-        #expect(workspace.localSettings != nil && workspace.fileSettings == nil && fixture.preferences.usesLegacyLocalPreferences)
+        #expect(workspace.navigationRouter === assembly.router)
+        #expect(menubar.navigationRouter == nil)
         #expect(assembly.router.navigation === fixture.navigation && assembly.hostContext.navigation === fixture.navigation)
         #expect(!assembly.hostContext.sharesProductionStorage)
         // 装配不读库写库、不申请权限、不刷新提醒／日历、不碰剪贴板与窗口。

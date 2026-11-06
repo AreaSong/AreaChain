@@ -1,7 +1,9 @@
 import Foundation
 import Observation
 
-typealias LocalPreferencePresentationStep = CommandPreferencePresentationStep
+enum LocalPreferencePresentationStep: Equatable, Sendable {
+    case notCalled, pending, returned, threw, superseded
+}
 
 struct LocalPreferencePresentation: Equatable, Sendable {
     let change: LocalPreferenceGroupChange

@@ -13,7 +13,6 @@ import Testing
     var reveals = 0
     var copied: [String] = []
     var clipboardActions: ClipboardHistoryActions?
-    var system: WorkspaceSystemCommands?
     var total: Int {
         refreshes.count + reminderRequests.count + calendarRefreshes + reveals + copied.count
     }
@@ -29,8 +28,7 @@ import Testing
         return .init(refresh: { [unowned self] in refreshes.append($0) }, calendarSyncEnabled: { false },
                      requestReminderAccess: { [unowned self] in reminderRequests.append($0) },
                      refreshCalendar: { [unowned self] in calendarRefreshes += 1 }, clipboardWriter: writer,
-                     // 两个工厂在装配时取一次（构造依赖、不调用系统）；用例需要时注入自己的 fake。
-                     clipboardActions: { [unowned self] in clipboardActions }, system: { [unowned self] in system },
+                     clipboardActions: { [unowned self] in clipboardActions },
                      sourceBundleID: { "com.areachain.m6.test" }, revealWorkspace: { [unowned self] in reveals += 1 })
     }
 }

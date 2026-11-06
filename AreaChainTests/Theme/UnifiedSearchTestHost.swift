@@ -49,8 +49,7 @@ struct UnifiedSearchTestFixture: View {
 
     var body: some View {
         if let results {
-            if operations { UnifiedSearchOperationTestContent(controller: results, layout: layout) }
-            else { UnifiedSearchResultsTestContent(controller: results, layout: layout) }
+            UnifiedSearchResultsTestContent(controller: results, layout: layout)
         } else {
         VStack {
             if !top { Spacer() }
@@ -113,16 +112,8 @@ final class UnifiedSearchTestHost {
     var field: NSTextField {
         get throws {
             try #require(SettingsButtonTestSupport.elements(window.contentView).compactMap { $0 as? NSTextField }
-                .first { $0.cell is UnifiedSearchFieldCell && !isOperationField($0) })
+                .first { $0.cell is UnifiedSearchFieldCell })
         }
-    }
-    private func isOperationField(_ field: NSView) -> Bool {
-        var ancestor = field.superview
-        while let view = ancestor {
-            if view is UnifiedSearchOperationBoundary { return true }
-            ancestor = view.superview
-        }
-        return false
     }
 
     var editor: NSTextView { get throws { try #require(try field.currentEditor() as? NSTextView) } }

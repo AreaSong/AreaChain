@@ -100,6 +100,9 @@ struct LocalPreferenceChange: Equatable, Sendable {
     let revision: UInt64
 }
 
+enum PreferenceCallOutcome: Equatable, Sendable { case notCalled, returned, threw }
+enum PreferenceReadback: Equatable, Sendable { case notRead, matches, differs, unavailable }
+
 struct LocalPreferenceWriteResult: Equatable, Sendable {
     typealias Readback = PreferenceReadback
     enum Rejection: Equatable, Sendable { case reentrant, unreadableStorage, snapshotChanged, executionInvalidated, unsupportedBackend }

@@ -20,7 +20,7 @@ import Testing
     var imagePause: (() async throws -> Void)?
     static let text = (0..<90).map { "合成查阅段落 \($0) — ordinary text / # ! 保持原文，不是应用命令。" }.joined(separator: "\n\n")
 
-    init(handoff: HandoffFixture? = nil, multiPlan: MultiPlanCommandAdapter? = nil) throws {
+    init(handoff: HandoffFixture? = nil) throws {
         base = try UnifiedSearchNavigationFixture(handoff: handoff)
         root = FileManager.default.temporaryDirectory.appending(path: "AreaChain-NM2-" + UUID().uuidString)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
@@ -50,7 +50,7 @@ import Testing
             read: { [weak self] in
                 guard let self else { throw WorkspaceContentFailure.stale }
                 return try await self.read()
-            }, recordOpen: { _ in Issue.record("不得进入旧意图回调") }, multiPlan: multiPlan)
+            }, recordOpen: { _ in Issue.record("不得进入旧意图回调") })
         controller.navigationRouter = base.router
     }
 

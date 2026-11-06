@@ -18,9 +18,9 @@ REFERENCE_SUITE_LIMIT = 60
 TOTAL_SUITE_LIMIT = 120
 # 冒烟集：统一搜索（正式版装配、读取、指令）、任务、手记、隐私、菜单栏各取代表类，只在收敛时追加。
 SMOKE_SUITES = (
-    "UnifiedSearchProductionAssemblyTests", "UnifiedSearchProductionReadTests", "UnifiedSearchProductionCommandTests",
+    "UnifiedSearchProductionAssemblyTests", "UnifiedSearchProductionReadTests", "UnifiedSearchCLIBridgeTests",
     "ContentQueryBodyReadTests", "ImageContentQueryPrivacyTests", "DiaryQueryPrivacyTests", "BoardSearchTests",
-    "TodoQueryIntegrationTests", "TaskMutationServiceTests", "DayBoardLogicTests", "DiaryWriteServiceTests",
+    "TodoQueryIntegrationTests", "TaskMutationServiceTests", "DayBoardLogicTests", "ActionRegistryAndHistoryTests",
     "PrivacyPersistenceTests", "MenuBarPopoverRenderingTests",
 )
 # 扩展成员名出现在超过这么多测试文件里就算常见名（如 accept、operations），按名字匹配没有区分度，跳过并提示。

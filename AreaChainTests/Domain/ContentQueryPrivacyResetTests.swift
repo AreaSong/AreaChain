@@ -4,43 +4,23 @@ import Testing
 
 @Suite(.serialized) @MainActor
 struct ContentQueryPrivacyResetTests {
-    @Test func systemClearDropsFrozenConditionsAndReturnSnapshotButPreservesOperations() throws {
+    @Test func systemClearDropsFrozenConditionsAndReturnSnapshot() throws {
         let h = try HandoffFixture(sourcePage: .diaries(tagID: UUID()))
         try h.send(.query(.setInput("/diaries synthetic-query #synthetic-tag")))
         try h.transfer()
         let target = HandoffFixture.target
-        let queued = try h.queue(HandoffFixture.setting(target))
-        try h.send(.removeFromPlan(#require(h.state(target).plan.items.first?.stamp), h.state(target).plan.stamp), host: target)
-        #expect(try h.state(target).operations.retained.first?.id != nil)
-        let second = try h.queue(HandoffFixture.setting(target, value: "english"))
-        #expect(queued != second)
-        try h.start(HandoffFixture.setting(target))
         let before = try h.state(target)
         #expect(before.query.handoffContext != nil && before.query.returnPoint != nil)
-        #expect(!before.query.conditions.isEmpty && !before.plan.items.isEmpty && before.operations.active != nil)
+        #expect(!before.query.conditions.isEmpty)
         let original = try h.owned(target).lease
-        // 系统清理允许同一所有权的更新修订；旧用户事件仍不得通过旧 lease。
         try h.send(.query(.setInput("Synthetic revised query")), host: target)
         try h.coordinator.invalidateSearch(ownedBy: original.ownership)
         let after = try h.state(target)
-        #expect(after.operations == before.operations && after.plan == before.plan && after.execution == before.execution)
         #expect(try QuerySessionFixture.source(after.query) == "")
         #expect(after.query.conditions.isEmpty && after.query.returnPoint == nil && after.query.handoffContext == nil)
         #expect(after.query.page.page == .overview && after.query.page.location.reference == "")
         #expect(after.query.binding == .independent(.privacyInvalidated))
         #expect(throws: CommandHandoffError.stale) { try h.coordinator.send(.query(.setInput("stale")), expecting: original) }
-    }
-
-    @Test func executionRecordIsNotClearedWithSearch() throws {
-        let h = try HandoffFixture()
-        try h.queue(HandoffFixture.setting())
-        _ = try h.seal()
-        try h.send(.query(.setInput("Synthetic query")))
-        let before = try h.state()
-        try h.coordinator.invalidateSearch(ownedBy: h.owned().lease.ownership)
-        let after = try h.state()
-        #expect(before.execution != nil && after.execution == before.execution)
-        #expect(after.operations == before.operations && after.plan == before.plan)
     }
 
     @Test func handoffOfClearedQueryKeepsBothHostsWaitingForTrustedPage() throws {

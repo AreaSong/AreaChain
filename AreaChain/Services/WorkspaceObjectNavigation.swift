@@ -35,11 +35,14 @@ struct WorkspaceObjectLocation: Equatable {
             return try location(object, parent: nil, day: todo.dayKey)
         case .subtask:
             guard object.dayKey == nil else { throw WorkspaceOpenFailure.invalidTarget }
-            let child = try TaskFamilyCommandIdentity.subtask(object.id, in: context)
+            let id = object.id
+            let rows = try context.fetch(FetchDescriptor<SubtaskItem>(predicate: #Predicate { $0.id == id }))
+            guard rows.count == 1, rows[0].modelContext === context else { throw WorkspaceOpenFailure.invalidTarget }
+            let child = rows[0]
             guard let parent = child.todo, try todo(parent.id) === parent,
                   open.parent == .init(type: .todo, id: parent.id),
                   try allows(.init(type: .todo, id: parent.id)),
-                  try TaskFamilyCommandIdentity.children(of: parent, in: context).contains(where: { $0 === child }) else {
+                  parent.subtasks.contains(where: { $0 === child }) else {
                 throw WorkspaceOpenFailure.invalidTarget
             }
             return try location(object, parent: open.parent, day: parent.dayKey)

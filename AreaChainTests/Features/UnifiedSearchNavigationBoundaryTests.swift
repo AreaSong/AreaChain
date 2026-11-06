@@ -122,7 +122,6 @@ import Testing
     @Test func nativeCompletionAndCommandReturnNeverSubmitBackgroundPlan() async throws {
         let fixture = try UnifiedSearchNavigationFixture()
         defer { fixture.stop() }
-        try fixture.handoff.queue(HandoffFixture.setting())
         _ = fixture.controller.publishOperation(text: "needle")
         try await fixture.start()
         let original = try fixture.handoff.state()

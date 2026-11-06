@@ -19,8 +19,6 @@ import Testing
             #expect(CommandPathParser().parse(.init(text: command.path)).command?.id == route.command, "\(id) 路径")
             #expect(WorkspaceNavigationDestination.page(command: route.command) == nil, "\(id) 被普通导航截走")
             #expect(!["inspector.day", "inspector.open", "go.tagList"].contains(id))
-            #expect(!CommandBoardNavigation.commands.contains(id) && CommandClipboardWindow(rawValue: id) == nil, "\(id)")
-            #expect(!CommandSystemAction.commands.contains(id), "\(id) 被系统动作截走")
         }
         #expect(Self.representativeRoutes.count < routes.count, "代表路由只取每种组合的第一条")
     }
@@ -50,9 +48,6 @@ import Testing
             // 浏览类（trash.browse）只是打开页面，不说“在原页面完成”。
             #expect(fixture.controller.navigationMessage
                 == (route.finishesOnPage ? "unified.originalPage.displayed" : "unified.navigation.displayed"))
-            #expect(try fixture.handoff.state().operations.active == nil, "\(command.id.rawValue) 不能建草稿")
-            #expect(try fixture.handoff.state().plan.items.isEmpty)
-            #expect(try fixture.handoff.state().execution == nil)
             #expect(!fixture.context.hasChanges)
             try await fixture.back()
             try await ready(fixture)
@@ -98,7 +93,6 @@ import Testing
             #expect(fixture.controller.navigationMessage == "unified.originalPage.needsDay")
         }
         #expect(fixture.saves == 0 && fixture.publications == 0 && !fixture.context.hasChanges)
-        #expect(try fixture.handoff.state().operations.active == nil)
     }
 
     @Test func trashRoutesLocateFocusedObject() async throws {
@@ -132,7 +126,6 @@ import Testing
         fixture.controller.prefillExample("tomorrow 9:00 meet #work")
         #expect(fixture.controller.buffer.text == "tomorrow 9:00 meet #work")
         #expect(fixture.controller.navigationMessage == "unified.help.example.prefilled")
-        #expect(try fixture.handoff.state().operations.active == nil)
         try await fixture.settle()
         try await fixture.enter("/notification/complete")
         // 工作台操作面板的合成鼠标事件到不了按钮（已知限制），沿任务页指令测试的做法用 AXPress 按同一按钮。
@@ -141,7 +134,6 @@ import Testing
         try await fixture.go("/notification/snooze")
         #expect(fixture.controller.navigationMessage == "unified.originalPage.useInstead.choose")
         #expect(fixture.saves == 0 && fixture.publications == 0)
-        #expect(try fixture.handoff.state().operations.active == nil)
     }
 
     @Test func unassembledAndLockedExplainWithoutActing() async throws {
@@ -151,7 +143,6 @@ import Testing
             _ = results.controller.navigationInput(path)
             results.controller.executeNavigation(source: results.controller.buffer)
             #expect(results.controller.navigationMessage == "unified.navigation.unassembled")
-            #expect(try results.handoff.state().operations.active == nil)
         }
         let fixture = try UnifiedSearchNavigationFixture()
         defer { fixture.stop() }

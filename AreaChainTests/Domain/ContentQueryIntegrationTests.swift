@@ -39,7 +39,7 @@ struct ContentQueryIntegrationTests {
     }
 
     @Test func diagnosticsStillAddressOriginalUTF16AfterARealConditionEdit() throws {
-        var host = PlanFixture.host()
+        var host = CommandHostSession(page: QuerySessionFixture.page())
         let source = "/tasks 👩🏽‍💻e\u{301} 汇报 (#工作 | #学习) -#归档 status:open date:2026-02-30"
         host.queryEvent(.setInput(source))
         let invalid = try #require(host.query.textDiagnostics.first { $0.issue == .invalidDate })

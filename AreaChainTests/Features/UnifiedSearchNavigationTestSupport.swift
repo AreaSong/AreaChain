@@ -107,7 +107,7 @@ import Testing
             controller = external
             external.navigationRouter = router
             try external.session.resumeDisplay(expecting: external.buffer.lease)
-            _ = try await external.readObjectSource()
+            _ = try await read()
         } else { _ = try await read() }
         var host = hostContext
         host.attachments = attachments
