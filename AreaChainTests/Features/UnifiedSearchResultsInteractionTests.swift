@@ -155,7 +155,7 @@ struct UnifiedSearchResultsInteractionTests {
         // 故意不 settle：同一个通知栈内必须已经撤下旧原生树和字段 storage。
         #expect(editor.string.isEmpty && !editor.hasMarkedText() && editor.undoManager?.canUndo == false)
         #expect(body.string.isEmpty && body.window == nil)
-        #expect(state.completion == nil && !state.suggestions.isActive)
+        #expect(!state.suggestions.isActive)
         #expect(fixture.controller.buffer.privacyRevision == oldSource.privacyRevision + 1)
         #expect(!fixture.session.hasRetainedPresentation)
         fixture.controller.browse(.init(version: old.snapshot.version, action: .activate(row.id)), source: oldSource)

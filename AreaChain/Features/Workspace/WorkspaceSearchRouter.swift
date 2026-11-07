@@ -15,28 +15,6 @@ enum WorkspaceNavigationDestination: Equatable {
         }
         return .calendar
     }
-
-    static func page(command: CommandID) -> WorkspaceTab? {
-        switch command.rawValue {
-        case "go.dashboard": .dashboard
-        case "go.today": .today
-        case "go.pending": .pending
-        case "go.allItems": .allItems
-        case "go.calendar": .calendar
-        case "go.quadrant": .quadrant
-        case "go.gantt": .gantt
-        case "go.diaries": .diary
-        case "go.images": .attachments
-        case "go.clipboard": .clipboard
-        case "go.tags": .tags
-        case "go.privacy": .privacy
-        case "go.backup": .dataBackup
-        case "go.trash": .trash
-        case "go.settings": .settings
-        case "go.shortcuts": .shortcuts
-        default: nil
-        }
-    }
 }
 
 enum WorkspaceNavigationOutcome: Equatable {

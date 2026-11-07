@@ -64,7 +64,6 @@ struct ContentQueryContractTests {
         #expect(ContentQueryScopeContract.composition(.routineOccurrences).types == [.routineOccurrence])
         #expect(ContentQueryScopeContract.composition(.catalog(.clipboard)).types == [.clipboardEntry])
         #expect(ContentQueryScopeContract.composition(.catalog(.trash)).deletion == .deletedOnly)
-        #expect(CommandCatalog.standard.discover(contentScopes: [.tasks]) == CommandCatalog.standard.entries)
     }
 
     @Test func businessDatesMapToActualFieldsOrProviderProjection() {

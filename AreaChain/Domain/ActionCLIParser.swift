@@ -320,10 +320,16 @@ enum ActionCLIParser {
         let hasTrailingSpace = body.last?.isWhitespace == true
         let parts = body.split(whereSeparator: \.isWhitespace).map(String.init)
         if parts.isEmpty || (parts.count == 1 && !hasTrailingSpace) {
-            let cmdPrefix = (parts.first ?? "").lowercased()
+            let cmdPrefix = (parts.first ?? "")
+                .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+                .replacingOccurrences(of: "/", with: "-")
+                .lowercased()
             return completeCommandNames(prefix: cmdPrefix, prefixWrapper: prefixWrapper, in: actions)
         }
-        let commandToken = parts[0].lowercased()
+        let commandToken = parts[0]
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+            .replacingOccurrences(of: "/", with: "-")
+            .lowercased()
         guard let matchedAction = actions.first(where: { action in
             action.commandNames.contains { $0.lowercased() == commandToken } || action.id.rawValue.lowercased() == commandToken
         }) else { return [] }
@@ -337,9 +343,11 @@ enum ActionCLIParser {
         prefix: String, prefixWrapper: String, in actions: [ActionMetadataDescriptor]
     ) -> [ActionCompletionCandidate] {
         actions.compactMap { action in
-            guard let matchedName = action.commandNames.first(where: {
-                prefix.isEmpty || $0.lowercased().hasPrefix(prefix)
-            }) else { return nil }
+            let matchedName = action.commandNames.first {
+                prefix.isEmpty || $0.lowercased().hasPrefix(prefix) || $0.lowercased().contains(prefix)
+            } ?? ((action.chineseTitle.lowercased().contains(prefix) || action.englishTitle.lowercased().contains(prefix))
+                ? action.primaryCommand : nil)
+            guard let matchedName else { return nil }
             return ActionCompletionCandidate(
                 kind: .command, insertText: matchedName,
                 completedInput: "\(prefixWrapper)\(matchedName) ",

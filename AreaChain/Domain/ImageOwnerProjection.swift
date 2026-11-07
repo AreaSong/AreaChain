@@ -117,7 +117,7 @@ enum ImageOwnerInput: CustomStringConvertible, CustomDebugStringConvertible {
         case .routine(let value): (day, created, tags) = (value.createdDayKey, value.createdAt, value.tagIDs)
         case .diary(let value): (day, created, tags) = (value.dayKey, value.createdAt, value.tagIDs)
         }
-        return CommandArgumentValidation.isCanonicalDay(day)
+        return DayKey.isCanonicalDay(day)
             && created.timeIntervalSince1970.isFinite && DiaryQueryMetadata.hasValidTagIDs(tags)
     }
 }

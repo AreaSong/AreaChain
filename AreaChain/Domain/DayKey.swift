@@ -60,6 +60,13 @@ enum DayKey {
         return calendar.date(from: components)
     }
 
+    static func isCanonicalDay(_ key: String) -> Bool {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        guard key.count == 10, let date = DayKey.date(from: key, calendar: calendar) else { return false }
+        return DayKey.from(date, calendar: calendar) == key
+    }
+
     static func date(dayKey: String, minutes: Int, calendar: Calendar = .current) -> Date? {
         guard let day = date(from: dayKey, calendar: calendar), (0..<1440).contains(minutes) else {
             return nil

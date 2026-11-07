@@ -7,7 +7,6 @@ enum ClipboardQueryMode: Equatable {
 
 enum ClipboardQueryRequestError: Error, Equatable {
     case invalidFilters, conflictingTextConditions, unsupportedCommand
-    case invalidArguments([CommandArgumentIssue])
 }
 
 /// 只有构造时通过“无文字条件”检查的 Session 才能作为独立筛选；不保存可编辑查询副本。
@@ -27,24 +26,6 @@ struct ClipboardQueryModeRequest: Equatable, CustomStringConvertible, CustomDebu
         self.mode = mode
         self.needle = needle
         self.filters = filters
-    }
-
-    /// 参数来自目录 chooseParameter / options；不解析或拼接自由文本尾段，不从指令推导查询范围。
-    init(commandID: CommandID, arguments: [CommandArgument], filters: ContentQuerySession) throws {
-        guard commandID.rawValue == "clipboard.search",
-              let command = CommandCatalog.standard.command(id: commandID) else {
-            throw ClipboardQueryRequestError.unsupportedCommand
-        }
-        let issues = CommandArgumentValidation.issues(for: arguments, command: command)
-        guard issues.isEmpty else { throw ClipboardQueryRequestError.invalidArguments(issues) }
-        guard case .choice(let raw) = arguments.first(where: { $0.parameter == .mode })?.value,
-              let mode = ClipboardSearchMode(rawValue: raw) else {
-            throw ClipboardQueryRequestError.invalidArguments([.missing(.mode)])
-        }
-        let needle: String
-        if case .shortText(let text) = arguments.first(where: { $0.parameter == .query })?.value { needle = text }
-        else { needle = "" }
-        try self.init(mode: mode, needle: needle, filters: filters)
     }
 
     var description: String { "ClipboardQueryModeRequest(redacted)" }

@@ -1,5 +1,33 @@
 import Foundation
 
+enum CommandObjectType: String, CaseIterable, Sendable {
+    case todo, subtask, routine, routineOccurrence, diary, tag, image, clipboardEntry
+    case diaryWindow, clipboardWindow, workspaceWindow, draft, calendarConflict, activity
+}
+
+/// routineOccurrence 的 id 是习惯定义 ID，dayKey 构成业务身份；不解析真实记录。
+struct CommandObjectReference: Equatable, Hashable, Sendable {
+    let type: CommandObjectType
+    let id: UUID
+    var dayKey: String?
+}
+
+enum CommandScopeInclusion: Equatable, Sendable {
+    case ordinaryContent, explicitOnly, unresolvedComposition
+}
+
+enum CommandContentScope: String, CaseIterable, Sendable {
+    case tasks, routines, subtasks, diaries, tags, images, clipboard, trash
+
+    var inclusion: CommandScopeInclusion {
+        switch self {
+        case .clipboard, .trash: .explicitOnly
+        case .tasks: .ordinaryContent
+        default: .ordinaryContent
+        }
+    }
+}
+
 /// 记录范围只供显式调用方选择，不擅自给指令目录增加另一条路径。
 enum ContentQueryScopeSelection: Equatable {
     case global
@@ -121,7 +149,7 @@ enum ContentQueryApplicability {
         case .todo, .subtask: return .ownCompletion
         case .routineOccurrence: return .occurrenceCompletion
         case .routine:
-            guard let day = occurrenceDay, CommandArgumentValidation.isCanonicalDay(day) else { return .requiresOccurrenceDay }
+            guard let day = occurrenceDay, DayKey.isCanonicalDay(day) else { return .requiresOccurrenceDay }
             return .routineCompletionOnDay(day)
         default: return .notApplicable
         }

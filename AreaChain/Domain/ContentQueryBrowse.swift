@@ -37,7 +37,7 @@ struct ContentQueryBrowseEffect: Equatable {
     var open: ContentQueryBrowseOpen?
 }
 
-/// 浏览集合与 CommandDraftTargets 完全分离。build 或可见性修订生成版本，发布采用比较并替换。
+/// 浏览集合由只读查询快照驱动。build 或可见性修订生成版本，发布采用比较并替换。
 struct ContentQueryBrowseState {
     private(set) var snapshot: ContentQueryDisplaySnapshot
     private(set) var active: CommandObjectReference?

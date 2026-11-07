@@ -91,7 +91,7 @@ struct InspectorBlurSaveTests {
         #expect(try Self.persisted(fixture).title == "needle parent")
         try await fixture.enter("/go/settings")
         try #require(fixture.window?.firstResponder === editor, "跳转前焦点必须仍在检查器标题，才能证明是导航触发的保存")
-        fixture.controller.intent(.open, source: fixture.controller.buffer)
+        fixture.controller.navigate(.page(.settings), source: fixture.controller.buffer)
         await fixture.controller.navigationTask?.value
         try await fixture.settle()
         #expect(fixture.router.outcome == .displayed)

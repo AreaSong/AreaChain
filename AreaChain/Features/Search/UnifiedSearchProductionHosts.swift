@@ -80,13 +80,13 @@ struct MenuBarUnifiedSearchField: View {
     }
 }
 
-/// 菜单栏浮层中部：有查询或指令时显示结果与 CLI / 导航面板。
+/// 菜单栏浮层中部：有查询或指令时显示结果与 CLI 面板。
 struct MenuBarUnifiedSearchContent: View {
     @Bindable var controller: UnifiedSearchController
 
     var body: some View {
         VStack(spacing: DaybookSpacing.sm) {
-            if !controller.isNavigationInput, controller.cliSession.shouldPresentPanel(for: controller.buffer.text) {
+            if controller.cliSession.shouldPresentPanel(for: controller.buffer.text) {
                 UnifiedSearchCLIPanel(controller: controller)
             }
             if controller.showsNavigationFeedback {
@@ -97,22 +97,78 @@ struct MenuBarUnifiedSearchContent: View {
             }
             UnifiedSearchResults(controller: controller, layout: .compact)
                 .unifiedSearchYieldsToCommand(controller)
-            if Self.showsOperation(controller), !controller.hidesResultsForCommand {
-                UnifiedSearchNavigationPanel(controller: controller)
-                    .frame(height: 220)
-            }
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("menubar.unified.content")
     }
 
     static func showsOperation(_ controller: UnifiedSearchController) -> Bool {
-        controller.isNavigationInput && controller.operationVisible
+        controller.cliSession.shouldPresentPanel(for: controller.buffer.text)
     }
 
     /// 浮层中部是否让位给搜索：有文字、在写指令或有活动面板。
     static func isActive(_ controller: UnifiedSearchController) -> Bool {
         !controller.buffer.text.isEmpty || controller.isCommandInput || showsOperation(controller)
+    }
+}
+
+struct UnifiedSearchWorkspaceContent: View {
+    @Bindable var controller: UnifiedSearchController
+    var body: some View {
+        VStack(spacing: DaybookSpacing.sm) {
+            if controller.cliSession.shouldPresentPanel(for: controller.buffer.text) {
+                UnifiedSearchCLIPanel(controller: controller)
+            }
+            if controller.showsNavigationFeedback {
+                Text(LocalizedStringKey(controller.navigationMessage))
+                    .font(DaybookType.caption)
+                    .accessibilityIdentifier("unified.navigation.feedback")
+            }
+            UnifiedSearchResults(controller: controller)
+                .unifiedSearchYieldsToCommand(controller)
+        }
+        .padding(DaybookSpacing.md)
+        .background(DaybookPalette.fill.page)
+    }
+}
+
+struct UnifiedSearchWorkspaceInput: View {
+    @Bindable var controller: UnifiedSearchController
+    var minimumWidth: CGFloat?
+    @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
+    var body: some View {
+        UnifiedSearchInput(buffer: controller.buffer, focused: $controller.inputFocused,
+                           actions: controller.actions, reset: controller.inputReset, showsStatus: false,
+                           minimumWidth: minimumWidth, availableTags: Catalog.liveTags(tags).map(\.name))
+    }
+}
+
+struct UnifiedSearchReturnBar: View {
+    @Bindable var controller: UnifiedSearchController
+    var body: some View {
+        if let ticket = controller.returnSearch {
+            HStack(spacing: DaybookSpacing.sm) {
+                Button("unified.navigation.return") { Task { await controller.returnToSearch(ticket.id) } }
+                    .buttonStyle(DaybookButtonStyle(.subtle))
+                    .keyboardShortcut("[", modifiers: .command)
+                    .accessibilityIdentifier("unified.navigation.return")
+                if controller.showsNavigationMessage {
+                    Text(LocalizedStringKey(controller.navigationMessage)).font(DaybookType.caption)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(DaybookSpacing.sm)
+            .background(DaybookPalette.fill.page)
+        }
+    }
+}
+
+extension View {
+    func unifiedSearchYieldsToCommand(_ controller: UnifiedSearchController) -> some View {
+        let yields = controller.hidesResultsForCommand
+        return opacity(yields ? 0 : 1)
+            .allowsHitTesting(!yields)
+            .accessibilityHidden(yields)
     }
 }
 

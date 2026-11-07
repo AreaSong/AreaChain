@@ -314,8 +314,7 @@ struct MenuBarPopoverRenderingTests {
         try snapshot(darkView, name: "menubar-normal-en-dark")
     }
 
-    /// 点选底栏向上展开的 `/` 指令候选：只补全搜索框、焦点留在原输入框、不建标签或事项。
-    /// `#`、`!`、`@` 的语法候选由 UnifiedSearchSyntaxCandidateTests 覆盖，这里只守住菜单栏底栏的点选与焦点。
+    /// 点选底栏向上展开的语法候选：只补全搜索框、焦点留在原输入框、不建标签或事项。
     @Test func clickingAnUpwardCommandCandidateCompletesTheFooterSearchOnly() async throws {
         let container = try fixture()
         let search = try MenuBarUnifiedSearchProbe(container: container)
@@ -327,13 +326,11 @@ struct MenuBarPopoverRenderingTests {
         try await settle(view)
         let field = try await focusSearch(toolbar, in: view)
         let editor = try #require(field.currentEditor() as? NSTextView)
-        editor.insertText("/set", replacementRange: NSRange(location: 0, length: 0))
+        editor.insertText("#工", replacementRange: NSRange(location: 0, length: 0))
         try await settle(view)
         let state = try #require((field.delegate as? DaybookTextField.Coordinator)?.parent.unifiedSearch)
-        let completion = try #require(state.completion)
-        let first = try #require(completion.result.candidates.first)
-        let expected = try #require(completion.result.accepting(first, in: "/set", hasMarkedText: false))
-        #expect(state.suggestions.isActive && searchField(in: view) === field, "切换结果区不应重建底部输入框")
+        #expect(state.showsSyntax && state.suggestions.isActive)
+        let first = try #require(state.suggestions.candidates.first)
         #expect(toolbar.searchIsFocused, "key=\(window.isKeyWindow), active=\(NSApp.isActive), editing=\(field.currentEditor() != nil)")
         try snapshot(view, name: "menubar-search-completion-zh")
         let fieldFrame = field.convert(field.bounds, to: nil)
@@ -341,8 +338,8 @@ struct MenuBarPopoverRenderingTests {
         #expect(candidatePoint.y > fieldFrame.maxY)
         try click(at: candidatePoint, in: window)
         try await settle(view)
-        #expect(field.currentEditor().map { ($0 as? NSTextView)?.string } == expected.text)
-        #expect(try search.controller.buffer.text == expected.text)
+        #expect(field.currentEditor().map { ($0 as? NSTextView)?.string } == "#工作 ")
+        #expect(try search.controller.buffer.text == "#工作 ")
         #expect(searchField(in: view) === field && field.currentEditor() != nil)
         #expect(try container.mainContext.fetchCount(FetchDescriptor<TagItem>()) == 5)
         #expect(try container.mainContext.fetchCount(FetchDescriptor<TodoItem>()) == 4)

@@ -35,7 +35,7 @@ extension UnifiedSearchController {
 
     func resumedRequest(_ request: UnifiedSearchEdit, reread: Bool = true) -> UnifiedSearchEdit? {
         resumeForExplicitAction(source: request.source, reread: reread).map {
-            UnifiedSearchEdit(source: $0, text: request.text, selection: request.selection, acceptance: request.acceptance)
+            UnifiedSearchEdit(source: $0, text: request.text, selection: request.selection)
         }
     }
 

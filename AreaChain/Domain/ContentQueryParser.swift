@@ -1,26 +1,20 @@
 import Foundation
 
 struct ContentQueryParser {
-    var catalog = CommandCatalog.standard
-
     func parse(_ source: String, context: ContentQueryDateContext) -> ContentQueryInput {
-        let pathParser = CommandPathParser(catalog: catalog)
         var query = ContentQuery(source: source)
         var start = source.startIndex
         if source.hasPrefix("/") {
-            let fullPath = pathParser.parse(.init(text: source))
-            if [.command, .incompleteArguments, .group].contains(fullPath.state)
-                || fullPath.diagnostics.contains(where: { $0.issue == .ambiguous }) { return .command(fullPath) }
-            // 最长、完整的目录范围别名优先；仅空白边界可连接内容条件。
-            if let prefix = scopePrefix(source, parser: pathParser) {
-                guard prefix.result.state == .scope, let scope = prefix.result.command?.contentScope else {
-                    return .command(fullPath)
-                }
-                query.scopes.append(.init(scope: scope, range: NSRange(source.startIndex..<prefix.end, in: source)))
-                start = prefix.end
+            let firstBoundary = source.firstIndex(where: \.isWhitespace) ?? source.endIndex
+            let firstToken = String(source[..<firstBoundary])
+            let scopeCandidate = String(firstToken.dropFirst()).lowercased()
+            if let scope = CommandContentScope(rawValue: scopeCandidate) {
+                query.scopes.append(.init(scope: scope, range: NSRange(source.startIndex..<firstBoundary, in: source)))
+                start = firstBoundary
+            } else if scopeCandidate.contains(".") || firstToken.hasPrefix("/tmp/") || firstToken.hasPrefix("/var/") || firstToken.hasPrefix("/usr/") || firstToken.hasPrefix("/Users/") {
+                // 文件路径（如 /tmp/example.txt）进入普通内容查询
             } else {
-                let path = pathParser.parse(.init(text: source))
-                if path.state != .ordinaryText { return .command(path) }
+                return .command(source)
             }
         }
         let tokens = ContentQueryLexer.scan(source, from: start)
@@ -42,26 +36,12 @@ struct ContentQueryParser {
         return .content(query)
     }
 
-    private func scopePrefix(
-        _ source: String, parser: CommandPathParser
-    ) -> (result: CommandPathResult, end: String.Index)? {
-        let boundaries = source.indices.filter { source[$0].isWhitespace } + [source.endIndex]
-        for end in boundaries.reversed() {
-            let result = parser.parse(.init(text: String(source[..<end])))
-            if [.scope, .command, .incompleteArguments, .group].contains(result.state)
-                || result.diagnostics.contains(where: { $0.issue == .ambiguous }) {
-                return (result, end)
-            }
-        }
-        return nil
-    }
-
     private func append(_ token: ContentQueryLexeme, context: ContentQueryDateContext, query: inout ContentQuery) {
         if !token.literal, token.raw.hasPrefix("/") {
-            let path = CommandPathParser(catalog: catalog).parse(.init(text: token.raw))
-            if path.state == .scope, let scope = path.command?.contentScope {
+            let body = String(token.raw.dropFirst())
+            if let scope = CommandContentScope(rawValue: body.lowercased()) {
                 query.scopes.append(.init(scope: scope, range: token.range))
-            } else if path.state == .ordinaryText {
+            } else if body.contains("/") || body.contains(".") {
                 let term = ContentQueryTerm(atom: .text(token.raw, phrase: false), range: token.range)
                 query.clauses.append(.init(alternatives: [term], range: token.range))
             } else {

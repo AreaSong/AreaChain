@@ -36,40 +36,36 @@ final class UnifiedSearchFieldEditor: NSTextView {
     }
 }
 
-/// 仅统一搜索启用；复用捕获语法颜色，但不让普通任务路径变成指令。
+/// 仅统一搜索启用；复用捕获语法颜色并对 `/` 命令前缀着色。
 @MainActor
 final class UnifiedSearchHighlight {
-    private var lastResult: CommandPathResult?
+    private var lastText: String?
     private var lastAppearance: NSAppearance.Name?
 
     func clear() {
-        lastResult = nil
+        lastText = nil
         lastAppearance = nil
     }
 
-    func apply(to editor: NSTextView, result: CommandPathResult) {
+    func apply(to editor: NSTextView, text: String) {
         guard !editor.hasMarkedText(), let storage = editor.textStorage else { return }
         let appearance = editor.effectiveAppearance.name
-        guard result != lastResult || appearance != lastAppearance else { return }
+        guard text != lastText || appearance != lastAppearance else { return }
         let font = NSFont.systemFont(ofSize: DaybookType.bodySize)
         let attributed = NSMutableAttributedString(attributedString: SyntaxHighlighter.attributedString(for: editor.string, font: font))
         let full = NSRange(location: 0, length: attributed.length)
-        if result.state != .ordinaryText {
-            let color = result.state == .scope ? DaybookPalette.Syntax.tagNS : DaybookPalette.Syntax.timeNS
-            attributed.addAttribute(.foregroundColor, value: color, range: full)
-            if !result.arguments.isEmpty {
-                let slash = (editor.string as NSString).range(of: "/", options: .backwards)
-                if slash.location != NSNotFound {
-                    attributed.addAttribute(.foregroundColor, value: DaybookPalette.Syntax.tagNS,
-                                            range: NSRange(location: NSMaxRange(slash), length: full.length - NSMaxRange(slash)))
-                }
-            }
-            for diagnostic in result.diagnostics where CommandPathText.valid(diagnostic.range, in: editor.string) {
-                let color = result.state == .invalid
-                    ? DaybookPalette.Syntax.priorityColorNS(isImportant: true, isUrgent: true)
-                    : NSColor(DaybookPalette.text.secondary)
-                attributed.addAttribute(.foregroundColor, value: color, range: diagnostic.range)
-                attributed.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: diagnostic.range)
+        if text.hasPrefix("/") {
+            let isScope = UnifiedSearchInputState.isContentScopePrefix(text)
+            let headColor = isScope ? DaybookPalette.Syntax.tagNS : DaybookPalette.Syntax.timeNS
+            let nsText = editor.string as NSString
+            let firstSpace = nsText.rangeOfCharacter(from: .whitespacesAndNewlines)
+            let headRange = firstSpace.location == NSNotFound
+                ? full
+                : NSRange(location: 0, length: firstSpace.location)
+            attributed.addAttribute(.foregroundColor, value: headColor, range: headRange)
+            if !isScope, firstSpace.location != NSNotFound, NSMaxRange(firstSpace) < full.length {
+                let tailRange = NSRange(location: NSMaxRange(firstSpace), length: full.length - NSMaxRange(firstSpace))
+                attributed.addAttribute(.foregroundColor, value: DaybookPalette.Syntax.tagNS, range: tailRange)
             }
         }
         let selection = editor.selectedRanges
@@ -79,7 +75,7 @@ final class UnifiedSearchHighlight {
         }
         storage.endEditing()
         editor.selectedRanges = selection
-        lastResult = result
+        lastText = text
         lastAppearance = appearance
     }
 }

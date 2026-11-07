@@ -71,7 +71,7 @@ struct RoutineOccurrenceEvaluation: Equatable {
 
     var state: RoutineOccurrenceState {
         guard schedule.object == records.object, schedule.object.type == .routineOccurrence,
-              let day = schedule.object.dayKey, CommandArgumentValidation.isCanonicalDay(day),
+              let day = schedule.object.dayKey, DayKey.isCanonicalDay(day),
               schedule.state != .invalidInput, records.state != .invalidInput else { return .invalidInput }
         if schedule.state == .notScheduled { return .notScheduled }
         if records.state == .conflict { return .conflict }

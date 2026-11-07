@@ -63,7 +63,7 @@ struct ContentQueryTests {
         #expect(diagnostic.issue == .incompleteQuote)
         #expect(diagnostic.range == NSRange(location: prefix.utf16.count, length: source.utf16.count - prefix.utf16.count))
         #expect((source as NSString).substring(with: diagnostic.range) == "\"未闭合 🧑‍🚀")
-        #expect(CommandPathText.valid(diagnostic.range, in: source))
+        #expect(NSMaxRange(diagnostic.range) <= source.utf16.count)
         #expect(!result.isReady)
         #expect(result.source.utf16.elementsEqual(source.utf16))
     }
@@ -136,8 +136,7 @@ struct ContentQueryTests {
             guard case .command(let result) = ContentQueryParser().parse(source, context: context) else {
                 Issue.record("expected command: \(source)"); continue
             }
-            #expect(result.input == source)
-            #expect(result.command?.isExecutable != true)
+            #expect(result == source)
         }
         for (source, scope) in [("/clipboard 汇报", CommandContentScope.clipboard), ("/trash #工作", .trash)] {
             let result = try query(source)
@@ -146,7 +145,7 @@ struct ContentQueryTests {
         }
         #expect(!(try query("/tasks /clipboard")).isReady)
         #expect(try query("/tasks /tasks").isReady)
-        #expect(!(try query("/tasks /setting/language/chinese")).isReady)
+        #expect(!(try query("/tasks /unknown")).isReady)
         #expect(try query("/tmp/example.txt").isReady)
         #expect(try query("\\/tasks").scopes.isEmpty)
         #expect(try query("`/tasks` #工作").scopes.isEmpty)
@@ -160,30 +159,5 @@ struct ContentQueryTests {
         let analysis = TodoQueryFixture.session(source).typeAnalysis
         #expect(analysis.assessment(for: .todo)?.reasons.contains { $0.issue == .analysisLimit } == true)
         #expect(analysis.possibleTypes.contains(.todo))
-    }
-}
-
-extension ContentQueryTests {
-    @Test func scopeAliasesAndCommandPrefixConflictsUseTheInjectedCatalog() throws {
-        var tasks = CommandDescriptor(id: .init(rawValue: "scope.tasks"), path: "/tasks", category: .scope)
-        tasks.contentScope = .tasks
-        tasks.pathAliases = ["/我的任务", "/all tasks"]
-        var action = CommandDescriptor(id: .init(rawValue: "synthetic.action"), path: "/action", category: .modification)
-        action.pathAliases = ["/tasks action"]
-        let parser = ContentQueryParser(catalog: .init(entries: [tasks, action]))
-        for source in ["/我的任务 #工作", "/all tasks 汇报"] {
-            guard case .content(let result) = parser.parse(source, context: context) else {
-                Issue.record("expected content: \(source)"); continue
-            }
-            #expect(result.isReady)
-            #expect(result.scopes.first?.scope == .tasks)
-            #expect(result.clauses.count == 1)
-        }
-        for source in ["/tasks action", "/tasks action #正文"] {
-            guard case .command(let result) = parser.parse(source, context: context) else {
-                Issue.record("command body entered content query: \(source)"); continue
-            }
-            #expect(result.input == source)
-        }
     }
 }

@@ -15,13 +15,13 @@ struct UnifiedSearchAnchorKey: PreferenceKey {
     }
 }
 
-/// 与输入布局解耦；未来预览作为宿主的独立下方内容，不重复挂载此补全层。
+/// 仅承载 `#`／`!`／`@` 搜索语法候选浮层；`/` 命令行补全与动作匹配由 `UnifiedSearchCLIPanel` 统一承载。
 private struct UnifiedSearchOverlayHost: ViewModifier {
     var motionDisabled = false
     func body(content: Content) -> some View {
         content.overlayPreferenceValue(UnifiedSearchAnchorKey.self) { sources in
             GeometryReader { proxy in
-                if let source = sources.first(where: { $0.state.focused && $0.state.suggestions.isActive }) {
+                if let source = sources.first(where: { $0.state.focused && $0.state.showsSyntax && $0.state.suggestions.isActive }) {
                     UnifiedSearchOverlay(source: source, proxy: proxy, motionDisabled: motionDisabled)
                 }
             }
@@ -46,9 +46,7 @@ private struct UnifiedSearchOverlay: View {
             prefersAbove: true, matchAnchorWidth: true
         )
         let state = source.state
-        let completion = state.completion
         ZStack(alignment: .topLeading) {
-            // 仅局部点击层关闭候选，不注册任何键盘监听。
             if !source.previewBelow {
                 Color.clear.contentShape(UnifiedSearchDismissRegion(input: anchor), eoFill: true)
                     .onTapGesture { state.suggestions.dismiss() }
@@ -58,16 +56,10 @@ private struct UnifiedSearchOverlay: View {
                 state: state.suggestions, growsUpward: placement.growsUpward,
                 width: placement.frame.width, maxHeight: placement.frame.height, motionDisabled: reduceMotion || motionDisabled,
                 onCommit: { item in
-                    if state.showsSyntax { _ = state.accept(syntax: item); return }
-                    guard let completion, let candidate = completion.result.candidates.first(where: { $0.id == item.id }) else { return }
-                    _ = state.accept(candidate, source: completion)
+                    _ = state.accept(syntax: item)
                 },
                 customRow: { item, selected in
-                    state.showsSyntax
-                        ? AnyView(UnifiedSearchSyntaxRow(candidate: item, selected: selected, locale: source.locale))
-                        : AnyView(UnifiedSearchCandidateRow(candidate: completion?.result.candidates.first { $0.id == item.id },
-                                                           selected: selected, locale: source.locale,
-                                                           disposition: state.actions.disposition))
+                    AnyView(UnifiedSearchSyntaxRow(candidate: item, selected: selected, locale: source.locale))
                 }, rowHeight: 68, listMaximumHeight: source.layout.maximumSuggestionsHeight - 25
             )
             .environment(\.locale, source.locale)
@@ -79,43 +71,7 @@ private struct UnifiedSearchOverlay: View {
     }
 }
 
-private struct UnifiedSearchCandidateRow: View {
-    let candidate: CommandPathCandidate?
-    let selected: Bool
-    let locale: Locale
-    let disposition: (CommandID) -> CommandHostDisposition
-
-    var body: some View {
-        if let candidate {
-            VStack(alignment: .leading, spacing: 2) {
-                HStack {
-                    Text(verbatim: candidate.title).font(DaybookType.body.weight(.medium)).lineLimit(1)
-                    Spacer(minLength: 4)
-                    Text(verbatim: L10n.format("unified.category." + candidate.category.rawValue, locale: locale))
-                        .font(DaybookType.micro)
-                }
-                Text(verbatim: candidate.summary).font(DaybookType.caption).lineLimit(1)
-                Text(verbatim: availability(candidate)).font(DaybookType.micro).lineLimit(1)
-            }
-            .foregroundStyle(DaybookPalette.text.primary)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(4)
-            .background(RoundedRectangle(cornerRadius: DaybookRadius.xs)
-                .fill(selected ? DaybookPalette.accent.fill : .clear))
-            .help(candidate.title + "\n" + candidate.summary + "\n" + availability(candidate))
-            .accessibilityElement(children: .combine)
-        }
-    }
-
-    private func availability(_ candidate: CommandPathCandidate) -> String {
-        if candidate.category == .group { return L10n.format("unified.input.browse", locale: locale) }
-        if candidate.category == .scope { return L10n.format("unified.input.scope", locale: locale) }
-        // 按宿主实际处理方式显示：可执行／打开原页面／目录不可用／未接上。
-        return disposition(candidate.command.id).label(locale: locale)
-    }
-}
-
-/// `#`／`!`／`@` 语法候选行：与指令候选行同一字号、内边距与选中底色，只换成候选标题与用途说明。
+/// `#`／`!`／`@` 语法候选行。
 private struct UnifiedSearchSyntaxRow: View {
     let candidate: SyntaxCandidate
     let selected: Bool

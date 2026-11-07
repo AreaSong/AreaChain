@@ -14,7 +14,6 @@ struct UnifiedSearchEdit {
     let source: UnifiedSearchBuffer
     let text: String
     let selection: NSRange
-    var acceptance: CommandPathEdit?
 }
 
 enum UnifiedSearchIntent: Equatable {
@@ -26,67 +25,71 @@ struct UnifiedSearchActions {
     var accept: (UnifiedSearchEdit) -> UnifiedSearchBuffer?
     var focus: (Bool) -> Void
     var intent: (UnifiedSearchIntent, UnifiedSearchBuffer) -> Void
-    /// 宿主对一条指令的处理方式（唯一判断在控制器）；未提供时按“未接上”显示，不冒充可执行。
-    var disposition: (CommandID) -> CommandHostDisposition = { _ in .unwired }
+
+    init(
+        edit: @escaping (UnifiedSearchEdit) -> UnifiedSearchBuffer?,
+        accept: ((UnifiedSearchEdit) -> UnifiedSearchBuffer?)? = nil,
+        focus: @escaping (Bool) -> Void,
+        intent: @escaping (UnifiedSearchIntent, UnifiedSearchBuffer) -> Void
+    ) {
+        self.edit = edit
+        self.accept = accept ?? edit
+        self.focus = focus
+        self.intent = intent
+    }
 }
 
 struct UnifiedSearchInputConfiguration {
     let actions: UnifiedSearchActions
-    let parser: CommandPathParser
-    let discovery: CommandDiscoveryConfiguration
     let locale: Locale
-    var parameter: UnifiedSearchParameterContext?
-    /// `#` 候选只列这些已有标签（宿主按旧搜索取存活标签）；搜索不能创建标签。
     var availableTags: [String] = []
 }
 
-struct UnifiedSearchCompletion {
-    let source: UnifiedSearchBuffer
-    let selection: NSRange
-    let result: CommandPathResult
-}
-
-/// 只保存原生展示与候选，不持有可修改的业务参数、查询或指令目录副本。
+/// 只保存原生展示与语法候选，不持有旧式目录副本。
 @Observable @MainActor
 final class UnifiedSearchInputState {
     let suggestions = SyntaxAutocompleteState(context: .search)
     private(set) var buffer: UnifiedSearchBuffer
-    private(set) var completion: UnifiedSearchCompletion?
-    private var acceptedNavigation: UnifiedSearchBuffer?
-    @ObservationIgnored var parser: CommandPathParser
-    @ObservationIgnored var configuration = CommandDiscoveryConfiguration.standard
     @ObservationIgnored var locale = Locale(identifier: "en")
-    @ObservationIgnored var parameter: UnifiedSearchParameterContext?
     @ObservationIgnored var actions: UnifiedSearchActions
     @ObservationIgnored var availableTags: [String] = []
-    /// 当前候选来自 `#`／`!`／`@` 语法（非 `/` 指令，沿旧搜索候选）；接受走 SyntaxAutocompleteState 原生提交。
+    /// 当前候选来自 `#`／`!`／`@` 语法（非 `/` 指令）；接受走 SyntaxAutocompleteState 原生提交。
     private(set) var showsSyntax = false
     var focused = false
     @ObservationIgnored weak var field: NSTextField?
     @ObservationIgnored weak var editor: NSTextView?
     @ObservationIgnored private var applying = false
     @ObservationIgnored private var deferredBuffer: UnifiedSearchBuffer?
-    @ObservationIgnored private var pendingAcceptance: CommandPathEdit?
     @ObservationIgnored private var lastSelection = NSRange(location: 0, length: 0)
     @ObservationIgnored private var highlight = UnifiedSearchHighlight()
 
-    init(buffer: UnifiedSearchBuffer, parser: CommandPathParser = .init(), actions: UnifiedSearchActions) {
+    init(buffer: UnifiedSearchBuffer, actions: UnifiedSearchActions) {
         self.buffer = buffer
-        self.parser = parser
         self.actions = actions
+    }
+
+    static func isContentScopePrefix(_ rawText: String) -> Bool {
+        let trimmed = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.hasPrefix("/") else { return false }
+        let firstEnd = trimmed.firstIndex(where: \.isWhitespace) ?? trimmed.endIndex
+        let token = String(trimmed[..<firstEnd].dropFirst()).lowercased()
+        return CommandContentScope(rawValue: token) != nil
+    }
+
+    static func isCLICommandInput(_ rawText: String) -> Bool {
+        let trimmed = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.hasPrefix("/") {
+            return !isContentScopePrefix(trimmed)
+        }
+        return rawText.contains(" > ")
     }
 
     func configure(_ configuration: UnifiedSearchInputConfiguration?) {
         guard let configuration else { return }
-        let changed = parser.catalog.entries != configuration.parser.catalog.entries
-            || self.configuration != configuration.discovery || locale != configuration.locale
-            || parameter != configuration.parameter || availableTags != configuration.availableTags
+        let changed = locale != configuration.locale || availableTags != configuration.availableTags
         actions = configuration.actions
         availableTags = configuration.availableTags
-        parser = configuration.parser
-        self.configuration = configuration.discovery
         locale = configuration.locale
-        parameter = configuration.parameter
         if changed { refresh() }
     }
 
@@ -128,27 +131,19 @@ final class UnifiedSearchInputState {
         focused = false
         suggestions.dismiss()
         showsSyntax = false
-        completion = nil
         actions.focus(false)
         editor = nil
     }
 
     func changed(_ editor: NSTextView) {
         guard !applying else { return }
-        // 普通参数组合文本先留在原生 editor；结束组词后才校验并进入草稿。
-        if parameter != nil, editor.hasMarkedText() { suggestions.dismiss(); completion = nil; return }
         if !editor.hasMarkedText(), let deferredBuffer, let field {
             synchronize(deferredBuffer, field: field)
             return
         }
-        // 组合文本也属于显示缓冲，但不能发布候选或改写 marked range。
-        let acceptance = pendingAcceptance
-        pendingAcceptance = nil
-        let request = UnifiedSearchEdit(source: buffer, text: editor.string,
-                                        selection: editor.selectedRange(), acceptance: acceptance)
-        if editor.string != buffer.text || acceptance != nil {
-            let response = acceptance == nil ? actions.edit(request) : actions.accept(request)
-            guard let accepted = response, accepted.text == editor.string,
+        let request = UnifiedSearchEdit(source: buffer, text: editor.string, selection: editor.selectedRange())
+        if editor.string != buffer.text {
+            guard let accepted = actions.edit(request), accepted.text == editor.string,
                   accepted.lease.ownership == buffer.lease.ownership, accepted.version > buffer.version else {
                 if !editor.hasMarkedText() { restore() }
                 return
@@ -166,96 +161,31 @@ final class UnifiedSearchInputState {
             dismissSuggestions()
             return
         }
-        let result = parameter?.completion(buffer.text, locale: locale)
-            ?? parser.parse(.init(text: buffer.text, cursorLocation: lastSelection.location,
-                                 locale: locale, configuration: configuration))
-        if acceptedNavigation == buffer { dismissSuggestions() }
-        else if parameter == nil, result.state == .ordinaryText, focused {
-            // 解析器只把 `/` 开头的文字当指令；其余文字沿旧搜索的语法候选。completion 仍记本次解析供状态行使用。
-            completion = .init(source: buffer, selection: lastSelection, result: result)
+        if !Self.isCLICommandInput(buffer.text), focused {
             showSyntaxCandidates()
-        } else { _ = publish(.init(source: buffer, selection: lastSelection, result: result)) }
+        } else {
+            dismissSuggestions()
+        }
         applying = true
-        if parameter == nil { highlight.apply(to: editor, result: result) }
+        highlight.apply(to: editor, text: buffer.text)
         applying = false
     }
 
-    /// 异步提供者必须携带原缓冲、宿主 lease 和选区；相同文字不是相同事件。
-    @discardableResult
-    func publish(_ value: UnifiedSearchCompletion) -> Bool {
-        guard value.source == buffer, value.result.input == buffer.text,
-              value.selection == lastSelection, editor?.hasMarkedText() != true,
-              editor?.string == buffer.text, focused else { return false }
-        completion = value
-        showsSyntax = false
-        suggestions.candidates = value.result.candidates.map {
-            SyntaxCandidate(id: $0.id, title: $0.title, insertText: $0.insertText, kind: .tag)
-        }
-        suggestions.selectedIndex = min(suggestions.selectedIndex, max(0, suggestions.candidates.count - 1))
-        suggestions.isActive = !suggestions.candidates.isEmpty
-        return true
-    }
-
-    @discardableResult
-    func accept(_ candidate: CommandPathCandidate, source: UnifiedSearchCompletion) -> Bool {
-        guard source.source == buffer, source.selection == lastSelection,
-              completion?.source == source.source, completion?.result == source.result,
-              let editor, !editor.hasMarkedText(),
-              let edit = source.result.accepting(candidate, in: editor.string, hasMarkedText: false) else { return false }
-        field?.window?.makeFirstResponder(field)
-        pendingAcceptance = edit
-        editor.breakUndoCoalescing()
-        editor.insertText(candidate.insertText, replacementRange: candidate.replacementRange)
-        editor.setSelectedRange(NSRange(location: edit.cursorLocation, length: 0))
-        changed(editor)
-        pendingAcceptance = nil
-        editor.breakUndoCoalescing()
-        if candidate.category == .navigation, buffer.text == edit.text {
-            acceptedNavigation = buffer
-            suggestions.dismiss()
-            completion = nil
-        }
-        return buffer.text == edit.text
-    }
-
-    /// Tab 只补文字、一次一层：候选还有下一层（子项，或能写进路径的取值）时补上 `/`，随后列出下一层；
-    /// 走普通编辑，不开始草稿、不执行。Return 仍是接受候选。
-    func complete(_ candidate: CommandPathCandidate, source: UnifiedSearchCompletion) -> Bool {
-        guard source.source == buffer, source.selection == lastSelection,
-              completion?.source == source.source, completion?.result == source.result,
-              let editor, !editor.hasMarkedText(),
-              let edit = source.result.accepting(candidate, in: editor.string, hasMarkedText: false) else { return false }
-        let text = edit.text as NSString
-        let followedBySlash = edit.cursorLocation < text.length
-            && text.substring(with: NSRange(location: edit.cursorLocation, length: 1)) == "/"
-        let insertion = candidate.insertText + (!followedBySlash && hasNextLevel(candidate) ? "/" : "")
-        let current = (editor.string as NSString).substring(with: candidate.replacementRange)
-        guard insertion != current else { return true }
+    /// Tab 触发 Linux CLI 命令或参数名补全。
+    func completeCLICommand(in editor: NSTextView) -> Bool {
+        guard !editor.hasMarkedText() else { return false }
+        StandardActionCatalog.bootstrapIfNeeded()
+        let candidates = ActionRegistry.shared.completions(for: buffer.text)
+        guard let first = candidates.first else { return false }
+        let insertion = first.completedInput
+        guard insertion != editor.string else { return true }
         field?.window?.makeFirstResponder(field)
         editor.breakUndoCoalescing()
-        editor.insertText(insertion, replacementRange: candidate.replacementRange)
-        editor.setSelectedRange(NSRange(location: candidate.replacementRange.location + insertion.utf16.count, length: 0))
+        editor.insertText(insertion, replacementRange: NSRange(location: 0, length: (editor.string as NSString).length))
+        editor.setSelectedRange(NSRange(location: (insertion as NSString).length, length: 0))
         changed(editor)
         editor.breakUndoCoalescing()
         return true
-    }
-
-    private func hasNextLevel(_ candidate: CommandPathCandidate) -> Bool {
-        if case .setArgument = candidate.intent { return false }
-        return !parser.catalog.children(of: candidate.command.id).isEmpty
-            || CommandPathArguments.parameter(for: candidate.command) != nil
-    }
-
-    /// 路径已完整写出的指令级候选（complete／chooseParameter）接受后文字不变，Return 再“接受”只会原地重复、
-    /// 永远发不出 .open；此时 Return 改发 .open。参数值候选（setArgument）照常接受：接受才把参数写进草稿。
-    static func isUnchangedCommand(_ candidate: CommandPathCandidate, in text: String) -> Bool {
-        switch candidate.intent {
-        case .complete, .chooseParameter:
-            let source = text as NSString
-            guard NSMaxRange(candidate.replacementRange) <= source.length else { return false }
-            return source.substring(with: candidate.replacementRange) == candidate.insertText
-        case .expand, .setArgument: return false
-        }
     }
 
     func command(_ selector: Selector, editor: NSTextView) -> Bool {
@@ -266,37 +196,38 @@ final class UnifiedSearchInputState {
         }
         if selector == #selector(NSResponder.cancelOperation(_:)) {
             if suggestions.isActive {
-                if completion?.result.command?.category == .navigation { acceptedNavigation = buffer }
                 dismissSuggestions()
-            } else { actions.intent(.escape, buffer) }
+            } else {
+                actions.intent(.escape, buffer)
+            }
             return true
         }
         if selector == #selector(NSResponder.moveUp(_:)) || selector == #selector(NSResponder.moveDown(_:)) {
             let down = selector == #selector(NSResponder.moveDown(_:))
             if suggestions.isActive {
                 if down { suggestions.selectNext() } else { suggestions.selectPrevious() }
-            } else { actions.intent(.results(down ? 1 : -1), buffer) }
+            } else {
+                actions.intent(.results(down ? 1 : -1), buffer)
+            }
             return true
         }
-        // 只在写指令路径时逐级补全；参数值候选（parameter 非 nil）的 Tab 仍按接受处理。
-        if selector == #selector(NSResponder.insertTab(_:)), parameter == nil, !showsSyntax, let source = completion, suggestions.isActive,
-           let selected = suggestions.selectedCandidate(),
-           let candidate = source.result.candidates.first(where: { $0.id == selected.id }) {
-            _ = complete(candidate, source: source)
-            return true
-        }
-        if selector == #selector(NSResponder.insertTab(_:)) || selector == #selector(NSResponder.insertNewline(_:)) {
+        if selector == #selector(NSResponder.insertTab(_:)) {
             if showsSyntax, suggestions.isActive, let selected = suggestions.selectedCandidate() {
                 _ = accept(syntax: selected)
-            } else if let source = completion, suggestions.isActive,
-               let selected = suggestions.selectedCandidate(),
-               let candidate = source.result.candidates.first(where: { $0.id == selected.id }) {
-                if selector == #selector(NSResponder.insertNewline(_:)), Self.isUnchangedCommand(candidate, in: buffer.text) {
-                    actions.intent(.open, buffer)
-                } else { _ = accept(candidate, source: source) }
-            } else if selector == #selector(NSResponder.insertNewline(_:)) {
+                return true
+            }
+            if Self.isCLICommandInput(buffer.text) {
+                _ = completeCLICommand(in: editor)
+                return true
+            }
+            return false
+        }
+        if selector == #selector(NSResponder.insertNewline(_:)) {
+            if showsSyntax, suggestions.isActive, let selected = suggestions.selectedCandidate() {
+                _ = accept(syntax: selected)
+            } else {
                 actions.intent(.open, buffer)
-            } else { return false }
+            }
             return true
         }
         return false
@@ -305,7 +236,6 @@ final class UnifiedSearchInputState {
     /// 明确导航先收候选并释放本字段焦点；组合输入由调用方继续等待，不清文字或撤销。
     func dismissForNavigation() -> Bool {
         guard editor?.hasMarkedText() != true else { return false }
-        acceptedNavigation = buffer
         dismissSuggestions()
         if let editor, let window = field?.window, window.firstResponder === editor {
             return window.makeFirstResponder(nil)
@@ -323,9 +253,6 @@ final class UnifiedSearchInputState {
         applying = true
         suggestions.reset()
         showsSyntax = false
-        completion = nil
-        pendingAcceptance = nil
-        acceptedNavigation = nil
         deferredBuffer = nil
         let native = (field?.cell as? UnifiedSearchFieldCell)?.searchEditor ?? editor
         native?.unmarkText()
@@ -338,15 +265,12 @@ final class UnifiedSearchInputState {
         applying = false
     }
 
-    /// 点选或 Return／Tab 接受语法候选：替换 SyntaxAutocompleteState 识别出的触发区间，经原生编辑插入（保留撤销与光标），
-    /// 再走同一文字变更路径进入缓冲。触发区间先取出：重新聚焦会让 AppKit 重开编辑并按新选区重算候选。
     @discardableResult
     func accept(syntax candidate: SyntaxCandidate) -> Bool {
         guard showsSyntax, suggestions.isActive, suggestions.candidates.contains(candidate),
               let trigger = suggestions.trigger, let current = editor, !current.hasMarkedText(),
               current.string == buffer.text, NSMaxRange(trigger.range) <= (buffer.text as NSString).length else { return false }
         let before = buffer.text
-        // 已在编辑时不再设第一响应者：对正在编辑的字段再设一次会结束并重开编辑（全选），候选随之失效。
         if field?.window?.firstResponder !== current { field?.window?.makeFirstResponder(field) }
         guard let editor, !editor.hasMarkedText(), editor.string == before else { return false }
         editor.breakUndoCoalescing()
@@ -359,7 +283,6 @@ final class UnifiedSearchInputState {
 
     private func showSyntaxCandidates() {
         suggestions.update(text: buffer.text, cursorLocation: lastSelection.location, availableTags: availableTags)
-        // 搜索不能创建标签：`#` 只留已有标签；引擎对未命中查询给出的原样回显也不展示（产品约定）。
         let existing = Set(availableTags.map(TagSyntax.normalizedName))
         let items = suggestions.candidates.filter { candidate in
             guard candidate.kind == .tag else { return true }
@@ -377,7 +300,6 @@ final class UnifiedSearchInputState {
     private func dismissSuggestions() {
         suggestions.dismiss()
         showsSyntax = false
-        completion = nil
     }
 
     private func restore() {

@@ -73,11 +73,4 @@ private enum LegacyTaskRowCopy {
         #expect(notes == "a\n\n  b")
         #expect(TaskCopyContent.text(.record, title: "T", notes: notes) == "T\na\n\n  b")
     }
-
-    @Test func catalogSectionChoicesAreTheRuleModes() throws {
-        let command = try #require(CommandCatalog.standard.command(id: .init(rawValue: "todo.copy")))
-        let parameter = try #require(command.parameters.first { $0.id == .section })
-        guard case .choice(let choices) = parameter.type else { Issue.record("section 不是 choice"); return }
-        #expect(choices.map(\.value) == TaskCopySection.allCases.map(\.rawValue))
-    }
 }

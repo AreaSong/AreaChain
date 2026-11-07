@@ -29,12 +29,12 @@ enum ContentQueryOccurrenceDay: Equatable {
             for term in terms {
                 guard case .on(let day) = term.atom else { continue }
                 guard !term.excluded else { return .invalid(.unsupportedExclusion) }
-                guard CommandArgumentValidation.isCanonicalDay(day) else { return .invalid(.invalidDate) }
+                guard DayKey.isCanonicalDay(day) else { return .invalid(.invalidDate) }
                 days.insert(day)
             }
         }
         if let explicitDay {
-            guard CommandArgumentValidation.isCanonicalDay(explicitDay) else { return .invalid(.invalidDate) }
+            guard DayKey.isCanonicalDay(explicitDay) else { return .invalid(.invalidDate) }
             days.insert(explicitDay)
         }
         guard days.count <= 1 else { return .invalid(.conflictingOccurrenceDays) }

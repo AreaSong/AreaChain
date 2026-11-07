@@ -177,7 +177,7 @@ struct ContentQuerySessionTests {
         var state = ContentQuerySession(page: Fixture.page())
         Fixture.apply(.setInput("/setting/language/chinese"), &state)
         guard case .command(let path) = state.input else { Issue.record("应保留指令结果"); return }
-        #expect(path.command?.id.rawValue == "setting.language")
+        #expect(path == "/setting/language/chinese")
         #expect(!state.showsResults)
         #expect(state.returnPoint == nil)
         Fixture.apply(.setInput("date:"), &state)

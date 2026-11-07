@@ -109,17 +109,15 @@ struct UnifiedSearchSyntaxCandidateTests {
         #expect(state.showsSyntax && state.suggestions.candidates.map(\.title) == ["#work", "#workshop"])
     }
 
-    /// `/` 开头走指令候选，不混入语法候选；接受仍是原指令路径。
-    @Test func slashKeepsCommandCandidates() async throws {
+    /// `/` 开头走 CLI 指令面板，不弹出普通搜索的语法浮层。
+    @Test func slashSuppressesSyntaxOverlay() async throws {
         let host = UnifiedSearchTestHost(availableTags: Self.tags)
         defer { host.close() }
         try await host.start()
         let editor = try host.editor
         let state = try host.state
-        editor.insertText("/set", replacementRange: editor.selectedRange())
+        editor.insertText("/theme", replacementRange: editor.selectedRange())
         try await host.settle()
-        let completion = try #require(state.completion)
-        #expect(!state.showsSyntax && state.suggestions.isActive && !completion.result.candidates.isEmpty)
-        #expect(state.suggestions.candidates.map(\.id) == completion.result.candidates.map(\.id))
+        #expect(!state.showsSyntax && !state.suggestions.isActive)
     }
 }

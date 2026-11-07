@@ -117,49 +117,8 @@ import Testing
     }
 }
 
-/// 补全键、组合文本、Esc 与检查器草稿走真实键鼠（前台 key window），与后台轮的 UnifiedSearchNavigationBoundaryTests 分开，留在前台轮。
+/// 组合文本与检查器草稿走真实键鼠（前台 key window），与后台轮的 UnifiedSearchNavigationBoundaryTests 分开，留在前台轮。
 @Suite(.serialized) @MainActor struct UnifiedSearchNavigationBoundaryInteractionTests {
-    @Test func nativeCompletionAndCommandReturnNeverSubmitBackgroundPlan() async throws {
-        let fixture = try UnifiedSearchNavigationFixture()
-        defer { fixture.stop() }
-        _ = fixture.controller.publishOperation(text: "needle")
-        try await fixture.start()
-        let original = try fixture.handoff.state()
-        try await fixture.typeNative("/go/settings")
-        try await fixture.key(36, "\r", flags: .command)
-        #expect(try fixture.handoff.state() == original)
-        try await fixture.key(48, "\t")
-        #expect(fixture.controller.returnSearch == nil)
-        try await fixture.key(36, "\r")
-        await fixture.controller.navigationTask?.value
-        #expect(fixture.router.outcome == .displayed)
-        #expect(try fixture.handoff.state() == original)
-        try await fixture.key(33, "[", flags: .command)
-        try await fixture.settle()
-        #expect(fixture.controller.buffer.text == "needle")
-        #expect(try fixture.handoff.state() == original)
-    }
-
-    @Test func markedTextAndEscapeKeepInputAndPreventNavigation() async throws {
-        let fixture = try UnifiedSearchNavigationFixture()
-        defer { fixture.stop() }
-        try await fixture.start()
-        try await fixture.typeNative("/go/settings")
-        let editor = try fixture.editor
-        editor.setMarkedText("组合", selectedRange: .init(location: 2, length: 0), replacementRange: editor.selectedRange())
-        fixture.controller.executeNavigation(source: fixture.controller.buffer)
-        #expect(fixture.controller.returnSearch == nil)
-        #expect(editor.hasMarkedText())
-        #expect(editor.string.contains("组合"))
-        editor.unmarkText()
-        try await fixture.typeNative("/go/settings")
-        try await fixture.key(53, "\u{1b}")
-        #expect(fixture.controller.returnSearch == nil)
-        try await fixture.key(53, "\u{1b}")
-        #expect(fixture.controller.buffer.text == "needle")
-        #expect(!fixture.context.hasChanges)
-    }
-
     @Test func realInspectorDraftsSurviveNavigationWithoutBlurSave() async throws {
         let fixture = try UnifiedSearchNavigationFixture()
         defer { fixture.stop() }

@@ -108,7 +108,7 @@ enum ContentQueryPresentationEvidenceRules {
             if ownerFields.contains(item.field), related == parent { return nil }
             let routineID = match.id.type == .image ? parent?.id : match.id.id
             return related.type == .routineOccurrence && related.id == routineID
-                && related.dayKey.map(CommandArgumentValidation.isCanonicalDay) == true ? nil : .invalidRelation
+                && related.dayKey.map(DayKey.isCanonicalDay) == true ? nil : .invalidRelation
         default:
             let allowsParent = parentFields.contains(item.field) || ownerFields.contains(item.field)
                 || item.field == .legacyPageProjection || (match.id.type == .image && item.ownerObject != nil)

@@ -65,8 +65,8 @@ enum ContentQueryConditionValidation {
     private static func invalidInterval(
         _ interval: ContentQueryDateInterval, dates: ContentQueryDateContext
     ) -> ContentQueryIssue? {
-        guard CommandArgumentValidation.isCanonicalDay(interval.lowerBound),
-              CommandArgumentValidation.isCanonicalDay(interval.upperBound) else { return .invalidDate }
+        guard DayKey.isCanonicalDay(interval.lowerBound),
+              DayKey.isCanonicalDay(interval.upperBound) else { return .invalidDate }
         switch ContentQueryDates.parse(interval.lowerBound + ".." + interval.upperBound, context: dates) {
         case .success: return nil
         case .failure(let failure): return failure.issue

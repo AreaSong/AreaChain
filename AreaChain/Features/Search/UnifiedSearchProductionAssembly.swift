@@ -104,9 +104,6 @@ import SwiftData
                                              calendar: router.objects.calendar, pendingLane: .overdue)
         }
         menubar.trustedPage = { Self.menubarPage(services) }
-        menubar.workspaceHandoff = .init(
-            disposition: { [weak self] in self?.workspace?.disposition(for: $0) ?? .unwired },
-            open: { [weak self] text, focus in self?.continueCommandInWorkspace(text, focus: focus) })
     }
 
     static func menubarPage(_ services: UnifiedSearchProductionServices) -> ContentQueryPageContext {
@@ -157,22 +154,6 @@ import SwiftData
         }
     }
 
-    /// 菜单栏没接上、工作台能处理的指令：先在工作台用菜单栏的同一查询选中菜单栏当时的焦点对象，
-    /// 再写入同一指令文字，由工作台走它自己的 Return 路径。
-    func continueCommandInWorkspace(_ text: String, focus: CommandObjectReference?) {
-        guard let menubar else { return }
-        revealWorkspaceThenWrite(menubar.queryInputText) { [weak self] workspace in
-            if let focus {
-                guard await self?.activateWhenVisible(focus, in: workspace) != nil else {
-                    workspace.navigationMessage = "unified.handoff.objectMissing"; return
-                }
-            }
-            guard workspace.edit(.init(source: workspace.buffer, text: text,
-                selection: NSRange(location: text.utf16.count, length: 0))) != nil else { return }
-            workspace.openHandedOffCommand()
-        }
-    }
-
     private func activateWhenVisible(_ object: CommandObjectReference, in workspace: UnifiedSearchController) async -> UUID? {
         for _ in 0..<150 where !Task.isCancelled {
             if let page = try? workspace.session.presentation().pagination, page.snapshot.visible.contains(object) {
@@ -193,7 +174,6 @@ import SwiftData
                 try? await Task.sleep(for: .milliseconds(20))
             }
             guard !Task.isCancelled else { return }
-            guard !workspace.hasUnsavedCommandWork else { workspace.reportBlockedHandoff(); return }
             guard workspace.edit(.init(source: workspace.buffer, text: text,
                 selection: NSRange(location: text.utf16.count, length: 0))) != nil else { return }
             await next(workspace)

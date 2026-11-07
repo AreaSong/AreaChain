@@ -38,7 +38,7 @@ enum ContentQuerySnapshotMatching {
 /// 注入快照的规范日与时间戳校验；不读当前时间，不补造缺省创建时间。
 enum ContentQuerySnapshotValidation {
     static func validDay(_ key: String, dates: ContentQueryDateContext) -> Bool {
-        guard CommandArgumentValidation.isCanonicalDay(key) else { return false }
+        guard DayKey.isCanonicalDay(key) else { return false }
         if case .success = ContentQueryDates.parse(key, context: dates) { return true }
         return false
     }

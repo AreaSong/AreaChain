@@ -57,7 +57,7 @@ enum ContentQueryDates {
 
     private static func valid(_ key: String, calendar: Calendar) -> Bool {
         // 复用严格公历日校验，再确认调用方日历可往返；拒绝隐式日历归一化。
-        guard CommandArgumentValidation.isCanonicalDay(key), calendar.identifier == .gregorian,
+        guard DayKey.isCanonicalDay(key), calendar.identifier == .gregorian,
               let date = DayKey.date(from: key, calendar: calendar) else { return false }
         return DayKey.from(date, calendar: calendar) == key
     }

@@ -44,7 +44,7 @@ struct ContentQueryIntegrationTests {
         host.queryEvent(.setInput(source))
         let invalid = try #require(host.query.textDiagnostics.first { $0.issue == .invalidDate })
         #expect(invalid.range == (source as NSString).range(of: "date:2026-02-30"))
-        #expect(CommandPathText.valid(invalid.range, in: source))
+        #expect(NSMaxRange(invalid.range) <= source.utf16.count)
         #expect(!host.query.isReady && host.query.showsResults)
         let exclusion = try #require(host.query.conditions.first {
             $0.value == .clause([.init(atom: .tag("归档"), excluded: true)])

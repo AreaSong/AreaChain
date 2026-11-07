@@ -16,97 +16,10 @@ struct UnifiedSearchReturnContext {
 }
 
 extension UnifiedSearchController {
-    var isNavigationInput: Bool { browsedCommand.map(Self.routesAsNavigation) == true }
-
-    /// 走导航面板（不建草稿）的指令：导航类与“在原页面完成”对照。
-    static func routesAsNavigation(_ command: CommandDescriptor) -> Bool {
-        command.category == .navigation || CommandOriginalPage.route(for: command.id) != nil
-    }
     var isNavigationPresented: Bool { navigationRouter?.navigation.searchPresentation == false }
 
     func navigationInput(_ text: String) -> UnifiedSearchBuffer? {
-        editingParameter = nil
-        return publishOperation(text: text)
-    }
-
-    func executeNavigation(source: UnifiedSearchBuffer) {
-        guard validates(source), isNavigationInput else { return }
-        if handOffToWorkspace(source) { return }
-        guard let router = navigationRouter else { navigationMessage = "unified.navigation.unassembled"; return }
-        let parsed = CommandPathParser().parse(.init(text: source.text))
-        guard let command = parsed.command else { return }
-        let route = navigationRoute(for: command)
-        if case .page(let page)? = route, parsed.arguments.isEmpty, parsed.state == .command {
-            navigate(.page(page), source: source)
-        } else if route == .day {
-            guard let day = navigationDay(parsed, calendar: router.objects.calendar) else {
-                navigationMessage = "unified.navigation.chooseDay"; return
-            }
-            navigate(.day(day), source: source)
-        } else if route == .routineDay {
-            guard let day = navigationDay(parsed, calendar: router.objects.calendar) else {
-                navigationMessage = "unified.navigation.chooseDay"; return
-            }
-            inspectRoutineDay(day, router: router, source: source)
-        } else if route == .closeInspector {
-            guard parsed.state == .command, parsed.arguments.isEmpty else { navigationMessage = "unified.navigation.invalidTarget"; return }
-            closeInspector(router: router, source: source)
-        } else if route == .focusedObject {
-            guard parsed.state != .invalid, parsed.arguments.isEmpty,
-                  parsed.diagnostics.allSatisfy({ $0.issue == .chooseParameter && $0.range.length == 0 }) else {
-                navigationMessage = "unified.navigation.invalidTarget"; return
-            }
-            guard let page = try? session.presentation().pagination, page.browse.active != nil else {
-                navigationMessage = "unified.navigation.chooseObject"; return
-            }
-            if command.id.rawValue == "go.tagList", page.browse.active?.type != .tag {
-                navigationMessage = "unified.navigation.chooseObject"; return
-            }
-            if command.id.rawValue == "inspector.open",
-               ![CommandObjectType.todo, .subtask, .routineOccurrence].contains(page.browse.active!.type) {
-                navigationMessage = "unified.navigation.unsupported"; return
-            }
-            browse(.init(version: page.snapshot.version, action: .open(inputEditing: false)), source: source)
-        } else if case .originalPage(let page)? = route {
-            executeOriginalPage(page, command: command, parsed: parsed, source: source)
-        } else { navigationMessage = "unified.navigation.unsupported" }
-    }
-
-    private func navigationDay(_ parsed: CommandPathResult, calendar: Calendar) -> String? {
-        guard parsed.state == .command,
-              case .day(let day)? = parsed.arguments.first(where: { $0.parameter == .day })?.value,
-              let date = DayKey.date(from: day, calendar: calendar), DayKey.from(date, calendar: calendar) == day else { return nil }
-        return day
-    }
-
-    private func inspectRoutineDay(_ day: String, router: WorkspaceSearchRouter, source: UnifiedSearchBuffer) {
-        guard let page = try? session.presentation().pagination, let active = page.browse.active,
-              page.snapshot.visible.contains(active), [.routine, .routineOccurrence].contains(active.type) else {
-            navigationMessage = "unified.navigation.chooseRoutine"; return
-        }
-        let open = ContentQueryBrowseOpen(object: .init(type: .routineOccurrence, id: active.id, dayKey: day),
-                                          parent: .init(type: .routine, id: active.id), viewingTrash: false)
-        do { navigate(.object(try router.objects.resolve(open)), source: source) }
-        catch { navigationMessage = navigationFailure(error as? WorkspaceOpenFailure ?? .invalidTarget) }
-    }
-
-    private func closeInspector(router: WorkspaceSearchRouter, source: UnifiedSearchBuffer) {
-        guard router.navigation.isInspectorPresented else { navigationMessage = "unified.navigation.inspectorNotOpen"; return }
-        do { try router.validateHost() } catch {
-            navigationMessage = navigationFailure(error as? WorkspaceOpenFailure ?? .unavailable); return
-        }
-        guard navigationTask == nil else { return }
-        let requestID = UUID()
-        navigationRequestID = requestID
-        navigationTask = Task { @MainActor [weak self] in
-            _ = await router.commitInspectorBeforeNavigation()
-            guard let self, self.navigationRequestID == requestID else { return }
-            self.navigationTask = nil
-            self.navigationRequestID = nil
-            guard self.validates(source), !Task.isCancelled, (try? router.validateHost()) != nil else { return }
-            router.navigation.closeInspector()
-            self.navigationMessage = "unified.navigation.inspectorClosed"
-        }
+        publishOperation(text: text)
     }
 
     func openResult(_ open: ContentQueryBrowseOpen, source: UnifiedSearchBuffer,
@@ -138,7 +51,10 @@ extension UnifiedSearchController {
     func navigate(_ destination: WorkspaceNavigationDestination, source: UnifiedSearchBuffer,
                   content: ContentQueryBrowseOpen? = nil, origin: CommandObjectReference? = nil,
                   then completion: ((WorkspaceNavigationOutcome) -> Void)? = nil) {
-        guard validates(source), let router = navigationRouter else { return }
+        guard validates(source), let router = navigationRouter else {
+            navigationMessage = "unified.navigation.unassembled"
+            return
+        }
         do { try router.validateHost(); try session.validateDisplayHost(expecting: source.lease) }
         catch { navigationMessage = navigationFailure(error as? WorkspaceOpenFailure ?? .stale); return }
         guard navigationTask == nil else { return }
@@ -209,8 +125,7 @@ extension UnifiedSearchController {
     }
 
     func openDiaryOriginalPage(_ source: UnifiedSearchBuffer) {
-        guard validates(source) else { return }
-        guard navigationRouter != nil else { return }
+        guard validates(source), navigationRouter != nil else { return }
         navigate(.page(.diary), source: source) { [weak self] _ in self?.navigationMessage = "unified.originalPage.displayed" }
     }
 
@@ -231,7 +146,7 @@ extension UnifiedSearchController {
         }
         router.clearDestination()
         router.navigation.restoreSearchPage(ticket.tab, tag: ticket.tag)
-        if !isCommandInput || isNavigationInput { restoreQueryInput() }
+        if !isCommandInput { restoreQueryInput() }
         if (try? session.presentation().pagination.snapshot.version) != ticket.version || ticket.version == nil {
             preservedSearchScrollVersion = nil
             do {
@@ -257,38 +172,6 @@ extension UnifiedSearchController {
         }
         returnSearch = nil
         inputFocused = true
-    }
-
-    func showSearchForCommandOnOriginalPage() {
-        guard isNavigationPresented, returnSearch == nil else { return }
-        navigationRouter?.navigation.searchPresentation = true
-    }
-
-    func returnForCommand(_ intent: UnifiedSearchIntent) -> Bool {
-        guard intent == .open || intent == .submit, isCommandInput, !isNavigationInput,
-              browsedCommand != nil else { return false }
-        return returnThenContinue { [weak self] source in
-            self?.intent(.open, source: source)
-        }
-    }
-
-    func returnThenContinue(_ next: @escaping (UnifiedSearchBuffer) -> Void) -> Bool {
-        guard isNavigationPresented, let ticket = returnSearch else { return false }
-        guard !commandReturnPending else { return true }
-        commandReturnPending = true
-        let source = buffer, message = navigationMessage
-        Task { @MainActor [weak self] in
-            guard let self else { return }
-            defer { self.commandReturnPending = false }
-            await self.returnToSearch(ticket.id)
-            guard self.validates(source) else { return }
-            guard !self.isNavigationPresented else {
-                if self.navigationMessage == message { self.reportGate() }
-                return
-            }
-            next(source)
-        }
-        return true
     }
 
     private func restoreBrowse(_ ticket: UnifiedSearchReturnContext) {

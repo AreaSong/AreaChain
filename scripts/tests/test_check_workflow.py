@@ -480,13 +480,13 @@ class WorkflowCheckTests(unittest.TestCase):
         for symbol in ("ControlsPreviewWindowController", "openControlsPreview", "settings.controlsPreview"):
             self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
 
-    def test_component_catalog_requires_command_catalog(self):
+    def test_component_catalog_requires_action_registry(self):
         self.make_project()
-        source = self.root / "AreaChain/Domain/CommandCatalog.swift"
+        source = self.root / "AreaChain/Services/ActionRegistry.swift"
         source.unlink()
         result = workflow.check_component_catalog(self.root)
         self.assertEqual(result["status"], "failed")
-        self.assertTrue(any("CommandCatalog" in item["message"] for item in result["issues"]))
+        self.assertTrue(any("ActionRegistry" in item["message"] for item in result["issues"]))
 
     def test_component_catalog_requires_task_read_adapter(self):
         self.make_project()
@@ -863,7 +863,7 @@ class WorkflowCheckTests(unittest.TestCase):
             self.write(f"AreaChain/Theme/{name}.swift", "struct Other {}\n")
         result = workflow.check_component_catalog(self.root)
         self.assertEqual(result["status"], "failed")
-        for symbol in ("UnifiedSearchInput", "UnifiedSearchBuffer", "UnifiedSearchCompletion", "UnifiedSearchFieldCell", "unifiedSearchOverlayHost"):
+        for symbol in ("UnifiedSearchInput", "UnifiedSearchBuffer", "UnifiedSearchFieldCell", "unifiedSearchOverlayHost"):
             self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
 
     def test_component_catalog_requires_date_picker_cell_and_geometry(self):

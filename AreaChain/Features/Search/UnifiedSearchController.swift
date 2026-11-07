@@ -7,21 +7,17 @@ final class UnifiedSearchController {
     private(set) var buffer: UnifiedSearchBuffer
     var navigationRouter: WorkspaceSearchRouter?
     var returnSearch: UnifiedSearchReturnContext?
-    /// 为指令回到搜索页的异步过程进行中；期间再按 Return 不重复返回和重读。
     @ObservationIgnored var commandReturnPending = false
     var navigationQueryRevision: UInt64 = 0
     @ObservationIgnored var captureSearchScroll: (() -> CGPoint?)?
     var restoreSearchScroll: (version: UUID, point: CGPoint)?
     var preservedSearchScrollVersion: UUID?
-    var navigationMessage = "unified.navigation.hint"
-    /// help.syntax／help.example 在导航面板里打开语法帮助卡。
+    var navigationMessage = ""
     var helpCardPresented = false
     var contentOwnerMessage = "unified.content.ownerHint"
     @ObservationIgnored var navigationTask: Task<Void, Never>?
     var navigationRequestID: UUID?
     var inputFocused = true
-    var editingParameter: CommandParameterID?
-    @ObservationIgnored var workspaceHandoff: UnifiedSearchWorkspaceHandoff?
     @ObservationIgnored var trustedPage: (() -> ContentQueryPageContext)?
     @ObservationIgnored var contentCommandTask: Task<Void, Never>?
     @ObservationIgnored var resumeTask: Task<Void, Never>?
@@ -53,8 +49,7 @@ final class UnifiedSearchController {
 
     var actions: UnifiedSearchActions {
         .init(edit: edit, accept: accept, focus: { [weak self] in self?.inputFocused = $0 },
-              intent: { [weak self] in self?.intent($0, source: $1) },
-              disposition: { [weak self] in self?.disposition(for: $0) ?? .unwired })
+              intent: { [weak self] in self?.intent($0, source: $1) })
     }
 
     var operationVisible: Bool {
@@ -70,24 +65,21 @@ final class UnifiedSearchController {
     }
 
     var isCommandInput: Bool {
-        let state = CommandPathParser().parse(.init(text: buffer.text, cursorLocation: buffer.text.utf16.count)).state
-        return state != .ordinaryText && state != .scope
-    }
-
-    var browsedCommand: CommandDescriptor? {
-        CommandPathParser().parse(.init(text: buffer.text, cursorLocation: buffer.text.utf16.count)).command
+        cliSession.shouldIntercept(text: buffer.text)
     }
 
     var hasUnsavedCommandWork: Bool { false }
 
     var hidesResultsForCommand: Bool {
-        guard isCommandInput else { return false }
-        guard let command = browsedCommand else { return true }
-        return command.targetTypes.isEmpty && !["inspector.open", "go.tagList", "occurrence.inspect"].contains(command.id.rawValue)
+        isCommandInput
     }
 
     var showsNavigationMessage: Bool {
-        navigationMessage != "unified.navigation.hint"
+        !navigationMessage.isEmpty && navigationMessage != "unified.navigation.hint"
+    }
+
+    var showsNavigationFeedback: Bool {
+        showsNavigationMessage
     }
 
     func validates(_ source: UnifiedSearchBuffer) -> Bool {
@@ -98,25 +90,14 @@ final class UnifiedSearchController {
     }
 
     func accept(_ request: UnifiedSearchEdit) -> UnifiedSearchBuffer? {
-        guard let request = resumedRequest(request, reread: true) else { return nil }
-        guard validates(request.source), let acceptance = request.acceptance, acceptance.text == request.text else { return nil }
-        clearBlockedHandoff()
-        cliSession.updateForInput(request.text)
-        let state = CommandPathParser().parse(.init(text: request.text, cursorLocation: request.selection.location)).state
-        if state == .ordinaryText || state == .scope {
-            return edit(.init(source: request.source, text: request.text, selection: request.selection))
-        }
-        showSearchForCommandOnOriginalPage()
-        return publishOperation(text: request.text)
+        edit(request)
     }
 
     func edit(_ request: UnifiedSearchEdit) -> UnifiedSearchBuffer? {
         guard validates(request.source) else { return nil }
-        clearBlockedHandoff()
         cliSession.updateForInput(request.text)
-        if request.text != buffer.text { navigationMessage = "unified.navigation.hint" }
-        let state = CommandPathParser().parse(.init(text: request.text, cursorLocation: request.selection.location)).state
-        let content = state == .ordinaryText || state == .scope
+        if request.text != buffer.text { navigationMessage = "" }
+        let content = !cliSession.shouldIntercept(text: request.text)
         guard let request = resumedRequest(request, reread: !content) else { return nil }
         if content {
             newNavigationQuery()
@@ -124,15 +105,26 @@ final class UnifiedSearchController {
                 try session.modelDidChange(expecting: buffer.lease.ownership)
                 try coordinator.send(.query(.setInput(request.text)), expecting: request.source.lease)
             } catch { reportGate(); return nil }
-        } else { showSearchForCommandOnOriginalPage() }
+        } else {
+            navigationRouter?.navigation.searchPresentation = true
+        }
         guard let owned = try? coordinator.host(buffer.lease.ownership.hostID) else { return nil }
         buffer = .init(lease: owned.lease, version: buffer.version + 1, text: request.text,
                        privacyRevision: buffer.privacyRevision)
         if content {
             navigationRouter?.navigation.searchPresentation = owned.session.query.showsResults
+                || cliSession.shouldPresentPanel(for: request.text)
             refresh()
         }
         return buffer
+    }
+
+    func prefillExample(_ text: String) {
+        helpCardPresented = false
+        cliSession.updateForInput(text)
+        _ = publishOperation(text: text)
+        navigationRouter?.navigation.searchPresentation = true
+        requestInputFocus()
     }
 
     /// 显式重读与“加载更多”分离；异步完成不能覆盖之后的输入或新所有权。
@@ -160,14 +152,6 @@ final class UnifiedSearchController {
             resumeForExplicitAction(source: source) { [weak self] renewed in self?.intent(intent, source: renewed) }
             return
         }
-        if intent == .open, handOffToWorkspace(source) { return }
-        if isNavigationInput {
-            if intent == .submit { return }
-            if intent == .open { executeNavigation(source: source); return }
-            if intent == .escape { _ = navigationInput(queryInputText); return }
-            if hidesResultsForCommand { return }
-        }
-        if returnForCommand(intent) { return }
         if handleCLIIntentIfApplicable(intent, source: source) { return }
         if hidesResultsForCommand, case .results = intent { return }
         guard let publication = try? session.presentation() else { return }
@@ -215,6 +199,11 @@ final class UnifiedSearchController {
               owned.lease.ownership == buffer.lease.ownership else { return nil }
         buffer = .init(lease: owned.lease, version: buffer.version + 1, text: text,
             privacyRevision: buffer.privacyRevision)
+        if text.isEmpty, !cliSession.shouldPresentPanel(for: "") {
+            navigationRouter?.navigation.searchPresentation = owned.session.query.showsResults
+        } else if cliSession.shouldPresentPanel(for: text) {
+            navigationRouter?.navigation.searchPresentation = true
+        }
         revision &+= 1
         return buffer
     }
@@ -276,7 +265,6 @@ final class UnifiedSearchController {
             let lease = current?.ownership == buffer.lease.ownership ? current! : buffer.lease
             buffer = .init(lease: lease, version: buffer.version + 1, text: "",
                            privacyRevision: buffer.privacyRevision + 1)
-            editingParameter = nil
             inputReset.invalidate(buffer)
             messageKey = "unified.results.invalidated"
         } else if change == .invalidated {
